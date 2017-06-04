@@ -443,12 +443,27 @@ namespace CSMWorld
     void Collection<ESXRecordT, IdAccessorT>::insertRecord (const RecordBase& record, int index,
         UniversalId::Type type)
     {
-        if (index<0 || index>static_cast<int> (mRecords.size()))
+		int vectorCapacity;
+		if (index<0 || index>static_cast<int> (mRecords.size()))
             throw std::runtime_error ("index out of range");
+
+		// Performance optimized vector resizing when using vector::insert or push_back
+		vectorCapacity = (int) mRecords.capacity();
+		if (index == vectorCapacity)
+		{
+			if (vectorCapacity == 0)
+				vectorCapacity = 512;
+			else if (vectorCapacity <= 10*1024*1024)
+				vectorCapacity *= 4;
+			else
+				vectorCapacity *= 2;
+			mRecords.reserve(vectorCapacity);
+		}
 
         const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
 
-        mRecords.insert (mRecords.begin()+index, record2);
+//        mRecords.insert (mRecords.begin()+index, record2);
+		mRecords.push_back(dynamic_cast<const Record<ESXRecordT>&> (record2));
 
         if (index<static_cast<int> (mRecords.size())-1)
         {
