@@ -59,14 +59,10 @@ public:
         return std::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end(), ci());
     }
 
-		// The original function is eating up 19% of cpu processing based on profiling
-		// non-iterator based code
-		for (size_t i = 0; i < x.length(); i++) {
-			if (toLower(x[i]) != toLower(y[i]))
-				return false;
-		}
-		return true;
-/*
+    static bool ciEqual(const std::string &x, const std::string &y) {
+        if (x.size() != y.size()) {
+            return false;
+        }
         std::string::const_iterator xit = x.begin();
         std::string::const_iterator yit = y.begin();
         for (; xit != x.end(); ++xit, ++yit) {
@@ -75,7 +71,6 @@ public:
             }
         }
         return true;
-*/
     }
 
     static int ciCompareLen(const std::string &x, const std::string &y, size_t len)
