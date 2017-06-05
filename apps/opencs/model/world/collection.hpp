@@ -49,9 +49,8 @@ namespace CSMWorld
 
         private:
 
-//			typedef std::list<Record<ESXRecordT>>::iterator RecordIterator;
+            std::map<std::string, int> mIndex;
 			std::list<Record<ESXRecordT> > mRecords;
-            std::map<std::string, typename std::list<Record<ESXRecordT>>::iterator > mIndex;
             std::vector<Column<ESXRecordT> *> mColumns;
 
             // not implemented
@@ -251,18 +250,15 @@ namespace CSMWorld
 //                buffer[newOrder[i]].setModified (buffer[newOrder[i]].get());
             }
 
-//            std::copy (buffer.begin(), buffer.end(), mRecords.begin()+baseIndex);
+            std::copy (buffer.begin(), buffer.end(), mRecords.begin()+baseIndex);
 
             // adjust index
-/*
-			for (std::map<std::string, std::list<Record<ESXRecordT>>::iterator>::iterator iter(mIndex.begin()); iter != mIndex.end();
-				++iter)
-			{
+            for (std::map<std::string, int>::iterator iter (mIndex.begin()); iter!=mIndex.end();
+                 ++iter)
                 if (iter->second>=baseIndex && iter->second<baseIndex+size)
                     iter->second = newOrder.at (iter->second-baseIndex)+baseIndex;
-			}
         }
-*/
+
         return true;
     }
 
@@ -296,7 +292,7 @@ namespace CSMWorld
     {
         std::string id = Misc::StringUtils::lowerCase (IdAccessorT().getId (record));
 
-        std::map<std::string, std::list<Record<ESXRecordT>>::iterator>::iterator iter = mIndex.find (id);
+        std::map<std::string, int>::iterator iter = mIndex.find (id);
 
         if (iter==mIndex.end())
         {
@@ -309,7 +305,7 @@ namespace CSMWorld
         }
         else
         {
-            (iter->second).setModified (record);
+            mRecords[iter->second].setModified (record);
         }
     }
 
@@ -412,16 +408,25 @@ namespace CSMWorld
 		for (i = 0; i < count; i++)
 			stopPos++;
 
-        mRecords.erase (startPos, stopPos);
+        typename std::map<std::string, int>::iterator iter = mIndex.begin();
 
-        std::map<std::string, typename std::list<Record<ESXRecordT>>::iterator >::iterator iter;
-		for (iter = mIndex.begin(); iter != mIndex.end(); iter++)
-		{
-			i = getIndexofRecord(iter->second);
-			if ( i >= index || i <= count )
-				mIndex.erase(iter);
-		}
-
+        while (iter!=mIndex.end())
+        {
+            if (iter->second>=index)
+            {
+                if (iter->second>=index+count)
+                {
+                    iter->second -= count;
+                    ++iter;
+                }
+                else
+                {
+                    mIndex.erase (iter++);
+                }
+            }
+            else
+                ++iter;
+        }
     }
 
     template<typename ESXRecordT, typename IdAccessorT>
@@ -450,7 +455,7 @@ namespace CSMWorld
         if (iter==mIndex.end())
             return -1;
 
-        return getIndexofRecord(iter->second);
+        return iter->second;
     }
 
     template<typename ESXRecordT, typename IdAccessorT>
@@ -511,8 +516,8 @@ namespace CSMWorld
         for (typename std::map<std::string, int>::const_iterator iter = mIndex.begin();
             iter!=mIndex.end(); ++iter)
         {
-            if (listDeleted || !(iter->second).isDeleted())
-                ids.push_back (IdAccessorT().getId ((iter->second).get()));
+            if (listDeleted || !mRecords[iter->second].isDeleted())
+                ids.push_back (IdAccessorT().getId (mRecords[iter->second].get()));
         }
 
         return ids;
@@ -542,10 +547,18 @@ namespace CSMWorld
 
         const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
 
-        std::list<Record<ESXRecordT>>::iterator recordPos = mRecords.insert (mRecords.begin()+index, record2);
+        mRecords.insert (mRecords.begin()+index, record2);
+
+        if (index<static_cast<int> (mRecords.size())-1)
+        {
+            for (std::map<std::string, int>::iterator iter (mIndex.begin()); iter!=mIndex.end();
+                ++iter)
+                 if (iter->second>=index)
+                     ++(iter->second);
+        }
 
         mIndex.insert (std::make_pair (Misc::StringUtils::lowerCase (IdAccessorT().getId (
-            record2.get())), recordPos ));
+            record2.get())), index));
     }
 
     template<typename ESXRecordT, typename IdAccessorT>
