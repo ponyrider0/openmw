@@ -15,7 +15,7 @@ namespace CSMWorld
     {
         public:
 
-            typedef std::vector<Record<Info> >::const_iterator RecordConstIterator;
+            typedef std::list<Record<Info> >::const_iterator RecordConstIterator;
             typedef std::pair<RecordConstIterator, RecordConstIterator> Range;
 
         private:
