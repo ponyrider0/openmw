@@ -36,9 +36,9 @@ void CSMWorld::InfoCollection::load (const Info& record, bool base)
 
         if (index==-1)
         {
-            Range range = getTopicRange (topic);
+            Range topicrange = getTopicRange (topic);
 
-            index = std::distance (getRecords().begin(), range.second);
+            index = std::distance (getRecords().begin(), topicrange.second);
         }
 
         insertRecord (record2, index);
@@ -165,7 +165,9 @@ CSMWorld::InfoCollection::Range CSMWorld::InfoCollection::getTopicRange (const s
     if (iter==getIdMap().end())
         return Range (getRecords().end(), getRecords().end());
 
-    RecordConstIterator begin = getRecords().begin()+iter->second;
+//    RecordConstIterator begin = getRecords().begin();
+//	advanceRecordIter(begin, iter->second);
+	RecordConstIterator begin (getNthRecordIterator(iter->second));
 
     while (begin != getRecords().begin())
     {
