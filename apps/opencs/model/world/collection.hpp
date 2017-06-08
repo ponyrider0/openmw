@@ -84,15 +84,15 @@ namespace CSMWorld
         private:
 
 			typedef typename std::list<Record<ESXRecordT> >::iterator RecordIteratorT;
-			typedef typename std::list<Record<ESXRecordT> >::const_iterator ConstRecordIteratorT;
 			typedef std::pair<int, RecordIteratorT> CacheEntry;
+			typedef typename std::list<Record<ESXRecordT> >::const_iterator ConstRecordIteratorT;
 			typedef std::pair<int, ConstRecordIteratorT> CacheConstEntry;
+			mutable CacheEntry mLastAccessedRecord;
+			mutable CacheConstEntry mLastAccessedConstRecord;
 
 			std::list<Record<ESXRecordT> > mRecords;
 			std::map<std::string, int> mIndex;
             std::vector<Column<ESXRecordT> *> mColumns;
-			CacheEntry mLastAccessedRecord;
-			mutable CacheConstEntry mLastAccessedConstRecord;
 
             // not implemented
             Collection (const Collection&);
@@ -124,14 +124,11 @@ namespace CSMWorld
             virtual ~Collection();
 
 			// use the fastest traversal to reach the Nth Record
-			typename std::list<Record<ESXRecordT>>::iterator* cacheLookup(int index);
 			typename std::list<Record<ESXRecordT>>::iterator getNthRecordIterator(int index);
 			typename std::list<Record<ESXRecordT>>::const_iterator getNthRecordIterator(int index) const;
 			Record<ESXRecordT>& getNthRecord(int index);
 			const Record<ESXRecordT>& getNthRecord(int index) const;
-			void advanceRecordIter(typename std::list<Record<ESXRecordT>>::iterator& recordIter, int index);
-			void advanceRecordIter(typename std::list<Record<ESXRecordT>>::const_iterator& recordIter, int index) const;
-			int getIndexOfRecord(typename std::list<Record<ESXRecordT>>::iterator& record);
+			void invalidateCache() const;
 
 			void add (const ESXRecordT& record);
             ///< Add a new record (modified)
@@ -220,45 +217,13 @@ namespace CSMWorld
             NestableColumn *getNestableColumn (int column) const;
     };
 
-	// cache lookup
 	template<typename ESXRecordT, typename IdAccessorT>
-	typename std::list<Record<ESXRecordT>>::iterator* Collection<ESXRecordT, IdAccessorT>::cacheLookup(int index)
+	void Collection<ESXRecordT, IdAccessorT>::invalidateCache() const
 	{
-		std::list<Record<ESXRecordT>>::iterator iter;
-		bool cacheResult;
-
-		// lookup index in cache
-		if (index == mLastAccessedRecord->first)
-		{
-			cacheResult = true;
-		}
-		else
-		{
-			cacheResult = false;
-		}
-
-		if (cacheResult == false)
-		{
-			// cacheMiss
-			// do lookup 
-			iter ( getNthRecordIterator(index) );
-			// add to cache
-			mLastAccessedRecord->first = index;
-			mLastAccessedRecord->second = &iter;
-		}
-		else
-		{
-			// cacheHit
-			// move to head and return
-			iter = mLastAccessedRecord->second;
-		}
-
-		// do read-ahead
-
-		return &iter;
-
+		// invalidate cache if can't maintain coherence
+		mLastAccessedRecord.first = -1;
+		mLastAccessedConstRecord.first = -1;
 	}
-
 
 	// use the fastest traversal to reach the Nth Record
 	template<typename ESXRecordT, typename IdAccessorT>
@@ -279,7 +244,10 @@ namespace CSMWorld
 		else
 		{
 			if (mLastAccessedRecord.first == index)
-				return mLastAccessedRecord.second;
+			{
+				iter = mLastAccessedRecord.second;
+				return iter;
+			}
 			else if (mLastAccessedRecord.first != -1)
 				distanceFromCache = index - mLastAccessedRecord.first;
 			else
@@ -287,7 +255,8 @@ namespace CSMWorld
 		}
 
 		distanceFromEnd = mRecords.size() - index;
-		if ( (index != 0) && (abs(distanceFromCache) < index) && (abs(distanceFromCache) < distanceFromEnd) )
+
+		if ((abs(distanceFromCache) < index) && (abs(distanceFromCache) < distanceFromEnd))
 		{
 			if (distanceFromCache > 0)
 				// forward
@@ -300,39 +269,26 @@ namespace CSMWorld
 		}
 		else
 		{
+
 			if (distanceFromEnd < index) {
 				// traverse from end()
 				for (iter = mRecords.end(), i = mRecords.size(); i > index; i--)
-				{
 					iter--;
-					if (iter == mRecords.end())
-					{
-						throw std::runtime_error("cached iterator is corrupted or your code is broken.");
-					}
-				}
 			}
 			else
 			{
 				// traverse from begin()
 				for (iter = mRecords.begin(), i = 0; i < index; i++)
-				{
 					iter++;
-					if (iter == mRecords.end())
-					{
-						throw std::runtime_error("cached iterator is corrupted or your code is broken.");
-					}
-				}
 			}
 
 		}
 
 		mLastAccessedRecord.first = index;
 		mLastAccessedRecord.second = iter;
-		if (mLastAccessedRecord.second != iter)
-		{
-			throw std::runtime_error("cache is corrupted.");
-		}
+
 		return iter;
+
 	}
 
 	// use the fastest traversal to reach the Nth Record
@@ -362,31 +318,21 @@ namespace CSMWorld
 		}
 
 		distanceFromEnd = mRecords.size() - index;
-		if ((index != 0) && (abs(distanceFromCache) < index) && (abs(distanceFromCache) < distanceFromEnd))
+
+		if ( (abs(distanceFromCache) < index) && (abs(distanceFromCache) < distanceFromEnd) )
 		{
 			if (distanceFromCache > 0)
 				// forward
 				for (iter = mLastAccessedConstRecord.second, i = 0; i < distanceFromCache; i++)
-				{
 					iter++;
-					if (iter == mRecords.end())
-					{
-						throw std::runtime_error("cached iterator is corrupted or your code is broken.");
-					}
-				}
 			else
 				// backward
 				for (iter = mLastAccessedConstRecord.second, i = 0; i > distanceFromCache; i--)
-				{
 					iter--;
-					if (iter == mRecords.end())
-					{
-						throw std::runtime_error("cached iterator is corrupted or your code is broken.");
-					}
-				}
 		}
 		else
 		{
+
 			if (distanceFromEnd < index) {
 				// traverse from end()
 				for (iter = mRecords.end(), i = mRecords.size(); i > index; i--)
@@ -403,10 +349,7 @@ namespace CSMWorld
 
 		mLastAccessedConstRecord.first = index;
 		mLastAccessedConstRecord.second = iter;
-		if (mLastAccessedConstRecord.second != iter)
-		{
-			throw std::runtime_error("cache is corrupted.");
-		}
+
 		return iter;
 	}
 
@@ -414,8 +357,6 @@ namespace CSMWorld
 	template<typename ESXRecordT, typename IdAccessorT>
 	Record<ESXRecordT>& Collection<ESXRecordT, IdAccessorT>::getNthRecord(int index)
 	{
-//		std::list<Record<ESXRecordT>>::iterator iter( getNthRecordIterator(index) );
-//		return *iter;
 		return *getNthRecordIterator(index);
 	}
 
@@ -423,45 +364,9 @@ namespace CSMWorld
 	template<typename ESXRecordT, typename IdAccessorT>
 	const Record<ESXRecordT>& Collection<ESXRecordT, IdAccessorT>::getNthRecord(int index) const
 	{
-//		std::list<Record<ESXRecordT>>::const_iterator iter(getNthRecordIterator(index));
-//		return *iter;
 		return *getNthRecordIterator(index);
 	}
 
-	// advance mRecord iterator by index positions
-	template<typename ESXRecordT, typename IdAccessorT>
-	void Collection<ESXRecordT, IdAccessorT>::advanceRecordIter(typename std::list<Record<ESXRecordT>>::iterator& recordIter, int index)
-	{
-		for (int i = 0; i < index; index++)
-		{
-			++recordIter;
-		}
-
-	}
-
-	// advance mRecord iterator by index positions
-	template<typename ESXRecordT, typename IdAccessorT>
-	void Collection<ESXRecordT, IdAccessorT>::advanceRecordIter(typename std::list<Record<ESXRecordT>>::const_iterator& recordIter, int index) const
-	{
-		for (int i = 0; i < index; index++)
-		{
-			++recordIter;
-		}
-
-	}
-
-	// calculate index position of iterator
-	template<typename ESXRecordT, typename IdAccessorT>
-	int Collection<ESXRecordT, IdAccessorT>::getIndexOfRecord(typename std::list<Record<ESXRecordT>>::iterator& record)
-	{
-		int counter;
-		std::list<Record<ESXRecordT>>::iterator currentRecord = record;
-		// walk back to the front of list to calculate position in list
-		for (counter = 0; currentRecord != mRecords.begin(); counter++)
-			--currentRecord;
-
-		return counter;
-	}
 
     template<typename ESXRecordT, typename IdAccessorT>
     const std::map<std::string, int>& Collection<ESXRecordT, IdAccessorT>::getIdMap() const
@@ -523,6 +428,14 @@ namespace CSMWorld
             for (iter = mIndex.begin(); iter != mIndex.end(); ++iter)
                 if ((iter->second >= baseIndex) && (iter->second < baseIndex+size))
                     iter->second = newOrder[iter->second - baseIndex] + baseIndex;
+
+			// update iterator caches
+			// iterator in mLastAccessedRecord is the splice_destination_iterator used in the last splice operation above
+//			if ((mLastAccessedRecord.first >= baseIndex) && (mLastAccessedRecord.first < baseIndex + size))
+			++(mLastAccessedRecord.first);
+			if ((mLastAccessedConstRecord.first >= baseIndex) && (mLastAccessedConstRecord.first < baseIndex + size))
+				mLastAccessedConstRecord.first = newOrder[mLastAccessedConstRecord.first - baseIndex] + baseIndex;
+
         }
 
         return true;
@@ -712,7 +625,11 @@ namespace CSMWorld
             iter->merge();
 
         purge();
-    }
+		// mIndex coherence??
+
+		// cache invalidation
+		invalidateCache();
+	}
 
     template<typename ESXRecordT, typename IdAccessorT>
     void  Collection<ESXRecordT, IdAccessorT>::purge()
@@ -732,13 +649,10 @@ namespace CSMWorld
     template<typename ESXRecordT, typename IdAccessorT>
     void Collection<ESXRecordT, IdAccessorT>::removeRows (int index, int count)
     {
-		int i;
-		std::list<Record<ESXRecordT>>::iterator startPos = mRecords.begin();
-		for (i = 0; i < index; i++)
-			startPos++;
-		std::list<Record<ESXRecordT>>::iterator stopPos = startPos;
-		for (i = 0; i < count; i++)
-			stopPos++;
+		std::list<Record<ESXRecordT>>::iterator startPos = getNthRecordIterator(index);
+		std::list<Record<ESXRecordT>>::iterator stopPos = getNthRecordIterator(index + count);
+
+		mRecords.erase(startPos, stopPos);
 
 //        typename std::map<std::string, int>::iterator iter = mIndex.begin();
 //        while (iter != mIndex.end())
@@ -753,6 +667,16 @@ namespace CSMWorld
 					mIndex.erase(iter);
 			}
 		}
+
+		// update iterator caches
+		// asssuming that index >= 0
+		// iterator in mLastAccessedRecord is the last_erase_iterator (stopPos) for erase operation above
+		mLastAccessedRecord.first -= count;
+		if (mLastAccessedConstRecord.first >= index)
+			if (mLastAccessedConstRecord.first >= index + count)
+				mLastAccessedConstRecord.first -= count;
+			else
+				mLastAccessedConstRecord.first = -1;
 
     }
 
@@ -770,8 +694,6 @@ namespace CSMWorld
 
 		appendRecord(record2);
 //        insertRecord (record2, getAppendIndex (id, type), type);
-
-		// mIndex !!!!!-----------------------------------
 
     }
 
@@ -813,8 +735,9 @@ namespace CSMWorld
 
 		mRecords.push_back(dynamic_cast<const Record<ESXRecordT>&> (record2));
 
-		// ????  use append ?????
 		mIndex.insert( std::make_pair(Misc::StringUtils::lowerCase(IdAccessorT().getId(record2.get())), index) );
+		// cache invalidation
+		// not needed, no elements affected
 	}
 
     template<typename ESXRecordT, typename IdAccessorT>
@@ -859,8 +782,11 @@ namespace CSMWorld
     void Collection<ESXRecordT, IdAccessorT>::insertRecord (const RecordBase& record, int index,
         UniversalId::Type type)
     {
-		if (index<0 || index>static_cast<int> (mRecords.size()))
+		if ( (index < 0) || (index > static_cast<int>(mRecords.size())) )
             throw std::runtime_error ("index out of range");
+
+		if (index == static_cast<int>(mRecords.size()) )
+			return appendRecord(record);
 
         const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
 		
@@ -871,13 +797,22 @@ namespace CSMWorld
 		if ( index < static_cast<int>(mRecords.size())-1 )
         {
 			std::map<std::string, int>::iterator iter;
-            for (iter = mIndex.begin(); iter != mIndex.end(); ++iter)
-                 if (iter->second >= index)
-                     ++(iter->second);
-        }
+			std::map<std::string, int>::iterator end = mIndex.end();
+			for (iter = mIndex.begin(); iter != end; ++iter)
+				if (iter->second >= index)
+					++(iter->second);
+
+			// update iterator caches
+			// must detect case where inserting into empty set
+			// iterator in mLastAccessedRecord was last used as insertion_iterator for operation above
+			++(mLastAccessedRecord.first);
+			if (mLastAccessedConstRecord.first >= index)
+				++(mLastAccessedConstRecord.first);
+		}
 		// insert new ID-index pair into mIndex
         mIndex.insert ( std::make_pair(Misc::StringUtils::lowerCase(IdAccessorT().getId(record2.get())), index) );
-    }
+
+	}
 
     template<typename ESXRecordT, typename IdAccessorT>
     void Collection<ESXRecordT, IdAccessorT>::setRecord (int index, const Record<ESXRecordT>& record)

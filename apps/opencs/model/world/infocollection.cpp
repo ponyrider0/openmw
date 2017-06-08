@@ -63,7 +63,7 @@ int CSMWorld::InfoCollection::getInfoIndex (const std::string& id, const std::st
 
     std::pair<RecordConstIterator, RecordConstIterator> range = getTopicRange (topic);
 
-    for (; range.first!=range.second; ++range.first)
+    for (; range.first != range.second; ++range.first)
         if (Misc::StringUtils::ciEqual(range.first->get().mId, fullId))
             return std::distance (getRecords().begin(), range.first);
 
@@ -148,7 +148,7 @@ CSMWorld::InfoCollection::Range CSMWorld::InfoCollection::getTopicRange (const s
 
     // Skip invalid records: The beginning of a topic string could be identical to another topic
     // string.
-    for (; iter!=getIdMap().end(); ++iter)
+    for (; iter != getIdMap().end(); ++iter)
     {
         std::string testTopicId =
             Misc::StringUtils::lowerCase (getRecord (iter->second).get().mTopicId);
@@ -158,15 +158,13 @@ CSMWorld::InfoCollection::Range CSMWorld::InfoCollection::getTopicRange (const s
 
         std::size_t size = topic2.size();
 
-        if (testTopicId.size()<size || testTopicId.substr (0, size)!=topic2)
+        if ( (testTopicId.size() < size) || (testTopicId.substr (0, size) != topic2) )
             return Range (getRecords().end(), getRecords().end());
     }
 
     if (iter==getIdMap().end())
         return Range (getRecords().end(), getRecords().end());
 
-//    RecordConstIterator begin = getRecords().begin();
-//	advanceRecordIter(begin, iter->second);
 	RecordConstIterator begin (getNthRecordIterator(iter->second));
 
     while (begin != getRecords().begin())
@@ -183,7 +181,7 @@ CSMWorld::InfoCollection::Range CSMWorld::InfoCollection::getTopicRange (const s
     // Find end
     RecordConstIterator end = begin;
 
-    for (; end!=getRecords().end(); ++end)
+    for (; end != getRecords().end(); ++end)
         if (!Misc::StringUtils::ciEqual(end->get().mTopicId, topic2))
             break;
 
@@ -195,6 +193,7 @@ void CSMWorld::InfoCollection::removeDialogueInfos(const std::string& dialogueId
     std::string id = Misc::StringUtils::lowerCase(dialogueId);
     std::vector<int> erasedRecords;
 
+	// update mIndex
     std::map<std::string, int>::const_iterator current = getIdMap().lower_bound(id);
     std::map<std::string, int>::const_iterator end = getIdMap().end();
     for (; current != end; ++current)
@@ -218,6 +217,7 @@ void CSMWorld::InfoCollection::removeDialogueInfos(const std::string& dialogueId
             break;
         }
     }
+	invalidateCache();
 
     while (!erasedRecords.empty())
     {
