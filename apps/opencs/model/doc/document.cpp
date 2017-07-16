@@ -397,6 +397,12 @@ void CSMDoc::Document::save()
     emit stateChanged (getState(), this);
 }
 
+void CSMDoc::Document::exportESM()
+{
+	// do export here
+	std::cout << "openmw-File-Export-Menu: ExportESM called" << std::endl;
+}
+
 CSMWorld::UniversalId CSMDoc::Document::verify (const CSMWorld::UniversalId& reportId)
 {
     CSMWorld::UniversalId id = mTools.runVerifier (reportId);

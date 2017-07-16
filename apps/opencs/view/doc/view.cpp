@@ -68,6 +68,10 @@ void CSVDoc::View::setupFileMenu()
     setupShortcut("document-file-save", mSave);
     file->addAction (mSave);
 
+	mExportESM = new QAction(tr("Export ESM"), this);
+	connect(mExportESM, SIGNAL(triggered()), this, SLOT(exportESM()));
+	file->addAction(mExportESM);
+
     mVerify = new QAction (tr ("Verify"), this);
     connect (mVerify, SIGNAL (triggered()), this, SLOT (verify()));
     setupShortcut("document-file-verify", mVerify);
@@ -702,6 +706,11 @@ void CSVDoc::View::newView()
 void CSVDoc::View::save()
 {
     mDocument->save();
+}
+
+void CSVDoc::View::exportESM()
+{
+	mDocument->exportESM();
 }
 
 void CSVDoc::View::verify()

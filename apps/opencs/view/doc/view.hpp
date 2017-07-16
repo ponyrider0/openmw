@@ -45,6 +45,7 @@ namespace CSVDoc
             QAction *mUndo;
             QAction *mRedo;
             QAction *mSave;
+			QAction *mExportESM;
             QAction *mVerify;
             QAction *mShowStatusBar;
             QAction *mStopDebug;
@@ -155,6 +156,8 @@ namespace CSVDoc
             void newView();
 
             void save();
+
+			void exportESM();
 
             void exit();
 

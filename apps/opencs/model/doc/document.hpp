@@ -130,6 +130,8 @@ namespace CSMDoc
 
             void save();
 
+			void exportESM();
+
             CSMWorld::UniversalId verify (const CSMWorld::UniversalId& reportId = CSMWorld::UniversalId());
 
             CSMWorld::UniversalId newSearch();
