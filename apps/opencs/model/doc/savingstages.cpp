@@ -137,13 +137,8 @@ void CSMDoc::WriteDialogueCollectionStage::perform (int stage, Messages& message
             mState.getWriter().endRecord (topic.mModified.sRecordId);
         }
 
-		// return if range is empty
-		if (range.first == range.second)
-			return;
-
         // write modified selected info records
-		CSMWorld::InfoCollection::RecordConstIterator iter(range.second);
-		for (--iter; iter!=range.first; --iter)
+        for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
         {
             if (iter->isModified() || iter->mState == CSMWorld::RecordBase::State_Deleted)
             {
@@ -151,21 +146,21 @@ void CSMDoc::WriteDialogueCollectionStage::perform (int stage, Messages& message
                 info.mId = info.mId.substr (info.mId.find_last_of ('#')+1);
 
                 info.mPrev = "";
-                if (iter!=range.second)
-                {
-					CSMWorld::InfoCollection::RecordConstIterator prev = iter;
-					++prev;
-					if (prev != range.second)
-						info.mPrev = prev->get().mId.substr (prev->get().mId.find_last_of ('#')+1);
-                }
-
-                info.mNext = "";
                 if (iter!=range.first)
                 {
-					CSMWorld::InfoCollection::RecordConstIterator next = iter;
-					--next;
+                    CSMWorld::InfoCollection::RecordConstIterator prev = iter;
+                    --prev;
 
-					info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
+                    info.mPrev = prev->get().mId.substr (prev->get().mId.find_last_of ('#')+1);
+                }
+
+                CSMWorld::InfoCollection::RecordConstIterator next = iter;
+                ++next;
+
+                info.mNext = "";
+                if (next!=range.second)
+                {
+                    info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
                 }
 
                 writer.startRecord (info.sRecordId);
@@ -173,25 +168,6 @@ void CSMDoc::WriteDialogueCollectionStage::perform (int stage, Messages& message
                 writer.endRecord (info.sRecordId);
             }
         }
-		// loop stops at first record, so process that
-		if (iter->isModified() || iter->mState == CSMWorld::RecordBase::State_Deleted)
-		{
-			ESM::DialInfo info = iter->get();
-			info.mId = info.mId.substr(info.mId.find_last_of('#') + 1);
-
-			info.mPrev = "";
-			CSMWorld::InfoCollection::RecordConstIterator prev = iter;
-			++prev;
-			if (prev != range.second)
-				info.mPrev = prev->get().mId.substr(prev->get().mId.find_last_of('#') + 1);
-
-			info.mNext = "";
-
-			writer.startRecord(info.sRecordId);
-			info.save(writer, iter->mState == CSMWorld::RecordBase::State_Deleted);
-			writer.endRecord(info.sRecordId);
-		}
-
     }
 }
 
