@@ -306,9 +306,11 @@ void CSMDoc::WriteCellCollectionStage::perform (int stage, Messages& messages)
         // write references
         if (references!=mState.getSubRecords().end())
         {
-            for (std::deque<int>::const_iterator iter (references->second.begin());
-                iter!=references->second.end(); ++iter)
-            {
+//            for (std::deque<int>::const_iterator iter (references->second.begin());
+//                iter!=references->second.end(); ++iter)
+			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
+				iter != references->second.rend(); ++iter)
+			{
                 const CSMWorld::Record<CSMWorld::CellRef>& ref =
                     mDocument.getData().getReferences().getRecord (*iter);
 

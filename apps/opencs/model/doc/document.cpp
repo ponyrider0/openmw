@@ -399,8 +399,24 @@ void CSMDoc::Document::save()
 
 void CSMDoc::Document::exportESM()
 {
+	uint fVersion = 0x9a99993F;
+
 	// do export here
-	std::cout << "openmw-File-Export-Menu: ExportESM called" << std::endl;
+	std::cout << "openmw-File-Export-Menu: ExportESM called:" << std::endl;
+	std::cout << "mSavePath=[" << mSavePath << "]  mProjectFile=[" << mProjectPath << "]";
+	std::cout << "Version 1.2 =[" << fVersion << "]";
+
+	exportESM3();
+}
+
+void CSMDoc::Document::exportESM3()
+{
+
+}
+
+void CSMDoc::Document::exportESM4()
+{
+
 }
 
 CSMWorld::UniversalId CSMDoc::Document::verify (const CSMWorld::UniversalId& reportId)

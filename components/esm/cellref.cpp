@@ -135,7 +135,7 @@ void ESM::CellRef::save (ESMWriter &esm, bool wideRefNum, bool inInventory, bool
     esm.writeHNCString("NAME", mRefID);
 
     if (isDeleted) {
-        esm.writeHNCString("DELE", "");
+        esm.writeHNString("DELE", "d,H", 4);
         return;
     }
 
@@ -158,8 +158,9 @@ void ESM::CellRef::save (ESMWriter &esm, bool wideRefNum, bool inInventory, bool
     if (mChargeInt != -1)
         esm.writeHNT("INTV", mChargeInt);
 
-    if (mGoldValue != 1) {
-        esm.writeHNT("NAM9", mGoldValue);
+//    if (mGoldValue != 1) {
+	if (mGoldValue != 1 && mGoldValue != 0) {
+			esm.writeHNT("NAM9", mGoldValue);
     }
 
     if (!inInventory && mTeleport)

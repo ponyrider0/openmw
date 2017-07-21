@@ -166,7 +166,7 @@ namespace ESM
 
         if (isDeleted)
         {
-            esm.writeHNCString("DELE", "");
+            esm.writeHNString("DELE", "d,H", 4);
             return;
         }
 
