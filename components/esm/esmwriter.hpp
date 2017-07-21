@@ -70,8 +70,7 @@ class ESMWriter
         }
         void writeHNOCString(const std::string& name, const std::string& data)
         {
-//            if (!data.empty())
-			if ( !data.empty() || name.compare("NAME")==0 )
+            if (!data.empty())
                 writeHNCString(name, data);
         }
 
