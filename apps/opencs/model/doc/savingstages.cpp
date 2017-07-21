@@ -126,9 +126,9 @@ void CSMDoc::WriteDialogueCollectionStage::perform (int stage, Messages& message
         if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified
                          && topic.mState != CSMWorld::RecordBase::State_ModifiedOnly)
         {
-//            mState.getWriter().startRecord (topic.mBase.sRecordId);
-//            topic.mBase.save (mState.getWriter(), topic.mState == CSMWorld::RecordBase::State_Deleted);
-//            mState.getWriter().endRecord (topic.mBase.sRecordId);
+            mState.getWriter().startRecord (topic.mBase.sRecordId);
+            topic.mBase.save (mState.getWriter(), topic.mState == CSMWorld::RecordBase::State_Deleted);
+            mState.getWriter().endRecord (topic.mBase.sRecordId);
         }
         else
         {

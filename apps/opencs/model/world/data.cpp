@@ -1164,27 +1164,33 @@ bool CSMWorld::Data::hasId (const std::string& id) const
 
 int CSMWorld::Data::count (RecordBase::State state) const
 {
-    return
-        count (state, mGlobals) +
-        count (state, mGmsts) +
-        count (state, mSkills) +
-        count (state, mClasses) +
-        count (state, mFactions) +
-        count (state, mRaces) +
-        count (state, mSounds) +
-        count (state, mScripts) +
-        count (state, mRegions) +
-        count (state, mBirthsigns) +
-        count (state, mSpells) +
-        count (state, mCells) +
-        count (state, mEnchantments) +
-        count (state, mBodyParts) +
-        count (state, mLand) +
-        count (state, mLandTextures) +
-        count (state, mSoundGens) +
-        count (state, mMagicEffects) +
-        count (state, mReferenceables) +
-        count (state, mPathgrids);
+	return
+		count(state, mGlobals) +
+		count(state, mGmsts) +
+		count(state, mSkills) +
+		count(state, mClasses) +
+		count(state, mFactions) +
+		count(state, mRaces) +
+		count(state, mSounds) +
+		count(state, mScripts) +
+		count(state, mRegions) +
+		count(state, mBirthsigns) +
+		count(state, mSpells) +
+		count(state, mCells) +
+		count(state, mEnchantments) +
+		count(state, mBodyParts) +
+		count(state, mLand) +
+		count(state, mLandTextures) +
+		count(state, mSoundGens) +
+		count(state, mMagicEffects) +
+		count(state, mReferenceables) +
+		count(state, mPathgrids) +
+		count(state, mTopics) +
+		count(state, mTopicInfos) +
+		count(state, mJournals) +
+		count(state, mJournalInfos) +
+//		count(state, mRefs) +
+		0; // zero is just a placeholder number for the above plus signs
 }
 
 std::vector<std::string> CSMWorld::Data::getIds (bool listDeleted) const
