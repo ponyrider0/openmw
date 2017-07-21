@@ -86,18 +86,18 @@ CSMDoc::Saving::Saving (Document& document, const boost::filesystem::path& proje
 
     appendStage (new WriteCellCollectionStage (mDocument, mState));
 
+	appendStage(new WritePathgridCollectionStage(mDocument, mState));
+
+	appendStage(new WriteLandTextureCollectionStage(mDocument, mState));
+
+	// references Land Textures
+	appendStage(new WriteLandCollectionStage(mDocument, mState));
+
     // Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
 
     appendStage (new WriteDialogueCollectionStage (mDocument, mState, false));
 
     appendStage (new WriteDialogueCollectionStage (mDocument, mState, true));
-
-    appendStage (new WritePathgridCollectionStage (mDocument, mState));
-
-    appendStage (new WriteLandTextureCollectionStage (mDocument, mState));
-
-    // references Land Textures
-    appendStage (new WriteLandCollectionStage (mDocument, mState));
 
     // close file and clean up
     appendStage (new CloseSaveStage (mState));
