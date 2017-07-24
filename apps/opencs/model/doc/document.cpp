@@ -282,8 +282,9 @@ CSMDoc::Document::Document (const VFS::Manager* vfs, const Files::ConfigurationM
   mSavingOperation (*this, mProjectPath, encoding),
   mSaving (&mSavingOperation),
   mResDir(resDir), mFallbackMap(fallback),
-  mRunner (mProjectPath), mDirty (false), mIdCompletionManager(mData)
-{
+  mRunner (mProjectPath), mDirty (false), mIdCompletionManager(mData),
+  mTES3Exporter(*this, mProjectPath, encoding)
+{	
     if (mContentFiles.empty())
         throw std::runtime_error ("Empty content file sequence");
 

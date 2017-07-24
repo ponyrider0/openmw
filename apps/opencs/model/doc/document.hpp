@@ -22,6 +22,8 @@
 #include "runner.hpp"
 #include "operationholder.hpp"
 
+#include "exporterTES3.hpp"
+
 class QAbstractItemModel;
 
 namespace Fallback
@@ -75,6 +77,8 @@ namespace CSMDoc
             bool mDirty;
 
             CSMWorld::IdCompletionManager mIdCompletionManager;
+
+			TES3Exporter mTES3Exporter;
 
             // It is important that the undo stack is declared last, because on desctruction it fires a signal, that is connected to a slot, that is
             // using other member variables.  Unfortunately this connection is cut only in the QObject destructor, which is way too late.
