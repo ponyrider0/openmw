@@ -16,7 +16,7 @@
 CSMDoc::TES3Exporter::TES3Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding)
   : Exporter(document, exportPath, encoding)
 {
-	std::cout << "TES3Export Path: " << mExportPath << std::endl;
+//	std::cout << "TES3Export Path: " << mExportPath << std::endl;
 }
 
 void CSMDoc::TES3Exporter::defineExportOperation()

@@ -17,6 +17,7 @@ namespace CSMDoc
 //		Q_OBJECT
 
 	public:
+		bool mExportDefined=false;
 		Operation mExportOperation;
 		OperationHolder mExportManager;
 		SavingState *mStatePtr=0;

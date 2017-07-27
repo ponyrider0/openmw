@@ -453,6 +453,7 @@ void CSVDoc::View::updateActions()
     mRedo->setEnabled (editing & mDocument->getUndoStack().canRedo());
 
     mSave->setEnabled (!(mDocument->getState() & CSMDoc::State_Saving) && !running);
+	mExportESM->setEnabled (!(mDocument->getState() & CSMDoc::State_Saving) && !running);
     mVerify->setEnabled (!(mDocument->getState() & CSMDoc::State_Verifying));
 
     mGlobalDebugProfileMenu->updateActions (running);

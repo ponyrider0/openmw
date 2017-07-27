@@ -332,7 +332,7 @@ CSMDoc::Document::Document (const VFS::Manager* vfs, const Files::ConfigurationM
 
     connect (&mRunner, SIGNAL (runStateChanged()), this, SLOT (runStateChanged()));
 
-	mExporter = new TES3Exporter(*this, boost::filesystem::path(mSavePath.parent_path() / (mSavePath.stem().string() + ".ESM")), encoding);
+	mExporter = new TES3Exporter(*this, boost::filesystem::path(mSavePath.parent_path() / (mSavePath.filename().string() + ".ESM")), encoding);
 	connect (&mExporter->mExportManager, SIGNAL (progress (int, int, int)), this, SLOT (progress (int, int, int)));
 	connect (&mExporter->mExportManager, SIGNAL (done (int, bool)), this, SLOT (operationDone (int, bool)));
 	connect (&mExporter->mExportManager, SIGNAL (reportMessage (const CSMDoc::Message&, int)),
