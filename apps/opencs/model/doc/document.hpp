@@ -78,7 +78,7 @@ namespace CSMDoc
 
             CSMWorld::IdCompletionManager mIdCompletionManager;
 
-			TES3Exporter mTES3Exporter;
+			Exporter *mExporter;
 
             // It is important that the undo stack is declared last, because on desctruction it fires a signal, that is connected to a slot, that is
             // using other member variables.  Unfortunately this connection is cut only in the QObject destructor, which is way too late.

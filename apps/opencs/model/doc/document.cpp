@@ -282,8 +282,7 @@ CSMDoc::Document::Document (const VFS::Manager* vfs, const Files::ConfigurationM
   mSavingOperation (*this, mProjectPath, encoding),
   mSaving (&mSavingOperation),
   mResDir(resDir), mFallbackMap(fallback),
-  mRunner (mProjectPath), mDirty (false), mIdCompletionManager(mData),
-  mTES3Exporter(*this, mProjectPath, encoding)
+  mRunner (mProjectPath), mDirty (false), mIdCompletionManager(mData)
 {	
     if (mContentFiles.empty())
         throw std::runtime_error ("Empty content file sequence");
@@ -332,6 +331,13 @@ CSMDoc::Document::Document (const VFS::Manager* vfs, const Files::ConfigurationM
         this, SLOT (reportMessage (const CSMDoc::Message&, int)));
 
     connect (&mRunner, SIGNAL (runStateChanged()), this, SLOT (runStateChanged()));
+
+	mExporter = new TES3Exporter(*this, boost::filesystem::path(mSavePath.parent_path() / (mSavePath.stem().string() + ".ESM")), encoding);
+	connect (&mExporter->mExportManager, SIGNAL (progress (int, int, int)), this, SLOT (progress (int, int, int)));
+	connect (&mExporter->mExportManager, SIGNAL (done (int, bool)), this, SLOT (operationDone (int, bool)));
+	connect (&mExporter->mExportManager, SIGNAL (reportMessage (const CSMDoc::Message&, int)),
+		this, SLOT (reportMessage (const CSMDoc::Message&, int)));
+
 }
 
 CSMDoc::Document::~Document()
@@ -363,6 +369,9 @@ int CSMDoc::Document::getState() const
 
     if (int operations = mTools.getRunningOperations())
         state |= State_Locked | State_Operation | operations;
+
+	if (mExporter->mExportManager.isRunning())
+		state |= State_Locked | State_Saving | State_Operation;
 
     return state;
 }
@@ -402,6 +411,12 @@ void CSMDoc::Document::exportESM()
 {
 	// do export here
 	std::cout << "openmw-File-Export-Menu: ExportESM called" << std::endl;
+//	mTES3Exporter.defineExportOperation();
+//	mTES3Exporter.setOperation(mTES3Exporter.mExportOperation);
+//	mTES3Exporter.mExportManager.start();
+	mExporter->startExportOperation();
+
+	emit stateChanged (getState(), this);
 }
 
 CSMWorld::UniversalId CSMDoc::Document::verify (const CSMWorld::UniversalId& reportId)
@@ -432,7 +447,10 @@ void CSMDoc::Document::runMerge (std::unique_ptr<CSMDoc::Document> target)
 void CSMDoc::Document::abortOperation (int type)
 {
     if (type==State_Saving)
-        mSaving.abort();
+		if (mExporter->mExportManager.isRunning())
+			mExporter->mExportManager.abort();
+		else
+	        mSaving.abort();
     else
         mTools.abortOperation (type);
 }

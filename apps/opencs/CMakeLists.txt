@@ -5,11 +5,11 @@ set (OPENCS_SRC main.cpp
 opencs_units (. editor)
 
 opencs_units (model/doc
-    document operation saving documentmanager loader runner operationholder exporter exporterTES3
+    document operation saving documentmanager loader runner operationholder 
     )
 
 opencs_units_noqt (model/doc
-    stage savingstate savingstages blacklist messages
+    stage savingstate savingstages blacklist messages exporter exporterTES3
     )
 
 opencs_hdrs_noqt (model/doc

@@ -12,19 +12,25 @@ namespace CSMDoc
 	class Document;
 	class SavingState;
 
-    class Exporter : public OperationHolder
+    class Exporter
     {
-		Q_OBJECT
+//		Q_OBJECT
 
 	public:
 		Operation mExportOperation;
+		OperationHolder mExportManager;
+		SavingState *mStatePtr=0;
+		boost::filesystem::path mExportPath;
+		ToUTF8::FromType mEncoding;
 		Document& mDocument;
-		SavingState mState;
 
-		Exporter(Document& document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
+		Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding);
+		virtual ~Exporter();
 
+		virtual void queryExportPath();
 		// Define export steps within this method
 		virtual void defineExportOperation();
+		virtual void startExportOperation();
 
     };
 
