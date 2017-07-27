@@ -149,9 +149,9 @@ void CSMDoc::ExportHeaderStage::perform (int stage, Messages& messages)
 	{
 		mDocument.getData().getMetaData().save (mState.getWriter());
 		mState.getWriter().setRecordCount (
-			mDocument.getData().count (CSMWorld::RecordBase::State_Modified) +
-			mDocument.getData().count (CSMWorld::RecordBase::State_ModifiedOnly) +
-			mDocument.getData().count (CSMWorld::RecordBase::State_Deleted));
+			mDocument.getData().countTES3 (CSMWorld::RecordBase::State_Modified) +
+			mDocument.getData().countTES3 (CSMWorld::RecordBase::State_ModifiedOnly) +
+			mDocument.getData().countTES3 (CSMWorld::RecordBase::State_Deleted));
 
 		/// \todo refine dependency list (at least remove redundant dependencies)
 		std::vector<boost::filesystem::path> dependencies = mDocument.getContentFiles();
@@ -391,13 +391,15 @@ void CSMDoc::ExportCellCollectionStage::perform (int stage, Messages& messages)
 			stream >> ignore >> cellRecord.mData.mX >> cellRecord.mData.mY;
 		}
 
-		cellRecord.save (writer, cell.mState == CSMWorld::RecordBase::State_Deleted);
+		cellRecord.exportTES3 (writer, cell.mState == CSMWorld::RecordBase::State_Deleted);
 
 		// write references
 		if (references!=mState.getSubRecords().end())
 		{
-			for (std::deque<int>::const_iterator iter (references->second.begin());
-				iter!=references->second.end(); ++iter)
+//			for (std::deque<int>::const_iterator iter (references->second.begin());
+//				iter!=references->second.end(); ++iter)
+			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
+				iter != references->second.rend(); ++iter)
 			{
 				const CSMWorld::Record<CSMWorld::CellRef>& ref =
 					mDocument.getData().getReferences().getRecord (*iter);
@@ -443,7 +445,7 @@ void CSMDoc::ExportCellCollectionStage::perform (int stage, Messages& messages)
 						writer.writeHNT ("CNDT", moved.mTarget, 8);
 					}
 
-					refRecord.save (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+					refRecord.exportTES3 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 				}
 			}
 		}

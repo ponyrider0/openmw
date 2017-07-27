@@ -131,6 +131,7 @@ struct Cell
   void loadCell(ESMReader &esm, bool saveContext = true); // Load everything, except NAME, DATAstruct and references
 
   void save(ESMWriter &esm, bool isDeleted = false) const;
+  void exportTES3(ESMWriter &esm, bool isDeleted = false) const;
 
   bool isExterior() const
   {

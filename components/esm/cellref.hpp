@@ -108,6 +108,7 @@ namespace ESM
             void loadData (ESMReader& esm, bool &isDeleted);
 
             void save (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
+			void exportTES3 (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
 
             void blank();
     };

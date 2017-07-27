@@ -196,6 +196,45 @@ namespace ESM
             esm.writeHNT("NAM0", mRefNumCounter);
     }
 
+	void Cell::exportTES3(ESMWriter &esm, bool isDeleted) const
+	{
+//		esm.writeHNOCString("NAME", mName);
+		esm.writeHNCString("NAME", mName);
+		esm.writeHNT("DATA", mData, 12);
+
+		if (isDeleted)
+		{
+			esm.writeHNCString("DELE", "");
+			return;
+		}
+
+		if (mData.mFlags & Interior)
+		{
+			if (mWaterInt) {
+				int water =
+					(mWater >= 0) ? (int)(mWater + 0.5) : (int)(mWater - 0.5);
+				esm.writeHNT("INTV", water);
+			}
+			else {
+				esm.writeHNT("WHGT", mWater);
+			}
+
+			if (mData.mFlags & QuasiEx)
+				esm.writeHNOCString("RGNN", mRegion);
+			else
+				esm.writeHNT("AMBI", mAmbi, 16);
+		}
+		else
+		{
+			esm.writeHNOCString("RGNN", mRegion);
+			if (mMapColor != 0)
+				esm.writeHNT("NAM5", mMapColor);
+		}
+
+		if (mRefNumCounter != 0)
+			esm.writeHNT("NAM0", mRefNumCounter);
+	}
+
     void Cell::restore(ESMReader &esm, int iCtx) const
     {
         esm.restoreContext(mContextList.at (iCtx));

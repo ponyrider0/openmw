@@ -299,6 +299,7 @@ namespace CSMWorld
 
             int count (RecordBase::State state) const;
             ///< Return number of top-level records with the given \a state.
+			int countTES3 (RecordBase::State state) const;
 
         signals:
 

@@ -185,6 +185,65 @@ void ESM::CellRef::save (ESMWriter &esm, bool wideRefNum, bool inInventory, bool
         esm.writeHNT("DATA", mPos, 24);
 }
 
+void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory, bool isDeleted) const
+{
+	mRefNum.save (esm, wideRefNum);
+
+	esm.writeHNCString("NAME", mRefID);
+
+	if (isDeleted) {
+//		esm.writeHNCString("DELE", "");
+		esm.writeHNString("DELE", "d,H", 4);
+		return;
+	}
+
+	if (mScale != 1.0) {
+		esm.writeHNT("XSCL", mScale);
+	}
+
+	esm.writeHNOCString("ANAM", mOwner);
+	esm.writeHNOCString("BNAM", mGlobalVariable);
+	esm.writeHNOCString("XSOL", mSoul);
+
+	esm.writeHNOCString("CNAM", mFaction);
+	if (mFactionRank != -2) {
+		esm.writeHNT("INDX", mFactionRank);
+	}
+
+	if (mEnchantmentCharge != -1)
+		esm.writeHNT("XCHG", mEnchantmentCharge);
+
+	if (mChargeInt != -1)
+		esm.writeHNT("INTV", mChargeInt);
+
+//	if (mGoldValue != 1) {
+	if (mGoldValue != 1 && mGoldValue != 0) {
+		esm.writeHNT("NAM9", mGoldValue);
+	}
+
+	if (!inInventory && mTeleport)
+	{
+		esm.writeHNT("DODT", mDoorDest);
+		esm.writeHNOCString("DNAM", mDestCell);
+	}
+
+	if (!inInventory && mLockLevel != 0) {
+		esm.writeHNT("FLTV", mLockLevel);
+	}
+
+	if (!inInventory)
+		esm.writeHNOCString ("KNAM", mKey);
+
+	if (!inInventory)
+		esm.writeHNOCString ("TNAM", mTrap);
+
+	if (mReferenceBlocked != -1)
+		esm.writeHNT("UNAM", mReferenceBlocked);
+
+	if (!inInventory)
+		esm.writeHNT("DATA", mPos, 24);
+}
+
 void ESM::CellRef::blank()
 {
     mRefNum.unset();

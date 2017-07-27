@@ -1187,6 +1187,35 @@ int CSMWorld::Data::count (RecordBase::State state) const
         count (state, mPathgrids);
 }
 
+int CSMWorld::Data::countTES3 (RecordBase::State state) const
+{
+	return
+		count (state, mGlobals) +
+		count (state, mGmsts) +
+		count (state, mSkills) +
+		count (state, mClasses) +
+		count (state, mFactions) +
+		count (state, mRaces) +
+		count (state, mSounds) +
+		count (state, mScripts) +
+		count (state, mRegions) +
+		count (state, mBirthsigns) +
+		count (state, mSpells) +
+		count (state, mCells) +
+		count (state, mEnchantments) +
+		count (state, mBodyParts) +
+		count (state, mLand) +
+		count (state, mLandTextures) +
+		count (state, mSoundGens) +
+		count (state, mMagicEffects) +
+		count (state, mReferenceables) +
+		count (state, mPathgrids) +
+		count (state, mTopics) +
+		count (state, mTopicInfos) +
+		count (state, mJournals) +
+		count (state, mJournalInfos);
+}
+
 std::vector<std::string> CSMWorld::Data::getIds (bool listDeleted) const
 {
     std::vector<std::string> ids;
