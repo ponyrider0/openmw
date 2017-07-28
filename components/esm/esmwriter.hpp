@@ -6,6 +6,7 @@
 
 #include "esmcommon.hpp"
 #include "loadtes3.hpp"
+#include "loadtes4.hpp"
 
 namespace ToUTF8
 {
@@ -51,6 +52,7 @@ class ESMWriter
 
         void save(std::ostream& file);
         ///< Start saving a file by writing the TES3 header.
+		void exportTES4(std::ostream& file);
 
         void close();
         ///< \note Does not close the stream.
@@ -125,6 +127,12 @@ public:
         void writeHCString(const std::string& data);
         void writeName(const std::string& data);
         void write(const char* data, size_t size);
+
+		void startRecordTES4(const std::string& name, uint64_t flags = 0);
+		void startRecordTES4(uint32_t name, uint64_t flags = 0);
+		void startSubRecordTES4(const std::string& name);
+		void endRecordTES4(const std::string& name);
+		void endSubRecordTES4(const std::string& name);
 
     private:
         std::list<RecordData> mRecords;

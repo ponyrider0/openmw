@@ -80,6 +80,22 @@ namespace ESM
         endRecord("TES3");
     }
 
+	void ESMWriter::exportTES4(std::ostream& file)
+	{
+		HeaderTES4 headerTES4;
+
+		mRecordCount = 0;
+		mRecords.clear();
+		mCounting = true;
+		mStream = &file;
+
+		startRecordTES4("TES4", 0);
+
+		mHeader.exportTES4 (*this);
+
+		endRecordTES4("TES4");
+	}
+
     void ESMWriter::close()
     {
         if (!mRecords.empty())
@@ -113,6 +129,33 @@ namespace ESM
         startRecord (type, flags);
     }
 
+	void ESMWriter::startRecordTES4(const std::string& name, uint64_t flags)
+	{
+		mRecordCount++;
+
+		writeName(name);
+		RecordData rec;
+		rec.name = name;
+		rec.position = mStream->tellp();
+		rec.size = 0;
+		writeT<uint64_t>(0); // Size goes here (must convert 32bit to 64bit)
+//		writeT(flags);
+		writeT<uint64_t>(0); // TES4 flags
+		mRecords.push_back(rec);
+
+		assert(mRecords.back().size == 0);
+	}
+
+	void ESMWriter::startRecordTES4 (uint32_t name, uint64_t flags)
+	{
+		std::string type;
+		for (int i=0; i<4; ++i)
+			/// \todo make endianess agnostic
+			type += reinterpret_cast<const char *> (&name)[i];
+
+		startRecordTES4 (type, flags);
+	}
+
     void ESMWriter::startSubRecord(const std::string& name)
     {
         // Sub-record hierarchies are not properly supported in ESMReader. This should be fixed later.
@@ -128,6 +171,22 @@ namespace ESM
 
         assert(mRecords.back().size == 0);
     }
+
+	void ESMWriter::startSubRecordTES4(const std::string& name)
+	{
+		// Sub-record hierarchies are not properly supported in ESMReader. This should be fixed later.
+		assert (mRecords.size() <= 1);
+
+		writeName(name);
+		RecordData rec;
+		rec.name = name;
+		rec.position = mStream->tellp();
+		rec.size = 0;
+		writeT<uint16_t>(0); // Size goes here
+		mRecords.push_back(rec);
+
+		assert(mRecords.back().size == 0);
+	}
 
     void ESMWriter::endRecord(const std::string& name)
     {
@@ -145,7 +204,39 @@ namespace ESM
 
     }
 
-    void ESMWriter::endRecord (uint32_t name)
+	void ESMWriter::endRecordTES4(const std::string& name)
+	{
+		RecordData rec = mRecords.back();
+		assert(rec.name == name);
+		mRecords.pop_back();
+
+		mStream->seekp(rec.position);
+
+		mCounting = false;
+		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t)); // rec.size is only 32bit
+		mCounting = true;
+
+		mStream->seekp(0, std::ios::end);
+
+	}
+
+	void ESMWriter::endSubRecordTES4(const std::string& name)
+	{
+		RecordData rec = mRecords.back();
+		assert(rec.name == name);
+		mRecords.pop_back();
+
+		mStream->seekp(rec.position);
+
+		mCounting = false;
+		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint16_t));
+		mCounting = true;
+
+		mStream->seekp(0, std::ios::end);
+
+	}
+
+	void ESMWriter::endRecord (uint32_t name)
     {
         std::string type;
         for (int i=0; i<4; ++i)

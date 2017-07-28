@@ -1,5 +1,5 @@
-#ifndef COMPONENT_ESM_TES3_H
-#define COMPONENT_ESM_TES3_H
+#ifndef COMPONENT_ESM_TES4_H
+#define COMPONENT_ESM_TES4_H
 
 #include <vector>
 
@@ -14,7 +14,7 @@ namespace ESM
 #pragma pack(1)
 
     /// \brief File header record
-    struct Header
+    struct HeaderTES4
     {
         static const int CurrentFormat = 0; // most recent known format
 
@@ -62,7 +62,7 @@ namespace ESM
         void load (ESMReader &esm);
         void save (ESMWriter &esm);
 		void exportTES4 (ESMWriter &esm);
-    };
+	};
 #pragma pack(pop)
 
 }

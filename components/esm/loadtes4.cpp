@@ -1,11 +1,11 @@
-#include "loadtes3.hpp"
+#include "loadtes4.hpp"
 
 #include "esmcommon.hpp"
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
-void ESM::Header::blank()
+void ESM::HeaderTES4::blank()
 {
     mData.version = ESM::VER_13;
     mData.type = 0;
@@ -16,7 +16,7 @@ void ESM::Header::blank()
     mMaster.clear();
 }
 
-void ESM::Header::load (ESMReader &esm)
+void ESM::HeaderTES4::load (ESMReader &esm)
 {
     if (esm.isNextSub ("FORM"))
     {
@@ -65,7 +65,7 @@ void ESM::Header::load (ESMReader &esm)
     }
 }
 
-void ESM::Header::save (ESMWriter &esm)
+void ESM::HeaderTES4::save (ESMWriter &esm)
 {
     if (mFormat>0)
         esm.writeHNT ("FORM", mFormat);
@@ -78,7 +78,7 @@ void ESM::Header::save (ESMWriter &esm)
     esm.writeT(mData.records);
     esm.endRecord("HEDR");
 
-    for (std::vector<Header::MasterData>::iterator iter = mMaster.begin();
+    for (std::vector<HeaderTES4::MasterData>::iterator iter = mMaster.begin();
          iter != mMaster.end(); ++iter)
     {
         esm.writeHNCString ("MAST", iter->name);
@@ -86,41 +86,23 @@ void ESM::Header::save (ESMWriter &esm)
     }
 }
 
-void ESM::Header::exportTES4 (ESMWriter &esm)
+void ESM::HeaderTES4::exportTES4 (ESMWriter &esm)
 {
+	if (mFormat>0)
+		esm.writeHNT ("FORM", mFormat);
 
-	esm.startSubRecordTES4("HEDR");
-// Version, float
-	esm.writeT<uint32_t>(0x3f4ccccd);
-// Number records, uint32
+	esm.startSubRecord("HEDR");
+	esm.writeT(mData.version);
+	esm.writeT(mData.type);
+	esm.writeFixedSizeString(mData.author.toString(), mData.author.data_size());
+	esm.writeFixedSizeString(mData.desc.toString(), mData.desc.data_size());
 	esm.writeT(mData.records);
-// Next available ID, uint32
-	esm.writeT<uint32_t>(0);
-	esm.endSubRecordTES4("HEDR");
+	esm.endRecord("HEDR");
 
-	//bytearray: OFST	
-	//bytearray: DELE
-
-//	esm.writeFixedSizeString(mData.author.toString(), mData.author.data_size());
-	esm.startSubRecordTES4("CNAM");
-	esm.writeHCString(mData.author.toString());
-	esm.endSubRecordTES4("CNAM");
-
-//	esm.writeFixedSizeString(mData.desc.toString(), mData.desc.data_size());
-	esm.startSubRecordTES4("SNAM");
-	esm.writeHCString(mData.desc.toString());
-	esm.endSubRecordTES4("SNAM");
-
-	for (std::vector<Header::MasterData>::iterator iter = mMaster.begin();
+	for (std::vector<HeaderTES4::MasterData>::iterator iter = mMaster.begin();
 		iter != mMaster.end(); ++iter)
 	{
-//		esm.writeHNCString ("MAST", iter->name);
-		esm.startSubRecordTES4("MAST");
-		esm.writeHCString(iter->name);
-		esm.endSubRecordTES4("MAST");
-//		esm.writeHNT ("DATA", iter->size);
-		esm.startSubRecordTES4("DATA");
-		esm.writeT(iter->size);	
-		esm.endSubRecordTES4("DATA");
+		esm.writeHNCString ("MAST", iter->name);
+		esm.writeHNT ("DATA", iter->size);
 	}
 }
