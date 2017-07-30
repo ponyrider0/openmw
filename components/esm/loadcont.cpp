@@ -103,6 +103,10 @@ namespace ESM
 
         mInventory.save(esm);
     }
+	bool Container::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Container::blank()
     {

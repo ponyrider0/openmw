@@ -76,6 +76,17 @@ namespace ESM
         esm.writeHNT("ALDT", mData, 12);
         mEffects.save(esm);
     }
+	bool Potion::exportTESx(ESMWriter &esm, int export_format) const
+	{
+//		esm.writeHNCString("NAME", mId);
+//		esm.writeHNCString("MODL", mModel);
+//		esm.writeHNOCString("TEXT", mIcon);
+//		esm.writeHNOCString("SCRI", mScript);
+//		esm.writeHNOCString("FNAM", mName);
+//		esm.writeHNT("ALDT", mData, 12);
+//		mEffects.save(esm);
+		return false;
+	}
 
     void Potion::blank()
     {

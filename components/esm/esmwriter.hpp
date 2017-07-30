@@ -128,11 +128,23 @@ public:
         void writeName(const std::string& data);
         void write(const char* data, size_t size);
 
-		void startRecordTES4(const std::string& name, uint64_t flags = 0);
-		void startRecordTES4(uint32_t name, uint64_t flags = 0);
+		void startRecordTES4(const std::string& name, uint32_t flags = 0, uint32_t formID = 0);
+		void startRecordTES4(uint32_t name, uint32_t flags = 0, uint32_t formID = 0);
+		void startGroupTES4(const std::string& name, uint32_t groupType);
+		void startGroupTES4(const uint32_t name, uint32_t groupType);
 		void startSubRecordTES4(const std::string& name);
 		void endRecordTES4(const std::string& name);
+		void endRecordTES4(uint32_t name);
 		void endSubRecordTES4(const std::string& name);
+		void endGroupTES4(const std::string& name);
+		void endGroupTES4(const uint32_t name);
+
+		std::list<uint64_t> mReservedFormIDs;
+		uint64_t mLastReservedFormID=0;
+		uint64_t getNextAvailableFormID();
+		uint64_t getLastReservedFormID();
+		bool reserveFormID(uint64_t formID);
+		void clearReservedFormIDs();
 
     private:
         std::list<RecordData> mRecords;

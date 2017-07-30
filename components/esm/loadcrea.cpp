@@ -138,6 +138,10 @@ namespace ESM {
         mTransport.save(esm);
         mAiPackage.save(esm);
     }
+	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Creature::blank()
     {

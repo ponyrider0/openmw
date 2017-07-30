@@ -109,6 +109,7 @@ namespace ESM
 
             void save (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
 			void exportTES3 (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
+			void exportTES4 (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
 
             void blank();
     };

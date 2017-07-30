@@ -58,6 +58,10 @@ namespace ESM
         esm.writeHNOCString("FNAM", mName);
         esm.writeHNOCString("SCRI", mScript);
     }
+	bool Activator::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Activator::blank()
     {

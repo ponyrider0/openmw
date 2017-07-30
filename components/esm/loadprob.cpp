@@ -72,6 +72,10 @@ namespace ESM
         esm.writeHNOString("SCRI", mScript);
         esm.writeHNOCString("ITEX", mIcon);
     }
+	bool Probe::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Probe::blank()
     {

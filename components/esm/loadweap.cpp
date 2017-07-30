@@ -73,6 +73,10 @@ namespace ESM
         esm.writeHNOCString("ITEX", mIcon);
         esm.writeHNOCString("ENAM", mEnchant);
     }
+	bool Weapon::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Weapon::blank()
     {

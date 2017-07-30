@@ -132,6 +132,7 @@ struct Cell
 
   void save(ESMWriter &esm, bool isDeleted = false) const;
   void exportTES3(ESMWriter &esm, bool isDeleted = false) const;
+  void exportTES4(ESMWriter &esm) const;
 
   bool isExterior() const
   {

@@ -111,6 +111,10 @@ namespace ESM
         mParts.save(esm);
         esm.writeHNOCString("ENAM", mEnchant);
     }
+	bool Armor::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Armor::blank()
     {

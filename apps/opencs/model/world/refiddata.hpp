@@ -59,7 +59,8 @@ namespace CSMWorld
         virtual std::string getId (int index) const = 0;
 
         virtual void save (int index, ESM::ESMWriter& writer) const = 0;
-    };
+		virtual bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const = 0;
+	};
 
     template<typename RecordT>
     struct RefIdDataContainer : public RefIdDataContainerBase
@@ -84,7 +85,8 @@ namespace CSMWorld
         virtual std::string getId (int index) const;
 
         virtual void save (int index, ESM::ESMWriter& writer) const;
-    };
+		virtual bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const;
+	};
 
     template<typename RecordT>
     void RefIdDataContainer<RecordT>::insertRecord(RecordBase& record)
@@ -210,11 +212,31 @@ namespace CSMWorld
         {
             RecordT esmRecord = record.get();
             writer.startRecord(esmRecord.sRecordId);
-            esmRecord.save(writer, record.mState == RecordBase::State_Deleted);
-            writer.endRecord(esmRecord.sRecordId);
+		    esmRecord.save(writer, record.mState == RecordBase::State_Deleted);
+			writer.endRecord(esmRecord.sRecordId);
         }
     }
 
+	template<typename RecordT>
+	bool RefIdDataContainer<RecordT>::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
+	{
+		bool retval=false;
+		Record<RecordT> record = mContainer.at(index);
+
+		if (record.isModified() || record.mState == RecordBase::State_Deleted)
+		{
+			RecordT esmRecord = record.get();
+			// HACK: Hardcoded RecordID filter
+			if ( esmRecord.sRecordId == ESM::REC_LEVC )
+			{
+				writer.startRecordTES4("LVLC");
+				retval = esmRecord.exportTESx(writer, export_format);
+				writer.endRecordTES4("LVLC");
+			}
+		}
+
+		return retval;
+	}
 
     class RefIdData
     {
@@ -287,6 +309,7 @@ namespace CSMWorld
             /// \param listDeleted include deleted record in the list
 
             void save (int index, ESM::ESMWriter& writer) const;
+			bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const;
 
             //RECORD CONTAINERS ACCESS METHODS
             const RefIdDataContainer<ESM::Book>& getBooks() const;

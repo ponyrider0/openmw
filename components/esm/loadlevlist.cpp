@@ -95,12 +95,56 @@ namespace ESM
         }
     }
 
+	bool LevelledListBase::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
+
     void LevelledListBase::blank()
     {
         mFlags = 0;
         mChanceNone = 0;
         mList.clear();
     }
+
+	bool CreatureLevList::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		// export LVC
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(mId);
+		esm.endSubRecordTES4("EDID");
+
+		// Chance, LVLD
+		esm.startSubRecordTES4("LVLD");
+		esm.writeT<char>(0);
+		esm.endSubRecordTES4("LVLD");
+
+		// Flags, LVLF
+		esm.startSubRecordTES4("LVLF");
+		esm.writeT<unsigned char>(0);
+		esm.endSubRecordTES4("LVLF");
+
+		// script formID, SCRI
+		esm.startSubRecordTES4("SCRI");
+		esm.writeT<uint32_t>(0);
+		esm.endSubRecordTES4("SCRI");
+
+		// creature template formID, TNAM
+		esm.startSubRecordTES4("TNAM");
+		esm.writeT<uint32_t>(0);
+		esm.endSubRecordTES4("TNAM");
+
+		// LVLO
+		esm.startSubRecordTES4("LVLO");
+		esm.writeT<uint16_t>(0);
+		esm.writeT<uint16_t>(0);
+		esm.writeT<uint32_t>(0);
+		esm.writeT<uint16_t>(0);
+		esm.writeT<uint16_t>(0);
+		esm.endSubRecordTES4("LVLO");
+
+		return true;
+	}
 
     unsigned int CreatureLevList::sRecordId = REC_LEVC;
 

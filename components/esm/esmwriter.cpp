@@ -64,6 +64,7 @@ namespace ESM
         d.name = name;
         d.size = size;
         mHeader.mMaster.push_back(d);
+		mLastReservedFormID += 0x01000000;
     }
 
     void ESMWriter::save(std::ostream& file)
@@ -89,7 +90,8 @@ namespace ESM
 		mCounting = true;
 		mStream = &file;
 
-		startRecordTES4("TES4", 0);
+		uint32_t flags=0;
+		startRecordTES4("TES4", flags);
 
 		mHeader.exportTES4 (*this);
 
@@ -129,7 +131,7 @@ namespace ESM
         startRecord (type, flags);
     }
 
-	void ESMWriter::startRecordTES4(const std::string& name, uint64_t flags)
+	void ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID)
 	{
 		mRecordCount++;
 
@@ -138,22 +140,68 @@ namespace ESM
 		rec.name = name;
 		rec.position = mStream->tellp();
 		rec.size = 0;
-		writeT<uint64_t>(0); // Size goes here (must convert 32bit to 64bit)
-//		writeT(flags);
-		writeT<uint64_t>(0); // TES4 flags
-		mRecords.push_back(rec);
 
+		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
+		writeT(flags);
+		if (name != "TES4" && formID == 0)
+		{
+			// auto-assign formID
+			formID = getNextAvailableFormID();
+			reserveFormID(formID);
+		}
+		writeT<uint32_t>(formID);
+		writeT<uint32_t>(0); // version control
+
+		mRecords.push_back(rec);
 		assert(mRecords.back().size == 0);
 	}
 
-	void ESMWriter::startRecordTES4 (uint32_t name, uint64_t flags)
+	void ESMWriter::startRecordTES4 (uint32_t name, uint32_t flags, uint32_t formID)
 	{
 		std::string type;
 		for (int i=0; i<4; ++i)
 			/// \todo make endianess agnostic
 			type += reinterpret_cast<const char *> (&name)[i];
+		type[4]='\0';
+		startRecordTES4 (type, flags, formID);
+	}
 
-		startRecordTES4 (type, flags);
+	void ESMWriter::startGroupTES4(const std::string& name, uint32_t groupType)
+	{
+//		mRecordCount++;
+
+		writeFixedSizeString("GRUP", 4);
+		RecordData rec;
+		rec.name = "GRUP";
+		rec.position = mStream->tellp();
+		rec.size = 20;
+
+		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
+		writeFixedSizeString(name, 4); // Group Label, aka record SIG
+		writeT<uint32_t>(groupType); // group type
+		writeT<uint32_t>(0); // date stamp
+
+		mRecords.push_back(rec);
+		assert(mRecords.back().size == 20);
+	}
+
+	void ESMWriter::startGroupTES4(const uint32_t name, uint32_t groupType)
+	{
+		//		mRecordCount++;
+
+		writeFixedSizeString("GRUP", 4);
+		RecordData rec;
+		rec.name = "GRUP";
+		rec.position = mStream->tellp();
+		rec.size = 20;
+
+		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
+		writeT<uint32_t>(name); // Group Label, aka record SIG
+		writeT<uint32_t>(groupType); // group type
+		writeT<uint32_t>(0); // date stamp
+
+		mRecords.push_back(rec);
+		assert(mRecords.back().size == 20);
 	}
 
     void ESMWriter::startSubRecord(const std::string& name)
@@ -174,9 +222,6 @@ namespace ESM
 
 	void ESMWriter::startSubRecordTES4(const std::string& name)
 	{
-		// Sub-record hierarchies are not properly supported in ESMReader. This should be fixed later.
-		assert (mRecords.size() <= 1);
-
 		writeName(name);
 		RecordData rec;
 		rec.name = name;
@@ -214,6 +259,55 @@ namespace ESM
 
 		mCounting = false;
 		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t)); // rec.size is only 32bit
+
+		if (name == "TES4")
+		{
+			mStream->seekp(4, std::ios_base::cur);
+			writeT<uint64_t>(getNextAvailableFormID());
+		}
+		mCounting = true;
+
+		mStream->seekp(0, std::ios::end);
+
+	}
+
+	void ESMWriter::endRecordTES4 (uint32_t name)
+	{
+		std::string type;
+		for (int i=0; i<4; ++i)
+			/// \todo make endianess agnostic
+			type += reinterpret_cast<const char *> (&name)[i];
+
+		endRecordTES4 (type);
+	}
+
+
+	void ESMWriter::endGroupTES4(const std::string& name)
+	{
+		RecordData rec = mRecords.back();
+		assert(rec.name == "GRUP");
+		mRecords.pop_back();
+
+		mStream->seekp(rec.position);
+
+		mCounting = false;
+		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t)); 
+		mCounting = true;
+
+		mStream->seekp(0, std::ios::end);
+
+	}
+
+	void ESMWriter::endGroupTES4(const uint32_t name)
+	{
+		RecordData rec = mRecords.back();
+		assert(rec.name == "GRUP");
+		mRecords.pop_back();
+
+		mStream->seekp(rec.position);
+
+		mCounting = false;
+		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t));
 		mCounting = true;
 
 		mStream->seekp(0, std::ios::end);
@@ -318,4 +412,38 @@ namespace ESM
     {
         mEncoder = encoder;
     }
+
+	uint64_t ESMWriter::getNextAvailableFormID()
+	{
+		uint64_t returnVal;
+		returnVal = mLastReservedFormID + 1;
+		return returnVal;
+	}
+
+	uint64_t ESMWriter::getLastReservedFormID()
+	{
+		uint64_t returnVal;
+		returnVal = mLastReservedFormID;
+		return returnVal;
+	}
+
+	bool ESMWriter::reserveFormID(uint64_t formID)
+	{
+		// lookup formID in mUsedFormIDs
+		// add to mUsedFormIDs if not present, then return true
+		if (true)
+		{
+			mReservedFormIDs.insert(mReservedFormIDs.end(), formID);
+			mLastReservedFormID = formID;
+			return true;
+		}
+		// otherwise return false
+		return false;
+	}
+
+	void ESMWriter::clearReservedFormIDs()
+	{
+		mLastReservedFormID = 0;
+		mReservedFormIDs.clear();
+	}
 }

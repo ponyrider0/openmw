@@ -67,6 +67,10 @@ namespace ESM
         esm.writeHNOCString("SNAM", mOpenSound);
         esm.writeHNOCString("ANAM", mCloseSound);
     }
+	bool Door::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Door::blank()
     {

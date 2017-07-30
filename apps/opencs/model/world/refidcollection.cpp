@@ -860,6 +860,13 @@ void CSMWorld::RefIdCollection::save (int index, ESM::ESMWriter& writer) const
     mData.save (index, writer);
 }
 
+bool CSMWorld::RefIdCollection::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
+{
+	bool retval;
+	retval = mData.exportTESx (index, writer, export_format);
+	return retval;
+}
+
 const CSMWorld::RefIdData& CSMWorld::RefIdCollection::getDataSet() const
 {
     return mData;

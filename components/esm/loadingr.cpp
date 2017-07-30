@@ -95,6 +95,11 @@ namespace ESM
         esm.writeHNOCString("ITEX", mIcon);
     }
 
+	bool Ingredient::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
+
     void Ingredient::blank()
     {
         mData.mWeight = 0;

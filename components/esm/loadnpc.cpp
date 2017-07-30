@@ -156,6 +156,10 @@ namespace ESM
 
         mAiPackage.save(esm);
     }
+	bool NPC::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     bool NPC::isMale() const {
         return (mFlags & Female) == 0;

@@ -84,6 +84,10 @@ namespace ESM
 
         esm.writeHNOCString("ENAM", mEnchant);
     }
+	bool Clothing::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Clothing::blank()
     {

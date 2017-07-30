@@ -78,6 +78,10 @@ namespace ESM
         esm.writeHNOString("TEXT", mText);
         esm.writeHNOCString("ENAM", mEnchant);
     }
+	bool Book::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Book::blank()
     {

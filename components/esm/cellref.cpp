@@ -244,6 +244,38 @@ void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeHNT("DATA", mPos, 24);
 }
 
+void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory, bool isDeleted) const
+{
+//	mRefNum.save (esm, wideRefNum);
+	// NAME = FormID
+	// lookup base record's FormID based on mRefID or mRefNum
+	uint32_t baseFormID = 0x01010101;
+	esm.startSubRecordTES4("NAME");
+	esm.writeT<uint32_t>(baseFormID);
+	esm.endSubRecordTES4("NAME");
+
+	// EDID = EditorID
+	//	esm.writeHNCString("NAME", mRefID);
+	esm.startSubRecordTES4("EDID");
+	esm.writeHCString(mRefID);
+	esm.endSubRecordTES4("EDID");
+
+	if (mScale != 1.0) {
+//		esm.writeHNT("XSCL", mScale);
+		esm.startSubRecordTES4("XSCL");
+		esm.writeT<float>(mScale);
+		esm.endSubRecordTES4("XSCL");
+	}
+
+	// check mOwner or mFaction to generate XOWN subrecord
+//	esm.writeHNOCString("ANAM", mOwner);
+//	esm.writeHNOCString("CNAM", mFaction);
+//	if (mFactionRank != -2) {
+//		esm.writeHNT("INDX", mFactionRank);
+//	}
+
+}
+
 void ESM::CellRef::blank()
 {
     mRefNum.unset();

@@ -50,6 +50,10 @@ namespace ESM
             esm.writeHNCString("MODL", mModel);
         }
     }
+	bool Static::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Static::blank()
     {

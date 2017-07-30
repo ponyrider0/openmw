@@ -235,6 +235,25 @@ namespace ESM
 			esm.writeHNT("NAM0", mRefNumCounter);
 	}
 
+	void Cell::exportTES4(ESMWriter &esm) const
+	{
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("EDID");
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		char dataFlags=0;
+		if (mWaterInt)
+			dataFlags |= 0x02;
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<char>(dataFlags);
+		esm.endSubRecordTES4("DATA");
+
+	}
+
     void Cell::restore(ESMReader &esm, int iCtx) const
     {
         esm.restoreContext(mContextList.at (iCtx));

@@ -136,6 +136,7 @@ namespace CSMWorld
             virtual void addNestedRow(int row, int col, int position);
 
             void save (int index, ESM::ESMWriter& writer) const;
+			bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const;
 
             const RefIdData& getDataSet() const; //I can't figure out a better name for this one :(
             void copyTo (int index, RefIdCollection& target) const;

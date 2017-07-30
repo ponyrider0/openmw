@@ -74,6 +74,10 @@ namespace ESM
         esm.writeHNOCString("SCRI", mScript);
         esm.writeHNOCString("SNAM", mSound);
     }
+	bool Light::exportTESx(ESMWriter &esm, int export_format) const
+	{
+		return false;
+	}
 
     void Light::blank()
     {

@@ -267,6 +267,22 @@ void CSMWorld::RefIdData::save (int index, ESM::ESMWriter& writer) const
     iter->second->save (localIndex.first, writer);
 }
 
+bool CSMWorld::RefIdData::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
+{
+	bool retval;
+	LocalIndex localIndex = globalToLocalIndex (index);
+
+	std::map<UniversalId::Type, RefIdDataContainerBase *>::const_iterator iter =
+		mRecordContainers.find (localIndex.second);
+
+	if (iter==mRecordContainers.end())
+		throw std::logic_error ("invalid local index type");
+
+	retval = iter->second->exportTESx (localIndex.first, writer, export_format);
+
+	return retval;
+}
+
 const CSMWorld::RefIdDataContainer< ESM::Book >& CSMWorld::RefIdData::getBooks() const
 {
     return mBooks;

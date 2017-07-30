@@ -105,13 +105,33 @@ namespace CSMDoc
 		CSMWorld::RecordBase::State state = mCollection.getRecord (stage).mState;
 		typename CollectionT::ESXRecord record = mCollection.getRecord (stage).get();
 
+		// if stage == 0, then add the group record first
+		if (stage == 0)
+		{
+			std::string sSIG;
+			for (int i=0; i<4; ++i)
+				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+			writer.startGroupTES4(sSIG, 0);
+		}
+
 		if (state == CSMWorld::RecordBase::State_Modified ||
 			state == CSMWorld::RecordBase::State_ModifiedOnly ||
 			state == CSMWorld::RecordBase::State_Deleted)
 		{
-			writer.startRecord (record.sRecordId);
-			record.save (writer, state == CSMWorld::RecordBase::State_Deleted);
-			writer.endRecord (record.sRecordId);
+			uint32_t flags=0;
+			if (state == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4 (record.sRecordId, flags);
+			record.exportTES4 (writer);
+			writer.endRecordTES4 (record.sRecordId);
+		}
+		
+		if (stage == (mCollection.getSize()-1))
+		{
+			std::string sSIG;
+			for (int i=0; i<4; ++i)
+				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+			writer.endGroupTES4(sSIG);
 		}
 	}
 
@@ -167,14 +187,14 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
-	class ExportCellCollectionTES4Stage : public Stage
+	class ExportInteriorCellCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
 
 	public:
 
-		ExportCellCollectionTES4Stage (Document& document, SavingState& state);
+		ExportInteriorCellCollectionTES4Stage (Document& document, SavingState& state);
 
 		virtual int setup();
 		///< \return number of steps
@@ -183,6 +203,21 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportExteriorCellCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+
+	public:
+
+		ExportExteriorCellCollectionTES4Stage (Document& document, SavingState& state);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
 
 	class ExportPathgridCollectionTES4Stage : public Stage
 	{

@@ -26,6 +26,7 @@ struct Global
 
     void load(ESMReader &esm, bool &isDeleted);
     void save(ESMWriter &esm, bool isDeleted = false) const;
+	void exportTES4(ESMWriter &esm) const;
 
     void blank();
     ///< Set record to default state (does not touch the ID).

@@ -39,6 +39,47 @@ namespace ESM
         }
     }
 
+	void Global::exportTES4 (ESMWriter &esm) const
+	{
+
+		// must convert mID into a TES4 compatible EditorID
+		std::string sEditorID = mId;
+//		esm.writeHNCString ("NAME", mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHString(sEditorID);
+		esm.endSubRecordTES4("EDID");
+
+		// FNAM
+		esm.startSubRecordTES4("FNAM");
+		char fnam_val=0;
+		switch (mValue.getType() )
+		{
+		case VT_Short:
+			fnam_val = 's';
+			break;
+		case VT_Long:
+			fnam_val = 'l';
+			break;
+		case VT_Float:
+			fnam_val = 'f';
+			break;
+		default:
+			fnam_val = 0;
+		}
+		esm.writeT<char>(fnam_val);
+		esm.endSubRecordTES4("FNAM");
+
+		// FLTV
+//		mValue.write (esm, ESM::Variant::Format_Global);
+		float glob_val=0;
+		esm.startSubRecordTES4("FLTV");
+		if (fnam_val != 0)
+			glob_val = mValue.getFloat();
+		esm.writeT<float>(glob_val);
+		esm.endSubRecordTES4("FLTV");		
+
+	}
+
     void Global::blank()
     {
         mValue.setType (ESM::VT_None);
