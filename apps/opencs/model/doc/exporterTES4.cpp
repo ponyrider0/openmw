@@ -34,8 +34,7 @@ void CSMDoc::TES4Exporter::defineExportOperation()
 
 	mExportOperation.appendStage (new ExportHeaderTES4Stage (mDocument, *mStatePtr, false));
 
-	mExportOperation.appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >
-		(mDocument.getData().getGlobals(), *mStatePtr));
+//	mExportOperation.appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), *mStatePtr));
 
 /*
 	mExportOperation.appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
@@ -280,7 +279,9 @@ CSMDoc::ExportRefIdCollectionTES4Stage::ExportRefIdCollectionTES4Stage (Document
 
 int CSMDoc::ExportRefIdCollectionTES4Stage::setup()
 {
-	return mDocument.getData().getReferenceables().getSize();
+	// HACK: hardcoded for LVLC
+//	return mDocument.getData().getReferenceables().getSize();
+	return mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
 }
 
 void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messages)
@@ -293,7 +294,8 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 		writer.startGroupTES4("LVLC", 0);
 	}
 
-	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
+//	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
 
 	if (stage == mDocument.getData().getReferenceables().getSize()-1)
 	{

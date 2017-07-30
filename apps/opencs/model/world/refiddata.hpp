@@ -221,17 +221,25 @@ namespace CSMWorld
 	bool RefIdDataContainer<RecordT>::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
 	{
 		bool retval=false;
+		std::string sSIG="";
 		Record<RecordT> record = mContainer.at(index);
 
 		if (record.isModified() || record.mState == RecordBase::State_Deleted)
 		{
 			RecordT esmRecord = record.get();
-			// HACK: Hardcoded RecordID filter
-			if ( esmRecord.sRecordId == ESM::REC_LEVC )
+			// convert internal record type to export-compatible record Signature
+			switch (esmRecord.sRecordId)
 			{
-				writer.startRecordTES4("LVLC");
+			case ESM::REC_LEVC:
+				sSIG = "LVLC";
+			default:
+				sSIG = "";
+			}
+			if ( sSIG != "" )
+			{
+				writer.startRecordTES4(sSIG);
 				retval = esmRecord.exportTESx(writer, export_format);
-				writer.endRecordTES4("LVLC");
+				writer.endRecordTES4(sSIG);
 			}
 		}
 
