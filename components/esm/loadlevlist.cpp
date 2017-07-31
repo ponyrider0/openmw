@@ -109,19 +109,25 @@ namespace ESM
 
 	bool CreatureLevList::exportTESx(ESMWriter &esm, int export_format) const
 	{
+
 		// export LVC
+		std::string *newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(mId);
+		esm.writeHCString(*newEDID);
 		esm.endSubRecordTES4("EDID");
+		delete newEDID;
 
 		// Chance, LVLD
 		esm.startSubRecordTES4("LVLD");
-		esm.writeT<char>(0);
+		esm.writeT<unsigned char>(mChanceNone);
 		esm.endSubRecordTES4("LVLD");
 
 		// Flags, LVLF
+		unsigned char flags=0;
+		if (mFlags & ESM::CreatureLevList::Flags::AllLevels)
+			flags |= 0x01;
 		esm.startSubRecordTES4("LVLF");
-		esm.writeT<unsigned char>(0);
+		esm.writeT<unsigned char>(flags);
 		esm.endSubRecordTES4("LVLF");
 
 		// script formID, SCRI
@@ -134,14 +140,21 @@ namespace ESM
 		esm.writeT<uint32_t>(0);
 		esm.endSubRecordTES4("TNAM");
 
+		// for each mList record, write LVLO subrecord
 		// LVLO
-		esm.startSubRecordTES4("LVLO");
-		esm.writeT<uint16_t>(0);
-		esm.writeT<uint16_t>(0);
-		esm.writeT<uint32_t>(0);
-		esm.writeT<uint16_t>(0);
-		esm.writeT<uint16_t>(0);
-		esm.endSubRecordTES4("LVLO");
+		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
+		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
+		{
+			esm.startSubRecordTES4("LVLO");
+			esm.writeT<short>(it_LVLO->mLevel); // level
+			esm.writeT<uint16_t>(0); // unknown?
+			// creature reference ID
+			uint32_t refID = esm.crossRefStringID(it_LVLO->mId);
+			esm.writeT<uint32_t>(refID); //formID
+			esm.writeT<uint16_t>(1); //count
+			esm.writeT<uint16_t>(0); //unknown
+			esm.endSubRecordTES4("LVLO");
+		}
 
 		return true;
 	}

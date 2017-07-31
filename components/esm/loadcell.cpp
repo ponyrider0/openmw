@@ -237,17 +237,22 @@ namespace ESM
 
 	void Cell::exportTES4(ESMWriter &esm) const
 	{
+		std::string *newEDID = esm.generateEDIDTES4(mName, true);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(mName);
+		esm.writeHCString(*newEDID);
 		esm.endSubRecordTES4("EDID");
+		delete newEDID;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
 		char dataFlags=0;
-		if (mWaterInt)
+		if (mWaterInt) // Has Water
 			dataFlags |= 0x02;
+		if (isExterior() == false) // Interior
+			dataFlags |= 0x08; // (Oblivion interior / interior?)
+
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<char>(dataFlags);
 		esm.endSubRecordTES4("DATA");

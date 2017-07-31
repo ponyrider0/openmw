@@ -56,6 +56,7 @@ namespace ESM
     void ESMWriter::clearMaster()
     {
         mHeader.mMaster.clear();
+		mESMoffset = 0;
     }
 
     void ESMWriter::addMaster(const std::string& name, uint64_t size)
@@ -64,7 +65,7 @@ namespace ESM
         d.name = name;
         d.size = size;
         mHeader.mMaster.push_back(d);
-		mLastReservedFormID += 0x01000000;
+		mESMoffset += 0x01000000;
     }
 
     void ESMWriter::save(std::ostream& file)
@@ -91,11 +92,23 @@ namespace ESM
 		mStream = &file;
 
 		uint32_t flags=0;
-		startRecordTES4("TES4", flags);
+		startRecordTES4("TES4", flags, 0);
 
 		mHeader.exportTES4 (*this);
 
 		endRecordTES4("TES4");
+	}
+
+	void ESMWriter::updateTES4()
+	{
+		std::streampos currentPos = mStream->tellp();
+		mStream->seekp(34, std::ios_base::beg);
+
+		mCounting = false;
+		writeT<uint32_t>(getNextAvailableFormID());
+		mCounting = true;
+
+		mStream->seekp(currentPos);
 	}
 
     void ESMWriter::close()
@@ -131,8 +144,55 @@ namespace ESM
         startRecord (type, flags);
     }
 
-	void ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID)
+	std::string* ESMWriter::generateEDIDTES4(const std::string& name, bool noLeadingZero)
 	{
+		std::string newEDID;
+
+		if (noLeadingZero == true)
+			newEDID = name;
+		else
+			newEDID = "0" + name;
+
+		int len = newEDID.length();
+
+		for (int index=0; index < len; index++)
+		{
+			switch (newEDID[index])
+			{
+			case '_':
+				newEDID[index] = 'U';
+				break;
+			case '+':
+				newEDID[index] = 'X';
+				break;
+			case '-':
+				newEDID[index] = 'T';
+				break;
+			case ' ':
+				newEDID[index] = 'S';
+				break;
+			case ',':
+				newEDID[index] = 'V';
+				break;
+			case '\'':
+				newEDID[index] = 'A';
+				break;
+			case ':':
+				newEDID[index] = 'X';
+				break;
+			case '.':
+				newEDID[index] = 'P';
+				break;
+
+			}
+		}
+
+		return new std::string(newEDID);
+	}
+
+	void ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID, const std::string& stringID)
+	{
+		int activeID = formID;
 		mRecordCount++;
 
 		writeName(name);
@@ -142,31 +202,38 @@ namespace ESM
 		rec.size = 0;
 
 		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
-		writeT(flags);
-		if (name != "TES4" && formID == 0)
+		writeT<uint32_t>(flags);
+
+		if (name == "TES4")
+			activeID = 0;
+		else if (name != "TES4" && activeID == 0)
 		{
 			// auto-assign formID
-			formID = getNextAvailableFormID();
-			reserveFormID(formID);
+			activeID = getNextAvailableFormID();
+			activeID = reserveFormID(activeID, stringID);
+			activeID |= mESMoffset;
 		}
-		writeT<uint32_t>(formID);
+		else
+			activeID |= mESMoffset;
+		writeT<uint32_t>(activeID);
+
 		writeT<uint32_t>(0); // version control
 
 		mRecords.push_back(rec);
 		assert(mRecords.back().size == 0);
 	}
 
-	void ESMWriter::startRecordTES4 (uint32_t name, uint32_t flags, uint32_t formID)
+	void ESMWriter::startRecordTES4 (uint32_t name, uint32_t flags, uint32_t formID, const std::string& stringID)
 	{
 		std::string type;
 		for (int i=0; i<4; ++i)
 			/// \todo make endianess agnostic
 			type += reinterpret_cast<const char *> (&name)[i];
 		type[4]='\0';
-		startRecordTES4 (type, flags, formID);
+		startRecordTES4 (type, flags, formID, stringID);
 	}
 
-	void ESMWriter::startGroupTES4(const std::string& name, uint32_t groupType)
+	void ESMWriter::startGroupTES4(const std::string& label, uint32_t groupType)
 	{
 //		mRecordCount++;
 
@@ -176,8 +243,8 @@ namespace ESM
 		rec.position = mStream->tellp();
 		rec.size = 20;
 
-		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
-		writeFixedSizeString(name, 4); // Group Label, aka record SIG
+		writeT<uint32_t>(0); // Size goes here 
+		writeFixedSizeString(label, 4); // Group Label, aka record SIG for topgroup
 		writeT<uint32_t>(groupType); // group type
 		writeT<uint32_t>(0); // date stamp
 
@@ -185,7 +252,7 @@ namespace ESM
 		assert(mRecords.back().size == 20);
 	}
 
-	void ESMWriter::startGroupTES4(const uint32_t name, uint32_t groupType)
+	void ESMWriter::startGroupTES4(const uint32_t label, uint32_t groupType)
 	{
 		//		mRecordCount++;
 
@@ -195,8 +262,8 @@ namespace ESM
 		rec.position = mStream->tellp();
 		rec.size = 20;
 
-		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
-		writeT<uint32_t>(name); // Group Label, aka record SIG
+		writeT<uint32_t>(0); // Size goes here 
+		writeT<uint32_t>(label); // Label, actual data depends on GroupType
 		writeT<uint32_t>(groupType); // group type
 		writeT<uint32_t>(0); // date stamp
 
@@ -259,12 +326,6 @@ namespace ESM
 
 		mCounting = false;
 		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t)); // rec.size is only 32bit
-
-		if (name == "TES4")
-		{
-			mStream->seekp(4, std::ios_base::cur);
-			writeT<uint64_t>(getNextAvailableFormID());
-		}
 		mCounting = true;
 
 		mStream->seekp(0, std::ios::end);
@@ -300,18 +361,12 @@ namespace ESM
 
 	void ESMWriter::endGroupTES4(const uint32_t name)
 	{
-		RecordData rec = mRecords.back();
-		assert(rec.name == "GRUP");
-		mRecords.pop_back();
+		std::string sSIG;
+		for (int i=0; i<4; ++i)
+			/// \todo make endianess agnostic
+			sSIG += reinterpret_cast<const char *> (&name)[i];
 
-		mStream->seekp(rec.position);
-
-		mCounting = false;
-		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t));
-		mCounting = true;
-
-		mStream->seekp(0, std::ios::end);
-
+		endGroupTES4 (sSIG);
 	}
 
 	void ESMWriter::endSubRecordTES4(const std::string& name)
@@ -413,32 +468,154 @@ namespace ESM
         mEncoder = encoder;
     }
 
-	uint64_t ESMWriter::getNextAvailableFormID()
+	uint32_t ESMWriter::getNextAvailableFormID()
 	{
-		uint64_t returnVal;
-		returnVal = mLastReservedFormID + 1;
-		return returnVal;
+		uint32_t returnVal;
+		if (mReservedFormIDs.size() == 0)
+			return 0x10001;
+
+		returnVal = mReservedFormIDs.back().first;
+
+		return (returnVal + 1);
 	}
 
-	uint64_t ESMWriter::getLastReservedFormID()
+	uint32_t ESMWriter::getLastReservedFormID()
 	{
-		uint64_t returnVal;
+		uint32_t returnVal;
 		returnVal = mLastReservedFormID;
 		return returnVal;
 	}
 
-	bool ESMWriter::reserveFormID(uint64_t formID)
+	uint32_t ESMWriter::reserveFormID(uint32_t formID, const std::string& stringID)
 	{
-		// lookup formID in mUsedFormIDs
-		// add to mUsedFormIDs if not present, then return true
-		if (true)
+		std::vector<std::pair<uint32_t, std::string>>::iterator insertionPoint;
+		std::pair<uint32_t, std::string> recordID(formID, std::string(stringID));
+		std::pair<std::string, uint32_t> stringMap(std::string(stringID), formID);
+
+		// check case for a pre-calc'ed formID
+		if (mReservedFormIDs.size() > 0)
+			if (mReservedFormIDs.back().first < formID)
+			{
+				mStringIDMap.insert(stringMap);
+				mReservedFormIDs.push_back(recordID);
+				mLastReservedFormID = formID;
+				return mLastReservedFormID;
+			}
+
+		// check special cases for size 0, 1 and 2
+		if (mReservedFormIDs.size() == 0)
 		{
-			mReservedFormIDs.insert(mReservedFormIDs.end(), formID);
-			mLastReservedFormID = formID;
-			return true;
+			uint32_t newID = 0x10001;
+			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+			mLastReservedFormID = newID;
+			return mLastReservedFormID;
 		}
-		// otherwise return false
-		return false;
+		else if (mReservedFormIDs.size() == 1)
+		{
+			insertionPoint = mReservedFormIDs.begin();
+			if (insertionPoint->first == formID)
+			{
+				uint32_t newID = (mReservedFormIDs.back().first+1);
+				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+				mLastReservedFormID = newID;
+				return mLastReservedFormID;
+			}
+			else if (insertionPoint->first > formID)
+				mReservedFormIDs.insert(insertionPoint, recordID);
+			else
+				mReservedFormIDs.push_back(recordID);
+			mStringIDMap.insert(stringMap);
+			mLastReservedFormID = formID;
+			return mLastReservedFormID;
+		}
+		else if (mReservedFormIDs.size() == 2)
+		{
+			insertionPoint = mReservedFormIDs.begin();
+			if (insertionPoint->first == formID)
+			{
+				uint32_t newID = (mReservedFormIDs.back().first+1);
+				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+				mLastReservedFormID = newID;
+				return mLastReservedFormID;
+			}
+			else if (insertionPoint->first > formID)
+				mReservedFormIDs.insert(insertionPoint, recordID);
+			else if ( (++insertionPoint)->first > formID )
+				mReservedFormIDs.insert(insertionPoint, recordID);
+			else
+				mReservedFormIDs.push_back(recordID);
+			mStringIDMap.insert(stringMap);
+			mLastReservedFormID = formID;
+			return mLastReservedFormID;
+		}
+
+		int currentIndex, midPoint = mReservedFormIDs.size() / 2;
+		if (mReservedFormIDs[midPoint].first == formID)
+		{
+			uint32_t newID = (mReservedFormIDs.back().first+1);
+			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+			mLastReservedFormID = newID;
+			return mLastReservedFormID;
+		}
+
+		// worst case: N/2
+		if (mReservedFormIDs[midPoint].first > formID)
+		{
+			// start searching down from midPoint
+			for (currentIndex=midPoint-1; currentIndex >= 0; currentIndex--)
+			{
+				if (mReservedFormIDs[currentIndex].first == formID)
+				{
+					uint32_t newID = (mReservedFormIDs.back().first+1);
+					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+					mLastReservedFormID = newID;
+					return mLastReservedFormID;
+				}
+				if (mReservedFormIDs[currentIndex].first < formID)
+				{
+					currentIndex++;
+					break;
+				}
+			}
+			// walk iterator to correct point
+			insertionPoint = mReservedFormIDs.begin();
+			for (int i=0; i < currentIndex; i++)
+				insertionPoint++;
+		}
+		else
+		{				
+			// start searching up from midPoint
+			for (currentIndex=midPoint+1; currentIndex < mReservedFormIDs.size(); currentIndex++) //this takes 19ms
+			{
+				if (mReservedFormIDs[currentIndex].first == formID)
+				{
+					uint32_t newID = (mReservedFormIDs.back().first+1);
+					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
+					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
+					mLastReservedFormID = newID;
+					return mLastReservedFormID;
+				}
+				if (mReservedFormIDs[currentIndex].first > formID)
+				{
+					break;
+				}
+			}
+			// walk iterator to correct point
+			insertionPoint = mReservedFormIDs.end();
+			for (int i=mReservedFormIDs.size(); i > currentIndex; i--)
+				insertionPoint--;
+		}
+
+		mStringIDMap.insert(stringMap);
+		mReservedFormIDs.insert(insertionPoint, recordID);
+		mLastReservedFormID = formID;
+
+		return mLastReservedFormID;
 	}
 
 	void ESMWriter::clearReservedFormIDs()
@@ -446,4 +623,53 @@ namespace ESM
 		mLastReservedFormID = 0;
 		mReservedFormIDs.clear();
 	}
+
+	uint32_t ESMWriter::crossRefStringID(const std::string& stringID)
+	{
+		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
+		std::map<std::string, uint32_t>::iterator searchResult;
+
+		if (stringID == "")
+			return 0;
+
+		// worst case: N
+/*
+		for (currentRecord=mReservedFormIDs.begin(); currentRecord != mReservedFormIDs.end(); currentRecord++) // this takes 130ms
+		{
+			if (stringID == currentRecord->second)
+				return currentRecord->first;
+		}
+*/
+		searchResult = mStringIDMap.find(stringID);
+		if (searchResult == mStringIDMap.end())
+			return 0;
+		else
+			return searchResult->second;
+
+//		return 0;
+	}
+
+	const std::string& ESMWriter::crossRefFormID(uint32_t formID)
+	{
+//		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
+		int currentIndex = mReservedFormIDs.size() / 2;
+
+		if (mReservedFormIDs[currentIndex].first == formID)
+			return mReservedFormIDs[currentIndex].second;
+
+		// worst case: N/2 (re-implement as binary search, NlogN)
+		if (mReservedFormIDs[currentIndex].first > formID)
+			// start searching down
+			while (--currentIndex >= 0)
+				if (mReservedFormIDs[currentIndex].first == formID)
+					return mReservedFormIDs[currentIndex].second;
+		else
+			// start searching up
+			while (++currentIndex < mReservedFormIDs.size())
+				if (mReservedFormIDs[currentIndex].first == formID)
+					return mReservedFormIDs[currentIndex].second;
+
+		return 0;
+	}
+
 }

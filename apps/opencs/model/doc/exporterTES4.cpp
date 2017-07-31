@@ -8,6 +8,8 @@
 #include "../world/cellcoordinates.hpp"
 #include "../world/data.hpp"
 #include "../world/idcollection.hpp"
+#include "../world/record.hpp"
+#include "components/esm/loadlevlist.hpp"
 
 #include "document.hpp"
 //#include "savingstages.hpp"
@@ -96,10 +98,10 @@ void CSMDoc::TES4Exporter::defineExportOperation()
 	mExportOperation.appendStage (new ExportLandCollectionTES4Stage (mDocument, *mStatePtr));
 */
 
-	mExportOperation.appendStage (new ExportRefIdCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation.appendStage (new ExportCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation.appendStage (new ExportLeveledCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
 
 	mExportOperation.appendStage (new ExportReferenceCollectionTES4Stage (mDocument, *mStatePtr));
-
 	mExportOperation.appendStage (new ExportInteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
 
 //	mExportOperation.appendStage (new ExportExteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
@@ -279,9 +281,10 @@ CSMDoc::ExportRefIdCollectionTES4Stage::ExportRefIdCollectionTES4Stage (Document
 
 int CSMDoc::ExportRefIdCollectionTES4Stage::setup()
 {
-	// HACK: hardcoded for LVLC
-//	return mDocument.getData().getReferenceables().getSize();
-	return mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+	mActiveRefCount=0;
+	// HACK: hardcoded to add Creatures
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
+	return mActiveRefCount;
 }
 
 void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messages)
@@ -291,16 +294,72 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	if (stage == 0)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.startGroupTES4("LVLC", 0);
+//		writer.startGroupTES4("LVLC", 0);
 	}
 
 //	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
+//	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+//		writer.endGroupTES4("LVLC");
+	}
+}
+
+CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::ExportLeveledCreaturesCollectionTES4Stage (Document& document, SavingState& state)
+	: mDocument (document), mState (state)
+{}
+
+int CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+	return mActiveRefCount;
+}
+
+void CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	// LVLC GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("LVLC", 0);
+	}
+
 	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
 
-	if (stage == mDocument.getData().getReferenceables().getSize()-1)
+	if (stage == mActiveRefCount-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4("LVLC");
+	}
+}
+
+CSMDoc::ExportCreaturesCollectionTES4Stage::ExportCreaturesCollectionTES4Stage (Document& document, SavingState& state)
+	: mDocument (document), mState (state)
+{}
+
+int CSMDoc::ExportCreaturesCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
+	return mActiveRefCount;
+}
+
+void CSMDoc::ExportCreaturesCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	// CREA GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("CREA", 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4("CREA");
 	}
 }
 
@@ -418,23 +477,26 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 				}
 			}
 
-			// write cell data
+			// formID for active cell
 			uint32_t cellFormID=writer.getNextAvailableFormID();
-			writer.reserveFormID(cellFormID);
+			cellFormID = writer.reserveFormID(cellFormID, cellRecord.mId);
+			if (cellFormID == 0)
+				return;
+
 			uint32_t flags=0;
 			if (cell.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
 
-			writer.startRecordTES4 (cellRecord.sRecordId, flags, cellFormID);
+			writer.startRecordTES4 (cellRecord.sRecordId, flags, cellFormID, cellRecord.mId);
 			cellRecord.exportTES4 (writer);
 			// Cell record ends before creation of child records (which are full records and not subrecords)
-			writer.endRecord (cellRecord.sRecordId);
+			writer.endRecordTES4 (cellRecord.sRecordId);
 
 			// write references
 			if (references!=mState.getSubRecords().end())
 			{
 				// Create Cell children group
-				writer.startGroupTES4(cellFormID, 6);
+				writer.startGroupTES4(cellFormID, 9); // 8 - persistent children, 9 - temporary children
 
 				for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 					iter != references->second.rend(); ++iter)
@@ -459,19 +521,38 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						}
 
 						// reserve formID
-						uint32_t refFormID=writer.getNextAvailableFormID();
-						writer.reserveFormID(refFormID);
-						uint32_t refFlags=0;
-						if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-							refFlags |= 0x01;
-						// start record
-						writer.startRecordTES4("REFR", refFlags, refFormID);
-						refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
-						// end record
-						writer.endRecordTES4("REFR");
-					}
-				}
 
+						uint32_t refFormID = writer.getNextAvailableFormID();
+						refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
+						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ) )
+						{
+							std::string sSIG;
+							switch (baseRefIndex.second)
+							{
+							case CSMWorld::UniversalId::Type::Type_Creature:
+								sSIG = "ACRE";
+								break;
+							case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+							default:
+								sSIG = "REFR";
+								break;
+							}
+							uint32_t refFlags=0;
+							if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+								refFlags |= 0x01;
+							// start record
+							
+							writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+							refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+							// end record
+							writer.endRecordTES4(sSIG);
+						}
+
+					}
+
+				}
 				// close cell children group
 				writer.endGroupTES4(cellFormID);
 			}
@@ -735,6 +816,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 {
 	if (mState.hasError())
 	{
+		mState.getWriter().updateTES4();
 		mState.getWriter().close();
 		mState.getStream().close();
 

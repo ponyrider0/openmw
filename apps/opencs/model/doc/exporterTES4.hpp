@@ -5,6 +5,11 @@
 
 #include "exporter.hpp"
 
+namespace CSMWorld
+{
+	class RefIdCollection;
+}
+
 namespace CSMDoc
 {
 	class Exporter;
@@ -158,6 +163,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
+		int mActiveRefCount;
 
 	public:
 
@@ -170,6 +176,39 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportCreaturesCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+
+	public:
+
+		ExportCreaturesCollectionTES4Stage (Document& document, SavingState& state);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
+	class ExportLeveledCreaturesCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+
+	public:
+
+		ExportLeveledCreaturesCollectionTES4Stage (Document& document, SavingState& state);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
 
 	class ExportReferenceCollectionTES4Stage : public Stage
 	{

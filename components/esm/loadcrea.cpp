@@ -140,7 +140,58 @@ namespace ESM {
     }
 	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		// export CREA
+		std::string *newEDID = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*newEDID);
+		esm.endSubRecordTES4("EDID");
+		delete newEDID;
+
+		// ACBS group
+		esm.startSubRecordTES4("ACBS");
+		esm.writeT<uint32_t>(0); //flags
+		esm.writeT<uint16_t>(0); // spell pts
+		esm.writeT<uint16_t>(0); // fatigue
+		esm.writeT<uint16_t>(0); // barter gold
+		esm.writeT<int16_t>(mData.mLevel); // level / offset level
+		esm.writeT<uint16_t>(0); // calc min
+		esm.writeT<uint16_t>(0); // calc max
+		esm.endSubRecordTES4("ACBS");
+
+		// AI Data
+		esm.startSubRecordTES4("AIDT");
+		esm.writeT<unsigned char>(0); // aggression
+		esm.writeT<unsigned char>(0); // confidence
+		esm.writeT<unsigned char>(0); // energy
+		esm.writeT<unsigned char>(0); // responsibility
+		esm.writeT<uint32_t>(0); // flags (buy/sell/services)
+		esm.writeT<unsigned char>(0); // trainer Skill
+		esm.writeT<unsigned char>(0); // trainer level
+		esm.writeT<uint16_t>(0); // ?
+		esm.endSubRecordTES4("AIDT");
+
+		// DATA
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<unsigned char>(0); // Type Creature
+		esm.writeT<unsigned char>(mData.mCombat); // Combat
+		esm.writeT<unsigned char>(mData.mMagic); // Magic
+		esm.writeT<unsigned char>(mData.mStealth); // Stealth
+		esm.writeT<uint16_t>(mData.mSoul); // soul size
+		esm.writeT<uint16_t>(mData.mHealth); // health
+		esm.writeT<uint16_t>(0); // ?
+		esm.writeT<uint16_t>( (mData.mAttack[0]+mData.mAttack[1])/2 ); // attack damage
+		esm.writeT<unsigned char>(mData.mStrength); // strength
+		esm.writeT<unsigned char>(mData.mIntelligence); // int
+		esm.writeT<unsigned char>(mData.mWillpower); // will
+		esm.writeT<unsigned char>(mData.mAgility); // agi
+		esm.writeT<unsigned char>(mData.mSpeed); // speed
+		esm.writeT<unsigned char>(mData.mEndurance); // end
+		esm.writeT<unsigned char>(mData.mPersonality); // per
+		esm.writeT<unsigned char>(mData.mLuck); // luck
+		esm.endSubRecordTES4("DATA");
+
+
+		return true;
 	}
 
     void Creature::blank()

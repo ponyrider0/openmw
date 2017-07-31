@@ -3,6 +3,7 @@
 
 #include <iosfwd>
 #include <list>
+#include <map>
 
 #include "esmcommon.hpp"
 #include "loadtes3.hpp"
@@ -56,6 +57,7 @@ class ESMWriter
 
         void close();
         ///< \note Does not close the stream.
+		void updateTES4();
 
         void writeHNString(const std::string& name, const std::string& data);
         void writeHNString(const std::string& name, const std::string& data, size_t size);
@@ -128,8 +130,8 @@ public:
         void writeName(const std::string& data);
         void write(const char* data, size_t size);
 
-		void startRecordTES4(const std::string& name, uint32_t flags = 0, uint32_t formID = 0);
-		void startRecordTES4(uint32_t name, uint32_t flags = 0, uint32_t formID = 0);
+		void startRecordTES4(const std::string& name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
+		void startRecordTES4(uint32_t name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
 		void startGroupTES4(const std::string& name, uint32_t groupType);
 		void startGroupTES4(const uint32_t name, uint32_t groupType);
 		void startSubRecordTES4(const std::string& name);
@@ -139,12 +141,20 @@ public:
 		void endGroupTES4(const std::string& name);
 		void endGroupTES4(const uint32_t name);
 
-		std::list<uint64_t> mReservedFormIDs;
-		uint64_t mLastReservedFormID=0;
-		uint64_t getNextAvailableFormID();
-		uint64_t getLastReservedFormID();
-		bool reserveFormID(uint64_t formID);
+		std::vector<std::pair<uint32_t, std::string> > mReservedFormIDs;
+		std::map<std::string, uint32_t> mStringIDMap;
+
+		uint32_t mLastReservedFormID=0;
+		uint32_t getNextAvailableFormID();
+		uint32_t getLastReservedFormID();
+		uint32_t reserveFormID(uint32_t formID, const std::string& stringID);
 		void clearReservedFormIDs();
+		uint32_t crossRefStringID(const std::string& mId);
+		const std::string& crossRefFormID(uint32_t formID);
+
+		uint32_t mESMoffset=0;
+
+		std::string* generateEDIDTES4(const std::string& name, bool noLeadingZero=false);
 
     private:
         std::list<RecordData> mRecords;

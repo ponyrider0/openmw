@@ -249,7 +249,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
 	// lookup base record's FormID based on mRefID or mRefNum
-	uint32_t baseFormID = 0x01010101;
+	uint32_t baseFormID = esm.crossRefStringID(mRefID);
 	esm.startSubRecordTES4("NAME");
 	esm.writeT<uint32_t>(baseFormID);
 	esm.endSubRecordTES4("NAME");
@@ -260,6 +260,35 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 	esm.writeHCString(mRefID);
 	esm.endSubRecordTES4("EDID");
 
+	// XRGD, ragdoll
+	// XESP, parent object
+/*
+	if ( (mOwner != "") || (mFaction != "") )
+	{
+		esm.startSubRecordTES4("XOWN");
+		if (mFaction != "")
+			esm.writeT<uint32_t>(esm.crossRefStringID(mFaction) );
+		else
+			esm.writeT<uint32_t>(esm.crossRefStringID(mOwner) );
+		esm.endSubRecordTES4("XOWN");
+	}
+	// XGLB
+	if ( (mOwner != "") && (mGlobalVariable != "") )
+	{
+		esm.startSubRecordTES4("XGLB");
+		esm.writeT<uint32_t>(esm.crossRefStringID(mGlobalVariable) );
+		esm.endSubRecordTES4("XGLB");
+	}
+	// XRNK, faction rank
+	if ( (mFaction != "") && (mFactionRank != -2) )
+	{
+		esm.startSubRecordTES4("XRNK");
+		esm.writeT<int32_t>(mFactionRank);
+		esm.endSubRecordTES4("XRNK");
+	}
+*/
+
+	// XSCL
 	if (mScale != 1.0) {
 //		esm.writeHNT("XSCL", mScale);
 		esm.startSubRecordTES4("XSCL");
@@ -267,12 +296,15 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.endSubRecordTES4("XSCL");
 	}
 
-	// check mOwner or mFaction to generate XOWN subrecord
-//	esm.writeHNOCString("ANAM", mOwner);
-//	esm.writeHNOCString("CNAM", mFaction);
-//	if (mFactionRank != -2) {
-//		esm.writeHNT("INDX", mFactionRank);
-//	}
+	// DATA	
+	esm.startSubRecordTES4("DATA");
+	esm.writeT<float>(mPos.pos[0]);
+	esm.writeT<float>(mPos.pos[1]);
+	esm.writeT<float>(mPos.pos[2]);
+	esm.writeT<float>(mPos.rot[0]);
+	esm.writeT<float>(mPos.rot[1]);
+	esm.writeT<float>(mPos.rot[2]);
+	esm.endSubRecordTES4("DATA");
 
 }
 

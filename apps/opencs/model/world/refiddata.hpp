@@ -230,14 +230,22 @@ namespace CSMWorld
 			// convert internal record type to export-compatible record Signature
 			switch (esmRecord.sRecordId)
 			{
+			case ESM::REC_CREA:
+				sSIG = "CREA";
+				break;
 			case ESM::REC_LEVC:
 				sSIG = "LVLC";
+				break;
 			default:
 				sSIG = "";
 			}
 			if ( sSIG != "" )
 			{
-				writer.startRecordTES4(sSIG);
+				uint32_t formID = writer.crossRefStringID(esmRecord.mId);
+				uint32_t flags=0;
+				if (record.mState == CSMWorld::RecordBase::State_Deleted)
+					flags |= 0x01;
+				writer.startRecordTES4(sSIG, flags, formID, esmRecord.mId);
 				retval = esmRecord.exportTESx(writer, export_format);
 				writer.endRecordTES4(sSIG);
 			}
