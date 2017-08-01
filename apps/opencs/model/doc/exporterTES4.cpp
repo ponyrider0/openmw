@@ -427,13 +427,90 @@ CSMDoc::ExportInteriorCellCollectionTES4Stage::ExportInteriorCellCollectionTES4S
 
 int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 {
-	return mDocument.getData().getCells().getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getCells().getSize();
+	std::vector< std::pair< uint32_t, const CSMWorld::Cell& > > Blocks[10][10];
+	bool blockInitialized[10][10];
+	int block, subblock;
+
+	for (int i=0; i < 10; i++)
+		for (int j=0; j < 10; j++)
+			blockInitialized[i][j]=false;
+
+	// 100 subblocks
+	for (int i=0; i < collectionSize; i++)
+	{
+		const CSMWorld::Cell &cellRecord = mDocument.getData().getCells().getRecord(i).get();
+		bool interior = cellRecord.mId.substr (0, 1)!="#";
+
+		if (interior == true)
+		{	
+			// add to one of 100 subblocks
+			uint32_t formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, cellRecord.mId);
+			int block = formID % 100;
+			int subblock = block % 10;
+			block -= subblock;
+			Blocks[block][subblock].push_back(std::pair<uint32_t, const CSMWorld::Cell&>(formID, cellRecord) );
+		}
+
+	}
+	collectionSize = 0;
+	for (int i=0; i < 10; i++)
+		for (int j=0; j < 10; j++)
+			collectionSize += Blocks[i][j].size();
+
+	return collectionSize;
 }
 
 void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	ESM::ESMWriter& writer = mState.getWriter();
 	const CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
+	int block, subblock;
+	std::vector< std::pair< uint32_t, const CSMWorld::Cell& > > Blocks[10][10];
+	std::pair< uint32_t, const CSMWorld::Cell& > *CellPair;
+	uint32_t formID;
+	const CSMWorld::Cell* cellPtr;
+	bool blockInitialized[10][10];
+
+	// if stage == 0, then add the group record first
+	if (stage == 0)
+	{
+		std::string sSIG;
+		for (int i=0; i<4; ++i)
+			sSIG += reinterpret_cast<const char *> (&cell.get().sRecordId)[i];
+		writer.startGroupTES4(sSIG, 0); // Top GROUP
+	}
+
+	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
+	for (int block=0; block < 10; block++)
+	{
+		for (int subblock=0; subblock < 10; subblock++)
+		{
+			if (Blocks[block][subblock].size() > 0)
+			{
+				formID = Blocks[block][subblock].back().first;
+				cellPtr = &Blocks[block][subblock].back().second;
+				Blocks[block][subblock].pop_back();
+				break;
+			}
+		}
+	}
+	// check to see if group is initialized
+	if (blockInitialized[block][subblock] == false)
+	{
+		blockInitialized[block][subblock] = true;
+		// StartGroups
+		// HACK: create one block-subblock for all cells
+		writer.startGroupTES4(0, 2);
+		writer.startGroupTES4(0, 3);
+	}
+	// export cell
+	// export references
+	// close groups
+	
+//============================================================================================================
 
 	std::map<std::string, std::deque<int> >::const_iterator references =
 		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cell.get().mId));
@@ -496,7 +573,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (references!=mState.getSubRecords().end())
 			{
 				// Create Cell children group
-				writer.startGroupTES4(cellFormID, 9); // 8 - persistent children, 9 - temporary children
+				writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
+				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 				for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 					iter != references->second.rend(); ++iter)
@@ -554,7 +632,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 				}
 				// close cell children group
-				writer.endGroupTES4(cellFormID);
+				writer.endGroupTES4(cellFormID); // cell children subgroup
+				writer.endGroupTES4(cellFormID); // 6 top cell children group
 			}
 
 		}
