@@ -297,7 +297,7 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 //		writer.startGroupTES4("LVLC", 0);
 	}
 
-//	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
+	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
 //	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
 
 	if (stage == mActiveRefCount-1)
@@ -326,7 +326,7 @@ void CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::perform (int stage, Mess
 		writer.startGroupTES4("LVLC", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), false, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -354,7 +354,7 @@ void CSMDoc::ExportCreaturesCollectionTES4Stage::perform (int stage, Messages& m
 		writer.startGroupTES4("CREA", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), false, 4);
 
 	if (stage == mActiveRefCount-1)
 	{

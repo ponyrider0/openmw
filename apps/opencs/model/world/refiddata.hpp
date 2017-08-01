@@ -59,7 +59,7 @@ namespace CSMWorld
         virtual std::string getId (int index) const = 0;
 
         virtual void save (int index, ESM::ESMWriter& writer) const = 0;
-		virtual bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const = 0;
+		virtual bool exportTESx (int index, ESM::ESMWriter& writer, bool skipBaseRecords=true, int export_format=4) const = 0;
 	};
 
     template<typename RecordT>
@@ -85,7 +85,7 @@ namespace CSMWorld
         virtual std::string getId (int index) const;
 
         virtual void save (int index, ESM::ESMWriter& writer) const;
-		virtual bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const;
+		virtual bool exportTESx (int index, ESM::ESMWriter& writer, bool skipBaseRecords=true, int export_format=4) const;
 	};
 
     template<typename RecordT>
@@ -218,13 +218,23 @@ namespace CSMWorld
     }
 
 	template<typename RecordT>
-	bool RefIdDataContainer<RecordT>::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
+	bool RefIdDataContainer<RecordT>::exportTESx (int index, ESM::ESMWriter& writer, bool skipBaseRecords, int export_format) const
 	{
 		bool retval=false;
 		std::string sSIG="";
 		Record<RecordT> record = mContainer.at(index);
 
-		if (record.isModified() || record.mState == RecordBase::State_Deleted)
+		bool exportOrSkip=true;
+		if (skipBaseRecords == true)
+		{
+			// check for modified / deleted state, otherwise skip
+			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted;
+		} else {
+			// no skipping, export all
+			exportOrSkip=true;
+		}
+
+		if (exportOrSkip)
 		{
 			RecordT esmRecord = record.get();
 			// convert internal record type to export-compatible record Signature
@@ -325,7 +335,7 @@ namespace CSMWorld
             /// \param listDeleted include deleted record in the list
 
             void save (int index, ESM::ESMWriter& writer) const;
-			bool exportTESx (int index, ESM::ESMWriter& writer, int export_format) const;
+			bool exportTESx (int index, ESM::ESMWriter& writer, bool skipBaseRecords=false, int export_format=4) const;
 
             //RECORD CONTAINERS ACCESS METHODS
             const RefIdDataContainer<ESM::Book>& getBooks() const;

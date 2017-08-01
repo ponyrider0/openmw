@@ -267,7 +267,7 @@ void CSMWorld::RefIdData::save (int index, ESM::ESMWriter& writer) const
     iter->second->save (localIndex.first, writer);
 }
 
-bool CSMWorld::RefIdData::exportTESx (int index, ESM::ESMWriter& writer, int export_format) const
+bool CSMWorld::RefIdData::exportTESx (int index, ESM::ESMWriter& writer, bool skipBaseRecords, int export_format) const
 {
 	bool retval;
 	LocalIndex localIndex = globalToLocalIndex (index);
@@ -278,7 +278,7 @@ bool CSMWorld::RefIdData::exportTESx (int index, ESM::ESMWriter& writer, int exp
 	if (iter==mRecordContainers.end())
 		throw std::logic_error ("invalid local index type");
 
-	retval = iter->second->exportTESx (localIndex.first, writer, export_format);
+	retval = iter->second->exportTESx (localIndex.first, writer, skipBaseRecords, export_format);
 
 	return retval;
 }
