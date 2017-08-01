@@ -248,10 +248,16 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		char dataFlags=0;
-		if (mWaterInt) // Has Water
-			dataFlags |= 0x02;
 		if (isExterior() == false) // Interior
-			dataFlags |= 0x08; // (Oblivion interior / interior?)
+			dataFlags |= 0x01; // Is Interior Cell
+		if (mWaterInt) 
+			dataFlags |= 0x02; // Has Water
+		// 0x04, Invert Fast Travel Behavior
+		// 0x08, Force hide land (exterior cell) / Oblivion interior
+		// 0x10, Unknown or reserved?
+		// 0x20, Public place
+		// 0x40, Hand changed
+		// 0x80, Behave like exterior (interior)
 
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<char>(dataFlags);

@@ -293,7 +293,7 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	// LVLC GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
+//		ESM::ESMWriter& writer = mState.getWriter();
 //		writer.startGroupTES4("LVLC", 0);
 	}
 
@@ -302,7 +302,7 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
+//		ESM::ESMWriter& writer = mState.getWriter();
 //		writer.endGroupTES4("LVLC");
 	}
 }
@@ -429,117 +429,128 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 {
 	ESM::ESMWriter& writer = mState.getWriter();
 	int collectionSize = mDocument.getData().getCells().getSize();
-	std::vector< std::pair< uint32_t, const CSMWorld::Cell& > > Blocks[10][10];
-	bool blockInitialized[10][10];
-	int block, subblock;
 
-	for (int i=0; i < 10; i++)
-		for (int j=0; j < 10; j++)
-			blockInitialized[i][j]=false;
-
-	// 100 subblocks
+	// look through all cells and add interior cells to appropriate subblock
 	for (int i=0; i < collectionSize; i++)
 	{
-		const CSMWorld::Cell &cellRecord = mDocument.getData().getCells().getRecord(i).get();
-		bool interior = cellRecord.mId.substr (0, 1)!="#";
+		CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr = &mDocument.getData().getCells().getNthRecord(i);
+		bool interior = cellRecordPtr->get().mId.substr (0, 1)!="#";
 
 		if (interior == true)
 		{	
 			// add to one of 100 subblocks
 			uint32_t formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, cellRecord.mId);
+			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
 			int block = formID % 100;
 			int subblock = block % 10;
 			block -= subblock;
-			Blocks[block][subblock].push_back(std::pair<uint32_t, const CSMWorld::Cell&>(formID, cellRecord) );
+			block /= 10;
+			if (block < 0 || block >= 10 || subblock < 0 || subblock >= 10)
+				throw std::runtime_error ("export error: block/subblock calculation produced out of bounds index");
+			Blocks[block][subblock].push_back(std::pair<uint32_t, CSMWorld::Record<CSMWorld::Cell>*>(formID, cellRecordPtr) );
+//			std::pair<uint32_t, CSMWorld::Record<CSMWorld::Cell>*> newPair(formID, cellRecordPtr);
+//			Blocks[block][subblock].push_back(newPair);
 		}
-
 	}
-	collectionSize = 0;
+
+	// initialize blockInitialized[][] to track BLOCK initialization in perform()
 	for (int i=0; i < 10; i++)
 		for (int j=0; j < 10; j++)
-			collectionSize += Blocks[i][j].size();
+			blockInitialized[i][j]=false;
 
-	return collectionSize;
+	// count number of cells in all blocks to return
+	mNumCells = 0;
+	for (int i=0; i < 10; i++)
+		for (int j=0; j < 10; j++)
+			mNumCells += Blocks[i][j].size();
+
+	return mNumCells;
 }
 
 void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	ESM::ESMWriter& writer = mState.getWriter();
-	const CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
+//	CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
+	CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr=0;
+
 	int block, subblock;
-	std::vector< std::pair< uint32_t, const CSMWorld::Cell& > > Blocks[10][10];
-	std::pair< uint32_t, const CSMWorld::Cell& > *CellPair;
-	uint32_t formID;
-	const CSMWorld::Cell* cellPtr;
-	bool blockInitialized[10][10];
+	uint32_t cellFormID;
+
+	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
+	for (block=0; block < 10; block++)
+	{
+		for (subblock=0; subblock < 10; subblock++)
+		{
+			if (Blocks[block][subblock].size() > 0)
+			{
+				cellFormID = Blocks[block][subblock].back().first;
+				cellRecordPtr = Blocks[block][subblock].back().second;
+				Blocks[block][subblock].pop_back();
+				break;
+			}
+		}
+		if (cellRecordPtr != 0)
+			break;
+	}
+	if (cellRecordPtr == 0)
+	{
+		// throw exception
+		throw std::runtime_error ("export error: cellRecordPtr uninitialized");
+	}
 
 	// if stage == 0, then add the group record first
 	if (stage == 0)
 	{
 		std::string sSIG;
 		for (int i=0; i<4; ++i)
-			sSIG += reinterpret_cast<const char *> (&cell.get().sRecordId)[i];
+			sSIG += reinterpret_cast<const char *>(&cellRecordPtr->get().sRecordId)[i];
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
+		// initialize first block
+		writer.startGroupTES4(0, 2);
+		// initialize first subblock
+		writer.startGroupTES4(0, 3);
+		// document creation of first subblock
+		blockInitialized[0][0] = true;
 	}
 
-	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
-	for (int block=0; block < 10; block++)
-	{
-		for (int subblock=0; subblock < 10; subblock++)
-		{
-			if (Blocks[block][subblock].size() > 0)
-			{
-				formID = Blocks[block][subblock].back().first;
-				cellPtr = &Blocks[block][subblock].back().second;
-				Blocks[block][subblock].pop_back();
-				break;
-			}
-		}
-	}
 	// check to see if group is initialized
 	if (blockInitialized[block][subblock] == false)
 	{
 		blockInitialized[block][subblock] = true;
-		// StartGroups
-		// HACK: create one block-subblock for all cells
-		writer.startGroupTES4(0, 2);
+		// close previous subblock
+		writer.endGroupTES4(0);
+		// if subblock == 0, then close prior block as well
+		if (subblock == 0)
+		{
+			writer.endGroupTES4(0);
+			// start the next block if prior block was closed
+			writer.startGroupTES4(0, 2);
+		}
+		// start new subblock
 		writer.startGroupTES4(0, 3);
 	}
+
 	// export cell
 	// export references
 	// close groups
 	
 //============================================================================================================
 
+	// load the pre-generated SubRecord list of references for this cell
 	std::map<std::string, std::deque<int> >::const_iterator references =
-		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cell.get().mId));
+		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cellRecordPtr->get().mId));
 
-	// if stage == 0, then add the group record first
-	if (stage == 0)
-	{
-		std::string sSIG;
-		for (int i=0; i<4; ++i)
-			sSIG += reinterpret_cast<const char *> (&cell.get().sRecordId)[i];
-		writer.startGroupTES4(sSIG, 0); // Top GROUP
-
-		// HACK: create one block-subblock for all cells
-		writer.startGroupTES4(0, 2);
-		writer.startGroupTES4(0, 3);
-	}
-
-	if (cell.isModified() ||
-		cell.mState == CSMWorld::RecordBase::State_Deleted ||
+	if (cellRecordPtr->isModified() ||
+		cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
 		references!=mState.getSubRecords().end())
 	{
-		CSMWorld::Cell cellRecord = cell.get();
-		bool interior = cellRecord.mId.substr (0, 1)!="#";
-
-		if (interior == true)
-		{
+//		CSMWorld::Cell cellRecord = cell.get();
+//		bool interior = cellRecord.mId.substr (0, 1)!="#";
+//		if (interior == true)
+//		{
 
 			// count new references and adjust RefNumCount accordingsly
-			int newRefNum = cellRecord.mRefNumCounter;
+			int newRefNum = cellRecordPtr->get().mRefNumCounter;
 
 			if (references!=mState.getSubRecords().end())
 			{
@@ -550,24 +561,27 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						mDocument.getData().getReferences().getRecord (*iter);
 
 					if (ref.get().mNew )
-						++cellRecord.mRefNumCounter;
+						++(cellRecordPtr->get().mRefNumCounter);
 				}
 			}
 
 			// formID for active cell
-			uint32_t cellFormID=writer.getNextAvailableFormID();
-			cellFormID = writer.reserveFormID(cellFormID, cellRecord.mId);
+//			uint32_t cellFormID=writer.getNextAvailableFormID();
+//			cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
 			if (cellFormID == 0)
+			{
+				throw std::exception("export: cellFormID is 0");
 				return;
+			}
 
 			uint32_t flags=0;
-			if (cell.mState == CSMWorld::RecordBase::State_Deleted)
+			if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
 
-			writer.startRecordTES4 (cellRecord.sRecordId, flags, cellFormID, cellRecord.mId);
-			cellRecord.exportTES4 (writer);
+			writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
+			cellRecordPtr->get().exportTES4 (writer);
 			// Cell record ends before creation of child records (which are full records and not subrecords)
-			writer.endRecordTES4 (cellRecord.sRecordId);
+			writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 
 			// write references
 			if (references!=mState.getSubRecords().end())
@@ -636,10 +650,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 				writer.endGroupTES4(cellFormID); // 6 top cell children group
 			}
 
-		}
+//		}
 	}
 
-	if (stage == (mDocument.getData().getCells().getSize()-1))
+	if (stage == (mNumCells-1))
 	{
 		// two for the block-subblock
 		writer.endGroupTES4(0);

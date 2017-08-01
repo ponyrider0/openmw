@@ -102,11 +102,16 @@ namespace ESM
 	void ESMWriter::updateTES4()
 	{
 		std::streampos currentPos = mStream->tellp();
-		mStream->seekp(34, std::ios_base::beg);
 
-		mCounting = false;
-		writeT<uint32_t>(getNextAvailableFormID());
-		mCounting = true;
+		mStream->seekp(std::ios_base::end);
+
+		if ( mStream->tellp() >= (34+4) )
+		{
+			mStream->seekp(34, std::ios_base::beg);
+			mCounting = false;
+			writeT<uint32_t>(getNextAvailableFormID());
+			mCounting = true;
+		}
 
 		mStream->seekp(currentPos);
 	}
@@ -211,10 +216,7 @@ namespace ESM
 			// auto-assign formID
 			activeID = getNextAvailableFormID();
 			activeID = reserveFormID(activeID, stringID);
-			activeID |= mESMoffset;
 		}
-		else
-			activeID |= mESMoffset;
 		writeT<uint32_t>(activeID);
 
 		writeT<uint32_t>(0); // version control
@@ -472,11 +474,11 @@ namespace ESM
 	{
 		uint32_t returnVal;
 		if (mReservedFormIDs.size() == 0)
-			return 0x10001;
+			return 0x10001 | mESMoffset;
 
 		returnVal = mReservedFormIDs.back().first;
 
-		return (returnVal + 1);
+		return (returnVal + 1) | mESMoffset;
 	}
 
 	uint32_t ESMWriter::getLastReservedFormID()
@@ -486,8 +488,10 @@ namespace ESM
 		return returnVal;
 	}
 
-	uint32_t ESMWriter::reserveFormID(uint32_t formID, const std::string& stringID)
+	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID)
 	{
+		uint32_t formID = paramformID | mESMoffset;
+
 		std::vector<std::pair<uint32_t, std::string>>::iterator insertionPoint;
 		std::pair<uint32_t, std::string> recordID(formID, std::string(stringID));
 		std::pair<std::string, uint32_t> stringMap(std::string(stringID), formID);
@@ -505,7 +509,7 @@ namespace ESM
 		// check special cases for size 0, 1 and 2
 		if (mReservedFormIDs.size() == 0)
 		{
-			uint32_t newID = 0x10001;
+			uint32_t newID = 0x10001 | mESMoffset;
 			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 			mLastReservedFormID = newID;
@@ -516,7 +520,7 @@ namespace ESM
 			insertionPoint = mReservedFormIDs.begin();
 			if (insertionPoint->first == formID)
 			{
-				uint32_t newID = (mReservedFormIDs.back().first+1);
+				uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
 				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 				mLastReservedFormID = newID;
@@ -535,7 +539,7 @@ namespace ESM
 			insertionPoint = mReservedFormIDs.begin();
 			if (insertionPoint->first == formID)
 			{
-				uint32_t newID = (mReservedFormIDs.back().first+1);
+				uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
 				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 				mLastReservedFormID = newID;
@@ -555,7 +559,7 @@ namespace ESM
 		int currentIndex, midPoint = mReservedFormIDs.size() / 2;
 		if (mReservedFormIDs[midPoint].first == formID)
 		{
-			uint32_t newID = (mReservedFormIDs.back().first+1);
+			uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
 			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 			mLastReservedFormID = newID;
@@ -570,7 +574,7 @@ namespace ESM
 			{
 				if (mReservedFormIDs[currentIndex].first == formID)
 				{
-					uint32_t newID = (mReservedFormIDs.back().first+1);
+					uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
 					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 					mLastReservedFormID = newID;
@@ -594,7 +598,7 @@ namespace ESM
 			{
 				if (mReservedFormIDs[currentIndex].first == formID)
 				{
-					uint32_t newID = (mReservedFormIDs.back().first+1);
+					uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
 					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
 					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
 					mLastReservedFormID = newID;
