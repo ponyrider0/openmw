@@ -104,7 +104,7 @@ void CSMDoc::TES4Exporter::defineExportOperation()
 	mExportOperation.appendStage (new ExportReferenceCollectionTES4Stage (mDocument, *mStatePtr));
 	mExportOperation.appendStage (new ExportInteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
 
-//	mExportOperation.appendStage (new ExportExteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation.appendStage (new ExportExteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
 
 	// close file and clean up
 	mExportOperation.appendStage (new CloseExportTES4Stage (*mStatePtr));
@@ -141,11 +141,6 @@ CSMDoc::ExportHeaderTES4Stage::ExportHeaderTES4Stage (Document& document, Saving
 
 int CSMDoc::ExportHeaderTES4Stage::setup()
 {
-	return 1;
-}
-
-void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
-{
 	mState.getWriter().clearReservedFormIDs();
 	mState.getWriter().setVersion();
 
@@ -180,6 +175,11 @@ void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
 		}
 	}
 
+	return 1;
+}
+
+void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
+{
 	mState.getWriter().exportTES4 (mState.getStream());
 }
 
@@ -671,122 +671,251 @@ CSMDoc::ExportExteriorCellCollectionTES4Stage::ExportExteriorCellCollectionTES4S
 
 int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 {
-	return mDocument.getData().getCells().getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getCells().getSize();
+
+	// look through all cells and add interior cells to appropriate subblock
+	for (int i=0; i < collectionSize; i++)
+	{
+		CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr = &mDocument.getData().getCells().getNthRecord(i);
+		bool interior = cellRecordPtr->get().mId.substr (0, 1)!="#";
+
+		if (interior == false)
+		{
+			// add to one of 100 subblocks
+			uint32_t formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
+			int block = formID % 100;
+			int subblock = block % 10;
+			block -= subblock;
+			block /= 10;
+			if (block < 0 || block >= 10 || subblock < 0 || subblock >= 10)
+				throw std::runtime_error ("export error: block/subblock calculation produced out of bounds index");
+			Blocks[block][subblock].push_back(std::pair<uint32_t, CSMWorld::Record<CSMWorld::Cell>*>(formID, cellRecordPtr));
+		}
+	}
+
+	// initialize blockInitialized[][] to track BLOCK initialization in perform()
+	for (int i=0; i < 10; i++)
+		for (int j=0; j < 10; j++)
+			blockInitialized[i][j]=false;
+
+	// count number of cells in all blocks to return
+	mNumCells = 0;
+	for (int i=0; i < 10; i++)
+		for (int j=0; j < 10; j++)
+			mNumCells += Blocks[i][j].size();
+
+	return mNumCells;
+
 }
 
 void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	ESM::ESMWriter& writer = mState.getWriter();
-	const CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
+	//	CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
+	CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr=0;
 
+	int block, subblock;
+	uint32_t cellFormID;
+
+	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
+	for (block=0; block < 10; block++)
+	{
+		for (subblock=0; subblock < 10; subblock++)
+		{
+			if (Blocks[block][subblock].size() > 0)
+			{
+				cellFormID = Blocks[block][subblock].back().first;
+				cellRecordPtr = Blocks[block][subblock].back().second;
+				Blocks[block][subblock].pop_back();
+				break;
+			}
+		}
+		if (cellRecordPtr != 0)
+			break;
+	}
+	if (cellRecordPtr == 0)
+	{
+		// throw exception
+		throw std::runtime_error ("export error: cellRecordPtr uninitialized");
+	}
+
+	// if stage == 0, then add the group record first
+	if (stage == 0)
+	{
+		std::string sSIG="WRLD";
+		writer.startGroupTES4(sSIG, 0); // Top GROUP
+
+		// Create WRLD record
+		writer.reserveFormID(0x01380001, "WrldMorrowind");
+		writer.startRecordTES4("WRLD", 0, 0x01380001, "WrldMorrowind");
+		writer.startSubRecordTES4("EDID");
+		writer.writeHCString("WrldMorrowind");
+		writer.endSubRecordTES4("EDID");
+		writer.startSubRecordTES4("FULL");
+		writer.writeHCString("Morrowind");
+		writer.endSubRecordTES4("FULL");
+		writer.endRecordTES4("WRLD");
+		
+		// Create WRLD Children Group
+		writer.startGroupTES4(0x01380001, 1);
+
+		// Create CELL dummy record
+		// Create CELL dummy top children group
+		// Create CELL dummy persistent children group
+
+		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
+		writer.startGroupTES4(0x00000000, 4);
+		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
+		writer.startGroupTES4(0x00000000, 5);
+		// document creation of first subblock
+		blockInitialized[0][0] = true;
+	}
+
+	// check to see if group is initialized
+	if (blockInitialized[block][subblock] == false)
+	{
+		blockInitialized[block][subblock] = true;
+		// close previous subblock
+		writer.endGroupTES4(0);
+		// if subblock == 0, then close prior block as well
+		if (subblock == 0)
+		{
+			writer.endGroupTES4(0);
+			// start the next block if prior block was closed
+			writer.startGroupTES4(0, 4);
+		}
+		// start new subblock
+		writer.startGroupTES4(0, 5);
+	}
+
+	//============================================================================================================
+
+	// load the pre-generated SubRecord list of references for this cell
 	std::map<std::string, std::deque<int> >::const_iterator references =
-		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cell.get().mId));
+		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cellRecordPtr->get().mId));
 
-	if (cell.isModified() ||
-		cell.mState == CSMWorld::RecordBase::State_Deleted ||
+	if (cellRecordPtr->isModified() ||
+		cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
 		references!=mState.getSubRecords().end())
 	{
-		CSMWorld::Cell cellRecord = cell.get();
-		bool interior = cellRecord.mId.substr (0, 1)!="#";
 
-		if (interior == false)
+		// count new references and adjust RefNumCount accordingsly
+		int newRefNum = cellRecordPtr->get().mRefNumCounter;
+
+		if (references!=mState.getSubRecords().end())
 		{
-
-			// count new references and adjust RefNumCount accordingsly
-			int newRefNum = cellRecord.mRefNumCounter;
-
-			if (references!=mState.getSubRecords().end())
+			for (std::deque<int>::const_iterator iter (references->second.begin());
+				iter!=references->second.end(); ++iter)
 			{
-				for (std::deque<int>::const_iterator iter (references->second.begin());
-					iter!=references->second.end(); ++iter)
-				{
-					const CSMWorld::Record<CSMWorld::CellRef>& ref =
-						mDocument.getData().getReferences().getRecord (*iter);
+				const CSMWorld::Record<CSMWorld::CellRef>& ref =
+					mDocument.getData().getReferences().getRecord (*iter);
 
-					if (ref.get().mNew ||
-						(!interior && ref.mState==CSMWorld::RecordBase::State_ModifiedOnly &&
-							/// \todo consider worldspace
-							CSMWorld::CellCoordinates (ref.get().getCellIndex()).getId("")!=ref.get().mCell))
-						++cellRecord.mRefNumCounter;
-				}
+				if (ref.get().mNew)
+					++(cellRecordPtr->get().mRefNumCounter);
 			}
-
-			// write cell data
-			writer.startRecord (cellRecord.sRecordId);
-
-			if (interior)
-				cellRecord.mData.mFlags |= ESM::Cell::Interior;
-			else
-			{
-				cellRecord.mData.mFlags &= ~ESM::Cell::Interior;
-
-				std::istringstream stream (cellRecord.mId.c_str());
-				char ignore;
-				stream >> ignore >> cellRecord.mData.mX >> cellRecord.mData.mY;
-			}
-
-			cellRecord.exportTES3 (writer, cell.mState == CSMWorld::RecordBase::State_Deleted);
-
-			// write references
-			if (references!=mState.getSubRecords().end())
-			{
-				//			for (std::deque<int>::const_iterator iter (references->second.begin());
-				//				iter!=references->second.end(); ++iter)
-				for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
-					iter != references->second.rend(); ++iter)
-				{
-					const CSMWorld::Record<CSMWorld::CellRef>& ref =
-						mDocument.getData().getReferences().getRecord (*iter);
-
-					if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
-					{
-						CSMWorld::CellRef refRecord = ref.get();
-
-						// Check for uninitialized content file
-						if (!refRecord.mRefNum.hasContentFile())
-							refRecord.mRefNum.mContentFile = 0;
-
-						// recalculate the ref's cell location
-						std::ostringstream stream;
-						if (!interior)
-						{
-							std::pair<int, int> index = refRecord.getCellIndex();
-							stream << "#" << index.first << " " << index.second;
-						}
-
-						if (refRecord.mNew ||
-							(!interior && ref.mState==CSMWorld::RecordBase::State_ModifiedOnly &&
-								refRecord.mCell!=stream.str()))
-						{
-							refRecord.mRefNum.mIndex = newRefNum++;
-						}
-						else if ((refRecord.mOriginalCell.empty() ? refRecord.mCell : refRecord.mOriginalCell)
-							!= stream.str() && !interior)
-						{
-							// An empty mOriginalCell is meant to indicate that it is the same as
-							// the current cell.  It is possible that a moved ref is moved again.
-
-							ESM::MovedCellRef moved;
-							moved.mRefNum = refRecord.mRefNum;
-
-							// Need to fill mTarget with the ref's new position.
-							std::istringstream istream (stream.str().c_str());
-
-							char ignore;
-							istream >> ignore >> moved.mTarget[0] >> moved.mTarget[1];
-
-							refRecord.mRefNum.save (writer, false, "MVRF");
-							writer.writeHNT ("CNDT", moved.mTarget, 8);
-						}
-
-						refRecord.exportTES3 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
-					}
-				}
-			}
-
-			writer.endRecord (cellRecord.sRecordId);
 		}
+
+		if (cellFormID == 0)
+		{
+			throw std::exception("export: cellFormID is 0");
+		}
+
+		uint32_t flags=0;
+		if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+
+		writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
+		cellRecordPtr->get().exportTES4 (writer);
+
+		writer.startSubRecordTES4("XCLC");
+		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mX);
+		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mY);
+		writer.endSubRecordTES4("XCLC");
+
+		// Cell record ends before creation of child records (which are full records and not subrecords)
+		writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
+
+		// write references
+		if (references!=mState.getSubRecords().end())
+		{
+			// Create Cell children group
+			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
+			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+
+			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
+				iter != references->second.rend(); ++iter)
+			{
+				const CSMWorld::Record<CSMWorld::CellRef>& ref =
+					mDocument.getData().getReferences().getRecord (*iter);
+
+				if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
+				{
+					CSMWorld::CellRef refRecord = ref.get();
+
+					// Check for uninitialized content file
+					if (!refRecord.mRefNum.hasContentFile())
+						refRecord.mRefNum.mContentFile = 0;
+
+					// recalculate the ref's cell location
+					std::ostringstream stream;
+
+					if (refRecord.mNew)
+					{
+						refRecord.mRefNum.mIndex = newRefNum++;
+					}
+
+					// reserve formID
+					uint32_t refFormID = writer.getNextAvailableFormID();
+					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
+					if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)))
+					{
+						std::string sSIG;
+						switch (baseRefIndex.second)
+						{
+						case CSMWorld::UniversalId::Type::Type_Creature:
+							sSIG = "ACRE";
+							break;
+						case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+						default:
+							sSIG = "REFR";
+							break;
+						}
+						uint32_t refFlags=0;
+						if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+							refFlags |= 0x01;
+						// start record
+
+						writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+						refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+						// end record
+						writer.endRecordTES4(sSIG);
+					}
+
+				}
+
+			}
+			// close cell children group
+			writer.endGroupTES4(cellFormID); // cell children subgroup
+			writer.endGroupTES4(cellFormID); // 6 top cell children group
+		}
+
 	}
+
+	if (stage == (mNumCells-1))
+	{
+		// two for the block-subblock
+		writer.endGroupTES4(0);
+		writer.endGroupTES4(0);
+		// WRLD children Group
+		writer.endGroupTES4(0);
+		// third one is the top Group
+		writer.endGroupTES4("WRLD");
+	}
+
 }
 
 

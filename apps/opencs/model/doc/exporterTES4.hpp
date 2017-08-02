@@ -249,6 +249,9 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
+		bool blockInitialized[10][10];
+		std::vector< std::pair< uint32_t, CSMWorld::Record<CSMWorld::Cell>* > > Blocks[10][10];
+		int mNumCells;
 
 	public:
 
