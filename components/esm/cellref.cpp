@@ -256,9 +256,9 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 
 	// EDID = EditorID
 	//	esm.writeHNCString("NAME", mRefID);
-	esm.startSubRecordTES4("EDID");
-	esm.writeHCString(mRefID);
-	esm.endSubRecordTES4("EDID");
+//	esm.startSubRecordTES4("EDID");
+//	esm.writeHCString(mRefID);
+//	esm.endSubRecordTES4("EDID");
 
 	// XRGD, ragdoll
 	// XESP, parent object

@@ -176,6 +176,23 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportNPCCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+
+	public:
+
+		ExportNPCCollectionTES4Stage (Document& document, SavingState& state);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
 	class ExportCreaturesCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;

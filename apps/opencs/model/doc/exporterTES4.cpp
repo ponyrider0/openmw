@@ -98,6 +98,7 @@ void CSMDoc::TES4Exporter::defineExportOperation()
 	mExportOperation.appendStage (new ExportLandCollectionTES4Stage (mDocument, *mStatePtr));
 */
 
+	mExportOperation.appendStage (new ExportNPCCollectionTES4Stage (mDocument, *mStatePtr));
 	mExportOperation.appendStage (new ExportCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
 	mExportOperation.appendStage (new ExportLeveledCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
 
@@ -171,7 +172,7 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 			std::string name = iter->filename().string();
 			uint64_t size = boost::filesystem::file_size (*iter);
 
-			mState.getWriter().addMaster (name, size);
+//			mState.getWriter().addMaster (name, size);
 		}
 	}
 
@@ -314,6 +315,15 @@ CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::ExportLeveledCreaturesCollect
 int CSMDoc::ExportLeveledCreaturesCollectionTES4Stage::setup()
 {
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+	int formID=0;
+
+	for (int i=0; i < mActiveRefCount; i++)
+	{
+		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId );
+//		std::cout << "export: LVLC[" << i << "] " << mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId << " = " << formID << std::endl;
+	}
+
 	return mActiveRefCount;
 }
 
@@ -363,6 +373,33 @@ void CSMDoc::ExportCreaturesCollectionTES4Stage::perform (int stage, Messages& m
 	}
 }
 
+CSMDoc::ExportNPCCollectionTES4Stage::ExportNPCCollectionTES4Stage (Document& document, SavingState& state)
+	: mDocument (document), mState (state)
+{}
+
+int CSMDoc::ExportNPCCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getNPCs().getSize();
+	return mActiveRefCount;
+}
+
+void CSMDoc::ExportNPCCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	// CREA GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("NPC_", 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), false, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4("NPC_");
+	}
+}
 
 CSMDoc::ExportReferenceCollectionTES4Stage::ExportReferenceCollectionTES4Stage (Document& document,
 	SavingState& state)
@@ -618,11 +655,14 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ) )
+						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
 						{
 							std::string sSIG;
 							switch (baseRefIndex.second)
 							{
+							case CSMWorld::UniversalId::Type::Type_Npc:
+								sSIG = "ACHR";
+								break;
 							case CSMWorld::UniversalId::Type::Type_Creature:
 								sSIG = "ACRE";
 								break;
@@ -748,8 +788,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 
 		// Create WRLD record
-		writer.reserveFormID(0x01380001, "WrldMorrowind");
-		writer.startRecordTES4("WRLD", 0, 0x01380001, "WrldMorrowind");
+		writer.reserveFormID(0x01380000, "WrldMorrowind");
+		writer.startRecordTES4("WRLD", 0, 0x01380000, "WrldMorrowind");
 		writer.startSubRecordTES4("EDID");
 		writer.writeHCString("WrldMorrowind");
 		writer.endSubRecordTES4("EDID");
@@ -759,11 +799,17 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.endRecordTES4("WRLD");
 		
 		// Create WRLD Children Group
-		writer.startGroupTES4(0x01380001, 1);
+		writer.startGroupTES4(0x01380000, 1);
 
 		// Create CELL dummy record
+		uint32_t flags=0x400;
+		writer.startRecordTES4("CELL", flags, 0x01380001, "");
+		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group
+//		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
 		// Create CELL dummy persistent children group
+//		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
+
 
 		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
 		writer.startGroupTES4(0x00000000, 4);
@@ -771,6 +817,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startGroupTES4(0x00000000, 5);
 		// document creation of first subblock
 		blockInitialized[0][0] = true;
+
+		// HACK for LVLC -- place all refs in single exterior CELL
+		writer.startRecordTES4("CELL", 0, 0x01380002, "");
+		writer.endRecordTES4("CELL");
+		writer.startGroupTES4(0x01380002, 6); // top Cell Children Group
+		writer.startGroupTES4(0x01380002, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+
 	}
 
 	// check to see if group is initialized
@@ -778,16 +831,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	{
 		blockInitialized[block][subblock] = true;
 		// close previous subblock
-		writer.endGroupTES4(0);
+//		writer.endGroupTES4(0);
 		// if subblock == 0, then close prior block as well
 		if (subblock == 0)
 		{
-			writer.endGroupTES4(0);
+//			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
-			writer.startGroupTES4(0, 4);
+//			writer.startGroupTES4(0, 4);
 		}
 		// start new subblock
-		writer.startGroupTES4(0, 5);
+//		writer.startGroupTES4(0, 5);
 	}
 
 	//============================================================================================================
@@ -821,7 +874,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		{
 			throw std::exception("export: cellFormID is 0");
 		}
-
+/*
 		uint32_t flags=0;
 		if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x01;
@@ -830,19 +883,19 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		cellRecordPtr->get().exportTES4 (writer);
 
 		writer.startSubRecordTES4("XCLC");
-		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mX);
-		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mY);
+		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mX*2);
+		writer.writeT<uint32_t>(cellRecordPtr->get().mData.mY*2);
 		writer.endSubRecordTES4("XCLC");
 
 		// Cell record ends before creation of child records (which are full records and not subrecords)
 		writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
-
+*/
 		// write references
 		if (references!=mState.getSubRecords().end())
 		{
 			// Create Cell children group
-			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
-			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+//			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
+//			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 				iter != references->second.rend(); ++iter)
@@ -871,11 +924,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-					if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)))
+					if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
 					{
 						std::string sSIG;
 						switch (baseRefIndex.second)
 						{
+						case CSMWorld::UniversalId::Type::Type_Npc:
+							sSIG = "ACHR";
+							break;
 						case CSMWorld::UniversalId::Type::Type_Creature:
 							sSIG = "ACRE";
 							break;
@@ -899,14 +955,19 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 			}
 			// close cell children group
-			writer.endGroupTES4(cellFormID); // cell children subgroup
-			writer.endGroupTES4(cellFormID); // 6 top cell children group
+//			writer.endGroupTES4(cellFormID); // cell children subgroup
+//			writer.endGroupTES4(cellFormID); // 6 top cell children group
 		}
 
 	}
 
 	if (stage == (mNumCells-1))
 	{
+		// <***** HACK for LVLC ****
+		writer.endGroupTES4(0x01380002); // cell children subgroup
+		writer.endGroupTES4(0x01380002); // 6 top cell children group
+		// ***** HACK for LVLC ****>
+
 		// two for the block-subblock
 		writer.endGroupTES4(0);
 		writer.endGroupTES4(0);

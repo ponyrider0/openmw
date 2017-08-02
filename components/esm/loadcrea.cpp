@@ -147,6 +147,11 @@ namespace ESM {
 		esm.endSubRecordTES4("EDID");
 		delete newEDID;
 
+		// FULL, fullname
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
 		// ACBS group
 		esm.startSubRecordTES4("ACBS");
 		esm.writeT<uint32_t>(0); //flags
@@ -189,7 +194,6 @@ namespace ESM {
 		esm.writeT<unsigned char>(mData.mPersonality); // per
 		esm.writeT<unsigned char>(mData.mLuck); // luck
 		esm.endSubRecordTES4("DATA");
-
 
 		return true;
 	}
