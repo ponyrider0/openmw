@@ -655,14 +655,15 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+//						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+						if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)) )
 						{
 							std::string sSIG;
 							switch (baseRefIndex.second)
 							{
-							case CSMWorld::UniversalId::Type::Type_Npc:
-								sSIG = "ACHR";
-								break;
+//							case CSMWorld::UniversalId::Type::Type_Npc:
+//								sSIG = "ACHR";
+//								break;
 							case CSMWorld::UniversalId::Type::Type_Creature:
 								sSIG = "ACRE";
 								break;
@@ -924,14 +925,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-					if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+//					if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+					if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)) )
 					{
 						std::string sSIG;
 						switch (baseRefIndex.second)
 						{
-						case CSMWorld::UniversalId::Type::Type_Npc:
-							sSIG = "ACHR";
-							break;
+//						case CSMWorld::UniversalId::Type::Type_Npc:
+//							sSIG = "ACHR";
+//							break;
 						case CSMWorld::UniversalId::Type::Type_Creature:
 							sSIG = "ACRE";
 							break;
