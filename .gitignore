@@ -82,3 +82,10 @@ moc_*.cxx
 gamecontrollerdb.txt
 openmw.appdata.xml
 venv/
+*moc*.c*
+/OpenMW*.app/Contents/*
+apps/launcher/qrc_launcher.cpp
+apps/opencs/qrc_launcher.cpp
+apps/opencs/qrc_resources.cpp
+CPackConfig.cmake
+CPackSourceConfig.cmake
