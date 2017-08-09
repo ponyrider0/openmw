@@ -1,6 +1,7 @@
 #ifndef CSM_WOLRD_COLLECTION_H
 #define CSM_WOLRD_COLLECTION_H
 
+#include <list>
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -185,7 +186,7 @@ namespace CSMWorld
 	typename std::list<Record<ESXRecordT>>::iterator Collection<ESXRecordT, IdAccessorT>::getNthRecordIterator(int index)
 	{
 		int i, distanceFromEnd, distanceFromCache;
-		std::list<Record<ESXRecordT>>::iterator iter;
+        typename std::list<Record<ESXRecordT>>::iterator iter;
 
 		if (index == 0)
 		{
@@ -251,7 +252,7 @@ namespace CSMWorld
 	typename std::list<Record<ESXRecordT>>::const_iterator Collection<ESXRecordT, IdAccessorT>::getNthRecordIterator(int index) const
 	{
 		int i, distanceFromEnd, distanceFromCache;
-		std::list<Record<ESXRecordT>>::const_iterator iter;
+		typename std::list<Record<ESXRecordT>>::const_iterator iter;
 
 		if (index == 0)
 		{
@@ -339,7 +340,7 @@ namespace CSMWorld
     bool Collection<ESXRecordT, IdAccessorT>::reorderRowsImp (int baseIndex,
         const std::vector<int>& newOrder)
     {
-		std::list<Record<ESXRecordT>>::iterator currentRecord, nextRecord, newPosition;
+		typename std::list<Record<ESXRecordT>>::iterator currentRecord, nextRecord, newPosition;
 
         if (!newOrder.empty())
         {
@@ -550,8 +551,8 @@ namespace CSMWorld
     template<typename ESXRecordT, typename IdAccessorT>
     void Collection<ESXRecordT, IdAccessorT>::removeRows (int index, int count)
     {
-		std::list<Record<ESXRecordT>>::iterator startPos = getNthRecordIterator(index);
-		std::list<Record<ESXRecordT>>::iterator stopPos = getNthRecordIterator(index + count);
+		typename std::list<Record<ESXRecordT>>::iterator startPos = getNthRecordIterator(index);
+		typename std::list<Record<ESXRecordT>>::iterator stopPos = getNthRecordIterator(index + count);
 
 		mRecords.erase(startPos, stopPos);
 
@@ -691,7 +692,7 @@ namespace CSMWorld
 
         const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
 		
-		std::list<Record<ESXRecordT> >::iterator recordIter = getNthRecordIterator(index);
+		typename std::list<Record<ESXRecordT> >::iterator recordIter = getNthRecordIterator(index);
         mRecords.insert (recordIter, record2);
 
 		// if index is less than the largest possible index value, update mIndex etnries
