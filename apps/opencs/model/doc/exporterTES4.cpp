@@ -607,7 +607,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 //			cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
 			if (cellFormID == 0)
 			{
-				throw std::exception("export: cellFormID is 0");
+				throw std::runtime_error ("export: cellFormID is 0");
 				return;
 			}
 
@@ -873,7 +873,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 		if (cellFormID == 0)
 		{
-			throw std::exception("export: cellFormID is 0");
+			throw std::runtime_error ("export: cellFormID is 0");
 		}
 /*
 		uint32_t flags=0;
