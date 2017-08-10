@@ -565,8 +565,8 @@ namespace CSMWorld
 			{
 				if (iter->second >= index + count)
 					iter->second -= count;
-				else 
-					mIndex.erase(iter);
+                else
+                    mIndex.erase(iter);
 			}
 		}
 
@@ -574,12 +574,13 @@ namespace CSMWorld
 		// asssuming that index >= 0
 		// iterator in mLastAccessedRecord is the last_erase_iterator (stopPos) for erase operation above
 		mLastAccessedRecord.first -= count;
-		if (mLastAccessedConstRecord.first >= index)
-			if (mLastAccessedConstRecord.first >= index + count)
+        if (mLastAccessedConstRecord.first >= index)
+        {
+            if (mLastAccessedConstRecord.first >= index + count)
 				mLastAccessedConstRecord.first -= count;
-			else
+            else
 				mLastAccessedConstRecord.first = -1;
-
+        }
     }
 
     template<typename ESXRecordT, typename IdAccessorT>
