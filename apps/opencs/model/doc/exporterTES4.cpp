@@ -611,6 +611,15 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         // write cell record
         writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
         cellRecordPtr->get().exportTES4 (writer);
+        // write supplemental records requiring cross-referenced data...
+        // Owner formID subrecord: XOWN
+        
+        // Faction rank long subrecord: XRNK (if owner is a faction)
+        
+        // Water formID subrecord: XCWT (if included as flag in record flags and present in cell record)
+        
+        // Region formID subrecord: XCLR (if present in cell record)
+        
         // Cell record ends before creation of child records (which are full records and not subrecords)
         writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 

@@ -237,32 +237,55 @@ namespace ESM
 
 	void Cell::exportTES4(ESMWriter &esm) const
 	{
+        // Write EDID (TES4-style editor string identifier)
 		std::string *newEDID = esm.generateEDIDTES4(mName, true);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(*newEDID);
 		esm.endSubRecordTES4("EDID");
 		delete newEDID;
 
+        // Write FULL (human readable name)
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+        // Write DATA (flags)
 		char dataFlags=0;
-		if (isExterior() == false) // Interior
-			dataFlags |= 0x01; // Is Interior Cell
-		if (mWaterInt) 
+		if (mData.mFlags & Interior) // Interior Cell
+			dataFlags |= 0x01; // Can't fast travel? Interior?
+		if (mData.mFlags & HasWater)
 			dataFlags |= 0x02; // Has Water
-		// 0x04, Invert Fast Travel Behavior
-		// 0x08, Force hide land (exterior cell) / Oblivion interior
+		// 0x04, Invert Fast Travel Behavior?
+        // 0x08, Force hide land (exterior cell) / Oblivion interior
 		// 0x10, Unknown or reserved?
-		// 0x20, Public place
+        if (!(mData.mFlags & NoSleep))
+            dataFlags |= 0x20; // 0x20, Public place
 		// 0x40, Hand changed
-		// 0x80, Behave like exterior (interior)
-
+        if (mData.mFlags & QuasiEx)
+            dataFlags |= 0x08; // 0x80, Behave like exterior
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<char>(dataFlags);
 		esm.endSubRecordTES4("DATA");
 
+        // Write XCLL (lighting)
+        esm.startSubRecordTES4("XCLL");
+        esm.writeT<uint32_t>(mAmbi.mAmbient); // ambient color
+        esm.writeT<uint32_t>(mAmbi.mSunlight); // direction color
+        esm.writeT<uint32_t>(mAmbi.mFog); // fog color
+        esm.writeT<float>(0); // fog near
+        esm.writeT<float>(mAmbi.mFogDensity);  // fog far
+        esm.writeT<uint32_t>(0); // rotation xy
+        esm.writeT<uint32_t>(0); // rotation z
+        esm.writeT<float>(0); // directional fade
+        esm.writeT<float>(0); // fog clip distance
+        esm.endSubRecordTES4("XCLL");
+
+        // Write XCLW (water level)
+        esm.startSubRecordTES4("XCLW");
+        esm.writeT<float>(mWater);
+        esm.endSubRecordTES4("XCLW");
+        
+        
 	}
 
     void Cell::restore(ESMReader &esm, int iCtx) const
