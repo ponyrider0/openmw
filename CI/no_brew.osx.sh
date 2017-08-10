@@ -4,7 +4,7 @@ export CXX=clang++
 export CC=clang
 
 DEPENDENCIES_ROOT="~/dev/openmw-deps"
-QT_PATH="~/dev/Qt5.5.0/5.5/clang_64/lib/cmake"
+QT_PATH="~/Qt5.5.0/5.5/clang_64/lib/cmake"
 mkdir build
 cd build
 
