@@ -9,7 +9,7 @@ CSMDoc::Exporter::Exporter(Document& document, const boost::filesystem::path exp
   mExportOperation(State_Exporting, true, true), // type=exporting, ordered=true, finalAlways=true
   mEncoding(encoding)
 {
-    mExportManager.setOperation(&mExportOperation);
+    mExportManager.setOperation(&mExportOperation); // assign task to thread
 	std::cout << "Export Path: " << mExportPath << std::endl;
 }
 
@@ -23,7 +23,7 @@ void CSMDoc::Exporter::queryExportPath()
 {
 	if (mStatePtr != 0)
 		delete mStatePtr;
-	mStatePtr = new SavingState(mExportOperation, mExportPath, mEncoding);
+    mStatePtr = new SavingState(mExportOperation, mExportPath, mEncoding);
 }
 
 void CSMDoc::Exporter::defineExportOperation()
@@ -38,5 +38,5 @@ void CSMDoc::Exporter::startExportOperation()
 		defineExportOperation();
 		mExportDefined = true;
 	}
-	mExportManager.start();
+	mExportManager.start(); // start thread
 }

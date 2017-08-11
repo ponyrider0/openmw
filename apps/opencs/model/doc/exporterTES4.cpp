@@ -125,7 +125,7 @@ int CSMDoc::OpenExportTES4Stage::setup()
 
 void CSMDoc::OpenExportTES4Stage::perform (int stage, Messages& messages)
 {
-	mState.start (mDocument, mProjectFile);
+	mState.start (mDocument, mProjectFile); // resets & clears iostream
 
 	mState.getStream().open (
 		mProjectFile ? mState.getPath() : mState.getTmpPath(),
