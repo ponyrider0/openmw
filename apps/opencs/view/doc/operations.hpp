@@ -3,15 +3,16 @@
 
 #include <vector>
 
-#include <QDockWidget>
+#include <QWidget>
 
 class QVBoxLayout;
+class QDockWidget;
 
 namespace CSVDoc
 {
     class Operation;
 
-    class Operations : public QDockWidget
+    class Operations : public QWidget
     {
             Q_OBJECT
 
@@ -24,6 +25,7 @@ namespace CSVDoc
 
         public:
 
+            QDockWidget *mDock;
             Operations();
 
             void setProgress (int current, int max, int type, int threads);

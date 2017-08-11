@@ -1,5 +1,6 @@
 #include "operations.hpp"
 
+#include <QDockWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
@@ -9,16 +10,12 @@ CSVDoc::Operations::Operations()
 {
     /// \todo make widget height fixed (exactly the height required to display all operations)
 
-    setFeatures (QDockWidget::NoDockWidgetFeatures);
-
-    QWidget *widgetContainer = new QWidget (this);
+    mDock = new QDockWidget;
     mLayout = new QVBoxLayout;
-
-    widgetContainer->setLayout (mLayout);
-    setWidget (widgetContainer);
+    setLayout (mLayout);
+    mDock->setWidget (this);
     setVisible (false);
-    setFixedHeight (widgetContainer->height());
-    setTitleBarWidget (new QWidget (this));
+
 }
 
 void CSVDoc::Operations::setProgress (int current, int max, int type, int threads)

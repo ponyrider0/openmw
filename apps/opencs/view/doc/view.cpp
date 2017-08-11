@@ -486,7 +486,7 @@ CSVDoc::View::View (ViewManager& viewManager, CSMDoc::Document *document, int to
     }
 
     mOperations = new Operations;
-    addDockWidget (Qt::BottomDockWidgetArea, mOperations);
+    addDockWidget (Qt::BottomDockWidgetArea, mOperations->mDock);
 
     setContextMenuPolicy(Qt::NoContextMenu);
 
