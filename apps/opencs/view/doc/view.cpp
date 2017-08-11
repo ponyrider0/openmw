@@ -462,9 +462,7 @@ void CSVDoc::View::updateActions()
         !(mDocument->getState() & CSMDoc::State_Merging));
 
     // Export Operation only available if no other operation is running
-    mExportESM->setEnabled ( !(mDocument->getState() &
-        (CSMDoc::State_Saving | CSMDoc::State_Verifying | CSMDoc::State_Merging) )
-        && !running);
+    mExportESM->setEnabled (!(mDocument->getState() & CSMDoc::State_Exporting) && !running);
 
 }
 
@@ -541,7 +539,7 @@ void CSVDoc::View::updateDocumentState()
     static const int operations[] =
     {
         CSMDoc::State_Saving, CSMDoc::State_Verifying, CSMDoc::State_Searching,
-        CSMDoc::State_Merging, 0,
+        CSMDoc::State_Merging, CSMDoc::State_Exporting,
         -1 // end marker
     };
 
