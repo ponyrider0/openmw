@@ -453,7 +453,6 @@ void CSVDoc::View::updateActions()
     mRedo->setEnabled (editing & mDocument->getUndoStack().canRedo());
 
     mSave->setEnabled (!(mDocument->getState() & CSMDoc::State_Saving) && !running);
-	mExportESM->setEnabled (!(mDocument->getState() & CSMDoc::State_Saving) && !running);
     mVerify->setEnabled (!(mDocument->getState() & CSMDoc::State_Verifying));
 
     mGlobalDebugProfileMenu->updateActions (running);
@@ -461,6 +460,12 @@ void CSVDoc::View::updateActions()
 
     mMerge->setEnabled (mDocument->getContentFiles().size()>1 &&
         !(mDocument->getState() & CSMDoc::State_Merging));
+
+    // Export Operation only available if no other operation is running
+    mExportESM->setEnabled ( !(mDocument->getState() &
+        (CSMDoc::State_Saving | CSMDoc::State_Verifying | CSMDoc::State_Merging) )
+        && !running);
+
 }
 
 CSVDoc::View::View (ViewManager& viewManager, CSMDoc::Document *document, int totalViews)
@@ -536,7 +541,7 @@ void CSVDoc::View::updateDocumentState()
     static const int operations[] =
     {
         CSMDoc::State_Saving, CSMDoc::State_Verifying, CSMDoc::State_Searching,
-        CSMDoc::State_Merging,
+        CSMDoc::State_Merging, 0,
         -1 // end marker
     };
 

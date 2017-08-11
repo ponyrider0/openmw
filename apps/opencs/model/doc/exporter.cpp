@@ -6,10 +6,10 @@
 CSMDoc::Exporter::Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding)
   : mDocument(document),
   mExportPath(exportPath),
-  mExportOperation(State_Saving, true, true),
-  mExportManager(&mExportOperation),
+  mExportOperation(0, true, true), // type=0, ordered=true, finalAlways=true
   mEncoding(encoding)
 {
+    mExportManager.setOperation(&mExportOperation);
 	std::cout << "Export Path: " << mExportPath << std::endl;
 }
 

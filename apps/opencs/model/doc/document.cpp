@@ -375,7 +375,7 @@ int CSMDoc::Document::getState() const
         state |= State_Locked | State_Operation | operations;
 
 	if (mExporter->mExportManager.isRunning())
-		state |= State_Locked | State_Saving | State_Operation;
+        state |= State_Locked | State_Operation;
 
     return state;
 }
