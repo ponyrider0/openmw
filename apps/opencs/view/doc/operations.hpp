@@ -27,7 +27,8 @@ namespace CSVDoc
 
             QDockWidget *mDock;
             Operations();
-
+            void setVisible (bool visible);
+        
             void setProgress (int current, int max, int type, int threads);
             ///< Implicitly starts the operation, if it is not running already.
 

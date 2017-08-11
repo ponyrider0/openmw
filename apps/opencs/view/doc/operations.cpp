@@ -11,11 +11,17 @@ CSVDoc::Operations::Operations()
     /// \todo make widget height fixed (exactly the height required to display all operations)
 
     mDock = new QDockWidget;
+    mDock->setFeatures (QDockWidget::NoDockWidgetFeatures);
     mLayout = new QVBoxLayout;
     setLayout (mLayout);
     mDock->setWidget (this);
     setVisible (false);
+}
 
+void CSVDoc::Operations::setVisible(bool visible)
+{
+    QWidget::setVisible(visible);
+    mDock->setVisible(visible);
 }
 
 void CSVDoc::Operations::setProgress (int current, int max, int type, int threads)
