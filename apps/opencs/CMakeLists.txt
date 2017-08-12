@@ -9,7 +9,7 @@ opencs_units (model/doc
     )
 
 opencs_units_noqt (model/doc
-    stage savingstate savingstages blacklist messages exporter exporterTES3 exporterTES4
+    stage savingstate savingstages blacklist messages exporter exportToBase exportToTES3 exportToTES4
     )
 
 opencs_hdrs_noqt (model/doc

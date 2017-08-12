@@ -23,7 +23,6 @@
 #include "operationholder.hpp"
 
 #include "exporter.hpp"
-//#include "exporterTES3.hpp"
 
 class QAbstractItemModel;
 

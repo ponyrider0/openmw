@@ -1,9 +1,9 @@
-#ifndef CSM_DOC_EXPORTER_TES3_H
-#define CSM_DOC_EXPORTER_TES3_H
+#ifndef CSM_DOC_EXPORT_TO_TES3_H
+#define CSM_DOC_EXPORT_TO_TES3_H
 
 #include "../world/scope.hpp"
 
-#include "exporter.hpp"
+#include "exportToBase.hpp"
 
 namespace CSMDoc
 {
@@ -11,7 +11,7 @@ namespace CSMDoc
 	class Document;
 	class SavingState;
 
-    class TES3Exporter : public Exporter
+    class ExportToTES3 : public ExportToBase
     {
 //		Q_OBJECT
 
@@ -20,10 +20,9 @@ namespace CSMDoc
 //		Operation *mExportOperation;
 //		SavingState *mState;
 	public:
-		TES3Exporter(Document& document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
+        ExportToTES3();
 //		void initializeExporter(Document *document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
-
-		void defineExportOperation();
+		void defineExportOperation(Document& currentDoc, SavingState& currentSave);
 
     };
 

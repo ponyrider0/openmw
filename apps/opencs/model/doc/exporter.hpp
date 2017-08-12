@@ -1,35 +1,30 @@
 #ifndef CSM_DOC_EXPORTER_H
 #define CSM_DOC_EXPORTER_H
 
+#include <boost/filesystem/path.hpp>
+#include "components/to_utf8/to_utf8.hpp"
 #include "operationholder.hpp"
-#include "operation.hpp"
-#include "state.hpp"
 #include "savingstate.hpp"
+#include "state.hpp"
+#include "exportToBase.hpp"
 
 namespace CSMDoc
 {
-	class OperationHolder;
 	class Document;
-	class SavingState;
 
     class Exporter
     {
-    protected:
-        Operation *mExportOperation;
+	public:
+        ExportToBase *mExportOperation=0;
         SavingState *mStatePtr=0;
+        
         boost::filesystem::path mExportPath;
         ToUTF8::FromType mEncoding;
         Document& mDocument;
-        bool mExportDefined=false;
-        
-	public:
-		OperationHolder mExportManager;
+        OperationHolder mExportManager;
 
-		Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding);
+		Exporter(Document& document, ToUTF8::FromType encoding);
 		virtual ~Exporter();
-
-		// Define export steps within this method
-		virtual void defineExportOperation();
         virtual void startExportOperation(boost::filesystem::path filename);
 
     };

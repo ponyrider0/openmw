@@ -724,7 +724,7 @@ void CSVDoc::View::exportESM()
     if (filename == 0)
         return;
     else
-        mDocument->exportESM(filename.toStdWString());
+        mDocument->exportESM(boost::filesystem::path( filename.toStdWString() ));
 }
 
 void CSVDoc::View::verify()

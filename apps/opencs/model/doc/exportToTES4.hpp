@@ -1,33 +1,43 @@
-#ifndef CSM_DOC_EXPORTER_TES4_H
-#define CSM_DOC_EXPORTER_TES4_H
+#ifndef CSM_DOC_EXPORT_TO_TES4_H
+#define CSM_DOC_EXPORT_TO_TES4_H
 
+#include "../world/record.hpp"
+#include "../world/idcollection.hpp"
 #include "../world/scope.hpp"
+#include <components/esm/defs.hpp>
 
-#include "exporter.hpp"
+//#include <components/esm/loaddial.hpp>
+//#include "../world/infocollection.hpp"
+//#include "../world/cellcoordinates.hpp"
+//#include "../world/data.hpp"
+//#include "components/esm/loadlevlist.hpp"
+#include "savingstate.hpp"
+#include "stage.hpp"
+
+#include "exportToBase.hpp"
+
+namespace ESM
+{
+    struct Dialogue;
+}
 
 namespace CSMWorld
 {
+    struct Cell;
+    class InfoCollection;
 	class RefIdCollection;
 }
 
 namespace CSMDoc
 {
-	class Exporter;
-	class Document;
-	class SavingState;
-
-    class TES4Exporter : public Exporter
+    class Document;
+    class SavingState;
+    
+    class ExportToTES4 : public ExportToBase
     {
-//		Q_OBJECT
-
-//	public:
-//		Document *mDocument;
-//		Operation *mExportOperation;
-//		SavingState *mState;
 	public:
-		TES4Exporter(Document& document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
-//		void initializeExporter(Document *document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
-		void defineExportOperation();
+        ExportToTES4();
+		void defineExportOperation(Document& currentDoc, SavingState& currentSave);
 
     };
 

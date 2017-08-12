@@ -3,16 +3,14 @@
 #include <QObject>
 
 #include "exporter.hpp"
+#include "exportToTES4.hpp"
+#include "exportToTES3.hpp"
 
-
-CSMDoc::Exporter::Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding)
+CSMDoc::Exporter::Exporter(Document& document, ToUTF8::FromType encoding)
   : mDocument(document),
-  mExportPath(exportPath),
-  mEncoding(encoding)
+    mEncoding(encoding)
 {
-    mExportOperation = new Operation(State_Exporting, true, true), // type=exporting, ordered=true, finalAlways=true
-    mExportManager.setOperation(mExportOperation); // assign task to thread
-	std::cout << "Export Path: " << mExportPath << std::endl;
+    std::cout << "Exporter Base Initalied." << std::endl;
 }
 
 CSMDoc::Exporter::~Exporter()
@@ -24,28 +22,37 @@ CSMDoc::Exporter::~Exporter()
     }
 }
 
-void CSMDoc::Exporter::defineExportOperation()
-{
-}
-
 void CSMDoc::Exporter::startExportOperation(boost::filesystem::path filename)
 {
     // clear old data
-    
     if (mStatePtr != 0)
     {
         mStatePtr->getStream().close();
         delete mStatePtr;
     }
-    delete mExportOperation;
+    if (mExportOperation != 0)
+    {
+        delete mExportOperation;
+    }
 
-    mExportOperation = new Operation(State_Exporting, true, true), // type=exporting, ordered=true, finalAlways=true
-    
     mExportPath = filename;
+    std::cout << "Extension = " << filename.extension().string() << std::endl;
+    if (filename.extension().string() == ".ESM4")
+    {
+        mExportOperation = new ExportToTES4();
+        std::cout << "TES4 Export Path = " << mExportPath << std::endl;
+    }
+    else
+    {
+        mExportOperation = new ExportToTES3();
+        std::cout << "TES3 Export Path = " << mExportPath << std::endl;
+    }
+    
     mStatePtr = new SavingState(*mExportOperation, mExportPath, mEncoding);
     
-    defineExportOperation(); // must querypath and create savingstate before defining operation
-
+    mExportOperation->defineExportOperation(mDocument, *mStatePtr); // must querypath and create savingstate before defining operation
+//    mExportOperation->defineExportOperation(mDocument, SavingState(*mExportOperation, mExportPath, mEncoding));
     mExportManager.setOperation(mExportOperation); // assign task to thread
+
     mExportManager.start(); // start thread
 }

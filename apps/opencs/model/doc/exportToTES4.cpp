@@ -2,109 +2,97 @@
 #include <boost/filesystem.hpp>
 #include <QUndoStack>
 
-#include <components/esm/loaddial.hpp>
-
-#include "../world/infocollection.hpp"
-#include "../world/cellcoordinates.hpp"
-#include "../world/data.hpp"
-#include "../world/idcollection.hpp"
-#include "../world/record.hpp"
-#include "components/esm/loadlevlist.hpp"
-
+#include "exportToTES4.hpp"
 #include "document.hpp"
-//#include "savingstages.hpp"
-#include "exporterTES4.hpp"
 
-CSMDoc::TES4Exporter::TES4Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding)
-  : Exporter(document, exportPath, encoding)
+CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
-	mExportPath = exportPath.parent_path() / (exportPath.stem().string() + ".ESM4");
-	std::cout << "TES4 Export Path = " << mExportPath << std::endl;
+    std::cout << "TES4 Exporter Initialized " << std::endl;
 }
 
-void CSMDoc::TES4Exporter::defineExportOperation()
+void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingState& currentSave)
 {
 
 	// Export to ESM file
-	mExportOperation->appendStage (new OpenExportTES4Stage (mDocument, *mStatePtr, true));
+	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
-	mExportOperation->appendStage (new ExportHeaderTES4Stage (mDocument, *mStatePtr, false));
+	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
 
-//	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), *mStatePtr));
+//	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
 
 /*
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
-		(mDocument.getData().getGmsts(), *mStatePtr));
+		(mDocument.getData().getGmsts(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
-		(mDocument.getData().getSkills(), *mStatePtr));
+		(mDocument.getData().getSkills(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
-		(mDocument.getData().getClasses(), *mStatePtr));
+		(mDocument.getData().getClasses(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
-		(mDocument.getData().getFactions(), *mStatePtr));
+		(mDocument.getData().getFactions(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
-		(mDocument.getData().getRaces(), *mStatePtr));
+		(mDocument.getData().getRaces(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
-		(mDocument.getData().getSounds(), *mStatePtr));
+		(mDocument.getData().getSounds(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
-		(mDocument.getData().getScripts(), *mStatePtr));
+		(mDocument.getData().getScripts(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(mDocument.getData().getRegions(), *mStatePtr));
+		(mDocument.getData().getRegions(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
-		(mDocument.getData().getBirthsigns(), *mStatePtr));
+		(mDocument.getData().getBirthsigns(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
-		(mDocument.getData().getSpells(), *mStatePtr));
+		(mDocument.getData().getSpells(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Enchantment> >
-		(mDocument.getData().getEnchantments(), *mStatePtr));
+		(mDocument.getData().getEnchantments(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
-		(mDocument.getData().getBodyParts(), *mStatePtr));
+		(mDocument.getData().getBodyParts(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::SoundGenerator> >
-		(mDocument.getData().getSoundGens(), *mStatePtr));
+		(mDocument.getData().getSoundGens(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::MagicEffect> >
-		(mDocument.getData().getMagicEffects(), *mStatePtr));
+		(mDocument.getData().getMagicEffects(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
-		(mDocument.getData().getStartScripts(), *mStatePtr));
+		(mDocument.getData().getStartScripts(), currentSave));
 
 	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
 
-	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, *mStatePtr, false));
+	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, false));
 
-	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, *mStatePtr, true));
+	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
-	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, currentSave));
 
 	// references Land Textures
-	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, *mStatePtr));
+	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 */
 
-	mExportOperation->appendStage (new ExportNPCCollectionTES4Stage (mDocument, *mStatePtr));
-	mExportOperation->appendStage (new ExportCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
-	mExportOperation->appendStage (new ExportLeveledCreaturesCollectionTES4Stage (mDocument, *mStatePtr));
+	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportLeveledCreaturesCollectionTES4Stage (currentDoc, currentSave));
 
-	mExportOperation->appendStage (new ExportReferenceCollectionTES4Stage (mDocument, *mStatePtr));
-	mExportOperation->appendStage (new ExportInteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
+	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
-	mExportOperation->appendStage (new ExportExteriorCellCollectionTES4Stage (mDocument, *mStatePtr));
+	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
 	// close file and clean up
-	mExportOperation->appendStage (new CloseExportTES4Stage (*mStatePtr));
+	appendStage (new CloseExportTES4Stage (currentSave));
 
-	mExportOperation->appendStage (new FinalizeExportTES4Stage (mDocument, *mStatePtr));
+	appendStage (new FinalizeExportTES4Stage (currentDoc, currentSave));
 
 }
 
