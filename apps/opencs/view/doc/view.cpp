@@ -13,6 +13,7 @@
 #include <QHBoxLayout>
 #include <QDesktopWidget>
 #include <QScrollBar>
+#include <QFileDialog>
 
 #include "../../model/doc/document.hpp"
 #include "../../model/prefs/state.hpp"
@@ -714,7 +715,16 @@ void CSVDoc::View::save()
 
 void CSVDoc::View::exportESM()
 {
-	mDocument->exportESM();
+    QString filter("ESM4 (*.ESM4)");
+    boost::filesystem::path exportPath = mDocument->getSavePath();
+    exportPath = (boost::filesystem::path::preferred_separator + exportPath.stem().string() + ".ESM4");
+    QString filename = QFileDialog::getSaveFileName(this, tr("Export Module"),
+        QDir::homePath() + QString::fromStdWString(exportPath.wstring()),
+        tr("ESM4 (*.ESM4);;ESM3 (*.ESM3)"), &filter);
+    if (filename == 0)
+        return;
+    else
+        mDocument->exportESM(filename.toStdWString());
 }
 
 void CSVDoc::View::verify()

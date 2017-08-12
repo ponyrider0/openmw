@@ -135,7 +135,7 @@ namespace CSMDoc
 
             void save();
 
-			void exportESM();
+            void exportESM(boost::filesystem::path filename);
 
             CSMWorld::UniversalId verify (const CSMWorld::UniversalId& reportId = CSMWorld::UniversalId());
 

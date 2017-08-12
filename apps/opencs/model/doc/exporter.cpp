@@ -1,4 +1,6 @@
 #include <iostream>
+#include <QFileDialog>
+#include <QObject>
 
 #include "exporter.hpp"
 
@@ -22,16 +24,11 @@ CSMDoc::Exporter::~Exporter()
     }
 }
 
-void CSMDoc::Exporter::queryExportPath()
-{
-    mStatePtr = new SavingState(*mExportOperation, mExportPath, mEncoding);
-}
-
 void CSMDoc::Exporter::defineExportOperation()
 {
 }
 
-void CSMDoc::Exporter::startExportOperation()
+void CSMDoc::Exporter::startExportOperation(boost::filesystem::path filename)
 {
     // clear old data
     
@@ -41,9 +38,12 @@ void CSMDoc::Exporter::startExportOperation()
         delete mStatePtr;
     }
     delete mExportOperation;
-    
+
     mExportOperation = new Operation(State_Exporting, true, true), // type=exporting, ordered=true, finalAlways=true
-    queryExportPath();
+    
+    mExportPath = filename;
+    mStatePtr = new SavingState(*mExportOperation, mExportPath, mEncoding);
+    
     defineExportOperation(); // must querypath and create savingstate before defining operation
 
     mExportManager.setOperation(mExportOperation); // assign task to thread

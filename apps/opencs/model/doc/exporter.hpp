@@ -28,10 +28,9 @@ namespace CSMDoc
 		Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding);
 		virtual ~Exporter();
 
-		virtual void queryExportPath();
 		// Define export steps within this method
 		virtual void defineExportOperation();
-		virtual void startExportOperation();
+        virtual void startExportOperation(boost::filesystem::path filename);
 
     };
 

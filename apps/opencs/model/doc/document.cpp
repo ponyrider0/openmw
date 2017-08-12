@@ -411,14 +411,14 @@ void CSMDoc::Document::save()
     emit stateChanged (getState(), this);
 }
 
-void CSMDoc::Document::exportESM()
+void CSMDoc::Document::exportESM(boost::filesystem::path filename)
 {
 	// do export here
 	std::cout << "openmw-File-Export-Menu: ExportESM called" << std::endl;
 //	mTES3Exporter.defineExportOperation();
 //	mTES3Exporter.setOperation(mTES3Exporter.mExportOperation);
 //	mTES3Exporter.mExportManager.start();
-	mExporter->startExportOperation();
+	mExporter->startExportOperation(filename);
 
 	emit stateChanged (getState(), this);
 }
