@@ -14,16 +14,16 @@ namespace CSMDoc
 
     class Exporter
     {
-//		Q_OBJECT
-
+    protected:
+        Operation *mExportOperation;
+        SavingState *mStatePtr=0;
+        boost::filesystem::path mExportPath;
+        ToUTF8::FromType mEncoding;
+        Document& mDocument;
+        bool mExportDefined=false;
+        
 	public:
-		bool mExportDefined=false;
-		Operation mExportOperation;
 		OperationHolder mExportManager;
-		SavingState *mStatePtr=0;
-		boost::filesystem::path mExportPath;
-		ToUTF8::FromType mEncoding;
-		Document& mDocument;
 
 		Exporter(Document& document, const boost::filesystem::path exportPath, ToUTF8::FromType encoding);
 		virtual ~Exporter();

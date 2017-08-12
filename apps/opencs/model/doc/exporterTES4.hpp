@@ -27,7 +27,6 @@ namespace CSMDoc
 	public:
 		TES4Exporter(Document& document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
 //		void initializeExporter(Document *document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
-		void queryExportPath();
 		void defineExportOperation();
 
     };
