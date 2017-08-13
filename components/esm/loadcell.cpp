@@ -261,7 +261,8 @@ namespace ESM
         }
         else
         {
-        //    do(cell);
+        //    do(0);
+            exportSubCellTES4(esm, 0, 0, 0);
         }
     }
     
@@ -269,12 +270,12 @@ namespace ESM
     {
         // Write EDID (TES4-style editor string identifier)
 		std::string *newEDID = esm.generateEDIDTES4(mName, true);
-        char *charbuf = new char[newEDID->size()+10];
+        char *charbuf = new char[newEDID->size()+6];
         
-        int len = snprintf(charbuf, newEDID->size()+10, "%s%02d", newEDID->c_str(), offset);
-        if (newEDID->compare("")!=0 && isExterior())
+        int len = snprintf(charbuf, newEDID->size()+6, "%s%02d", newEDID->c_str(), offset);
+        if (newEDID->compare("")!=0)
         {
-            if ((len < 0) || (len > newEDID->size()+10))
+            if ((len < 0) || (len > newEDID->size()+6))
             {
                 throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
             }

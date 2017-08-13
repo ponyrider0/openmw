@@ -693,10 +693,11 @@ CSMDoc::ExportExteriorCellCollectionTES4Stage::ExportExteriorCellCollectionTES4S
 
 int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 {
+    int subblock, block;
 	ESM::ESMWriter& writer = mState.getWriter();
 	int collectionSize = mDocument.getData().getCells().getSize();
 
-	// look through all cells and add interior cells to appropriate subblock
+	// look through all cells and add exterior cells to appropriate block (32x32 quads aka 16x16 cells) and sub-block (8x8 quads aka 4x4 cells) -- each cell is 2x2 quads
 	for (int i=0; i < collectionSize; i++)
 	{
 		CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr = &mDocument.getData().getCells().getNthRecord(i);
@@ -704,30 +705,65 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 
 		if (exterior == true)
 		{
-			// add to one of 100 subblocks
-			uint32_t formID = writer.getNextAvailableFormID();
+			// add to one of block=256, subblock=64
+            // create space for new entry and copy cellRecord pointer
+            CellExportData *exportData = new CellExportData();
+            exportData->cellRecordPtr = cellRecordPtr;
+
+            // translate to Oblivion coords, then calculate block and subblock
+            int baseX = cellRecordPtr->get().mData.mX*2;
+            int baseY = cellRecordPtr->get().mData.mY*2;
+            block = (baseX/32);
+            if ((baseX%32) != 0)
+            {
+                block++;
+            }
+            int block_mult = baseY/32;
+            if ((baseY%32) != 0)
+            {
+                if (block_mult != 1)
+                    block_mult++;
+            }
+            block *= block_mult;
+
+            subblock = (baseX/8);
+            if ((baseX%8) != 0)
+            {
+                subblock++;
+            }
+            block_mult = baseY/8;
+            if ((baseY%8) != 0)
+            {
+                if (block_mult != 1)
+                    block_mult++;
+            }
+            subblock *= block_mult;
+            
+            exportData->block = block;
+            exportData->subblock = subblock;
+            
+            // assign formID
+            int formID = writer.getNextAvailableFormID();
 			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
-			int block = formID % 100;
-			int subblock = block % 10;
-			block -= subblock;
-			block /= 10;
-			if (block < 0 || block >= 10 || subblock < 0 || subblock >= 10)
-				throw std::runtime_error ("export error: block/subblock calculation produced out of bounds index");
-			Blocks[block][subblock].push_back(std::pair<uint32_t, CSMWorld::Record<CSMWorld::Cell>*>(formID, cellRecordPtr));
+            exportData->formID = formID;
+
+            Blocks.push_back(*exportData);
+            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; Block[" << block << "][" << subblock << "]" << std::endl;
 		}
 	}
 
 	// initialize blockInitialized[][] to track BLOCK initialization in perform()
-	for (int i=0; i < 10; i++)
-		for (int j=0; j < 10; j++)
-			blockInitialized[i][j]=false;
+//	for (int i=0; i < 256; i++)
+//		for (int j=0; j < 64; j++)
+//			blockInitialized[i][j]=false;
 
 	// count number of cells in all blocks to return
 	mNumCells = 0;
-	for (int i=0; i < 10; i++)
-		for (int j=0; j < 10; j++)
-			mNumCells += Blocks[i][j].size();
-
+//	for (int i=0; i < 256; i++)
+//		for (int j=0; j < 64; j++)
+//			mNumCells += Blocks[i][j].size();
+    mNumCells = Blocks.size();
+    
 	return mNumCells;
 
 }
@@ -736,15 +772,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 {
 	ESM::ESMWriter& writer = mState.getWriter();
 	//	CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
-	CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr=0;
-
+    CellExportData *exportData;
+    CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr=0;
 	int block, subblock;
 	uint32_t cellFormID;
 
 	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
-	for (block=0; block < 10; block++)
+/*
+    for (block=0; block < 256; block++)
 	{
-		for (subblock=0; subblock < 10; subblock++)
+		for (subblock=0; subblock < 64; subblock++)
 		{
 			if (Blocks[block][subblock].size() > 0)
 			{
@@ -757,6 +794,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		if (cellRecordPtr != 0)
 			break;
 	}
+*/
+
+    exportData = &Blocks.back();
+    cellRecordPtr = exportData->cellRecordPtr;
+    cellFormID = exportData->formID;
+    block = exportData->block;
+    subblock = exportData->subblock;
+    
 	if (cellRecordPtr == 0)
 	{
 		// throw exception
@@ -798,7 +843,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
 		writer.startGroupTES4(0x00000000, 5);
 		// document creation of first subblock
-		blockInitialized[0][0] = true;
+//		blockInitialized[0][0] = true;
 
 		// HACK for LVLC -- place all refs in single exterior CELL
 //		writer.startRecordTES4("CELL", 0, 0x01380002, "");
@@ -809,13 +854,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	}
 
 	// check to see if group is initialized
-	if (blockInitialized[block][subblock] == false)
+//	if (blockInitialized[block][subblock] == false)
+    if (subblock != oldSubblock)
 	{
-		blockInitialized[block][subblock] = true;
+//		blockInitialized[block][subblock] = true;
 		// close previous subblock
 		writer.endGroupTES4(0);
 		// if subblock == 0, then close prior block as well
-		if (subblock == 0)
+//        if (subblock == 0)
+        if (block != oldBlock)
 		{
 			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
@@ -824,6 +871,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// start new subblock
 		writer.startGroupTES4(0, 5);
 	}
+    oldBlock = block;
+    oldSubblock = subblock;
 
 	//============================================================================================================
 
@@ -958,6 +1007,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// third one is the top Group
 		writer.endGroupTES4("WRLD");
 	}
+    Blocks.pop_back();
 
 }
 

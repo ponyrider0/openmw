@@ -252,13 +252,22 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+    class CellExportData
+    {
+    public:
+        int block;
+        int subblock;
+        uint32_t formID;
+        CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr;
+    };
+    
 	class ExportInteriorCellCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
-		bool blockInitialized[10][10];
-		std::vector< std::pair< uint32_t, CSMWorld::Record<CSMWorld::Cell>* > > Blocks[10][10];
-		int mNumCells;
+        int mNumCells;
+        bool blockInitialized[10][10];
+        std::vector< std::pair< uint32_t, CSMWorld::Record<CSMWorld::Cell>* > > Blocks[10][10];
 
 	public:
 
@@ -275,9 +284,11 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		bool blockInitialized[10][10];
-		std::vector< std::pair< uint32_t, CSMWorld::Record<CSMWorld::Cell>* > > Blocks[10][10];
-		int mNumCells;
+        int mNumCells;
+//		bool blockInitialized[10][10];
+        int oldBlock;
+        int oldSubblock;
+		std::vector< CellExportData > Blocks;
 
 	public:
 
