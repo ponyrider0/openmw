@@ -133,7 +133,8 @@ struct Cell
   void save(ESMWriter &esm, bool isDeleted = false) const;
   void exportTES3(ESMWriter &esm, bool isDeleted = false) const;
   void exportTES4(ESMWriter &esm) const;
-
+  void exportSubCellTES4(ESMWriter &esm, int subX, int subY, int offset) const;
+    
   bool isExterior() const
   {
       return !(mData.mFlags & Interior);

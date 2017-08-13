@@ -2,6 +2,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <list>
 
 #include <boost/concept_check.hpp>
@@ -237,8 +238,51 @@ namespace ESM
 
 	void Cell::exportTES4(ESMWriter &esm) const
 	{
+        // First: If Exterior, then Divide Cell into quarters and repeat rest of steps for all four quarters
+        
+        if (isExterior())
+        {
+            // find base x,y (multiply by 2)
+            int BaseX = mData.mX * 2;
+            int BaseY = mData.mY * 2;
+            
+            // PSEUDO-CODE: iterate through four quarters:
+            // for (x=0; x<2; x++)
+            //      for (y=0; y<2; y++)
+            //          do(BaseX+x,BaseY+y)
+            for (int x=0, offset=0; x < 2; x++)
+            {
+                for (int y=0; y < 2; y++)
+                {
+                    exportSubCellTES4(esm, BaseX+x, BaseY+y, offset++);
+                }
+            }
+            
+        }
+        else
+        {
+        //    do(cell);
+        }
+    }
+    
+    void Cell::exportSubCellTES4(ESMWriter &esm, int subX, int subY, int offset) const
+    {
         // Write EDID (TES4-style editor string identifier)
 		std::string *newEDID = esm.generateEDIDTES4(mName, true);
+        char *charbuf = new char[newEDID->size()+10];
+        
+        int len = snprintf(charbuf, newEDID->size()+10, "%s%02d", newEDID->c_str(), offset);
+        if (newEDID->compare("")!=0 && isExterior())
+        {
+            if ((len < 0) || (len > newEDID->size()+10))
+            {
+                throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
+            }
+            charbuf[len] = '\0';
+            delete newEDID;
+            newEDID = new std::string(charbuf);
+        }
+        std::cout << "EDID=[" << *newEDID << "]; ";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(*newEDID);
 		esm.endSubRecordTES4("EDID");
@@ -281,11 +325,31 @@ namespace ESM
         esm.endSubRecordTES4("XCLL");
 
         // Write XCLW (water level)
-        esm.startSubRecordTES4("XCLW");
-        esm.writeT<float>(mWater);
-        esm.endSubRecordTES4("XCLW");
+        if (mData.mFlags & HasWater)
+        {
+            esm.startSubRecordTES4("XCLW");
+            esm.writeT<float>(mWater);
+            esm.endSubRecordTES4("XCLW");
+        }
         
+        // Write XCLC (X,Y coordinates)
+        if (isExterior())
+        {
+            esm.startSubRecordTES4("XCLC");
+            esm.writeT<long>(subX);
+            esm.writeT<long>(subY);
+            esm.endSubRecordTES4("XCLC");
+            std::cout << "X,Y=[" << (subX) <<"," << (subY) << "];";
+        }
         
+        // XCLR (Region formID) == must cross-ref with Region StringID
+        if (isExterior())
+        {
+            std::cout << "Region=[" << mRegion << "]";
+        }
+        
+        // XOWN == ?? morrowind equivalent unknown
+        std::cout << std::endl;
 	}
 
     void Cell::restore(ESMReader &esm, int iCtx) const
