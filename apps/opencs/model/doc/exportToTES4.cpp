@@ -700,9 +700,9 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 	for (int i=0; i < collectionSize; i++)
 	{
 		CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr = &mDocument.getData().getCells().getNthRecord(i);
-		bool interior = cellRecordPtr->get().mId.substr (0, 1)!="#";
+		bool exterior = cellRecordPtr->get().mId.substr (0, 1)=="#";
 
-		if (interior == false)
+		if (exterior == true)
 		{
 			// add to one of 100 subblocks
 			uint32_t formID = writer.getNextAvailableFormID();
@@ -788,9 +788,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startRecordTES4("CELL", flags, 0x01380001, "");
 		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group
-//		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
+		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
 		// Create CELL dummy persistent children group
-//		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
+		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
 
 
 		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
@@ -801,10 +801,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		blockInitialized[0][0] = true;
 
 		// HACK for LVLC -- place all refs in single exterior CELL
-		writer.startRecordTES4("CELL", 0, 0x01380002, "");
-		writer.endRecordTES4("CELL");
-		writer.startGroupTES4(0x01380002, 6); // top Cell Children Group
-		writer.startGroupTES4(0x01380002, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+//		writer.startRecordTES4("CELL", 0, 0x01380002, "");
+//		writer.endRecordTES4("CELL");
+//		writer.startGroupTES4(0x01380002, 6); // top Cell Children Group
+//		writer.startGroupTES4(0x01380002, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 	}
 
@@ -813,16 +813,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	{
 		blockInitialized[block][subblock] = true;
 		// close previous subblock
-//		writer.endGroupTES4(0);
+		writer.endGroupTES4(0);
 		// if subblock == 0, then close prior block as well
 		if (subblock == 0)
 		{
-//			writer.endGroupTES4(0);
+			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
-//			writer.startGroupTES4(0, 4);
+			writer.startGroupTES4(0, 4);
 		}
 		// start new subblock
-//		writer.startGroupTES4(0, 5);
+		writer.startGroupTES4(0, 5);
 	}
 
 	//============================================================================================================
@@ -856,7 +856,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		{
 			throw std::runtime_error ("export: cellFormID is 0");
 		}
-/*
+
 		uint32_t flags=0;
 		if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x01;
@@ -871,13 +871,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 		// Cell record ends before creation of child records (which are full records and not subrecords)
 		writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
-*/
+
 		// write references
 		if (references!=mState.getSubRecords().end())
 		{
 			// Create Cell children group
-//			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
-//			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
+			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 				iter != references->second.rend(); ++iter)
@@ -906,15 +906,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-//					if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
-					if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)) )
+					if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+//					if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)) )
 					{
 						std::string sSIG;
 						switch (baseRefIndex.second)
 						{
-//						case CSMWorld::UniversalId::Type::Type_Npc:
-//							sSIG = "ACHR";
-//							break;
+						case CSMWorld::UniversalId::Type::Type_Npc:
+							sSIG = "ACHR";
+							break;
 						case CSMWorld::UniversalId::Type::Type_Creature:
 							sSIG = "ACRE";
 							break;
@@ -927,7 +927,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 							refFlags |= 0x01;
 						// start record
-
 						writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
 						refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 						// end record
@@ -938,8 +937,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 			}
 			// close cell children group
-//			writer.endGroupTES4(cellFormID); // cell children subgroup
-//			writer.endGroupTES4(cellFormID); // 6 top cell children group
+			writer.endGroupTES4(cellFormID); // cell children subgroup
+			writer.endGroupTES4(cellFormID); // 6 top cell children group
 		}
 
 	}
@@ -947,8 +946,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	if (stage == (mNumCells-1))
 	{
 		// <***** HACK for LVLC ****
-		writer.endGroupTES4(0x01380002); // cell children subgroup
-		writer.endGroupTES4(0x01380002); // 6 top cell children group
+//		writer.endGroupTES4(0x01380002); // cell children subgroup
+//		writer.endGroupTES4(0x01380002); // 6 top cell children group
 		// ***** HACK for LVLC ****>
 
 		// two for the block-subblock
