@@ -10,7 +10,6 @@
 #include "../world/idcollection.hpp"
 
 #include "document.hpp"
-//#include "savingstages.hpp"
 #include "exportToTES3.hpp"
 
 CSMDoc::ExportToTES3::ExportToTES3() : ExportToBase()

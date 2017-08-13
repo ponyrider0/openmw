@@ -13,15 +13,8 @@ namespace CSMDoc
 
     class ExportToTES3 : public ExportToBase
     {
-//		Q_OBJECT
-
-//	public:
-//		Document *mDocument;
-//		Operation *mExportOperation;
-//		SavingState *mState;
 	public:
         ExportToTES3();
-//		void initializeExporter(Document *document, const boost::filesystem::path projectPath, ToUTF8::FromType encoding);
 		void defineExportOperation(Document& currentDoc, SavingState& currentSave);
 
     };
