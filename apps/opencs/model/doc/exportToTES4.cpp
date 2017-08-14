@@ -702,17 +702,20 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 		if (exterior == true)
 		{
             // create space for new entry and copy cellRecord pointer
-            CellExportData *exportData = new CellExportData();
+			std::cout << "Creating CellExport Data: i=[" << i << "] ";
+            CellExportData *exportData = new CellExportData;
             exportData->cellRecordPtr = cellRecordPtr;
 
 			// assign formID
 			int formID = writer.getNextAvailableFormID();
 			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
 			exportData->formID = formID;
+			std::cout << "formID[" << formID << "] ";
 
             // translate to Oblivion coords, then calculate block and subblock
             int baseX = cellRecordPtr->get().mData.mX*2;
             int baseY = cellRecordPtr->get().mData.mY*2;
+			std::cout << "X,Y[" << baseX << "," << baseY << "] ";
 			
 			// calculate block and subblock coordinates
 			// Thanks to Zilav's forum posting for the Oblivion/Fallout Grid algorithm
@@ -741,36 +744,44 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 			exportData->blockY = blockY;
 			exportData->subblockX = subblockX;
 			exportData->subblockY = subblockY;
+			std::cout << "Block=[" << blockX << "," << blockY << "] ";
+			std::cout << "Subblock=[" << subblockX << "," << subblockY << "] ";
 
 			mCellExportList.push_back(*exportData);
 
 			// retrieve the block from the worldgrid
 			if (WorldGrid.find(blockX) == WorldGrid.end() || WorldGrid[blockX].find(blockY) == WorldGrid[blockX].end())
 			{
-//				BlockT newBlock* = new BlockT;
+				std::cout << "New Block... (" << WorldGrid.size() << ") ";
 				WorldGrid[blockX][blockY] = new BlockT;
 			}
 			BlockT *block = WorldGrid[blockX][blockY];
 			// retrieve subblock from block
-			if (block->find(subblockX) == block->end() || block[subblockX].find(subblockY) == block[subblockX].end())
+			if (block->find(subblockX) == block->end() || (*block)[subblockX].find(subblockY) == (*block)[subblockX].end())
 			{
-//				SubBlockT newSubblock* = new SubBlockT;
+				std::cout << "New Sub-Subblock... (" << block->size() << ") ";
 				(*block)[subblockX][subblockY] = new SubBlockT;
 			}
 			SubBlockT *subblock = (*block)[subblockX][subblockY];
 			// map cell to coord in subblock
+			if ((*subblock)[baseX].find(baseY) != (*subblock)[baseX].end())
+			{
+				exit(-1);
+				throw std::runtime_error("bad programming of subblocks");
+			}
 			(*subblock)[baseX][baseY] = exportData;
 
 			// record the block and subblock used in a separate list
-			GridTrackT gridTrack;
-			gridTrack.blockX = blockX;
-			gridTrack.blockY = blockY;
-			gridTrack.subblockX = subblockX;
-			gridTrack.subblockY = subblockY;
-			GridTracker.push_back(gridTrack);
+			GridTrackT *gridTrack = new GridTrackT;
+			gridTrack->blockX = blockX;
+			gridTrack->blockY = blockY;
+			gridTrack->subblockX = subblockX;
+			gridTrack->subblockY = subblockY;
+			GridTracker.push_back(*gridTrack);
+			std::cout << std::endl;
 			
-            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; ";
-			std::cout << "Block[" << blockX << "," << blockY << "][" << subblockX << "," << subblockY << "]" << std::endl;
+//            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; ";
+//			std::cout << "Block[" << blockX << "," << blockY << "][" << subblockX << "," << subblockY << "]" << std::endl;
 		}
 	}
 
@@ -822,7 +833,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	// retrieve a gridtrack from the tracker and process a cell
 	if (stage == 0)
 	{
-		GridTrackT gridTrack = GridTracker.back();
+		GridTrackT gridTrack = GridTracker[0];
 		blockX = gridTrack.blockX;
 		blockY = gridTrack.blockY;
 		subblockX = gridTrack.subblockX;
@@ -831,6 +842,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		oldBlockY = blockY;
 		oldSubblockX = subblockX;
 		oldSubblockY = subblockY;
+		cellCount = 0;
 	}
 
 	blockX = oldBlockX;
@@ -845,32 +857,49 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		BlockT *block = WorldGrid[blockX][blockY];
 		subblock = (*block)[subblockX][subblockY];
 		// check if any cells are left
-		if (subblock->size() == 0)
+		if (subblock->begin() == subblock->end())
 		{
+			cellCount = 0;
 			// remove gridtrack and try again
-			GridTracker.pop_back();
+//			std::cout << "no more cells in subblock, getting next GridTracker... ";
+			if (GridTracker.begin() == GridTracker.end())
+				throw std::runtime_error("exterior cell exporter broke!");
 			// retrieve a gridtrack from the tracker and process a cell
-			GridTrackT gridTrack = GridTracker.back();
+			GridTrackT gridTrack = GridTracker[1];
 			blockX = gridTrack.blockX;
 			blockY = gridTrack.blockY;
 			subblockX = gridTrack.subblockX;
 			subblockY = gridTrack.subblockY;
+//			std::cout << "trying block[" << blockX << "," << blockY << "] subblock[" << subblockX << "," << subblockY << "]" << std::endl;
+			GridTracker.erase(GridTracker.begin());
+		}
+		else if (subblock->begin()->second.begin() != subblock->begin()->second.end())
+		{
+			cellFound = true;
+//			std::cout << "get the first subblock" << std::endl;
+			exportData = subblock->begin()->second.begin()->second;
 		}
 		else
 		{
-			cellFound = true;
-			exportData = subblock->begin()->second.begin()->second;
+			// delete prior column and start the next
+			subblock->erase(subblock->begin());
 		}
+		
 	}
 	
 //    exportData = &mCellExportList.back();
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
-    blockX = exportData->blockX;
-    blockY = exportData->blockY;
-    subblockX = exportData->subblockX;
-    subblockY = exportData->subblockY;
-    
+//    blockX = exportData->blockX;
+//    blockY = exportData->blockY;
+//    subblockX = exportData->subblockX;
+//    subblockY = exportData->subblockY;
+
+	std::cout << "Exporting Exterior Cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
+	std::cout << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
+	std::cout << "CellCount=[" << ++cellCount << "]" << std::endl;
+	
+	
 	if (cellRecordPtr == 0)
 	{
 		// throw exception
@@ -878,6 +907,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	}
 
 	// if stage == 0, then add the group record first
+	//*********************START WORLD GROUP HEADER**************************/
 	if (stage == 0)
 	{
 		std::string sSIG="WRLD";
@@ -921,6 +951,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //		writer.startGroupTES4(0x01380002, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 	}
+	//*********************END WORLD GROUP HEADER**************************/
 
 	// check to see if group is initialized
 //	if (blockInitialized[block][subblock] == false)
@@ -997,6 +1028,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
 			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
+			std::cout << "Export the Cell's Children" << std::endl;
 			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 				iter != references->second.rend(); ++iter)
 			{
@@ -1077,7 +1109,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.endGroupTES4("WRLD");
 	}
 //    mCellExportList.pop_back();
+	std::cout << "Erase the first sub-block" << std::endl;
 	subblock->begin()->second.erase( subblock->begin()->second.begin() );
+	
 }
 
 

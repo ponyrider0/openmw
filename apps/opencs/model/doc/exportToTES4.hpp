@@ -285,6 +285,7 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
         int mNumCells;
+		int cellCount;
 		int oldBlockX, oldBlockY;
 		int oldSubblockX, oldSubblockY;
         std::vector<CellExportData> mCellExportList;
