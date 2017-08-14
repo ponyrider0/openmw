@@ -113,6 +113,8 @@ struct Land
 
     void load(ESMReader &esm, bool &isDeleted);
     void save(ESMWriter &esm, bool isDeleted = false) const;
+	void exportTESx(ESMWriter &esm, int export_type) const;
+	void exportSubCellTES4(ESMWriter &esm, int offsetX, int offsetY) const;
 
     void blank() {}
 

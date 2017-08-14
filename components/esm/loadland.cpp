@@ -175,6 +175,144 @@ namespace ESM
 
     }
 
+	void Land::exportSubCellTES4(ESMWriter &esm, int offsetX, int offsetY) const
+	{
+		int i, j;
+		const LandData *landData;
+
+		// Load LandData once and pass off to each call to exportSubCell
+//		landData = getLandData(Land::DATA_VNML|Land::DATA_VHGT|Land::DATA_VCLR|Land::DATA_VTEX);
+	
+		// DATA 4-bytes
+		esm.startSubRecordTES4("DATA");
+		unsigned char flags=0;
+		esm.writeT<unsigned char>(flags); // bitmask of subrecords present
+		esm.writeT<unsigned char>(0);
+		esm.writeT<unsigned char>(0);
+		esm.writeT<unsigned char>(0);
+		esm.endSubRecordTES4("DATA");
+		
+		// VNML 33x33 grid of 3-bytes vertex normals
+		landData = getLandData(Land::DATA_VNML);
+		if (landData != 0)
+		{
+			esm.startSubRecordTES4("VNML");
+			for (int u=0; u < 33; u++)
+			{
+				for (int v=0; v < 33; v++)
+				{
+					// convert 65x64 to 33x33
+					i = u + (32 * offsetX);
+					j = v + (32 * offsetY);
+					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j]); // X
+					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j+1]); // Y
+					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j+2]); // Z
+				}
+			}
+			esm.endSubRecordTES4("VNML");
+		}
+		
+		// VHGT gradient of 33x33 grid of height data,
+		landData = getLandData(Land::DATA_VHGT);
+		if (landData != 0)
+		{
+			unsigned char deltaVal;
+			float oldVal = landData->mHeightOffset;
+			esm.startSubRecordTES4("VHGT");
+			esm.writeT<float>(landData->mHeightOffset); // 32-bit float (Offset)
+			for (int u=0; u < 33; u++)
+			{
+				for (int v=0; v < 33; v++)
+				{
+					// convert 65x64 to 33x33
+					i = u + (32 * offsetX);
+					j = v + (32 * offsetY);
+					float newVal = landData->mHeights[(i*65)+j];
+					deltaVal = newVal - oldVal;
+					esm.writeT<unsigned char>(deltaVal); // 1 byte for each point
+					newVal = oldVal;
+				}
+			}
+			// final 3 bytes unknown
+			esm.writeT<unsigned char>(0); // X
+			esm.writeT<unsigned char>(0); // Y
+			esm.writeT<unsigned char>(0); // Z
+			esm.endSubRecordTES4("VHGT");
+		}
+		
+		// VCLR 33x33 grid of 24-bit Vertex Color
+		landData = getLandData(Land::DATA_VCLR);
+		if (landData != 0)
+		{
+			esm.startSubRecordTES4("VCLR");
+			for (int u=0; u < 33; u++)
+			{
+				for (int v=0; v < 33; v++)
+				{
+					// convert 65x64 to 33x33
+					i = u + (32 * offsetX);
+					j = v + (32 * offsetY);
+					esm.writeT<unsigned char>(landData->mColours[(i*65)+j]); // R
+					esm.writeT<unsigned char>(landData->mColours[(i*65)+j+1]); // G
+					esm.writeT<unsigned char>(landData->mColours[(i*65)+j+2]); // B
+				}
+			}
+			esm.endSubRecordTES4("VCLR");
+		}
+
+/*
+		// BTXT, Base Texture (up to 4 formID+quadrant pairs)
+		esm.startSubRecordTES4("BTXT");
+		esm.writeT<uint32_t>(0); // formID
+		esm.writeT<unsigned char>(0); // quadrant
+		esm.writeT<unsigned char>(0); // unk?
+		esm.writeT<unsigned char>(0); // unk?
+		esm.writeT<unsigned char>(0); // unk?
+		esm.endSubRecordTES4("BTXT");
+		
+		// ATXT, Additional Texture
+		esm.startSubRecordTES4("ATXT");
+		esm.writeT<uint32_t>(0); // formID
+		esm.writeT<unsigned char>(0); // quadrant
+		esm.writeT<unsigned char>(0); // unk
+		esm.writeT<uint16_t>(0); // Layer
+		esm.endSubRecordTES4("ATXT");
+		
+		// VTXT, Additional Texture Opacity
+		esm.startSubRecordTES4("VTXT");
+		esm.writeT<uint16_t>(0); // Position
+		esm.writeT<unsigned char>(0); // quadrant
+		esm.writeT<unsigned char>(0); // unk
+		esm.writeT<float>(0); // 32bit-float Opacity
+		esm.endSubRecordTES4("VTXT");
+*/
+		
+		// VTEX, LTEX formIDs
+		landData = getLandData(Land::DATA_VTEX);
+		if (landData != 0)
+		{
+			esm.startSubRecordTES4("VTEX");
+			// multiple formIDs
+//			esm.writeT<uint32_t>(0); // formID
+			// ....
+			esm.endSubRecordTES4("VTEX");
+		}
+	
+	}
+
+	void Land::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		int x, y;
+
+		for (x=0; x < 2; x++)
+		{
+			for (y=0; y < 2; y++)
+			{
+				exportSubCellTES4(esm, x, y);
+			}
+		}
+	}
+	
     void Land::loadData(int flags, LandData* target) const
     {
         // Create storage if nothing is loaded
