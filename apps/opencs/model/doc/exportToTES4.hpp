@@ -255,8 +255,8 @@ namespace CSMDoc
     class CellExportData
     {
     public:
-        int block;
-        int subblock;
+        int blockX, blockY;
+        int subblockX, subblockY;
         uint32_t formID;
         CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr;
     };
@@ -285,10 +285,14 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
         int mNumCells;
-//		bool blockInitialized[10][10];
-        int oldBlock;
-        int oldSubblock;
-		std::vector< CellExportData > Blocks;
+		int oldBlockX, oldBlockY;
+		int oldSubblockX, oldSubblockY;
+        std::vector<CellExportData> mCellExportList;
+        typedef std::map<int, std::map<int, CellExportData* > > SubBlockT;
+        typedef std::map<int, std::map<int, SubBlockT* > > BlockT;
+		std::map<int, std::map<int, BlockT* > > WorldGrid;
+		typedef struct { int blockX; int blockY; int subblockX; int subblockY; } GridTrackT;
+		std::vector<GridTrackT> GridTracker;
 
 	public:
 

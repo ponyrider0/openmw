@@ -17,10 +17,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
-
-//	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
-
 /*
+	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
+
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 		(mDocument.getData().getGmsts(), currentSave));
 
@@ -65,20 +64,19 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
 		(mDocument.getData().getStartScripts(), currentSave));
-
+*/
 	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
 
-	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, false));
+//	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, false));
 
-	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
+//	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
-	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
+//	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, currentSave));
+//	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, currentSave));
 
 	// references Land Textures
-	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
-*/
+//	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
@@ -638,15 +636,14 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     refFormID = writer.reserveFormID(refFormID, refRecord.mId);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-//						if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
-                    if ((baseRefID != 0) && ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)) )
+                    if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
                     {
                         std::string sSIG;
                         switch (baseRefIndex.second)
                         {
-//							case CSMWorld::UniversalId::Type::Type_Npc:
-//								sSIG = "ACHR";
-//								break;
+                        case CSMWorld::UniversalId::Type::Type_Npc:
+                            sSIG = "ACHR";
+                            break;
                         case CSMWorld::UniversalId::Type::Type_Creature:
                             sSIG = "ACRE";
                             break;
@@ -693,11 +690,10 @@ CSMDoc::ExportExteriorCellCollectionTES4Stage::ExportExteriorCellCollectionTES4S
 
 int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 {
-    int subblock, block;
+    int blockX, blockY, subblockX, subblockY;
 	ESM::ESMWriter& writer = mState.getWriter();
 	int collectionSize = mDocument.getData().getCells().getSize();
 
-	// look through all cells and add exterior cells to appropriate block (32x32 quads aka 16x16 cells) and sub-block (8x8 quads aka 4x4 cells) -- each cell is 2x2 quads
 	for (int i=0; i < collectionSize; i++)
 	{
 		CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr = &mDocument.getData().getCells().getNthRecord(i);
@@ -705,50 +701,76 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 
 		if (exterior == true)
 		{
-			// add to one of block=256, subblock=64
             // create space for new entry and copy cellRecord pointer
             CellExportData *exportData = new CellExportData();
             exportData->cellRecordPtr = cellRecordPtr;
 
+			// assign formID
+			int formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
+			exportData->formID = formID;
+
             // translate to Oblivion coords, then calculate block and subblock
             int baseX = cellRecordPtr->get().mData.mX*2;
             int baseY = cellRecordPtr->get().mData.mY*2;
-            block = (baseX/32);
-            if ((baseX%32) != 0)
+			
+			// calculate block and subblock coordinates
+			// Thanks to Zilav's forum posting for the Oblivion/Fallout Grid algorithm
+			subblockX = baseX/8;
+            if ((baseX < 0) && ((baseX % 8) != 0))
             {
-                block++;
+				subblockX--;
             }
-            int block_mult = baseY/32;
-            if ((baseY%32) != 0)
-            {
-                if (block_mult != 1)
-                    block_mult++;
-            }
-            block *= block_mult;
+			blockX = subblockX/4;
+			if ((subblockX < 0) && ((subblockX % 4) != 0))
+			{
+				blockX--;
+			}
 
-            subblock = (baseX/8);
-            if ((baseX%8) != 0)
-            {
-                subblock++;
-            }
-            block_mult = baseY/8;
-            if ((baseY%8) != 0)
-            {
-                if (block_mult != 1)
-                    block_mult++;
-            }
-            subblock *= block_mult;
-            
-            exportData->block = block;
-            exportData->subblock = subblock;
-            
-            // assign formID
-            int formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
-            exportData->formID = formID;
+			subblockY = baseY/8;
+			if ((baseY < 0) && ((baseY % 8) != 0))
+			{
+				subblockY--;
+			}
+			blockY = subblockY/4;
+			if ((subblockY < 0) && ((subblockY % 4) != 0))
+			{
+				blockY--;
+			}
+			exportData->blockX = blockX;
+			exportData->blockY = blockY;
+			exportData->subblockX = subblockX;
+			exportData->subblockY = subblockY;
 
-            Blocks.push_back(*exportData);
-            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; Block[" << block << "][" << subblock << "]" << std::endl;
+			mCellExportList.push_back(*exportData);
+
+			// retrieve the block from the worldgrid
+			if (WorldGrid.find(blockX) == WorldGrid.end() || WorldGrid[blockX].find(blockY) == WorldGrid[blockX].end())
+			{
+//				BlockT newBlock* = new BlockT;
+				WorldGrid[blockX][blockY] = new BlockT;
+			}
+			BlockT *block = WorldGrid[blockX][blockY];
+			// retrieve subblock from block
+			if (block->find(subblockX) == block->end() || block[subblockX].find(subblockY) == block[subblockX].end())
+			{
+//				SubBlockT newSubblock* = new SubBlockT;
+				(*block)[subblockX][subblockY] = new SubBlockT;
+			}
+			SubBlockT *subblock = (*block)[subblockX][subblockY];
+			// map cell to coord in subblock
+			(*subblock)[baseX][baseY] = exportData;
+
+			// record the block and subblock used in a separate list
+			GridTrackT gridTrack;
+			gridTrack.blockX = blockX;
+			gridTrack.blockY = blockY;
+			gridTrack.subblockX = subblockX;
+			gridTrack.subblockY = subblockY;
+			GridTracker.push_back(gridTrack);
+			
+            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; ";
+			std::cout << "Block[" << blockX << "," << blockY << "][" << subblockX << "," << subblockY << "]" << std::endl;
 		}
 	}
 
@@ -762,7 +784,7 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 //	for (int i=0; i < 256; i++)
 //		for (int j=0; j < 64; j++)
 //			mNumCells += Blocks[i][j].size();
-    mNumCells = Blocks.size();
+    mNumCells = mCellExportList.size();
     
 	return mNumCells;
 
@@ -774,8 +796,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	//	CSMWorld::Record<CSMWorld::Cell>& cell = mDocument.getData().getCells().getRecord (stage);
     CellExportData *exportData;
     CSMWorld::Record<CSMWorld::Cell>* cellRecordPtr=0;
-	int block, subblock;
+	int blockX, blockY, subblockX, subblockY;
 	uint32_t cellFormID;
+	SubBlockT *subblock;
 
 	// iterate through Blocks[][] starting with 0,0 and sequentially remove each Cell until all are gone
 /*
@@ -796,11 +819,57 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	}
 */
 
-    exportData = &Blocks.back();
+	// retrieve a gridtrack from the tracker and process a cell
+	if (stage == 0)
+	{
+		GridTrackT gridTrack = GridTracker.back();
+		blockX = gridTrack.blockX;
+		blockY = gridTrack.blockY;
+		subblockX = gridTrack.subblockX;
+		subblockY = gridTrack.subblockY;
+		oldBlockX = blockX;
+		oldBlockY = blockY;
+		oldSubblockX = subblockX;
+		oldSubblockY = subblockY;
+	}
+
+	blockX = oldBlockX;
+	blockY = oldBlockY;
+	subblockX = oldSubblockX;
+	subblockY = oldSubblockY;
+	
+	bool cellFound=false;
+	while (cellFound == false)
+	{
+		// retrieve block and subblock groups from the current coordinates
+		BlockT *block = WorldGrid[blockX][blockY];
+		subblock = (*block)[subblockX][subblockY];
+		// check if any cells are left
+		if (subblock->size() == 0)
+		{
+			// remove gridtrack and try again
+			GridTracker.pop_back();
+			// retrieve a gridtrack from the tracker and process a cell
+			GridTrackT gridTrack = GridTracker.back();
+			blockX = gridTrack.blockX;
+			blockY = gridTrack.blockY;
+			subblockX = gridTrack.subblockX;
+			subblockY = gridTrack.subblockY;
+		}
+		else
+		{
+			cellFound = true;
+			exportData = subblock->begin()->second.begin()->second;
+		}
+	}
+	
+//    exportData = &mCellExportList.back();
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
-    block = exportData->block;
-    subblock = exportData->subblock;
+    blockX = exportData->blockX;
+    blockY = exportData->blockY;
+    subblockX = exportData->subblockX;
+    subblockY = exportData->subblockY;
     
 	if (cellRecordPtr == 0)
 	{
@@ -855,14 +924,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 	// check to see if group is initialized
 //	if (blockInitialized[block][subblock] == false)
-    if (subblock != oldSubblock)
+    if ((subblockX != oldSubblockX) || (subblockY != oldSubblockY))
 	{
 //		blockInitialized[block][subblock] = true;
 		// close previous subblock
 		writer.endGroupTES4(0);
 		// if subblock == 0, then close prior block as well
 //        if (subblock == 0)
-        if (block != oldBlock)
+        if ((blockX != oldBlockX) || (blockY != oldBlockY))
 		{
 			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
@@ -871,8 +940,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// start new subblock
 		writer.startGroupTES4(0, 5);
 	}
-    oldBlock = block;
-    oldSubblock = subblock;
+    oldBlockX = blockX; oldBlockY = blockY;
+    oldSubblockX = subblockX; oldSubblockY = subblockY;
 
 	//============================================================================================================
 
@@ -1007,8 +1076,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// third one is the top Group
 		writer.endGroupTES4("WRLD");
 	}
-    Blocks.pop_back();
-
+//    mCellExportList.pop_back();
+	subblock->begin()->second.erase( subblock->begin()->second.begin() );
 }
 
 
