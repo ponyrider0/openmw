@@ -51,6 +51,8 @@ namespace CSMDoc
             ///< Currently saving project file? (instead of content file)
 
             std::map<std::string, std::deque<int> >& getSubRecords();
+			std::vector<int> mPersistentWorldRefs; // record ID, list of subrecords
+		
     };
 
 

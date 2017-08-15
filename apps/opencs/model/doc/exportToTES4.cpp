@@ -84,12 +84,10 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
-
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
 	// close file and clean up
 	appendStage (new CloseExportTES4Stage (currentSave));
-
 	appendStage (new FinalizeExportTES4Stage (currentDoc, currentSave));
 
 }
@@ -151,7 +149,7 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 		{
 			std::string name = iter->filename().string();
 			uint64_t size = boost::filesystem::file_size (*iter);
-
+			
 //			mState.getWriter().addMaster (name, size);
 		}
 	}
@@ -420,6 +418,19 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 			std::ostringstream stream;
 			if (!interior)
 			{
+				// TODO: Collect NPC refs
+				// if NPC in exterior worldspace
+				// then add to a global worldspace dummy cell
+				// and skip to the next loop iteration
+				uint32_t baseRefID = mState.getWriter().crossRefStringID(record.get().mRefID);
+				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
+				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
+				{
+					std::cout << "Collecting Persistent NPC reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
+					mState.mPersistentWorldRefs.push_back(i);
+					continue;
+				}
+
 				// recalculate the ref's cell location
 				std::pair<int, int> index = record.get().getCellIndex();
 				stream << "#" << index.first << " " << index.second;
@@ -636,7 +647,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     refFormID = writer.reserveFormID(refFormID, refRecord.mId);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-                    if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+                    if ( (baseRefID != 0) && ( (baseRefIndex.second ==
+						CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
                     {
                         std::string sSIG;
                         switch (baseRefIndex.second)
@@ -702,7 +716,7 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 		if (exterior == true)
 		{
             // create space for new entry and copy cellRecord pointer
-			std::cout << "Creating CellExport Data: i=[" << i << "] ";
+			std::cout << "Collecting CellExport Data: i=[" << i << "] ";
             CellExportData *exportData = new CellExportData;
             exportData->cellRecordPtr = cellRecordPtr;
 
@@ -800,6 +814,99 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	uint32_t cellFormID;
 	SubBlockT *subblock;
 
+
+	// if stage == 0, then add the group record first
+	//*********************START WORLD GROUP HEADER**************************/
+	if (stage == 0)
+	{
+		std::string sSIG="WRLD";
+		writer.startGroupTES4(sSIG, 0); // Top GROUP
+		
+		// Create WRLD record
+		writer.reserveFormID(0x01380000, "WrldMorrowind");
+		writer.startRecordTES4("WRLD", 0, 0x01380000, "WrldMorrowind");
+		writer.startSubRecordTES4("EDID");
+		writer.writeHCString("WrldMorrowind");
+		writer.endSubRecordTES4("EDID");
+		writer.startSubRecordTES4("FULL");
+		writer.writeHCString("Morrowind");
+		writer.endSubRecordTES4("FULL");
+		writer.endRecordTES4("WRLD");
+		
+		// Create WRLD Children Group
+		writer.startGroupTES4(0x01380000, 1);
+		
+		// Create CELL dummy record
+		uint32_t flags=0x400;
+		writer.startRecordTES4("CELL", flags, 0x01380001, "");
+		writer.endRecordTES4("CELL");
+		// Create CELL dummy top children group
+		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
+		// Create CELL dummy persistent children group
+		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
+		
+		// TODO: create persistent group, add persistent refs
+		//		writer.startGroupTES4(cellFormID, 8); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+		for (std::vector<int>::const_iterator refindex_iter = mState.mPersistentWorldRefs.begin();
+			 refindex_iter != mState.mPersistentWorldRefs.end(); refindex_iter++)
+		{
+			const CSMWorld::Record<CSMWorld::CellRef>& ref =
+			mDocument.getData().getReferences().getRecord (*refindex_iter);
+			
+			CSMWorld::CellRef refRecord = ref.get();
+			
+			uint32_t refFormID = writer.getNextAvailableFormID();
+			refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
+			if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+									 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+			{
+				std::string sSIG;
+				switch (baseRefIndex.second)
+				{
+					case CSMWorld::UniversalId::Type::Type_Npc:
+						sSIG = "ACHR";
+						break;
+					case CSMWorld::UniversalId::Type::Type_Creature:
+						sSIG = "ACRE";
+						break;
+					case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+					default:
+						sSIG = "REFR";
+						break;
+				}
+				uint32_t refFlags=0;
+				if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+					refFlags |= 0x01;
+				// start record
+				writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+				refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+				// end record
+				writer.endRecordTES4(sSIG);
+				std::cout << "writing persistent record: type=[" << sSIG << "] refStringID=[" << refRecord.mId << "] baseEDID=[" << refRecord.mRefID << "]" << std::endl;
+			}
+			
+		}
+		writer.endGroupTES4(0x01380001); // (8) cell persistent children subgroup
+		writer.endGroupTES4(0x01380001); // (6) cell persistent children subgroup
+		
+		// TODO: write out persistent refs (aka NPCs) here...
+		
+		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
+		writer.startGroupTES4(0x00000000, 4);
+		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
+		writer.startGroupTES4(0x00000000, 5);
+		// document creation of first subblock
+		//		blockInitialized[0][0] = true;
+		
+		
+	}
+	
+	//*********************END WORLD GROUP HEADER**************************/
+
+
+	//********************BEGIN PROCESSING EXTERIOR CELLS*****************/
 	// retrieve a gridtrack from the tracker and process a cell
 	if (stage == 0)
 	{
@@ -861,7 +968,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
 
-	std::cout << "Exporting Exterior Cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
+	std::cout << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
 	std::cout << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
 	std::cout << "CellCount=[" << ++cellCount << "]" << std::endl;
 	
@@ -871,50 +978,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// throw exception
 		throw std::runtime_error ("export error: cellRecordPtr uninitialized");
 	}
-
-	// if stage == 0, then add the group record first
-	//*********************START WORLD GROUP HEADER**************************/
-	if (stage == 0)
-	{
-		std::string sSIG="WRLD";
-		writer.startGroupTES4(sSIG, 0); // Top GROUP
-
-		// Create WRLD record
-		writer.reserveFormID(0x01380000, "WrldMorrowind");
-		writer.startRecordTES4("WRLD", 0, 0x01380000, "WrldMorrowind");
-		writer.startSubRecordTES4("EDID");
-		writer.writeHCString("WrldMorrowind");
-		writer.endSubRecordTES4("EDID");
-		writer.startSubRecordTES4("FULL");
-		writer.writeHCString("Morrowind");
-		writer.endSubRecordTES4("FULL");
-		writer.endRecordTES4("WRLD");
-		
-		// Create WRLD Children Group
-		writer.startGroupTES4(0x01380000, 1);
-
-		// Create CELL dummy record
-		uint32_t flags=0x400;
-		writer.startRecordTES4("CELL", flags, 0x01380001, "");
-		writer.endRecordTES4("CELL");
-		// Create CELL dummy top children group
-		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
-		// Create CELL dummy persistent children group
-		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
-
-		// TODO: write out persistent refs (aka NPCs) here...
-
-		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
-		writer.startGroupTES4(0x00000000, 4);
-		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
-		writer.startGroupTES4(0x00000000, 5);
-		// document creation of first subblock
-//		blockInitialized[0][0] = true;
-
-
-	}
-	
-	//*********************END WORLD GROUP HEADER**************************/
 
 	// check to see if group is initialized
 //	if (blockInitialized[block][subblock] == false)
@@ -990,8 +1053,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				// Create Cell children group
 				writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
 				
-				// TODO: create persistent group, add persistent refs
-				
 				// TODO: create VWD group, add VWD refs
 
 				
@@ -1010,6 +1071,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, baseX+x, baseY+y);
 					writer.endRecordTES4("LAND");
 					std::cout << "done." << std::endl;
+				}
+				else
+				{
+					std::cout << "no landscape data." << std::endl;
 				}
 				
 				// TODO: export PATH
@@ -1046,7 +1111,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-							if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+							if ((baseRefID != 0) && ( (baseRefIndex.second ==
+								CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
 							{
 								std::string sSIG;
 								switch (baseRefIndex.second)
@@ -1076,12 +1144,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 					}
 					// close cell children group
-					writer.endGroupTES4(cellFormID); // cell temporary children subgroup
+					writer.endGroupTES4(cellFormID); // (9) cell temporary children subgroup
 
-					writer.endGroupTES4(cellFormID); // 6 top cell children group
+					writer.endGroupTES4(cellFormID); // (6) top cell children group
 				}
 			}
 		}
+	}
+	else
+	{
+		std::cout << "Cell is identical to master, skipping. " << std::endl;
 	}
 
 	if (stage == (mNumCells-1))
