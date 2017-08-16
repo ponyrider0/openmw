@@ -294,6 +294,7 @@ namespace CSMDoc
 		std::map<int, std::map<int, BlockT* > > WorldGrid;
 		typedef struct { int blockX; int blockY; int subblockX; int subblockY; } GridTrackT;
 		std::vector<GridTrackT> GridTracker;
+		bool mIsWrldHeaderWritten=false;
 
 	public:
 

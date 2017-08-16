@@ -1,3 +1,4 @@
+#include <Windows.h>
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include <QUndoStack>
@@ -400,6 +401,7 @@ int CSMDoc::ExportReferenceCollectionTES4Stage::setup()
 void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	int size = mDocument.getData().getReferences().getSize();
+	std::ostringstream debugstream;
 
 	for (int i=stage*100; i<stage*100+100 && i<size; ++i)
 	{
@@ -427,7 +429,9 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
 				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
 				{
-					std::cout << "Collecting Persistent NPC reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
+					debugstream.str(""); debugstream.clear();
+					debugstream << "Collecting Persistent NPC reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
+//					OutputDebugString(debugstream.str().c_str());
 					mState.mPersistentWorldRefs.push_back(i);
 					continue;
 				}
@@ -708,6 +712,7 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
     int blockX, blockY, subblockX, subblockY;
 	ESM::ESMWriter& writer = mState.getWriter();
 	int collectionSize = mDocument.getData().getCells().getSize();
+	std::ostringstream debugstream;
 
 	for (int i=0; i < collectionSize; i++)
 	{
@@ -717,7 +722,8 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 		if (exterior == true)
 		{
             // create space for new entry and copy cellRecord pointer
-			std::cout << "Collecting CellExport Data: i=[" << i << "] ";
+			debugstream.str(""); debugstream.clear();
+			debugstream << "Collecting CellExport Data: i=[" << i << "] ";
             CellExportData *exportData = new CellExportData;
             exportData->cellRecordPtr = cellRecordPtr;
 
@@ -725,12 +731,12 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 			int formID = writer.getNextAvailableFormID();
 			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
 			exportData->formID = formID;
-			std::cout << "formID[" << formID << "] ";
+			debugstream << "formID[" << formID << "] ";
 
             // translate to Oblivion coords, then calculate block and subblock
             int baseX = cellRecordPtr->get().mData.mX*2;
             int baseY = cellRecordPtr->get().mData.mY*2;
-			std::cout << "X,Y[" << baseX << "," << baseY << "] ";
+			debugstream << "X,Y[" << baseX << "," << baseY << "] ";
 			
 			// calculate block and subblock coordinates
 			// Thanks to Zilav's forum posting for the Oblivion/Fallout Grid algorithm
@@ -756,22 +762,22 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 				blockY--;
 			}
 
-			std::cout << "Block=[" << blockX << "," << blockY << "] ";
-			std::cout << "Subblock=[" << subblockX << "," << subblockY << "] ";
+			debugstream << "Block=[" << blockX << "," << blockY << "] ";
+			debugstream << "Subblock=[" << subblockX << "," << subblockY << "] ";
 
 			mCellExportList.push_back(*exportData);
 
 			// retrieve the block from the worldgrid
 			if (WorldGrid.find(blockX) == WorldGrid.end() || WorldGrid[blockX].find(blockY) == WorldGrid[blockX].end())
 			{
-				std::cout << "New Block... (" << WorldGrid.size() << ") ";
+				debugstream << "New Block... (" << WorldGrid.size() << ") ";
 				WorldGrid[blockX][blockY] = new BlockT;
 			}
 			BlockT *block = WorldGrid[blockX][blockY];
 			// retrieve subblock from block
 			if (block->find(subblockX) == block->end() || (*block)[subblockX].find(subblockY) == (*block)[subblockX].end())
 			{
-				std::cout << "New Sub-Subblock... (" << block->size() << ") ";
+				debugstream << "New Sub-Subblock... (" << block->size() << ") ";
 				(*block)[subblockX][subblockY] = new SubBlockT;
 			}
 			SubBlockT *subblock = (*block)[subblockX][subblockY];
@@ -790,8 +796,9 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 			gridTrack->subblockX = subblockX;
 			gridTrack->subblockY = subblockY;
 			GridTracker.push_back(*gridTrack);
-			std::cout << std::endl;
-			
+			debugstream << std::endl;
+
+//			OutputDebugString(debugstream.str().c_str());			
 //            std::cout << "formID=" << formID << "; i=" << i << "; X,Y=[" << baseX << "," << baseY << "]; ";
 //			std::cout << "Block[" << blockX << "," << blockY << "][" << subblockX << "," << subblockY << "]" << std::endl;
 		}
@@ -814,12 +821,19 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	int blockX, blockY, subblockX, subblockY;
 	uint32_t cellFormID;
 	SubBlockT *subblock;
-
+	uint16_t groupid_gridYX[2];
+	std::ostringstream debugstream;
 
 	// if stage == 0, then add the group record first
 	//*********************START WORLD GROUP HEADER**************************/
-	if (stage == 0)
+	if (stage == 0 && mIsWrldHeaderWritten == false)
 	{
+		mIsWrldHeaderWritten = true;
+		debugstream.str("");
+		debugstream.clear();
+		debugstream << "writing world header" << std::endl;
+		OutputDebugString(debugstream.str().c_str());
+
 		std::string sSIG="WRLD";
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 		
@@ -834,7 +848,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.endSubRecordTES4("FULL");
 		writer.endRecordTES4("WRLD");
 		
-		// Create WRLD Children Group
+		// Create WRLD Children Top Group
 		writer.startGroupTES4(0x01380000, 1);
 		
 		// Create CELL dummy record
@@ -843,9 +857,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group
 		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
-		// Create CELL dummy persistent children group
+		// Create CELL dummy persistent children subgroup
 		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
-		
+
 		// Write out persistent refs (aka NPCs) here...
 		for (std::vector<int>::const_iterator refindex_iter = mState.mPersistentWorldRefs.begin();
 			 refindex_iter != mState.mPersistentWorldRefs.end(); refindex_iter++)
@@ -860,7 +874,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 			if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
-									 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
 			{
 				std::string sSIG;
 				switch (baseRefIndex.second)
@@ -888,19 +903,17 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			}
 			
 		}
-		writer.endGroupTES4(0x01380001); // (8) cell persistent children subgroup
-		writer.endGroupTES4(0x01380001); // (6) cell persistent children subgroup
+
+		writer.endGroupTES4(0x01380001); // (8) dummy cell's persistent children subgroup
+		writer.endGroupTES4(0x01380001); // (6) dummy cell's top children group
 		
 		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
-		writer.startGroupTES4(0x00000000, 4);
+//		writer.startGroupTES4(0x00000000, 4);
 		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
-		writer.startGroupTES4(0x00000000, 5);
+//		writer.startGroupTES4(0x00000000, 5);
 		// document creation of first subblock
 		//		blockInitialized[0][0] = true;
-		
-		
-	}
-	
+	}	
 	//*********************END WORLD GROUP HEADER**************************/
 
 
@@ -918,6 +931,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		oldSubblockX = subblockX;
 		oldSubblockY = subblockY;
 		cellCount = 0;
+
+//		initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
+		groupid_gridYX[0] = blockY;
+		groupid_gridYX[1] = blockX;
+		writer.startGroupTES4( *((uint32_t *)groupid_gridYX), 4);
+// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
+		groupid_gridYX[0] = subblockY;
+		groupid_gridYX[1] = subblockX;
+		writer.startGroupTES4( *((uint32_t *)groupid_gridYX), 5);
 	}
 
 	blockX = oldBlockX;
@@ -939,7 +961,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //			std::cout << "no more cells in subblock, getting next GridTracker... ";
 			if (GridTracker.begin() == GridTracker.end())
 				throw std::runtime_error("exterior cell exporter broke!");
-			// retrieve a gridtrack from the tracker and process a cell
+			// retrieve the next gridtrack from the tracker and process a cell
 			GridTrackT gridTrack = GridTracker[1];
 			blockX = gridTrack.blockX;
 			blockY = gridTrack.blockY;
@@ -966,11 +988,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
 
-	std::cout << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
-	std::cout << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
-	std::cout << "CellCount=[" << ++cellCount << "]" << std::endl;
-	
-	
+	debugstream.clear();
+	debugstream << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
+	debugstream << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
+	debugstream << "CellCount=[" << ++cellCount << "]" << std::endl;
+	OutputDebugString(debugstream.str().c_str());
+
 	if (cellRecordPtr == 0)
 	{
 		// throw exception
@@ -983,17 +1006,27 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	{
 //		blockInitialized[block][subblock] = true;
 		// close previous subblock
+		debugstream.str("");
+		debugstream.clear();
+		debugstream << "Closing Subblock [" << oldSubblockX << "," << oldSubblockY << "]...";
 		writer.endGroupTES4(0);
 		// if subblock == 0, then close prior block as well
 //        if (subblock == 0)
         if ((blockX != oldBlockX) || (blockY != oldBlockY))
 		{
+			debugstream << "Closing Block [" << oldBlockX << "," << oldBlockY << "]";
 			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
-			writer.startGroupTES4(0, 4);
+			groupid_gridYX[0] = blockY;
+			groupid_gridYX[1] = blockX;
+			writer.startGroupTES4(*((uint32_t *)groupid_gridYX), 4);
 		}
+		debugstream << std::endl;
+		OutputDebugString(debugstream.str().c_str());
 		// start new subblock
-		writer.startGroupTES4(0, 5);
+		groupid_gridYX[0] = subblockY;
+		groupid_gridYX[1] = subblockX;
+		writer.startGroupTES4(*((uint32_t *)groupid_gridYX), 5);
 	}
     oldBlockX = blockX; oldBlockY = blockY;
     oldSubblockX = subblockX; oldSubblockY = subblockY;
@@ -1043,8 +1076,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			{
 				// ********************EXPORT SUBCELL HERE **********************
 				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
-				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);
-				
+				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);			
 				// Cell record ends before creation of child records (which are full records and not subrecords)
 				writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 
@@ -1052,30 +1084,31 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 				// Create Cell children group
 				writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
-				
 				// TODO: create VWD group, add VWD refs
 
-				
 				//******************TEMPORARY CHILDREN*****************************
 				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
 				// TODO: export LAND
 				std::ostringstream landID;
 				landID << "#" << (baseX/2) << " " << (baseY/2);
-				std::cout << "retrieving landID=[" << landID.str() << "] ...";
+				debugstream.str("");
+				debugstream.clear();
+				debugstream << "retrieving landID=[" << landID.str() << "] ...";
 				if (mDocument.getData().getLand().searchId(landID.str()) != -1)
 				{
 					int landIndex = mDocument.getData().getLand().getIndex(landID.str());
-					std::cout << "ID retrieved.  exporting land ... ";
+					debugstream << "ID retrieved.  exporting land ... ";
 					writer.startRecordTES4("LAND");
-					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, baseX+x, baseY+y);
+					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
 					writer.endRecordTES4("LAND");
-					std::cout << "done." << std::endl;
+					debugstream << "done." << std::endl;
 				}
 				else
 				{
-					std::cout << "no landscape data." << std::endl;
+					debugstream << "no landscape data." << std::endl;
 				}
+				OutputDebugString(debugstream.str().c_str());
 				
 				// TODO: export PATH
 				
@@ -1140,31 +1173,34 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								writer.endRecordTES4(sSIG);
 							}
 
-						}
+						} // end: if ( (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted) ...
+					} // end: for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin()) ...
+				}  // end: if (references!=mState.getSubRecords().end())
+				// end: export Refs (ACRE, REFR)
 
-					}
-					// close cell children group
-					writer.endGroupTES4(cellFormID); // (9) cell temporary children subgroup
-
-					writer.endGroupTES4(cellFormID); // (6) top cell children group
-				}
+				// close cell children group
+				writer.endGroupTES4(cellFormID); // (9) cell temporary children subgroup
+				writer.endGroupTES4(cellFormID); // (6) top cell children group
 			}
 		}
 	}
 	else
 	{
-		std::cout << "Cell is identical to master, skipping. " << std::endl;
+		debugstream.str("");
+		debugstream.clear();
+		debugstream << "Cell is identical to master, skipping. " << std::endl;
+		OutputDebugString(debugstream.str().c_str());
 	}
 
 	if (stage == (mNumCells-1))
 	{
 
-		// two for the block-subblock
+		// two for the final block-subblock
 		writer.endGroupTES4(0);
 		writer.endGroupTES4(0);
-		// WRLD children Group
+		// WRLD children Top Group
 		writer.endGroupTES4(0);
-		// third one is the top Group
+		// third one is the WRLD Top Group
 		writer.endGroupTES4("WRLD");
 	}
 //	std::cout << "Erase the current sub-block" << std::endl;

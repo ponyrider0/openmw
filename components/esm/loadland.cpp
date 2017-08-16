@@ -185,6 +185,7 @@ namespace ESM
 	
 		// DATA 4-bytes
 		esm.startSubRecordTES4("DATA");
+		// write correct bitmask for enabled subrecords
 		unsigned char flags=0;
 		esm.writeT<unsigned char>(flags); // bitmask of subrecords present
 		esm.writeT<unsigned char>(0);
@@ -201,12 +202,22 @@ namespace ESM
 			{
 				for (int v=0; v < 33; v++)
 				{
-					// convert 65x64 to 33x33
+					// convert 65x65 to 33x33
 					i = u + (32 * offsetX);
 					j = v + (32 * offsetY);
-					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j]); // X
-					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j+1]); // Y
-					esm.writeT<unsigned char>(landData->mNormals[(i*65)+j+2]); // Z
+					int vnormalIndex = ((i*65)+j)*3;
+					if (vnormalIndex >= (65*65*3))
+						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
+					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // X
+					vnormalIndex = (i*65)+j+1;
+					if (vnormalIndex >= (65*65*3))
+						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
+					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // Y
+					vnormalIndex = (i*65)+j+2;
+					if (vnormalIndex >= (65*65*3))
+						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
+					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // Z
+
 				}
 			}
 			esm.endSubRecordTES4("VNML");
@@ -229,7 +240,7 @@ namespace ESM
 					j = v + (32 * offsetY);
 					float newVal = landData->mHeights[(i*65)+j];
 					deltaVal = newVal - oldVal;
-					esm.writeT<unsigned char>(deltaVal); // 1 byte for each point
+					esm.writeT<signed char>(deltaVal); // 1 byte for each point
 					newVal = oldVal;
 				}
 			}
