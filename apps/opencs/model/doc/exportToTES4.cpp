@@ -41,6 +41,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
 		(mDocument.getData().getScripts(), currentSave));
 
+	// TODO: assign formIDs to crossRef in Cell Export
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
 		(mDocument.getData().getRegions(), currentSave));
 
@@ -75,7 +76,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, currentSave));
 
-	// references Land Textures
+// Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
@@ -845,8 +846,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// Create CELL dummy persistent children group
 		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
 		
-		// TODO: create persistent group, add persistent refs
-		//		writer.startGroupTES4(cellFormID, 8); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+		// Write out persistent refs (aka NPCs) here...
 		for (std::vector<int>::const_iterator refindex_iter = mState.mPersistentWorldRefs.begin();
 			 refindex_iter != mState.mPersistentWorldRefs.end(); refindex_iter++)
 		{
@@ -884,14 +884,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 				// end record
 				writer.endRecordTES4(sSIG);
-				std::cout << "writing persistent record: type=[" << sSIG << "] refStringID=[" << refRecord.mId << "] baseEDID=[" << refRecord.mRefID << "]" << std::endl;
+				std::cout << "writing persistent record: type=[" << sSIG << "] baseEDID=[" << refRecord.mRefID << "] formID=[" << baseRefID << "]" << std::endl;
 			}
 			
 		}
 		writer.endGroupTES4(0x01380001); // (8) cell persistent children subgroup
 		writer.endGroupTES4(0x01380001); // (6) cell persistent children subgroup
-		
-		// TODO: write out persistent refs (aka NPCs) here...
 		
 		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
 		writer.startGroupTES4(0x00000000, 4);
@@ -1049,6 +1047,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				
 				// Cell record ends before creation of child records (which are full records and not subrecords)
 				writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
+
+				// TODO: cross-reference Region string with formID
 
 				// Create Cell children group
 				writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
@@ -1209,7 +1209,7 @@ void CSMDoc::ExportPathgridCollectionTES4Stage::perform (int stage, Messages& me
 	}
 }
 
-
+//************EXPORT LAND STAGE NOT NECESSARY -- COMBINED WITH EXPORT CELL**********/
 CSMDoc::ExportLandCollectionTES4Stage::ExportLandCollectionTES4Stage (Document& document,
 	SavingState& state)
 	: mDocument (document), mState (state)
