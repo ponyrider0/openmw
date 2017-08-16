@@ -188,6 +188,24 @@ namespace ESM
 			case '.':
 				newEDID[index] = 'P';
 				break;
+			case '#':
+				newEDID[index] = 'X';
+				break;
+			case '[':
+				newEDID[index] = 'X';
+				break;
+			case ']':
+				newEDID[index] = 'X';
+				break;
+			case '’':
+				newEDID[index] = 'X';
+				break;
+			case '(':
+				newEDID[index] = 'X';
+				break;
+			case ')':
+				newEDID[index] = 'X';
+				break;
 
 			}
 		}
