@@ -899,7 +899,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 				// end record
 				writer.endRecordTES4(sSIG);
-				std::cout << "writing persistent record: type=[" << sSIG << "] baseEDID=[" << refRecord.mRefID << "] formID=[" << baseRefID << "]" << std::endl;
+				debugstream.str(""); debugstream.clear();
+				debugstream << "writing persistent record: type=[" << sSIG << "] baseEDID=[" << refRecord.mRefID << "] formID=[" << baseRefID << "]" << std::endl;
+//				OutputDebugString(debugstream.str().c_str());
 			}
 			
 		}
@@ -956,7 +958,32 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// check if any cells are left
 		if (subblock->begin() == subblock->end())
 		{
+			// if no more subblocks in block, check the gridtrack
 			cellCount = 0;
+			// if no more cells in subblock, search block for more subblocks
+			// start with the first subblock and iterate down
+			BlockT::iterator blockBranchX;
+			std::map<int, SubBlockT* >::iterator blockBranchY;
+			bool siblingSubBlockFound=false;
+			for (blockBranchX = block->begin();
+				 blockBranchX != block->end() && siblingSubBlockFound != true;
+				 blockBranchX++)
+			{
+				for (blockBranchY = blockBranchX->second.begin();
+					 blockBranchY != blockBranchX->second.end() && siblingSubBlockFound != true;
+					 blockBranchY++)
+				{
+					SubBlockT *tempSubBlock = blockBranchY->second;
+					if (tempSubBlock->size() > 0 )
+					{
+						subblockX = blockBranchX->first;
+						subblockY = blockBranchY->first;
+						siblingSubBlockFound = true;
+					}
+				}
+			}
+			if (siblingSubBlockFound == true)
+				continue;
 			// remove gridtrack and try again
 //			std::cout << "no more cells in subblock, getting next GridTracker... ";
 			if (GridTracker.begin() == GridTracker.end())
@@ -978,7 +1005,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		}
 		else
 		{
-			// delete prior column and start the next
+			// delete prior column(row?) of cells and start the next
 			subblock->erase(subblock->begin());
 		}
 		
@@ -1074,6 +1101,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		{
 			for (int y=0; y < 2; y++)
 			{
+				if (subCell > 0)
+				{
+					// request new formID, so subcell siblings don't share a single formID
+					cellFormID = writer.getNextAvailableFormID();
+					cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
+				}
 				// ********************EXPORT SUBCELL HERE **********************
 				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
 				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);			

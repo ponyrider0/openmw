@@ -1,5 +1,6 @@
 #include "loadcell.hpp"
 
+#include <Windows.h>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -271,6 +272,7 @@ namespace ESM
         // Write EDID (TES4-style editor string identifier)
 		std::string *newEDID = esm.generateEDIDTES4(mName, true);
         char *charbuf = new char[newEDID->size()+6];
+		std::ostringstream debugstream;
         
         int len = snprintf(charbuf, newEDID->size()+6, "%s%02d", newEDID->c_str(), offset);
         if (newEDID->compare("")!=0)
@@ -283,7 +285,7 @@ namespace ESM
             delete newEDID;
             newEDID = new std::string(charbuf);
         }
-        std::cout << "EDID=[" << *newEDID << "]; ";
+		debugstream << "EDID=[" << *newEDID << "]; ";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(*newEDID);
 		esm.endSubRecordTES4("EDID");
@@ -340,17 +342,18 @@ namespace ESM
             esm.writeT<long>(subX);
             esm.writeT<long>(subY);
             esm.endSubRecordTES4("XCLC");
-            std::cout << "X,Y=[" << (subX) <<"," << (subY) << "];";
+			debugstream << "X,Y=[" << (subX) <<"," << (subY) << "]; ";
         }
         
         // XCLR (Region formID) == must cross-ref with Region StringID
         if (isExterior())
         {
-            std::cout << "Region=[" << mRegion << "]";
+			debugstream << "Region=[" << mRegion << "]";
         }
         
         // XOWN == ?? morrowind equivalent unknown
-        std::cout << std::endl;
+		debugstream << std::endl;
+		OutputDebugString(debugstream.str().c_str());
 	}
 
     void Cell::restore(ESMReader &esm, int iCtx) const
