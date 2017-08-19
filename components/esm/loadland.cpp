@@ -1,5 +1,7 @@
 #include "loadland.hpp"
 
+#include <Windows.h>
+#include <iostream>
 #include <utility>
 
 #include "esmreader.hpp"
@@ -179,6 +181,7 @@ namespace ESM
 	{
 		int i, j;
 		const LandData *landData;
+		std::ostringstream debugstream;
 
 		// Load LandData once and pass off to each call to exportSubCell
 //		landData = getLandData(Land::DATA_VNML|Land::DATA_VHGT|Land::DATA_VCLR|Land::DATA_VTEX);
@@ -186,11 +189,13 @@ namespace ESM
 		// DATA 4-bytes
 		esm.startSubRecordTES4("DATA");
 		// write correct bitmask for enabled subrecords
-		unsigned char flags=0;
-		esm.writeT<unsigned char>(flags); // bitmask of subrecords present
-		esm.writeT<unsigned char>(0);
-		esm.writeT<unsigned char>(0);
-		esm.writeT<unsigned char>(0);
+		int8_t flags=0;
+		// assuming same bitmask as TES3, change if necessary
+		flags = mFlags;
+		esm.writeT<int8_t>(flags); // bitmask of subrecords present
+		esm.writeT<int8_t>(0);
+		esm.writeT<int8_t>(0);
+		esm.writeT<int8_t>(0);
 		esm.endSubRecordTES4("DATA");
 		
 		// VNML 33x33 grid of 3-bytes vertex normals
@@ -203,20 +208,14 @@ namespace ESM
 				for (int v=0; v < 33; v++)
 				{
 					// convert 65x65 to 33x33
-					i = u + (32 * offsetX);
-					j = v + (32 * offsetY);
-					int vnormalIndex = ((i*65)+j)*3;
-					if (vnormalIndex >= (65*65*3))
+					i = u + (32 * offsetY);
+					j = v + (32 * offsetX);
+					int vnormalIndex = ((i*LAND_SIZE)+j)*3;
+					if (vnormalIndex >= (LAND_SIZE*LAND_SIZE*3))
 						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
-					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // X
-					vnormalIndex = (i*65)+j+1;
-					if (vnormalIndex >= (65*65*3))
-						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
-					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // Y
-					vnormalIndex = (i*65)+j+2;
-					if (vnormalIndex >= (65*65*3))
-						throw std::runtime_error("loadland.cpp: landscape index calculation error.");
-					esm.writeT<signed char>(landData->mNormals[vnormalIndex]); // Z
+					esm.writeT<int8_t>(landData->mNormals[vnormalIndex]); // X
+					esm.writeT<int8_t>(landData->mNormals[vnormalIndex+1]); // Y
+					esm.writeT<int8_t>(landData->mNormals[vnormalIndex+2]); // Z
 
 				}
 			}
@@ -227,27 +226,44 @@ namespace ESM
 		landData = getLandData(Land::DATA_VHGT);
 		if (landData != 0)
 		{
-			unsigned char deltaVal;
-			float oldVal = landData->mHeightOffset;
+			int8_t deltaVal;
+			i = 0 + (32 * offsetY); // calculate origin for subcell
+			j = 0 + (32 * offsetX); // calculate origin for subcell
+			float oldYVal, oldXVal, newVal;
+			oldYVal = landData->mHeights[(i*LAND_SIZE)+j]; // mHeights[] stores data as absolute height values, so we must translate to offset by taking origin (0,0) / 8;
+			debugstream.str(""); debugstream.clear();
+			debugstream << "mHeigtOffset = [" << oldYVal << "]: ";
 			esm.startSubRecordTES4("VHGT");
-			esm.writeT<float>(landData->mHeightOffset); // 32-bit float (Offset)
+			esm.writeT<float>(oldYVal/HEIGHT_SCALE); // 32-bit float (Offset)
 			for (int u=0; u < 33; u++)
 			{
-				for (int v=0; v < 33; v++)
+				// calculate start of row by previous row
+				i = u + (32 * offsetY);
+				j = 0 + (32 * offsetX);
+				newVal = landData->mHeights[(i*LAND_SIZE)+j];
+				deltaVal = ((newVal - oldYVal)/HEIGHT_SCALE);
+				debugstream << (int)deltaVal << ", ";
+				esm.writeT<int8_t>(deltaVal); // 1 byte for each point
+				oldYVal = oldXVal = newVal;
+
+				for (int v=1; v < 33; v++)
 				{
-					// convert 65x64 to 33x33
-					i = u + (32 * offsetX);
-					j = v + (32 * offsetY);
-					float newVal = landData->mHeights[(i*65)+j];
-					deltaVal = newVal - oldVal;
-					esm.writeT<signed char>(deltaVal); // 1 byte for each point
-					newVal = oldVal;
+					// convert 65x65 to 33x33 (LAND_SIZE==65)
+					i = u + (32 * offsetY);
+					j = v + (32 * offsetX);
+					newVal = landData->mHeights[(i*LAND_SIZE)+j];
+					deltaVal = ((newVal - oldXVal)/HEIGHT_SCALE);
+					debugstream << (int) deltaVal << ", ";
+					esm.writeT<int8_t>(deltaVal); // 1 byte for each point
+					oldXVal = newVal;
 				}
 			}
+			debugstream << "; " << std::endl;
+//			OutputDebugString(debugstream.str().c_str());
 			// final 3 bytes unknown
-			esm.writeT<unsigned char>(0); // X
-			esm.writeT<unsigned char>(0); // Y
-			esm.writeT<unsigned char>(0); // Z
+			esm.writeT<int8_t>(0); // X
+			esm.writeT<int8_t>(0); // Y
+			esm.writeT<int8_t>(0); // Z
 			esm.endSubRecordTES4("VHGT");
 		}
 		
@@ -261,11 +277,11 @@ namespace ESM
 				for (int v=0; v < 33; v++)
 				{
 					// convert 65x64 to 33x33
-					i = u + (32 * offsetX);
-					j = v + (32 * offsetY);
-					esm.writeT<unsigned char>(landData->mColours[(i*65)+j]); // R
-					esm.writeT<unsigned char>(landData->mColours[(i*65)+j+1]); // G
-					esm.writeT<unsigned char>(landData->mColours[(i*65)+j+2]); // B
+					i = u + (32 * offsetY);
+					j = v + (32 * offsetX);
+					esm.writeT<int8_t>(landData->mColours[(i*65)+j]); // R
+					esm.writeT<int8_t>(landData->mColours[(i*65)+j+1]); // G
+					esm.writeT<int8_t>(landData->mColours[(i*65)+j+2]); // B
 				}
 			}
 			esm.endSubRecordTES4("VCLR");

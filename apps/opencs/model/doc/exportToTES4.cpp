@@ -838,8 +838,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 		
 		// Create WRLD record
-		writer.reserveFormID(0x01380000, "WrldMorrowind");
-		writer.startRecordTES4("WRLD", 0, 0x01380000, "WrldMorrowind");
+		uint32_t wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
+		writer.startRecordTES4("WRLD", 0, wrldFormID, "WrldMorrowind");
 		writer.startSubRecordTES4("EDID");
 		writer.writeHCString("WrldMorrowind");
 		writer.endSubRecordTES4("EDID");
@@ -849,16 +849,17 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.endRecordTES4("WRLD");
 		
 		// Create WRLD Children Top Group
-		writer.startGroupTES4(0x01380000, 1);
+		writer.startGroupTES4(wrldFormID, 1);
 		
 		// Create CELL dummy record
 		uint32_t flags=0x400;
-		writer.startRecordTES4("CELL", flags, 0x01380001, "");
+		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "");
+		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
 		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group
-		writer.startGroupTES4(0x01380001, 6); // top Cell Children Group
+		writer.startGroupTES4(dummyCellFormID, 6); // top Cell Children Group
 		// Create CELL dummy persistent children subgroup
-		writer.startGroupTES4(0x01380001, 8); // grouptype=8 (persistent children)
+		writer.startGroupTES4(dummyCellFormID, 8); // grouptype=8 (persistent children)
 
 		// Write out persistent refs (aka NPCs) here...
 		for (std::vector<int>::const_iterator refindex_iter = mState.mPersistentWorldRefs.begin();
@@ -906,8 +907,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			
 		}
 
-		writer.endGroupTES4(0x01380001); // (8) dummy cell's persistent children subgroup
-		writer.endGroupTES4(0x01380001); // (6) dummy cell's top children group
+		writer.endGroupTES4(dummyCellFormID); // (8) dummy cell's persistent children subgroup
+		writer.endGroupTES4(dummyCellFormID); // (6) dummy cell's top children group
 		
 		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
 //		writer.startGroupTES4(0x00000000, 4);
@@ -1097,9 +1098,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// ************* EXPORT CELL RECORD TIMES 4 SUBCELLS **********************
 		int baseX=cellRecordPtr->get().mData.mX * 2;
 		int baseY=cellRecordPtr->get().mData.mY * 2;
-		for (int x=0, subCell=0; x < 2; x++)
+		for (int y=0, subCell=0; y < 2; y++)
 		{
-			for (int y=0; y < 2; y++)
+			for (int x=0; x < 2; x++)
 			{
 				if (subCell > 0)
 				{

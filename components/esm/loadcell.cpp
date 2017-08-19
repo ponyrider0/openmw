@@ -315,17 +315,20 @@ namespace ESM
 		esm.endSubRecordTES4("DATA");
 
         // Write XCLL (lighting)
-        esm.startSubRecordTES4("XCLL");
-        esm.writeT<uint32_t>(mAmbi.mAmbient); // ambient color
-        esm.writeT<uint32_t>(mAmbi.mSunlight); // direction color
-        esm.writeT<uint32_t>(mAmbi.mFog); // fog color
-        esm.writeT<float>(0); // fog near
-        esm.writeT<float>(mAmbi.mFogDensity);  // fog far
-        esm.writeT<uint32_t>(0); // rotation xy
-        esm.writeT<uint32_t>(0); // rotation z
-        esm.writeT<float>(0); // directional fade
-        esm.writeT<float>(0); // fog clip distance
-        esm.endSubRecordTES4("XCLL");
+		if (!isExterior())
+		{
+			esm.startSubRecordTES4("XCLL");
+			esm.writeT<uint32_t>(mAmbi.mAmbient); // ambient color
+			esm.writeT<uint32_t>(mAmbi.mSunlight); // direction color
+			esm.writeT<uint32_t>(mAmbi.mFog); // fog color
+			esm.writeT<float>(0); // fog near
+			esm.writeT<float>(mAmbi.mFogDensity);  // fog far
+			esm.writeT<uint32_t>(0); // rotation xy
+			esm.writeT<uint32_t>(0); // rotation z
+			esm.writeT<float>(0); // directional fade
+			esm.writeT<float>(0); // fog clip distance
+			esm.endSubRecordTES4("XCLL");
+		}
 
         // Write XCLW (water level)
         if (mData.mFlags & HasWater)
@@ -353,7 +356,7 @@ namespace ESM
         
         // XOWN == ?? morrowind equivalent unknown
 		debugstream << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+//		OutputDebugString(debugstream.str().c_str());
 	}
 
     void Cell::restore(ESMReader &esm, int iCtx) const
