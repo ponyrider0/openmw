@@ -197,7 +197,7 @@ namespace ESM
 		esm.writeT<int8_t>(0);
 		esm.writeT<int8_t>(0);
 		esm.endSubRecordTES4("DATA");
-		
+
 		// VNML 33x33 grid of 3-bytes vertex normals
 		landData = getLandData(Land::DATA_VNML);
 		if (landData != 0)
@@ -216,7 +216,6 @@ namespace ESM
 					esm.writeT<int8_t>(landData->mNormals[vnormalIndex]); // X
 					esm.writeT<int8_t>(landData->mNormals[vnormalIndex+1]); // Y
 					esm.writeT<int8_t>(landData->mNormals[vnormalIndex+2]); // Z
-
 				}
 			}
 			esm.endSubRecordTES4("VNML");
@@ -276,12 +275,13 @@ namespace ESM
 			{
 				for (int v=0; v < 33; v++)
 				{
-					// convert 65x64 to 33x33
+					// convert 65x65 to 33x33
 					i = u + (32 * offsetY);
 					j = v + (32 * offsetX);
-					esm.writeT<int8_t>(landData->mColours[(i*65)+j]); // R
-					esm.writeT<int8_t>(landData->mColours[(i*65)+j+1]); // G
-					esm.writeT<int8_t>(landData->mColours[(i*65)+j+2]); // B
+					int vColorIndex = ((i*LAND_SIZE)+j)*3;
+					esm.writeT<int8_t>(landData->mColours[vColorIndex]); // R
+					esm.writeT<int8_t>(landData->mColours[vColorIndex+1]); // G
+					esm.writeT<int8_t>(landData->mColours[vColorIndex+2]); // B
 				}
 			}
 			esm.endSubRecordTES4("VCLR");
@@ -312,19 +312,14 @@ namespace ESM
 		esm.writeT<unsigned char>(0); // unk
 		esm.writeT<float>(0); // 32bit-float Opacity
 		esm.endSubRecordTES4("VTXT");
-*/
-		
+
 		// VTEX, LTEX formIDs
-		landData = getLandData(Land::DATA_VTEX);
-		if (landData != 0)
-		{
-			esm.startSubRecordTES4("VTEX");
-			// multiple formIDs
-//			esm.writeT<uint32_t>(0); // formID
-			// ....
-			esm.endSubRecordTES4("VTEX");
-		}
-	
+		esm.startSubRecordTES4("VTEX");
+		// multiple formIDs
+		esm.writeT<uint32_t>(0); // formID
+		esm.endSubRecordTES4("VTEX");
+*/
+
 	}
 
 	void Land::exportTESx(ESMWriter &esm, int export_type) const

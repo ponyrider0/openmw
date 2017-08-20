@@ -345,6 +345,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
+		int mActiveRefCount=0;
 
 	public:
 

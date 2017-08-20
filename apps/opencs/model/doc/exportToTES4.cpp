@@ -5,6 +5,7 @@
 
 #include "exportToTES4.hpp"
 #include "document.hpp"
+#include <components/esm/loadland.hpp>
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -75,7 +76,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-//	mExportOperation->appendStage (new ExportLandTextureCollectionTES4Stage (mDocument, currentSave));
+	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave));
 
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
@@ -829,8 +830,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	if (stage == 0 && mIsWrldHeaderWritten == false)
 	{
 		mIsWrldHeaderWritten = true;
-		debugstream.str("");
-		debugstream.clear();
+		debugstream.str(""); debugstream.clear();
 		debugstream << "writing world header" << std::endl;
 		OutputDebugString(debugstream.str().c_str());
 
@@ -904,21 +904,11 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				debugstream << "writing persistent record: type=[" << sSIG << "] baseEDID=[" << refRecord.mRefID << "] formID=[" << baseRefID << "]" << std::endl;
 //				OutputDebugString(debugstream.str().c_str());
 			}
-			
 		}
-
-		writer.endGroupTES4(dummyCellFormID); // (8) dummy cell's persistent children subgroup
-		writer.endGroupTES4(dummyCellFormID); // (6) dummy cell's top children group
-		
-		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
-//		writer.startGroupTES4(0x00000000, 4);
-		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
-//		writer.startGroupTES4(0x00000000, 5);
-		// document creation of first subblock
-		//		blockInitialized[0][0] = true;
+		writer.endGroupTES4(0); // (8) dummy cell's persistent children subgroup
+		writer.endGroupTES4(0); // (6) dummy cell's top children group		
 	}	
 	//*********************END WORLD GROUP HEADER**************************/
-
 
 	//********************BEGIN PROCESSING EXTERIOR CELLS*****************/
 	// retrieve a gridtrack from the tracker and process a cell
@@ -935,11 +925,11 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		oldSubblockY = subblockY;
 		cellCount = 0;
 
-//		initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
+		// initialize first exterior Cell Block, grouptype=4; label=0xYYYYXXXX
 		groupid_gridYX[0] = blockY;
 		groupid_gridYX[1] = blockX;
 		writer.startGroupTES4( *((uint32_t *)groupid_gridYX), 4);
-// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
+		// initialize first exterior Cell SubBlock, grouptype=5; label=0xYYYYXXXX
 		groupid_gridYX[0] = subblockY;
 		groupid_gridYX[1] = subblockX;
 		writer.startGroupTES4( *((uint32_t *)groupid_gridYX), 5);
@@ -986,7 +976,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (siblingSubBlockFound == true)
 				continue;
 			// remove gridtrack and try again
-//			std::cout << "no more cells in subblock, getting next GridTracker... ";
+			debugstream.str(""); debugstream.clear();
+			debugstream << "no more cells in subblock, getting next GridTracker... ";
 			if (GridTracker.begin() == GridTracker.end())
 				throw std::runtime_error("exterior cell exporter broke!");
 			// retrieve the next gridtrack from the tracker and process a cell
@@ -995,13 +986,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			blockY = gridTrack.blockY;
 			subblockX = gridTrack.subblockX;
 			subblockY = gridTrack.subblockY;
-//			std::cout << "trying block[" << blockX << "," << blockY << "] subblock[" << subblockX << "," << subblockY << "]" << std::endl;
+			debugstream << "trying block[" << blockX << "," << blockY << "] subblock[" << subblockX << "," << subblockY << "]" << std::endl;
 			GridTracker.erase(GridTracker.begin());
 		}
 		else if (subblock->begin()->second.begin() != subblock->begin()->second.end())
 		{
 			cellFound = true;
-//			std::cout << "get the first subblock" << std::endl;
+			debugstream << "get the first subblock" << std::endl;
+//			OutputDebugString(debugstream.str().c_str());
 			exportData = subblock->begin()->second.begin()->second;
 		}
 		else
@@ -1009,14 +1001,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			// delete prior column(row?) of cells and start the next
 			subblock->erase(subblock->begin());
 		}
-		
 	}
 	
 //    exportData = &mCellExportList.back();
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
 
-	debugstream.clear();
+	debugstream.str(""); debugstream.clear();
 	debugstream << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
 	debugstream << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
 	debugstream << "CellCount=[" << ++cellCount << "]" << std::endl;
@@ -1029,17 +1020,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	}
 
 	// check to see if group is initialized
-//	if (blockInitialized[block][subblock] == false)
     if ((subblockX != oldSubblockX) || (subblockY != oldSubblockY))
 	{
-//		blockInitialized[block][subblock] = true;
 		// close previous subblock
-		debugstream.str("");
-		debugstream.clear();
+		debugstream.str(""); debugstream.clear();
 		debugstream << "Closing Subblock [" << oldSubblockX << "," << oldSubblockY << "]...";
 		writer.endGroupTES4(0);
-		// if subblock == 0, then close prior block as well
-//        if (subblock == 0)
         if ((blockX != oldBlockX) || (blockY != oldBlockY))
 		{
 			debugstream << "Closing Block [" << oldBlockX << "," << oldBlockY << "]";
@@ -1135,6 +1121,52 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					debugstream << "ID retrieved.  exporting land ... ";
 					writer.startRecordTES4("LAND");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
+
+					// VTEX, LTEX formIDs
+					const ESM::Land::LandData *landData = mDocument.getData().getLand().getRecord(landIndex).get().getLandData(ESM::Land::DATA_VTEX);
+					if (landData != 0)
+					{
+						// calculate quadrant to use
+						uint32_t texformID;
+						int i, j, u, v, quadVal=0;
+						for (v=0; v < 2; v++)
+						{
+							for (u=0; u < 2; u++)
+							{
+								i = (u) + (8 * x);
+								j = (v) + (8 * y);
+
+//								int texindex = landData->mTextures[(j*16)+i];
+								int texindex = landData->mTextures[quadVal];
+								// lookup mID or formID from index
+								std::map<int, uint32_t>::iterator lookupResult = mState.mLandTexLookup.find(texindex);
+								if (lookupResult != mState.mLandTexLookup.end() )
+								{
+									texformID = lookupResult->second;
+
+									writer.startSubRecordTES4("BTXT");
+									writer.writeT<uint32_t>(texformID); // formID
+									writer.writeT<uint8_t>(quadVal); // quadrant
+									writer.writeT<uint8_t>(0); // unk?
+									writer.writeT<uint8_t>(0); // unk?
+									writer.writeT<uint8_t>(0); // unk?
+									writer.endSubRecordTES4("BTXT");
+//									debugstream << "writing ref-LTEX=[" << texformID << "]... ";
+
+								}
+
+								quadVal++;
+/*
+								writer.startSubRecordTES4("VTEX");
+								// multiple formIDs
+								writer.writeT<uint32_t>(texformID); // formID
+								writer.endSubRecordTES4("VTEX");
+*/
+
+							}
+						}
+					}
+
 					writer.endRecordTES4("LAND");
 					debugstream << "done." << std::endl;
 				}
@@ -1228,7 +1260,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 	if (stage == (mNumCells-1))
 	{
-
 		// two for the final block-subblock
 		writer.endGroupTES4(0);
 		writer.endGroupTES4(0);
@@ -1284,15 +1315,12 @@ CSMDoc::ExportLandCollectionTES4Stage::ExportLandCollectionTES4Stage (Document& 
 	SavingState& state)
 	: mDocument (document), mState (state)
 {}
-
 int CSMDoc::ExportLandCollectionTES4Stage::setup()
 {
 	return mDocument.getData().getLand().getSize();
 }
-
 void CSMDoc::ExportLandCollectionTES4Stage::perform (int stage, Messages& messages)
 {
-
 }
 
 
@@ -1303,7 +1331,9 @@ CSMDoc::ExportLandTextureCollectionTES4Stage::ExportLandTextureCollectionTES4Sta
 
 int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 {
-	return mDocument.getData().getLandTextures().getSize();
+	mActiveRefCount =  mDocument.getData().getLandTextures().getSize();
+
+	return mActiveRefCount;
 }
 
 void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages& messages)
@@ -1312,13 +1342,41 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	const CSMWorld::Record<CSMWorld::LandTexture>& landTexture =
 		mDocument.getData().getLandTextures().getRecord (stage);
 
+	// LTEX GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("LTEX", 0);
+	}
+
 	if (landTexture.isModified() || landTexture.mState == CSMWorld::RecordBase::State_Deleted)
 	{
 		CSMWorld::LandTexture record = landTexture.get();
-		writer.startRecord (record.sRecordId);
-		record.save (writer, landTexture.mState == CSMWorld::RecordBase::State_Deleted);
-		writer.endRecord (record.sRecordId);
+
+		uint32_t formID = writer.crossRefStringID(record.mId);
+		if (formID == 0)
+		{
+			// reserve new formID
+			formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, record.mId);
+		}
+		// create lookup table for TextureIndex
+		mState.mLandTexLookup[record.mIndex] = formID;
+
+		uint32_t flags=0;
+		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4("LTEX", flags, formID, record.mId);
+		record.exportTESx (writer, true, 4);
+		writer.endRecordTES4 ("LTEX");
 	}
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4("LTEX");
+	}
+
 }
 
 
