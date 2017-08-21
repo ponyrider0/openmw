@@ -10,7 +10,7 @@ CSMDoc::Exporter::Exporter(Document& document, ToUTF8::FromType encoding)
   : mDocument(document),
     mEncoding(encoding)
 {
-    std::cout << "Exporter Base Initalied." << std::endl;
+    std::cout << "Exporter Base Initialized." << std::endl;
 }
 
 CSMDoc::Exporter::~Exporter()
