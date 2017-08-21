@@ -5,7 +5,6 @@
 
 #include "exportToTES4.hpp"
 #include "document.hpp"
-#include <components/esm/loadland.hpp>
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -1122,39 +1121,59 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					writer.startRecordTES4("LAND");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
 
-					// VTEX, LTEX formIDs
+					// VTEX, LTEX formIDs (each morroblivion subcell maps to 8x8 portion of the original 16x16 morrowind cell vtex grid)
+					// each Subcell is further divided into quadrants containing a 4x4 portion of the original 16x16 morrowind cell vtex grid
 					const ESM::Land::LandData *landData = mDocument.getData().getLand().getRecord(landIndex).get().getLandData(ESM::Land::DATA_VTEX);
 					if (landData != 0)
 					{
-						// calculate quadrant to use
 						uint32_t texformID;
 						int i, j, u, v, quadVal=0;
 						for (v=0; v < 2; v++)
 						{
 							for (u=0; u < 2; u++)
 							{
-								i = (u) + (8 * x);
-								j = (v) + (8 * y);
+								// create texture list for subcell quadrant
+								gatherSubCellQuadrantLTEX(x, y, u, v, landData);
 
-//								int texindex = landData->mTextures[(j*16)+i];
-								int texindex = landData->mTextures[quadVal];
-								// lookup mID or formID from index
-								std::map<int, uint32_t>::iterator lookupResult = mState.mLandTexLookup.find(texindex);
-								if (lookupResult != mState.mLandTexLookup.end() )
+								// export first texture as the base layer
+								int16_t layer = -1;
+								auto subCellQuadList_iter = mSubCellQuadTexList.begin();
+								texformID = subCellQuadList_iter->first;
+								writer.startSubRecordTES4("BTXT");
+								writer.writeT<uint32_t>(texformID); // formID
+								writer.writeT<uint8_t>(quadVal); // quadrant
+								writer.writeT<uint8_t>(0); // unused
+								writer.writeT<int16_t>(layer); // 16bit layer
+								writer.endSubRecordTES4("BTXT");
+//								debugstream << "writing ref-LTEX=[" << texformID << "]... ";
+
+								// iterate through the remaining textures, exporting each as a separate layer
+								for (subCellQuadList_iter++; subCellQuadList_iter !=  mSubCellQuadTexList.end(); subCellQuadList_iter++)
 								{
-									texformID = lookupResult->second;
-
-									writer.startSubRecordTES4("BTXT");
+									layer++;
+									texformID = subCellQuadList_iter->first;
+									writer.startSubRecordTES4("ATXT");
 									writer.writeT<uint32_t>(texformID); // formID
 									writer.writeT<uint8_t>(quadVal); // quadrant
-									writer.writeT<uint8_t>(0); // unk?
-									writer.writeT<uint8_t>(0); // unk?
-									writer.writeT<uint8_t>(0); // unk?
-									writer.endSubRecordTES4("BTXT");
-//									debugstream << "writing ref-LTEX=[" << texformID << "]... ";
+									writer.writeT<uint8_t>(0); // unused
+									writer.writeT<int16_t>(layer); // 16bit layer
+									writer.endSubRecordTES4("ATXT");
 
+									// create an opacity map for this layer, then export it as VTXT record
+
+									uint16_t position=0;
+									float opacity=1.0f;
+									writer.startSubRecordTES4("VTXT");
+
+									writer.writeT<uint16_t>(position); // offset into 17x17 grid
+									writer.writeT<uint8_t>(0); // unused
+									writer.writeT<uint8_t>(0); // unused
+									writer.writeT<float>(opacity); // float opacity
+
+									writer.endSubRecordTES4("VTXT");
 								}
 
+								// update the quadrant number for next pass
 								quadVal++;
 /*
 								writer.startSubRecordTES4("VTEX");
@@ -1162,7 +1181,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								writer.writeT<uint32_t>(texformID); // formID
 								writer.endSubRecordTES4("VTEX");
 */
-
 							}
 						}
 					}
@@ -1274,6 +1292,53 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	
 }
 
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData)
+{
+	std::ostringstream debugstream;
+	mSubCellQuadTexList.clear();
+
+	// iterate through the 4x4 grid for this quadrant and add index=formID pair to map if not already there
+
+	debugstream << "Collecting SubCell-Quadrant Textures List: ";
+
+	int texindex=0;
+	int quadIndex=0;
+	uint32_t formID;
+	int gridpos=0;
+	for (int i=0; i < 4; i++)
+	{
+		for (int j=0; j < 4; j++)
+		{
+			int yoffset = (subCY*8) + (quadX*4) + i;
+			int xoffset = (subCX*8) + (quadY*4) + j;
+			texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
+			debugstream << "[" << gridpos << "] texindex=" << texindex << " ";
+			gridpos++;
+			if (texindex == -1)
+			{
+				debugstream << "; ";
+				continue; // todo: figure out what the default texture is
+			}
+
+			std::map<int, uint32_t>::iterator lookup = mState.mLandTexLookup.find(texindex);
+			if (lookup == mState.mLandTexLookup.end())
+				throw std::runtime_error("error trying to collect landscape texture indexes");
+
+			formID = lookup->second;
+			debugstream << "formID=[" << formID << "] ";
+			auto lookup2 = mSubCellQuadTexList.find(formID);
+			if (lookup2 == mSubCellQuadTexList.end())
+			{
+				debugstream << "ADDED";
+				mSubCellQuadTexList[formID] = quadIndex++;
+			}
+			debugstream << ";";
+		}
+	}
+	debugstream << std::endl;
+	OutputDebugString(debugstream.str().c_str());
+
+}
 
 CSMDoc::ExportPathgridCollectionTES4Stage::ExportPathgridCollectionTES4Stage (Document& document,
 	SavingState& state)

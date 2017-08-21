@@ -5,6 +5,7 @@
 #include "../world/idcollection.hpp"
 #include "../world/scope.hpp"
 #include <components/esm/defs.hpp>
+#include <components/esm/loadland.hpp>
 
 //#include <components/esm/loaddial.hpp>
 //#include "../world/infocollection.hpp"
@@ -305,6 +306,10 @@ namespace CSMDoc
 
 		virtual void perform (int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
+
+		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData);
+		std::map<uint32_t, int> mSubCellQuadTexList;
+		
 	};
 
 	class ExportPathgridCollectionTES4Stage : public Stage
