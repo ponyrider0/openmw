@@ -309,6 +309,9 @@ namespace CSMDoc
 
 		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData);
 		std::map<uint32_t, int> mSubCellQuadTexList;
+
+		void calculateTexLayerOpacityMap(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int layerID);
+		std::map<uint16_t, float> mTexLayerOpacityMap;
 		
 	};
 

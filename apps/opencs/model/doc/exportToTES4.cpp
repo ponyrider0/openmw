@@ -1164,12 +1164,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									uint16_t position=0;
 									float opacity=1.0f;
 									writer.startSubRecordTES4("VTXT");
-
-									writer.writeT<uint16_t>(position); // offset into 17x17 grid
-									writer.writeT<uint8_t>(0); // unused
-									writer.writeT<uint8_t>(0); // unused
-									writer.writeT<float>(opacity); // float opacity
-
+									calculateTexLayerOpacityMap(x, y, u, v, landData, texformID);
+									for (auto map_pos = mTexLayerOpacityMap.begin(); map_pos != mTexLayerOpacityMap.end(); map_pos++)
+									{
+										position = map_pos->first;
+//										opacity = map_pos->second;
+										writer.writeT<uint16_t>(position); // offset into 17x17 grid
+										writer.writeT<uint8_t>(0); // unused
+										writer.writeT<uint8_t>(0); // unused
+										writer.writeT<float>(opacity); // float opacity
+									}
 									writer.endSubRecordTES4("VTXT");
 								}
 
@@ -1292,15 +1296,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	
 }
 
+// iterate through the 4x4 grid for this quadrant and add index=formID pair to map if not already there
 void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData)
 {
 	std::ostringstream debugstream;
 	mSubCellQuadTexList.clear();
 
-	// iterate through the 4x4 grid for this quadrant and add index=formID pair to map if not already there
-
 	debugstream << "Collecting SubCell-Quadrant Textures List: ";
-
 	int texindex=0;
 	int quadIndex=0;
 	uint32_t formID;
@@ -1333,6 +1335,60 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(in
 				mSubCellQuadTexList[formID] = quadIndex++;
 			}
 			debugstream << ";";
+		}
+	}
+	debugstream << std::endl;
+//	OutputDebugString(debugstream.str().c_str());
+
+}
+
+// create a 17x17 opacity map for specified layerID
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData, int layerID)
+{
+	std::ostringstream debugstream;
+	mTexLayerOpacityMap.clear();
+
+	debugstream << "Create Opacity Map: layerID=[" << layerID << "] ";
+	int texindex=0;
+	int quadIndex=0;
+	uint32_t formID;
+	int gridpos=0;
+	for (int i=0; i < 4; i++)
+	{
+		for (int j=0; j < 4; j++)
+		{
+			int yoffset = (subCY*8) + (quadX*4) + i;
+			int xoffset = (subCX*8) + (quadY*4) + j;
+			texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
+			gridpos++;
+			if (texindex == -1)
+			{
+				continue; // todo: figure out what the default texture is
+			}
+
+			std::map<int, uint32_t>::iterator lookup = mState.mLandTexLookup.find(texindex);
+			if (lookup == mState.mLandTexLookup.end())
+				throw std::runtime_error("error trying to lookup texture indexes");
+
+			formID = lookup->second;
+			float opacity = (1.0f / mSubCellQuadTexList.size());
+			if (layerID == formID)
+			{
+				debugstream << "[" << gridpos << "] pos=";
+				// calculate positions
+				int map_x, map_y;
+				map_x = j * 17.0 / 4.0;
+				map_y = i * 17.0 / 4.0;
+
+				for (int y=0; y < 4; y++)
+				for (int x=0; x < 4; x++)
+				{
+					uint16_t map_pos = ((map_y+y)*17)+(map_x+x);
+					mTexLayerOpacityMap[map_pos] = opacity;
+					debugstream << map_pos << " ";
+				}
+				debugstream << "; ";
+			}
 		}
 	}
 	debugstream << std::endl;
