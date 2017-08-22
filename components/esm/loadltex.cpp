@@ -90,7 +90,7 @@ namespace ESM
 		delete tempStr;
 
 		debugstream << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+//		OutputDebugString(debugstream.str().c_str());
 
 	}
 

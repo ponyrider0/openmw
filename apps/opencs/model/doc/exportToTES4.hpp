@@ -307,10 +307,10 @@ namespace CSMDoc
 		virtual void perform (int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 
-		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData);
-		std::map<uint32_t, int> mSubCellQuadTexList;
+		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int plugindex);
+		std::vector<uint32_t> mSubCellQuadTexList;
 
-		void calculateTexLayerOpacityMap(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int layerID);
+		void calculateTexLayerOpacityMap(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int plugindex, int layerID);
 		std::map<uint16_t, float> mTexLayerOpacityMap;
 		
 	};
@@ -354,10 +354,11 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount=0;
+		bool mSkipMasterRecords=true;
 
 	public:
 
-		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state);
+		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state, bool skipMaster=true);
 
 		virtual int setup();
 		///< \return number of steps

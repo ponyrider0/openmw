@@ -75,7 +75,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, false));
 
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
@@ -1120,6 +1120,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					debugstream << "ID retrieved.  exporting land ... ";
 					writer.startRecordTES4("LAND");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
+					int plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
 
 					// VTEX, LTEX formIDs (each morroblivion subcell maps to 8x8 portion of the original 16x16 morrowind cell vtex grid)
 					// each Subcell is further divided into quadrants containing a 4x4 portion of the original 16x16 morrowind cell vtex grid
@@ -1133,12 +1134,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							for (u=0; u < 2; u++)
 							{
 								// create texture list for subcell quadrant
-								gatherSubCellQuadrantLTEX(x, y, u, v, landData);
+								gatherSubCellQuadrantLTEX(x, y, u, v, landData, plugindex);
+								if (mSubCellQuadTexList.size() == 0)
+									continue;
 
 								// export first texture as the base layer
 								int16_t layer = -1;
-								auto subCellQuadList_iter = mSubCellQuadTexList.begin();
-								texformID = subCellQuadList_iter->first;
+								auto tex_iter = mSubCellQuadTexList.begin();
+								texformID = *tex_iter;
 								writer.startSubRecordTES4("BTXT");
 								writer.writeT<uint32_t>(texformID); // formID
 								writer.writeT<uint8_t>(quadVal); // quadrant
@@ -1148,10 +1151,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //								debugstream << "writing ref-LTEX=[" << texformID << "]... ";
 
 								// iterate through the remaining textures, exporting each as a separate layer
-								for (subCellQuadList_iter++; subCellQuadList_iter !=  mSubCellQuadTexList.end(); subCellQuadList_iter++)
+								for (tex_iter++; tex_iter !=  mSubCellQuadTexList.end(); tex_iter++)
 								{
 									layer++;
-									texformID = subCellQuadList_iter->first;
+									texformID = *tex_iter;
 									writer.startSubRecordTES4("ATXT");
 									writer.writeT<uint32_t>(texformID); // formID
 									writer.writeT<uint8_t>(quadVal); // quadrant
@@ -1164,11 +1167,11 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									uint16_t position=0;
 									float opacity=1.0f;
 									writer.startSubRecordTES4("VTXT");
-									calculateTexLayerOpacityMap(x, y, u, v, landData, texformID);
+									calculateTexLayerOpacityMap(x, y, u, v, landData, plugindex, texformID);
 									for (auto map_pos = mTexLayerOpacityMap.begin(); map_pos != mTexLayerOpacityMap.end(); map_pos++)
 									{
 										position = map_pos->first;
-//										opacity = map_pos->second;
+										opacity = map_pos->second;
 										writer.writeT<uint16_t>(position); // offset into 17x17 grid
 										writer.writeT<uint8_t>(0); // unused
 										writer.writeT<uint8_t>(0); // unused
@@ -1196,7 +1199,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				{
 					debugstream << "no landscape data." << std::endl;
 				}
-				OutputDebugString(debugstream.str().c_str());
+//				OutputDebugString(debugstream.str().c_str());
 				
 				// TODO: export PATH
 				
@@ -1297,14 +1300,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 }
 
 // iterate through the 4x4 grid for this quadrant and add index=formID pair to map if not already there
-void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData)
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData, int plugindex)
 {
 	std::ostringstream debugstream;
 	mSubCellQuadTexList.clear();
 
-	debugstream << "Collecting SubCell-Quadrant Textures List: ";
+	debugstream << "Collecting SubCell-Quadrant Textures List: (plugin=" << plugindex << ") ";
 	int texindex=0;
-	int quadIndex=0;
 	uint32_t formID;
 	int gridpos=0;
 	for (int i=0; i < 4; i++)
@@ -1322,28 +1324,45 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(in
 				continue; // todo: figure out what the default texture is
 			}
 
-			std::map<int, uint32_t>::iterator lookup = mState.mLandTexLookup.find(texindex);
-			if (lookup == mState.mLandTexLookup.end())
-				throw std::runtime_error("error trying to collect landscape texture indexes");
+			auto lookup = mState.mLandTexLookup_Plugin_Index[plugindex].find(texindex);
+			if (lookup == mState.mLandTexLookup_Plugin_Index[plugindex].end())
+			{
+				debugstream << "<<not found, plugin=0...>> ";
+				// try again with plugindex==0
+				lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
+				if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
+				{
+					debugstream << "ERROR: couldn't resolve texindex=" << texindex << std::endl;
+					OutputDebugString(debugstream.str().c_str());
+					throw std::runtime_error("ERROR: gatherSubCellQuadrantLTEX - couldn't resolve texindex");
+				}
+			}
 
 			formID = lookup->second;
 			debugstream << "formID=[" << formID << "] ";
-			auto lookup2 = mSubCellQuadTexList.find(formID);
-			if (lookup2 == mSubCellQuadTexList.end())
+			auto tex_iter = mSubCellQuadTexList.begin();
+			for (; tex_iter != mSubCellQuadTexList.end(); tex_iter++)
+			{
+				if (*tex_iter == formID)
+				{
+					break;
+				}
+			}
+			if (tex_iter == mSubCellQuadTexList.end())
 			{
 				debugstream << "ADDED";
-				mSubCellQuadTexList[formID] = quadIndex++;
+				mSubCellQuadTexList.push_back(formID);
 			}
 			debugstream << ";";
 		}
 	}
 	debugstream << std::endl;
-//	OutputDebugString(debugstream.str().c_str());
+	OutputDebugString(debugstream.str().c_str());
 
 }
 
 // create a 17x17 opacity map for specified layerID
-void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData, int layerID)
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData, int plugindex, int layerID)
 {
 	std::ostringstream debugstream;
 	mTexLayerOpacityMap.clear();
@@ -1366,9 +1385,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 				continue; // todo: figure out what the default texture is
 			}
 
-			std::map<int, uint32_t>::iterator lookup = mState.mLandTexLookup.find(texindex);
-			if (lookup == mState.mLandTexLookup.end())
-				throw std::runtime_error("error trying to lookup texture indexes");
+			auto lookup = mState.mLandTexLookup_Plugin_Index[plugindex].find(texindex);
+			if (lookup == mState.mLandTexLookup_Plugin_Index[plugindex].end())
+			{
+				lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
+				if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
+					throw std::runtime_error("ERROR: calculateTexLayerOpacityMap - couldn't resolve texindex");
+			}
 
 			formID = lookup->second;
 			float opacity = (1.0f / mSubCellQuadTexList.size());
@@ -1384,7 +1407,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 				for (int x=0; x < 4; x++)
 				{
 					uint16_t map_pos = ((map_y+y)*17)+(map_x+x);
-					mTexLayerOpacityMap[map_pos] = opacity;
+					if (x > 0 && x < 4 && y > 0 && y < 4)
+						mTexLayerOpacityMap[map_pos] = 1.0f;
+					else
+						mTexLayerOpacityMap[map_pos] = 0.8f;
 					debugstream << map_pos << " ";
 				}
 				debugstream << "; ";
@@ -1392,7 +1418,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 		}
 	}
 	debugstream << std::endl;
-	OutputDebugString(debugstream.str().c_str());
+//	OutputDebugString(debugstream.str().c_str());
 
 }
 
@@ -1446,9 +1472,11 @@ void CSMDoc::ExportLandCollectionTES4Stage::perform (int stage, Messages& messag
 
 
 CSMDoc::ExportLandTextureCollectionTES4Stage::ExportLandTextureCollectionTES4Stage (Document& document,
-	SavingState& state)
+	SavingState& state, bool skipMaster)
 	: mDocument (document), mState (state)
-{}
+{
+	mSkipMasterRecords = skipMaster;
+}
 
 int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 {
@@ -1459,6 +1487,7 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 
 void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::ostringstream debugstream;
 	ESM::ESMWriter& writer = mState.getWriter();
 	const CSMWorld::Record<CSMWorld::LandTexture>& landTexture =
 		mDocument.getData().getLandTextures().getRecord (stage);
@@ -1470,10 +1499,16 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		writer.startGroupTES4("LTEX", 0);
 	}
 
-	if (landTexture.isModified() || landTexture.mState == CSMWorld::RecordBase::State_Deleted)
+	bool bIdenticalToMaster = !(landTexture.isModified() || landTexture.mState == CSMWorld::RecordBase::State_Deleted);
+	if (bIdenticalToMaster && mSkipMasterRecords)
+	{
+		// do nothing
+	}
+	else
 	{
 		CSMWorld::LandTexture record = landTexture.get();
 
+		// create separate lookup tables for each plugin loaded
 		uint32_t formID = writer.crossRefStringID(record.mId);
 		if (formID == 0)
 		{
@@ -1482,7 +1517,9 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 			formID = writer.reserveFormID(formID, record.mId);
 		}
 		// create lookup table for TextureIndex
-		mState.mLandTexLookup[record.mIndex] = formID;
+		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
+		debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
+		OutputDebugString(debugstream.str().c_str());
 
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
