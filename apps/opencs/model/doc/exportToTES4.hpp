@@ -136,8 +136,8 @@ namespace CSMDoc
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
-			writer.startRecordTES4 (record.sRecordId, flags);
-			record.exportTES4 (writer);
+			writer.startRecordTES4 (record.sRecordId, flags, 0, record.mId);
+			record.exportTESx (writer);
 			writer.endRecordTES4 (record.sRecordId);
 		}
 		
@@ -178,6 +178,24 @@ namespace CSMDoc
 	public:
 
 		ExportRefIdCollectionTES4Stage (Document& document, SavingState& state);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
+	class ExportSTATCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+		bool mSkipMasterRecords;
+
+	public:
+
+		ExportSTATCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps

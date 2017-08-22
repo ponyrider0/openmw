@@ -42,10 +42,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
 		(mDocument.getData().getScripts(), currentSave));
 
-	// TODO: assign formIDs to crossRef in Cell Export
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(mDocument.getData().getRegions(), currentSave));
-
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
 		(mDocument.getData().getBirthsigns(), currentSave));
 
@@ -75,11 +71,16 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
+// TODO: assign formIDs to crossRef in Cell Export
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
+		(currentDoc.getData().getRegions(), currentSave));
+
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, false));
 
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportLeveledCreaturesCollectionTES4Stage (currentDoc, currentSave));
@@ -350,6 +351,36 @@ void CSMDoc::ExportCreaturesCollectionTES4Stage::perform (int stage, Messages& m
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4("CREA");
+	}
+}
+
+CSMDoc::ExportSTATCollectionTES4Stage::ExportSTATCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+
+int CSMDoc::ExportSTATCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getStatics().getSize();
+	return mActiveRefCount;
+}
+
+void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	// STAT GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("STAT", 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getStatics().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4("STAT");
 	}
 }
 
@@ -652,10 +683,11 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     refFormID = writer.reserveFormID(refFormID, refRecord.mId);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-                    if ( (baseRefID != 0) && ( (baseRefIndex.second ==
-						CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+                    if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static)
+						) )
                     {
                         std::string sSIG;
                         switch (baseRefIndex.second)
@@ -875,7 +907,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 			if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static)
+				)
 			{
 				std::string sSIG;
 				switch (baseRefIndex.second)
@@ -1095,7 +1129,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				}
 				// ********************EXPORT SUBCELL HERE **********************
 				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
-				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);			
+				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);
+				// crossRef Region stringID to formID to make XCLR subrecord
+				uint32_t regnID = writer.crossRefStringID(cellRecordPtr->get().mRegion);
+				if (regnID != 0)				
+				{
+					writer.startSubRecordTES4("XCLR");
+					writer.writeT<uint32_t>(regnID);
+					writer.endSubRecordTES4("XCLR");
+				}
 				// Cell record ends before creation of child records (which are full records and not subrecords)
 				writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 
@@ -1206,15 +1248,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				// export Refs (ACRE, REFR)
 				if (references!=mState.getSubRecords().end())
 				{
-//					std::cout << "Exporting Temporary Refs (ACRE,REFR) " << std::endl;
+					debugstream.str(""); debugstream.clear();
+					debugstream << "Exporting Temporary Refs (ACRE,REFR): ";
 					for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 						iter != references->second.rend(); ++iter)
 					{
 						const CSMWorld::Record<CSMWorld::CellRef>& ref =
 							mDocument.getData().getReferences().getRecord (*iter);
 
-						// TODO: figure out how to skip records from a different subCell
-						if ( (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted) && (subCell == 0) )
+						// TODO: figure out how to skip records from a different subCell ((CURRENTLY HARDCODED TO SUBCELL==1 actually zero))
+						if ( (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted) && (subCell == 1) )
 						{
 							CSMWorld::CellRef refRecord = ref.get();
 
@@ -1235,10 +1278,11 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-							if ((baseRefID != 0) && ( (baseRefIndex.second ==
-								CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+							if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) )
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static)
+								)
 							{
 								std::string sSIG;
 								switch (baseRefIndex.second)
@@ -1262,10 +1306,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 								// end record
 								writer.endRecordTES4(sSIG);
+								debugstream << "(" << sSIG << ")[" << refFormID << "] ";
 							}
 
 						} // end: if ( (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted) ...
 					} // end: for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin()) ...
+					debugstream << std::endl;
+//					OutputDebugString(debugstream.str().c_str());
+
 				}  // end: if (references!=mState.getSubRecords().end())
 				// end: export Refs (ACRE, REFR)
 

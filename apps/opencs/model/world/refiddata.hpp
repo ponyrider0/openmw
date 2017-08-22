@@ -240,6 +240,9 @@ namespace CSMWorld
 			// convert internal record type to export-compatible record Signature
 			switch (esmRecord.sRecordId)
 			{
+			case ESM::REC_STAT:
+				sSIG = "STAT";
+				break;
 			case ESM::REC_NPC_:
 				sSIG = "NPC_";
 				break;

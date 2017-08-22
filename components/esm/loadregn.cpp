@@ -107,6 +107,43 @@ namespace ESM
         }
     }
 
+	bool Region::exportTESx(ESMWriter &esm, int export_format) const
+	{
+//		esm.writeHNCString("NAME", mId);
+//		esm.writeHNOCString("FNAM", mName);
+//		if (esm.getVersion() == VER_12)
+//			esm.writeHNT("WEAT", mData, sizeof(mData) - 2);
+//		else
+//			esm.writeHNT("WEAT", mData);
+//		esm.writeHNOCString("BNAM", mSleepList);
+//		esm.writeHNT("CNAM", mMapColor);
+//		for (std::vector<SoundRef>::const_iterator it = mSoundList.begin(); it != mSoundList.end(); ++it)
+//			esm.writeHNT<SoundRef>("SNAM", *it);
+
+		std::string *tempStr;
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		// ICON
+
+		// RCLR (8bit x Red,Green,Blue,Unused)
+		esm.startSubRecordTES4("RCLR");
+		esm.writeT<uint32_t>(mMapColor);
+		esm.endSubRecordTES4("RCLR");
+
+		// WNAM - Worldspace
+
+		// Region Areas? RPLI, RPLD(X,Y)
+
+		// Region Data Entries?
+			// Objects, Map, Grass, Sound, Weather
+		
+		return true;
+	}
+
     void Region::blank()
     {
         mName.clear();
