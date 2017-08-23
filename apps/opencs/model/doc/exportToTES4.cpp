@@ -1,5 +1,11 @@
-#include <Windows.h>
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
+
 #include <boost/filesystem.hpp>
 #include <QUndoStack>
 

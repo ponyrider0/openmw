@@ -1,9 +1,14 @@
 #include "loadcell.hpp"
 
+#include <iostream>
+#ifdef _WIN32
 #include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+#endif
+
 #include <string>
 #include <sstream>
-#include <iostream>
 #include <list>
 
 #include <boost/concept_check.hpp>
