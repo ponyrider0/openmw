@@ -240,9 +240,14 @@ namespace CSMWorld
 			// convert internal record type to export-compatible record Signature
 			switch (esmRecord.sRecordId)
 			{
+/*
+			case ESM::REC_DOOR:
+				sSIG = "DOOR";
+				break;
 			case ESM::REC_STAT:
 				sSIG = "STAT";
 				break;
+*/
 			case ESM::REC_NPC_:
 				sSIG = "NPC_";
 				break;
@@ -254,6 +259,11 @@ namespace CSMWorld
 				break;
 			default:
 				sSIG = "";
+				for (int i=0; i<4; ++i)
+					/// \todo make endianess agnostic
+					sSIG += reinterpret_cast<const char *> (&esmRecord.sRecordId)[i];
+				sSIG[4]='\0';
+
 			}
 			if ( sSIG != "" )
 			{

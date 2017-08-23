@@ -254,6 +254,31 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 	esm.writeT<uint32_t>(baseFormID);
 	esm.endSubRecordTES4("NAME");
 
+	// TODO: if (base type == door):
+	//   1. create searchable list of doorRefID+Cell+location to match
+	// If (mTeleport == true) 
+	//   1. add this reference to stack for second pass processing,
+	//   2. save writer context to go back to replace with correct RefID
+	// After all references created, make a second pass to:
+	//   1. iterate through stack of all door references with mTeleport==true
+	//   2. match mDestCell+mDoorDest with searchable list of doorRefID+Cell+location
+	//   3. replace XTEL subrecord with referenceID from #2
+	if (mDestCell.length() != 0)
+	{
+			uint32_t destID = esm.crossRefStringID(mDestCell);
+			// find teleport door (reference) in destID that is near mDoorDest
+			uint32_t teleportDoorRefID=0;
+			esm.startSubRecordTES4("XTEL");
+			esm.writeT<uint32_t>(teleportDoorRefID);
+			esm.writeT<float>(mDoorDest.pos[0]);
+			esm.writeT<float>(mDoorDest.pos[1]);
+			esm.writeT<float>(mDoorDest.pos[2]);
+			esm.writeT<float>(mDoorDest.rot[0]);
+			esm.writeT<float>(mDoorDest.rot[1]);
+			esm.writeT<float>(mDoorDest.rot[2]);
+			esm.endSubRecordTES4("XTEL");
+	}
+
 	// EDID = EditorID
 	//	esm.writeHNCString("NAME", mRefID);
 //	esm.startSubRecordTES4("EDID");

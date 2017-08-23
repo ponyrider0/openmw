@@ -80,6 +80,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
@@ -260,7 +261,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 CSMDoc::ExportRefIdCollectionTES4Stage::ExportRefIdCollectionTES4Stage (Document& document, SavingState& state)
 	: mDocument (document), mState (state)
 {}
-
 int CSMDoc::ExportRefIdCollectionTES4Stage::setup()
 {
 	mActiveRefCount=0;
@@ -268,7 +268,6 @@ int CSMDoc::ExportRefIdCollectionTES4Stage::setup()
 //	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
 	return mActiveRefCount;
 }
-
 void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	// HACK: hardcoded for LVLC
@@ -351,6 +350,37 @@ void CSMDoc::ExportCreaturesCollectionTES4Stage::perform (int stage, Messages& m
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4("CREA");
+	}
+}
+
+CSMDoc::ExportDoorCollectionTES4Stage::ExportDoorCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+
+int CSMDoc::ExportDoorCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getDoors().getSize();
+	return mActiveRefCount;
+}
+
+void CSMDoc::ExportDoorCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	// DOOR GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4("DOOR", 0);
+	}
+
+	std::cout << "Door [" << stage << "]" << std::endl;
+	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (stage, mState.getWriter(), false, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4("DOOR");
 	}
 }
 
@@ -458,10 +488,10 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				// and skip to the next loop iteration
 				uint32_t baseRefID = mState.getWriter().crossRefStringID(record.get().mRefID);
 				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
-				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
+				if ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) )
 				{
 					debugstream.str(""); debugstream.clear();
-					debugstream << "Collecting Persistent NPC reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
+					debugstream << "Collecting Persistent reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
 //					OutputDebugString(debugstream.str().c_str());
 					mState.mPersistentWorldRefs.push_back(i);
 					continue;
@@ -686,7 +716,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static)
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door)
 						) )
                     {
                         std::string sSIG;
@@ -908,7 +939,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
 				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static)
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door)
 				)
 			{
 				std::string sSIG;

@@ -69,7 +69,45 @@ namespace ESM
     }
 	bool Door::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		std::string *tempStr;
+		std::ostringstream modelPath;
+
+		// EDID
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		// FULL
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// MODL, MODB, MODT
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		modelPath << "morro\\" << *tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(modelPath.str());
+		esm.endSubRecordTES4("MODL");
+		delete tempStr;
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(1.0);
+		esm.endSubRecordTES4("MODB");
+
+		// SCRI, script
+
+		// SNAM, OpenSound
+		// ANAM, CloseSound
+		// BNAM, LoopSound
+
+		// FNAM, Flags 0x01=Oblivion Gate, 0x02=Automatic, 0x04=Hidden, 0x08=Minimal Use
+
+		// TNAM, Array: Teleport Destination: [Cell, WRLD]
+		return true;
 	}
 
     void Door::blank()
