@@ -332,6 +332,25 @@ namespace CSMDoc
 		typedef struct { int blockX; int blockY; int subblockX; int subblockY; } GridTrackT;
 		std::vector<GridTrackT> GridTracker;
 		bool mIsWrldHeaderWritten=false;
+		std::vector<uint32_t> mSubCellQuadTexList;
+		std::map<uint16_t, float> mTexLayerOpacityMap;
+		uint32_t mPreBlendMap[6][6]; // ESM3-based, single-layer 4x4 grid +1 surrounding texture
+		std::vector<uint32_t> mPreBlendTextureList;
+		std::vector<float[17][17]> mPostBlendMaps; // ESM4-based, multi-layered 17x17 grid
+
+		bool getLandDataFromXY(int origX, int origY, int& plugindex, const ESM::Land::LandData*& landData);
+		void drawPreBlendMapXY(const ESM::Land::LandData *landData, int plugindex, int subCX, int subCY, int quadX, int quadY, int inputX, int inputY, int outputX, int outputY);
+		void drawLeftBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawRightBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawTopBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawBottomBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawTopLeftCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawTopRightCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawBottomLeftCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+		void drawBottomRightCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
+
+		void doStuff4(ESM::ESMWriter& writer, int quadVal);
+		void doStuff5(ESM::ESMWriter& writer, int quadVal);
 
 	public:
 
@@ -343,11 +362,11 @@ namespace CSMDoc
 		virtual void perform (int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 
-		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int plugindex);
-		std::vector<uint32_t> mSubCellQuadTexList;
+		void createPreBlendMap(ESM::ESMWriter& writer, int baseX, int baseY, int subCX, int subCY, int quadX, int quadY);
+		void gatherPreBlendTextureList();
 
+		void gatherSubCellQuadrantLTEX(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int plugindex);
 		void calculateTexLayerOpacityMap(int SubCell, int subX, int subY, int quadrant, const ESM::Land::LandData *landData, int plugindex, int layerID);
-		std::map<uint16_t, float> mTexLayerOpacityMap;
 		
 	};
 

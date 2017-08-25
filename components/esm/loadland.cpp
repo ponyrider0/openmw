@@ -272,6 +272,7 @@ namespace ESM
 		}
 		
 		// VCLR 33x33 grid of 24-bit Vertex Color
+/*
 		landData = getLandData(Land::DATA_VCLR);
 		if (landData != 0)
 		{
@@ -291,6 +292,7 @@ namespace ESM
 			}
 			esm.endSubRecordTES4("VCLR");
 		}
+*/
 
 /*
 		// BTXT, Base Texture (up to 4 formID+quadrant pairs)

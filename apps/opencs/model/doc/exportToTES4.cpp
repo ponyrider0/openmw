@@ -86,8 +86,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
-	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
+//	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
+//	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportLeveledCreaturesCollectionTES4Stage (currentDoc, currentSave));
@@ -982,7 +982,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	//*********************END WORLD GROUP HEADER**************************/
 
 	//********************BEGIN PROCESSING EXTERIOR CELLS*****************/
-	// retrieve a gridtrack from the tracker and process a cell
+	//***************BEGIN CELL SELECTION********************/
+	// Cells must be written to file in sets of contigous blocks and subblocks
 	if (stage == 0)
 	{
 		GridTrackT gridTrack = GridTracker[0];
@@ -1072,17 +1073,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			// delete prior column(row?) of cells and start the next
 			subblock->erase(subblock->begin());
 		}
-	}
-	
-//    exportData = &mCellExportList.back();
+	}	
     cellRecordPtr = exportData->cellRecordPtr;
     cellFormID = exportData->formID;
+	//******************* END CELL SELECTION ***********************/
 
 	debugstream.str(""); debugstream.clear();
 	debugstream << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
 	debugstream << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
 	debugstream << "CellCount=[" << ++cellCount << "]" << std::endl;
-	OutputDebugString(debugstream.str().c_str());
+//	OutputDebugString(debugstream.str().c_str());
 
 	if (cellRecordPtr == 0)
 	{
@@ -1090,6 +1090,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		throw std::runtime_error ("export error: cellRecordPtr uninitialized");
 	}
 
+	//*****************CHECK FOR END OF BLOCK/SUBBLOCK***********/
 	// check to see if group is initialized
     if ((subblockX != oldSubblockX) || (subblockY != oldSubblockY))
 	{
@@ -1107,7 +1108,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			writer.startGroupTES4(*((uint32_t *)groupid_gridYX), 4);
 		}
 		debugstream << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+//		OutputDebugString(debugstream.str().c_str());
 		// start new subblock
 		groupid_gridYX[0] = subblockY;
 		groupid_gridYX[1] = subblockX;
@@ -1188,7 +1189,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				//******************TEMPORARY CHILDREN*****************************
 				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
 
-				// TODO: export LAND
+				//******************EXPORT LANDSCAPE*****************/
 				std::ostringstream landID;
 				landID << "#" << (baseX/2) << " " << (baseY/2);
 				debugstream.str("");
@@ -1213,6 +1214,22 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						{
 							for (u=0; u < 2; u++)
 							{
+
+								// After exporting landscape heightmaps...
+								// 1. Create BlendMap
+								createPreBlendMap(writer, (baseX/2), (baseY/2), x, y, u, v);
+								// 2. Create Layer List (from all textures in Blendmap)
+								gatherPreBlendTextureList();
+								if (mPreBlendTextureList.size() > 0)
+								{
+									// 3. Choose Base Texture
+									doStuff4(writer, quadVal);
+									// 4. Run interpolation algorithm to generate layers
+									doStuff5(writer, quadVal);
+								}
+
+								//*******************************************************/
+/*
 								// create texture list for subcell quadrant
 								gatherSubCellQuadrantLTEX(x, y, u, v, landData, plugindex);
 								if (mSubCellQuadTexList.size() == 0)
@@ -1243,7 +1260,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									writer.endSubRecordTES4("ATXT");
 
 									// create an opacity map for this layer, then export it as VTXT record
-
 									uint16_t position=0;
 									float opacity=1.0f;
 									writer.startSubRecordTES4("VTXT");
@@ -1259,15 +1275,18 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									}
 									writer.endSubRecordTES4("VTXT");
 								}
-
+*/
+								// ************************************************************/
 								// update the quadrant number for next pass
 								quadVal++;
+
 /*
 								writer.startSubRecordTES4("VTEX");
 								// multiple formIDs
 								writer.writeT<uint32_t>(texformID); // formID
 								writer.endSubRecordTES4("VTEX");
 */
+
 							}
 						}
 					}
@@ -1280,6 +1299,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					debugstream << "no landscape data." << std::endl;
 				}
 //				OutputDebugString(debugstream.str().c_str());
+				//**********END EXPORT LANDSCAPE************************/
 				
 				// TODO: export PATH
 				
@@ -1385,6 +1405,636 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	
 }
 
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& writer, int quadVal)
+{
+	std::ostringstream debugstream;
+	int layer = -1;
+	uint32_t texformID;
+	auto tex_iter = mPreBlendTextureList.begin();
+
+	// iterate through the remaining textures, exporting each as a separate layer
+	for (tex_iter++; tex_iter != mPreBlendTextureList.end(); tex_iter++)
+	{
+		layer++;
+		texformID = *tex_iter;
+		writer.startSubRecordTES4("ATXT");
+		writer.writeT<uint32_t>(texformID); // formID
+		writer.writeT<uint8_t>(quadVal); // quadrant
+		writer.writeT<uint8_t>(0); // unused
+		writer.writeT<int16_t>(layer); // 16bit layer
+		writer.endSubRecordTES4("ATXT");
+
+		debugstream.str(""); debugstream.clear();
+		debugstream << "[" << layer << "]Making OpacityMap: texformID=" << texformID << " ";
+		// create an opacity map for this layer, then export it as VTXT record
+		float opacityMap[17][17];
+		int map_x, map_y;
+		for (map_y = 0; map_y < 17; map_y++)
+		for (map_x = 0; map_x < 17; map_x++)
+		{
+			// bilinear interopolate texture
+			float map_u, map_v;
+			float neighbors[2][2];
+			map_u = ((map_x)/17.0); // (UV coords 0-1)
+			map_v = ((map_y)/17.0);
+			// assign neighbors (1.0 vs 0.0 if texture is present)
+			// find nearest neighbor coordinate (on 6x6 preblendmap)
+//			int v_floor = floor(map_v * 5); 
+//			int v_ceil = ceil(map_v * 5);
+//			int u_floor = floor(map_u * 5);
+//			int u_ceil = ceil(map_u * 5);
+			int v_floor = (map_v * 4)+1;
+			int u_floor = (map_u * 4)+1;
+			int v_ceil = (map_v * 4)+1.5;
+			int u_ceil = (map_u * 4)+1.5;
+
+			if ((u_ceil >= 6) || (v_ceil >= 6))
+				throw std::runtime_error("ERROR: Landtex bilerp - preblend offsets out of bounds"); 
+
+			// get neighbor's values
+			neighbors[0][0] = (mPreBlendMap[u_floor][v_floor] == texformID) ? 1.0f : 0.0f;
+			neighbors[1][0] = (mPreBlendMap[u_ceil][v_floor] == texformID) ? 1.0f : 0.0f;
+			neighbors[0][1] = (mPreBlendMap[u_floor][v_ceil] == texformID) ? 1.0f : 0.0f;
+			neighbors[1][1] = (mPreBlendMap[u_ceil][v_ceil] == texformID) ? 1.0f : 0.0f;
+
+			// now do the actual interpolation
+			// first along x * 2
+			float x_lerp1, x_lerp2;
+			x_lerp1 = (neighbors[0][0] * (1-map_u)) + (neighbors[1][0] * (map_u));
+			x_lerp2 = (neighbors[0][1] * (1-map_u)) + (neighbors[1][1] * (map_u));
+			// then along y of the 2 prior results
+			float y_lerp;
+			y_lerp = (x_lerp1 * (1-map_v)) + (x_lerp2 * (map_v));
+			if (y_lerp != 0)
+				debugstream << "pos=[" << map_x << "," << map_y << "] uv=(" << map_u << "," << map_v << ") X1=" << x_lerp1 << " X2=" << x_lerp2 << " Y=" << y_lerp << "; ";
+
+			// now put it in the postmap
+			opacityMap[map_x][map_y] = y_lerp;
+		}
+		debugstream << std::endl;
+//		OutputDebugString(debugstream.str().c_str());
+
+		uint16_t position=0;
+		float opacity=0;
+		writer.startSubRecordTES4("VTXT");
+		int u, v;
+		for (v=0; v < 17; v++)
+		for (u=0; u < 17; u++)
+		{
+			position++;
+			opacity = opacityMap[u][v];
+			if (opacity >= 0.0f)
+			{
+				writer.writeT<uint16_t>(position); // offset into 17x17 grid
+				writer.writeT<uint8_t>(0); // unused
+				writer.writeT<uint8_t>(0); // unused
+				writer.writeT<float>(opacity); // float opacity
+			}
+		}
+		writer.endSubRecordTES4("VTXT");
+	}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff4(ESM::ESMWriter& writer, int quadVal)
+{
+	int texformID;
+
+	// export first texture as the base layer
+	int16_t layer = -1;
+	auto tex_iter = mPreBlendTextureList.begin();
+	texformID = *tex_iter;
+	writer.startSubRecordTES4("BTXT");
+	writer.writeT<uint32_t>(texformID); // formID
+	writer.writeT<uint8_t>(quadVal); // quadrant
+	writer.writeT<uint8_t>(0); // unused
+	writer.writeT<int16_t>(layer); // 16bit layer
+	writer.endSubRecordTES4("BTXT");
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherPreBlendTextureList()
+{
+	int x, y;
+	uint32_t formID;
+	mPreBlendTextureList.clear();
+
+	// gather central 4x4
+	for (y=1; y < 5; y++)
+		for (x=1; x < 5; x++)
+		{
+			formID = mPreBlendMap[x][y];
+			if (formID == 0)
+				continue;
+			auto tex_iter = mPreBlendTextureList.begin();
+			bool matchFound = false;
+			for (; tex_iter != mPreBlendTextureList.end(); tex_iter++)
+			{
+				if (*tex_iter == formID)
+				{
+					matchFound = true;
+					break;
+				}
+			}
+			if (matchFound == false)
+			{
+				mPreBlendTextureList.push_back(formID);
+			}
+		}
+	// gather borders areas
+	for (y=0; y < 6; y++)
+		for (x=0; x < 6; x++)
+		{
+			if (x == 0 || x == 5 || y == 0 || y == 5) 
+			{
+				formID = mPreBlendMap[x][y];
+				if (formID == 0)
+					continue;
+				auto tex_iter = mPreBlendTextureList.begin();
+				bool matchFound = false;
+				for (; tex_iter != mPreBlendTextureList.end(); tex_iter++)
+				{
+					if (*tex_iter == formID)
+					{
+						matchFound = true;
+						break;
+					}
+				}
+				if (matchFound == false)
+				{
+					mPreBlendTextureList.push_back(formID);
+				}
+			}
+		}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::createPreBlendMap(ESM::ESMWriter& writer, int origX, int origY, int subCX, int subCY, int quadX, int quadY)
+{
+	std::ostringstream landID, debugstream;
+	const ESM::Land::LandData *landData;
+	int landIndex, plugindex;
+
+	// get central 4x4 grid
+	if (getLandDataFromXY(origX, origY, plugindex, landData) == true)
+	{
+		int x, y;
+		for (y=0; y < 4; y++)
+			for (x=0; x < 4; x++)
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, x, y, x+1, y+1);
+
+		// get 4 sides...
+		// get side X-1
+		drawLeftBorder(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawRightBorder(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawTopBorder(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawBottomBorder(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+
+		// get 4 corners
+		drawTopLeftCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawTopRightCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawBottomLeftCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+		drawBottomRightCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
+
+	} // if (getLandDataFromXY(origX, origY, plugindex, landData) == true)
+	else
+	{
+		debugstream.str(""); debugstream.clear();
+		debugstream << "ERROR: createPreBlendMap-getLandDataFromXY: no landData found" << std::endl;
+//		OutputDebugString(debugstream.str().c_str());
+	}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawTopLeftCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	int origX2=origX, origY2=origY;
+	int subCX2=subCX, quadX2=quadX;
+	int subCY2=subCY, quadY2=quadY;
+
+	// move to top left corner quadrant
+	// start with quadX-1 and quadY+1
+	quadX2 = quadX - 1;
+	quadY2 = quadY + 1;
+	// evaluate boundaries and move subcells or cells as needed
+	// if quadX2 < 0, then decrement subCX-1 and set quadX2=1
+	if (quadX2 < 0)
+	{
+		subCX2 = subCX - 1;
+		quadX2 = 1;
+		// now re-evaluate new boundaries
+		if (subCX2 < 0)
+		{
+			origX2 = origX - 1;
+			subCX2 = 1;
+			quadX2 = 1;
+		}
+	}
+	if (quadY2 > 1)
+	{
+		subCY2 = subCY + 1;
+		quadY2 = 0;
+		// re-evaluate
+		if (subCY2 > 1)
+		{
+			origY2 = origY + 1;
+			subCY2 = 0;
+			quadY2 = 0;
+		}
+	}
+	const ESM::Land::LandData* tempData;
+	int plugindex2;
+	if (getLandDataFromXY (origX2, origY2, plugindex2, tempData) == true)
+	{
+		drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY2, quadX2, quadY2, 3, 0, 0, 5);
+	}
+	else
+	{
+		// feather to blank or make hard edge
+		drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 0, 3, 0, 5);
+	}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawTopRightCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	int origX2=origX, origY2=origY;
+	int subCX2=subCX, quadX2=quadX;
+	int subCY2=subCY, quadY2=quadY;
+
+	// move to top left corner quadrant
+	// start with quadX-1 and quadY+1
+	quadX2 = quadX + 1;
+	quadY2 = quadY + 1;
+	// evaluate boundaries and move subcells or cells as needed
+	// if quadX2 < 0, then decrement subCX-1 and set quadX2=1
+	if (quadX2 > 1)
+	{
+		subCX2 = subCX + 1;
+		quadX2 = 0;
+		// now re-evaluate new boundaries
+		if (subCX2 > 1)
+		{
+			origX2 = origX + 1;
+			subCX2 = 0;
+			quadX2 = 0;
+		}
+	}
+	if (quadY2 > 1)
+	{
+		subCY2 = subCY + 1;
+		quadY2 = 0;
+		// re-evaluate
+		if (subCY2 > 1)
+		{
+			origY2 = origY + 1;
+			subCY2 = 0;
+			quadY2 = 0;
+		}
+	}
+	const ESM::Land::LandData* tempData;
+	int plugindex2;
+	if (getLandDataFromXY (origX2, origY2, plugindex2, tempData) == true)
+	{
+		drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY2, quadX2, quadY2, 0, 0, 5, 5);
+	}
+	else
+	{
+		// feather to blank or make hard edge
+		drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 3, 3, 5, 5);
+	}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawBottomLeftCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	int origX2=origX, origY2=origY;
+	int subCX2=subCX, quadX2=quadX;
+	int subCY2=subCY, quadY2=quadY;
+
+	// move to top left corner quadrant
+	// start with quadX-1 and quadY+1
+	quadX2 = quadX - 1;
+	quadY2 = quadY - 1;
+	// evaluate boundaries and move subcells or cells as needed
+	// if quadX2 < 0, then decrement subCX-1 and set quadX2=1
+	if (quadX2 < 0)
+	{
+		subCX2 = subCX - 1;
+		quadX2 = 1;
+		// now re-evaluate new boundaries
+		if (subCX2 < 0)
+		{
+			origX2 = origX - 1;
+			subCX2 = 1;
+			quadX2 = 1;
+		}
+	}
+	if (quadY2 < 0)
+	{
+		subCY2 = subCY - 1;
+		quadY2 = 1;
+		// re-evaluate
+		if (subCY2 < 0)
+		{
+			origY2 = origY - 1;
+			subCY2 = 1;
+			quadY2 = 1;
+		}
+	}
+	const ESM::Land::LandData* tempData;
+	int plugindex2;
+	if (getLandDataFromXY (origX2, origY2, plugindex2, tempData) == true)
+	{
+		drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY2, quadX2, quadY2, 3, 3, 0, 0);
+	}
+	else
+	{
+		// feather to blank or make hard edge
+		drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 0, 0, 0, 0);
+	}
+
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawBottomRightCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	int origX2=origX, origY2=origY;
+	int subCX2=subCX, quadX2=quadX;
+	int subCY2=subCY, quadY2=quadY;
+
+	// move to top left corner quadrant
+	// start with quadX-1 and quadY+1
+	quadX2 = quadX + 1;
+	quadY2 = quadY - 1;
+	// evaluate boundaries and move subcells or cells as needed
+	// if quadX2 < 0, then decrement subCX-1 and set quadX2=1
+	if (quadX2 > 1)
+	{
+		subCX2 = subCX + 1;
+		quadX2 = 0;
+		// now re-evaluate new boundaries
+		if (subCX2 > 1)
+		{
+			origX2 = origX + 1;
+			subCX2 = 0;
+			quadX2 = 0;
+		}
+	}
+	if (quadY2 < 0)
+	{
+		subCY2 = subCY - 1;
+		quadY2 = 1;
+		// re-evaluate
+		if (subCY2 < 0)
+		{
+			origY2 = origY - 1;
+			subCY2 = 1;
+			quadY2 = 1;
+		}
+	}
+	const ESM::Land::LandData* tempData;
+	int plugindex2;
+	if (getLandDataFromXY (origX2, origY2, plugindex2, tempData) == true)
+	{
+		drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY2, quadX2, quadY2, 0, 3, 5, 0);
+	}
+	else
+	{
+		// feather to blank or make hard edge
+		drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 3, 0, 5, 0);
+	}
+
+}
+
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawLeftBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	// get side X-1
+	int subCX2=subCX, quadX2=quadX;
+	if (quadX == 1)
+	{
+		// retrieve from quadX=0;
+		quadX2=0;
+		int y;
+		for (y=0; y < 4; y++)
+			drawPreBlendMapXY(landData, plugindex, subCX2, subCY, quadX2, quadY, 3, y, 0, y+1);
+	}
+	else if (subCX == 1)
+	{
+		// retrieve from subCX=0, quadX=1;
+		subCX2=0;
+		quadX2=1;
+		int y;
+		for (y=0; y < 4; y++)
+			drawPreBlendMapXY(landData, plugindex, subCX2, subCY, quadX2, quadY, 3, y, 0, y+1);
+	}
+	else
+	{
+		// retrieve from origX-1, subCX=1, quadX=1
+		subCX2=1;
+		quadX2=1;
+		const ESM::Land::LandData* tempData;
+		int plugindex2;
+		if (getLandDataFromXY (origX-1, origY, plugindex2, tempData) == true)
+		{
+			int y;
+			for (y=0; y < 4; y++)
+				drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY, quadX2, quadY, 3, y, 0, y+1);
+		}
+		else
+		{
+			// feather to blank or make hard edge
+			for (int y=0; y < 4; y++)
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 3, y, 0, y+1);
+		}
+	}
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawRightBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	// get side X+1
+	int subCX2=subCX, quadX2=quadX;
+	if (quadX == 0)
+	{
+		// retrieve from quadX=0;
+		quadX2=1;
+		for (int y=0; y < 4; y++)
+			drawPreBlendMapXY(landData, plugindex, subCX2, subCY, quadX2, quadY, 0, y, 5, y+1);
+	}
+	else if (subCX == 0)
+	{
+		// retrieve from subCX=1, quadX=0;
+		subCX2=1;
+		quadX2=0;
+		for (int y=0; y < 4; y++)
+			drawPreBlendMapXY(landData, plugindex, subCX2, subCY, quadX2, quadY, 0, y, 5, y+1);
+	}
+	else
+	{
+		// retrieve from origX+1, subCX=1, quadX=1
+		subCX2=0;
+		quadX2=0;
+		const ESM::Land::LandData* tempData;
+		int plugindex2;
+		if (getLandDataFromXY (origX+1, origY, plugindex2, tempData) == true)
+		{
+			for (int y=0; y < 4; y++)
+				drawPreBlendMapXY(tempData, plugindex2, subCX2, subCY, quadX2, quadY, 0, y, 5, y+1);
+		}
+		else
+		{
+			// feather to blank or make hard edge
+			for (int y=0; y < 4; y++)
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 3, y, 5, y+1);
+		}
+	}
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawTopBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	// get side Y+1
+	int subCY2=subCY, quadY2=quadY;
+	if (quadY == 0)
+	{
+		// retrieve from quadX=0;
+		quadY2=1;
+		for (int x=0; x < 4; x++)
+			drawPreBlendMapXY(landData, plugindex, subCX, subCY2, quadX, quadY2, x, 0, x+1, 5);
+	}
+	else if (subCX == 0)
+	{
+		// retrieve from subCX=1, quadX=0;
+		subCY2=1;
+		quadY2=0;
+		for (int x=0; x < 4; x++)
+			drawPreBlendMapXY(landData, plugindex, subCX, subCY2, quadX, quadY2, x, 0, x+1, 5);
+	}
+	else
+	{
+		// retrieve from origX+1, subCX=1, quadX=1
+		subCY2=0;
+		quadY2=0;
+		const ESM::Land::LandData* tempData;
+		int plugindex2;
+		if (getLandDataFromXY (origX+1, origY, plugindex2, tempData) == true)
+		{
+			for (int x=0; x < 4; x++)
+				drawPreBlendMapXY(tempData, plugindex2, subCX, subCY2, quadX, quadY2, x, 0, x+1, 5);
+		}
+		else
+		{
+			// feather to blank or make hard edge
+			for (int x=0; x < 4; x++)
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, x, 3, x+1, 5);
+		}
+	}
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawBottomBorder(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData)
+{
+	// get side Y-1
+	int subCY2=subCY, quadY2=quadY;
+	if (quadY == 1)
+	{
+		// retrieve from quadX=0;
+		quadY2=0;
+		for (int x=0; x < 4; x++)
+			drawPreBlendMapXY(landData, plugindex, subCX, subCY2, quadX, quadY2, x, 3, x+1, 0);
+	}
+	else if (subCY == 1)
+	{
+		// retrieve from subCY=0, quadY=1;
+		subCY2=0;
+		quadY2=1;
+		for (int x=0; x < 4; x++)
+			drawPreBlendMapXY(landData, plugindex, subCX, subCY2, quadX, quadY2, x, 3, x+1, 0);
+	}
+	else
+	{
+		// retrieve from origY-1, subCX=1, quadX=1
+		subCY2=1;
+		quadY2=1;
+		const ESM::Land::LandData* tempData;
+		int plugindex2;
+		if (getLandDataFromXY (origX, origY-1, plugindex2, tempData) == true)
+		{
+			for (int x=0; x < 4; x++)
+				drawPreBlendMapXY(tempData, plugindex, subCX, subCY2, quadX, quadY2, x, 3, x+1, 0);
+		}
+		else
+		{
+			// feather to blank or make hard edge
+			for (int x=0; x < 4; x++)
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, x, 0, x+1, 0);
+		}
+	}
+}
+
+bool CSMDoc::ExportExteriorCellCollectionTES4Stage::getLandDataFromXY(int origX, int origY, int& plugindex, const ESM::Land::LandData*& landData)
+{
+	std::ostringstream landID, debugstream;
+	int landIndex;
+
+	landID.str(""); landID.clear();
+	landID << "#" << origX << " " << origY;
+	if (mDocument.getData().getLand().searchId(landID.str()) != -1)
+	{
+		landIndex = mDocument.getData().getLand().getIndex(landID.str());
+		plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
+		landData = mDocument.getData().getLand().getRecord(landIndex).get().getLandData(ESM::Land::DATA_VTEX);
+		if (landData != 0)
+			return true;
+		else
+		{
+			debugstream << "ERROR: getLandDataFromXY - no vtex data" << std::endl;
+//			OutputDebugString(debugstream.str().c_str());
+//			throw std::runtime_error("ERROR: getLandDataFromXY - no vtex data");
+		}
+	}
+	else
+	{
+		debugstream << "ERROR: getLandDataFromXY - couldn't find landID" << std::endl;
+//		OutputDebugString(debugstream.str().c_str());
+//		throw std::runtime_error("ERROR: getLandDataFromXY - couldn't find landID");
+	}
+
+	return false;
+}
+
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM::Land::LandData *landData, int plugindex, int subCX, int subCY, int quadX, int quadY, int inputX, int inputY, int outputX, int outputY)
+{
+	std::ostringstream debugstream;
+
+	int yoffset = (subCY*8) + (quadY*4) + inputY;
+	int xoffset = (subCX*8) + (quadX*4) + inputX;
+	if (landData == 0)
+	{
+		debugstream << "ERROR: drawPreBlendMapXY - landData=0!" << std::endl;
+		OutputDebugString(debugstream.str().c_str());
+		throw std::runtime_error(debugstream.str().c_str());
+	}
+	int texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
+	if (texindex == -1)
+	{
+		mPreBlendMap[outputX][outputY] = 0;
+		return; // todo: figure out what the default texture is
+	}
+	auto lookup = mState.mLandTexLookup_Plugin_Index[plugindex].find(texindex);
+	if (lookup == mState.mLandTexLookup_Plugin_Index[plugindex].end())
+	{
+		// try again with plugindex==0
+		lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
+		if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
+		{
+			debugstream << "ERROR: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << std::endl;
+			OutputDebugString(debugstream.str().c_str());
+			throw std::runtime_error("ERROR: drawPreBlendMapXY - couldn't resolve texindex");
+		}
+	}
+	uint32_t texformID = lookup->second;
+	mPreBlendMap[outputX][outputY] = texformID;
+}
+
 // iterate through the 4x4 grid for this quadrant and add index=formID pair to map if not already there
 void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(int subCX, int subCY, int quadX, int quadY, const ESM::Land::LandData *landData, int plugindex)
 {
@@ -1399,8 +2049,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(in
 	{
 		for (int j=0; j < 4; j++)
 		{
-			int yoffset = (subCY*8) + (quadX*4) + i;
-			int xoffset = (subCX*8) + (quadY*4) + j;
+			int yoffset = (subCY*8) + (quadY*4) + i;
+			int xoffset = (subCX*8) + (quadX*4) + j;
 			texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
 			debugstream << "[" << gridpos << "] texindex=" << texindex << " ";
 			gridpos++;
