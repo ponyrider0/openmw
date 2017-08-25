@@ -77,7 +77,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-// TODO: assign formIDs to crossRef in Cell Export
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
 		(currentDoc.getData().getRegions(), currentSave));
 
@@ -86,8 +85,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
-//	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreaturesCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportLeveledCreaturesCollectionTES4Stage (currentDoc, currentSave));
@@ -380,7 +379,7 @@ void CSMDoc::ExportDoorCollectionTES4Stage::perform (int stage, Messages& messag
 		writer.startGroupTES4("DOOR", 0);
 	}
 
-	std::cout << "Door [" << stage << "]" << std::endl;
+//	std::cout << "Door [" << stage << "]" << std::endl;
 	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (stage, mState.getWriter(), false, 4);
 
 	if (stage == mActiveRefCount-1)
@@ -2255,7 +2254,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		// create lookup table for TextureIndex
 		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
 		debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+//		OutputDebugString(debugstream.str().c_str());
 
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
