@@ -336,7 +336,6 @@ namespace CSMDoc
 		std::map<uint16_t, float> mTexLayerOpacityMap;
 		uint32_t mPreBlendMap[6][6]; // ESM3-based, single-layer 4x4 grid +1 surrounding texture
 		std::vector<uint32_t> mPreBlendTextureList;
-		std::vector<float[17][17]> mPostBlendMaps; // ESM4-based, multi-layered 17x17 grid
 
 		bool getLandDataFromXY(int origX, int origY, int& plugindex, const ESM::Land::LandData*& landData);
 		void drawPreBlendMapXY(const ESM::Land::LandData *landData, int plugindex, int subCX, int subCY, int quadX, int quadY, int inputX, int inputY, int outputX, int outputY);
