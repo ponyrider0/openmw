@@ -487,13 +487,19 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 			std::ostringstream stream;
 			if (!interior)
 			{
-				// TODO: Collect NPC refs
-				// if NPC in exterior worldspace
+				// if NPC or teleport door in exterior worldspace
 				// then add to a global worldspace dummy cell
 				// and skip to the next loop iteration
+				bool exportRef=false;
 				uint32_t baseRefID = mState.getWriter().crossRefStringID(record.get().mRefID);
 				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
-				if ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) || (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) )
+
+				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
+					exportRef = true;
+				else if ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true) )
+					exportRef = true;
+
+				if (exportRef == true)
 				{
 					debugstream.str(""); debugstream.clear();
 					debugstream << "Collecting Persistent reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
@@ -606,11 +612,11 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			sSIG += reinterpret_cast<const char *>(&cellRecordPtr->get().sRecordId)[i];
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 		// initialize first block
-		writer.startGroupTES4(0, 2);
+		writer.startGroupTES4(block, 2);
 		// initialize first subblock
-		writer.startGroupTES4(0, 3);
+		writer.startGroupTES4(subblock, 3);
 		// document creation of first subblock
-		blockInitialized[0][0] = true;
+		blockInitialized[block][subblock] = true;
 	}
 
 	// check to see if we need to write the next GRUP record
@@ -624,10 +630,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 		{
 			writer.endGroupTES4(0);
 			// start the next block if prior block was closed
-			writer.startGroupTES4(0, 2);
+			writer.startGroupTES4(block, 2);
 		}
 		// start new subblock
-		writer.startGroupTES4(0, 3);
+		writer.startGroupTES4(subblock, 3);
 	}
 	
 //============================================================================================================

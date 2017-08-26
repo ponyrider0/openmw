@@ -263,20 +263,30 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 	//   1. iterate through stack of all door references with mTeleport==true
 	//   2. match mDestCell+mDoorDest with searchable list of doorRefID+Cell+location
 	//   3. replace XTEL subrecord with referenceID from #2
-	if (mDestCell.length() != 0)
+	if (mTeleport == true)
 	{
+		// find teleport door (reference) near the doordest location...
+		uint32_t teleportDoorRefID=0;
+		// add this reference + teleportDoorRefID ESM file offset to stack for second pass
+
+		if (mDestCell.length() == 0)
+		{
+			// dest cell is exterior worldspace, search worldspace for dest position
+		}
+		else
+		{
+			// dest is an interior cell, search dest cell for dest position
 			uint32_t destID = esm.crossRefStringID(mDestCell);
-			// find teleport door (reference) in destID that is near mDoorDest
-			uint32_t teleportDoorRefID=0;
-			esm.startSubRecordTES4("XTEL");
-			esm.writeT<uint32_t>(teleportDoorRefID);
-			esm.writeT<float>(mDoorDest.pos[0]);
-			esm.writeT<float>(mDoorDest.pos[1]);
-			esm.writeT<float>(mDoorDest.pos[2]);
-			esm.writeT<float>(mDoorDest.rot[0]);
-			esm.writeT<float>(mDoorDest.rot[1]);
-			esm.writeT<float>(mDoorDest.rot[2]);
-			esm.endSubRecordTES4("XTEL");
+		}
+		esm.startSubRecordTES4("XTEL");
+		esm.writeT<uint32_t>(teleportDoorRefID);
+		esm.writeT<float>(mDoorDest.pos[0]);
+		esm.writeT<float>(mDoorDest.pos[1]);
+		esm.writeT<float>(mDoorDest.pos[2]);
+		esm.writeT<float>(mDoorDest.rot[0]);
+		esm.writeT<float>(mDoorDest.rot[1]);
+		esm.writeT<float>(mDoorDest.rot[2]);
+		esm.endSubRecordTES4("XTEL");
 	}
 
 	// EDID = EditorID
