@@ -1438,14 +1438,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 			map_v = ((map_y)/17.0);
 			// assign neighbors (1.0 vs 0.0 if texture is present)
 			// find nearest neighbor coordinate (on 6x6 preblendmap)
-//			int v_floor = floor(map_v * 5); 
-//			int v_ceil = ceil(map_v * 5);
-//			int u_floor = floor(map_u * 5);
-//			int u_ceil = ceil(map_u * 5);
-			int v_floor = (map_v * 4)+1;
-			int u_floor = (map_u * 4)+1;
-			int v_ceil = (map_v * 4)+1.5;
-			int u_ceil = (map_u * 4)+1.5;
+			int v_floor = floor((map_v * 4)+1);
+			int u_floor = floor((map_u * 4)+1);
+			int v_ceil = v_floor+1;
+			int u_ceil = u_floor+1;
 
 			if ((u_ceil >= 6) || (v_ceil >= 6))
 				throw std::runtime_error("ERROR: Landtex bilerp - preblend offsets out of bounds"); 
@@ -1459,11 +1455,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 			// now do the actual interpolation
 			// first along x * 2
 			float x_lerp1, x_lerp2;
-			x_lerp1 = (neighbors[0][0] * (1-map_u)) + (neighbors[1][0] * (map_u));
-			x_lerp2 = (neighbors[0][1] * (1-map_u)) + (neighbors[1][1] * (map_u));
+			float wt_u = ((map_u*4)+1) - u_floor;
+			float wt_v = ((map_v*4)+1) - v_floor;
+			// calculate weights based on u==0 as texture A and u==1 as texture B
+			x_lerp1 = (neighbors[0][0] * (1-wt_u)) + (neighbors[1][0] * (wt_u));
+			x_lerp2 = (neighbors[0][1] * (1-wt_u)) + (neighbors[1][1] * (wt_u));
 			// then along y of the 2 prior results
 			float y_lerp;
-			y_lerp = (x_lerp1 * (1-map_v)) + (x_lerp2 * (map_v));
+			y_lerp = (x_lerp1 * (1-wt_v)) + (x_lerp2 * (wt_v));
 			if (y_lerp != 0)
 				debugstream << "pos=[" << map_x << "," << map_y << "] uv=(" << map_u << "," << map_v << ") X1=" << x_lerp1 << " X2=" << x_lerp2 << " Y=" << y_lerp << "; ";
 
@@ -1482,7 +1481,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 		{
 			position++;
 			opacity = opacityMap[u][v];
-			if (opacity >= 0.0f)
+			if (opacity > 0.0f)
 			{
 				writer.writeT<uint16_t>(position); // offset into 17x17 grid
 				writer.writeT<uint8_t>(0); // unused
