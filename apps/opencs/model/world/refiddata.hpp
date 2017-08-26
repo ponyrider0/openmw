@@ -224,7 +224,7 @@ namespace CSMWorld
 		std::string sSIG="";
 		Record<RecordT> record = mContainer.at(index);
 
-		bool exportOrSkip=true;
+		bool exportOrSkip=false;
 		if (skipBaseRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
@@ -237,7 +237,7 @@ namespace CSMWorld
 		if (exportOrSkip)
 		{
 			RecordT esmRecord = record.get();
-			// convert internal record type to export-compatible record Signature
+			// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
 			switch (esmRecord.sRecordId)
 			{
 /*
@@ -247,13 +247,13 @@ namespace CSMWorld
 			case ESM::REC_STAT:
 				sSIG = "STAT";
 				break;
-*/
 			case ESM::REC_NPC_:
 				sSIG = "NPC_";
 				break;
 			case ESM::REC_CREA:
 				sSIG = "CREA";
 				break;
+*/
 			case ESM::REC_LEVC:
 				sSIG = "LVLC";
 				break;

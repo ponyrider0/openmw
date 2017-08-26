@@ -85,11 +85,12 @@ namespace CSMDoc
 		const CollectionT& mCollection;
 		SavingState& mState;
 		CSMWorld::Scope mScope;
+		bool mSkipMasterRecords;
 
 	public:
 
 		ExportCollectionTES4Stage (const CollectionT& collection, SavingState& state,
-			CSMWorld::Scope scope = CSMWorld::Scope_Content);
+			CSMWorld::Scope scope = CSMWorld::Scope_Content, bool skipMasters = true);
 
 		virtual int setup();
 		///< \return number of steps
@@ -100,9 +101,11 @@ namespace CSMDoc
 
 	template<class CollectionT>
 	ExportCollectionTES4Stage<CollectionT>::ExportCollectionTES4Stage (const CollectionT& collection,
-		SavingState& state, CSMWorld::Scope scope)
+		SavingState& state, CSMWorld::Scope scope, bool skipMasters)
 		: mCollection (collection), mState (state), mScope (scope)
-	{}
+	{
+		mSkipMasterRecords = skipMasters;
+	}
 
 	template<class CollectionT>
 	int ExportCollectionTES4Stage<CollectionT>::setup()
@@ -129,9 +132,20 @@ namespace CSMDoc
 			writer.startGroupTES4(sSIG, 0);
 		}
 
-		if (state == CSMWorld::RecordBase::State_Modified ||
-			state == CSMWorld::RecordBase::State_ModifiedOnly ||
-			state == CSMWorld::RecordBase::State_Deleted)
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords == true)
+		{
+			// check for modified / deleted state, otherwise skip
+			exportOrSkip = ( (state == CSMWorld::RecordBase::State_Modified) || 
+				(state == CSMWorld::RecordBase::State_ModifiedOnly) ||
+				(state == CSMWorld::RecordBase::State_Deleted) );
+		}
+		else {
+			// no skipping, export all
+			exportOrSkip=true;
+		}
+
+		if (exportOrSkip)
 		{
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
@@ -186,20 +200,30 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportPotionsCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+		bool mSkipMasterRecords;
+	public:
+		ExportPotionsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+		virtual int setup();
+		///< \return number of steps
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
 	class ExportActivatorsCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
 		bool mSkipMasterRecords;
-
 	public:
-
 		ExportActivatorsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
-
 		virtual int setup();
 		///< \return number of steps
-
 		virtual void perform (int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 	};

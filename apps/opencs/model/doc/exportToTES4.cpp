@@ -78,13 +78,14 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(currentDoc.getData().getRegions(), currentSave));
+		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, false));
 
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportPotionsCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportActivatorsCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
@@ -294,9 +295,41 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	}
 }
 
+CSMDoc::ExportPotionsCollectionTES4Stage::ExportPotionsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportPotionsCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getPotions().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportPotionsCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "ALCH";
+
+	// GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getPotions().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
 CSMDoc::ExportActivatorsCollectionTES4Stage::ExportActivatorsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
-{}
+{
+	mSkipMasterRecords = skipMasters;
+}
 int CSMDoc::ExportActivatorsCollectionTES4Stage::setup()
 {
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getActivators().getSize();
@@ -313,7 +346,7 @@ void CSMDoc::ExportActivatorsCollectionTES4Stage::perform (int stage, Messages& 
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), 4);
+	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -403,7 +436,7 @@ void CSMDoc::ExportDoorCollectionTES4Stage::perform (int stage, Messages& messag
 	}
 
 //	std::cout << "Door [" << stage << "]" << std::endl;
-	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (stage, mState.getWriter(), false, 4);
+	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -751,7 +784,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator)
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion)
 						) )
                     {
                         std::string sSIG;
@@ -1369,7 +1403,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator)
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion)
 								)
 							{
 								std::string sSIG;
