@@ -1382,10 +1382,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	}
 	else
 	{
-		debugstream.str("");
-		debugstream.clear();
-		debugstream << "Cell is identical to master, skipping. " << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+		debugstream.str(""); debugstream.clear();
+		debugstream << "Cell X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
+		debugstream << "is identical to master, skipping. " << std::endl;
+//		OutputDebugString(debugstream.str().c_str());
 	}
 
 	if (stage == (mNumCells-1))
