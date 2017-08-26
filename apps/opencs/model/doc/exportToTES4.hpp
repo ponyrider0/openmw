@@ -186,6 +186,24 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportActivatorsCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+		bool mSkipMasterRecords;
+
+	public:
+
+		ExportActivatorsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
 	class ExportDoorCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;

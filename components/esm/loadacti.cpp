@@ -60,7 +60,38 @@ namespace ESM
     }
 	bool Activator::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		std::string *tempStr;
+		std::ostringstream modelPath;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		modelPath << "morro\\" << *tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(modelPath.str());
+		esm.endSubRecordTES4("MODL");
+		delete tempStr;
+
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(1.0);
+		esm.endSubRecordTES4("MODB");
+
+		// MODT
+		// SCRI (script formID)
+		// SNAM (sound formID)
+
+		return true;
 	}
 
     void Activator::blank()
