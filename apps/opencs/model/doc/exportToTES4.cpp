@@ -1438,8 +1438,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 			map_v = ((map_y)/17.0);
 			// assign neighbors (1.0 vs 0.0 if texture is present)
 			// find nearest neighbor coordinate (on 6x6 preblendmap)
-			int v_floor = floor((map_v * 4)+1);
-			int u_floor = floor((map_u * 4)+1);
+			int v_floor = floor(map_v * 4)+1;
+			int u_floor = floor(map_u * 4)+1;
 			int v_ceil = v_floor+1;
 			int u_ceil = u_floor+1;
 
@@ -1463,8 +1463,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 			// then along y of the 2 prior results
 			float y_lerp;
 			y_lerp = (x_lerp1 * (1-wt_v)) + (x_lerp2 * (wt_v));
-			if (y_lerp != 0)
-				debugstream << "pos=[" << map_x << "," << map_y << "] uv=(" << map_u << "," << map_v << ") X1=" << x_lerp1 << " X2=" << x_lerp2 << " Y=" << y_lerp << "; ";
+//			if (y_lerp != 0)
+//				debugstream << "pos=[" << map_x << "," << map_y << "] uv=(" << map_u << "," << map_v << ") X1=" << x_lerp1 << " X2=" << x_lerp2 << " Y=" << y_lerp << "; ";
 
 			// now put it in the postmap
 			opacityMap[map_x][map_y] = y_lerp;
@@ -1472,14 +1472,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 		debugstream << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
 
+		int u, v;
 		uint16_t position=0;
 		float opacity=0;
 		writer.startSubRecordTES4("VTXT");
-		int u, v;
 		for (v=0; v < 17; v++)
 		for (u=0; u < 17; u++)
 		{
-			position++;
 			opacity = opacityMap[u][v];
 			if (opacity > 0.0f)
 			{
@@ -1488,6 +1487,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 				writer.writeT<uint8_t>(0); // unused
 				writer.writeT<float>(opacity); // float opacity
 			}
+			position++;
 		}
 		writer.endSubRecordTES4("VTXT");
 	}
@@ -1843,7 +1843,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawLeftBorder(int origX, in
 		{
 			// feather to blank or make hard edge
 			for (int y=0; y < 4; y++)
-				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 3, y, 0, y+1);
+				drawPreBlendMapXY(landData, plugindex, subCX, subCY, quadX, quadY, 0, y, 0, y+1);
 		}
 	}
 }
@@ -1899,7 +1899,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawTopBorder(int origX, int
 		for (int x=0; x < 4; x++)
 			drawPreBlendMapXY(landData, plugindex, subCX, subCY2, quadX, quadY2, x, 0, x+1, 5);
 	}
-	else if (subCX == 0)
+	else if (subCY == 0)
 	{
 		// retrieve from subCX=1, quadX=0;
 		subCY2=1;
@@ -1914,7 +1914,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawTopBorder(int origX, int
 		quadY2=0;
 		const ESM::Land::LandData* tempData;
 		int plugindex2;
-		if (getLandDataFromXY (origX+1, origY, plugindex2, tempData) == true)
+		if (getLandDataFromXY (origX, origY+1, plugindex2, tempData) == true)
 		{
 			for (int x=0; x < 4; x++)
 				drawPreBlendMapXY(tempData, plugindex2, subCX, subCY2, quadX, quadY2, x, 0, x+1, 5);
