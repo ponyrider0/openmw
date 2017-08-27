@@ -1,4 +1,5 @@
 #include "loadclas.hpp"
+#include <components\esm\loadskil.hpp>
 
 #include <stdexcept>
 
@@ -94,6 +95,149 @@ namespace ESM
         esm.writeHNT("CLDT", mData, 60);
         esm.writeHNOString("DESC", mDescription);
     }
+
+	void Class::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		std::string *tempStr;
+		std::ostringstream tempPath;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// DESC, mText
+		esm.startSubRecordTES4("DESC");
+		esm.writeHCString(mDescription);
+		esm.endSubRecordTES4("DESC");
+
+		// ICON, 
+
+		// DATA
+		uint32_t tempval=0;
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint32_t>(mData.mAttribute[0]); // primary attributes 1
+		esm.writeT<uint32_t>(mData.mAttribute[1]); // primary attributes 2
+		esm.writeT<uint32_t>(mData.mSpecialization); // specialization
+		esm.writeT<uint32_t>(getSkillTES4(0)); // major skills 1
+		esm.writeT<uint32_t>(getSkillTES4(1)); // major skills 2
+		esm.writeT<uint32_t>(getSkillTES4(2)); // major skills 3
+		esm.writeT<uint32_t>(getSkillTES4(3)); // major skills 4
+		esm.writeT<uint32_t>(getSkillTES4(4)); // major skills 5
+		esm.writeT<uint32_t>(getSkillTES4(5)); // major skills 6
+		esm.writeT<uint32_t>(getSkillTES4(6)); // major skills 7
+		tempval = 0;
+		if (mData.mIsPlayable)
+			tempval |= 0x01;
+		esm.writeT<uint32_t>(tempval); // flags
+		tempval = 0;
+		esm.writeT<uint32_t>(tempval); // buy/sells/services
+		esm.writeT<int8_t>(-1); // skill trained
+		esm.writeT<int8_t>(0); // max training level
+		esm.writeT<uint8_t>(tempval); // unused
+		esm.writeT<uint8_t>(tempval); // unused
+		esm.endSubRecordTES4("DATA");
+
+	}
+
+	uint32_t Class::getSkillTES4(int ESM4index) const
+	{
+		int ESM3index, ESM3index2;
+		uint32_t tempval=0;
+
+		if (ESM4index < 5)
+		{
+			ESM3index = ESM4index;
+			ESM3index2 = 1;
+		}
+		else if (ESM4index >= 5 && ESM4index < 10)
+		{
+			ESM3index = ESM4index % 5;
+			ESM3index2 = 0;
+		}
+		else
+			throw std::runtime_error ("ERROR: Class skill index out of bounds");
+
+		switch (mData.mSkills[ESM3index][ESM3index2])
+		{
+		case ESM::Skill::SkillEnum::Acrobatics:
+			tempval = 26;
+			break;
+		case ESM::Skill::SkillEnum::Alchemy:
+			tempval = 19;
+			break;
+		case ESM::Skill::SkillEnum::Alteration:
+			tempval = 20;
+			break;
+		case ESM::Skill::SkillEnum::Armorer:
+			tempval = 12;
+			break;
+		case ESM::Skill::SkillEnum::Athletics:
+			tempval = 13;
+			break;
+		case ESM::Skill::SkillEnum::Axe:
+		case ESM::Skill::SkillEnum::BluntWeapon:
+		case ESM::Skill::SkillEnum::Spear:
+			tempval = 16;
+			break;
+		case ESM::Skill::SkillEnum::Block:
+			tempval = 15;
+			break;
+		case ESM::Skill::SkillEnum::Conjuration:
+		case ESM::Skill::SkillEnum::Enchant:
+			tempval = 21;
+			break;
+		case ESM::Skill::SkillEnum::Destruction:
+			tempval = 22;
+			break;
+		case ESM::Skill::SkillEnum::HandToHand:
+			tempval = 17;
+			break;
+		case ESM::Skill::SkillEnum::HeavyArmor:
+		case ESM::Skill::SkillEnum::MediumArmor:
+			tempval = 18;
+			break;
+		case ESM::Skill::SkillEnum::Illusion:
+			tempval = 23;
+			break;
+		case ESM::Skill::SkillEnum::LightArmor:
+		case ESM::Skill::SkillEnum::Unarmored:
+			tempval = 27;
+			break;
+		case ESM::Skill::SkillEnum::LongBlade:
+		case ESM::Skill::SkillEnum::ShortBlade:
+			tempval = 14; // blade
+			break;
+		case ESM::Skill::SkillEnum::Marksman:
+			tempval = 28;
+			break;
+		case ESM::Skill::SkillEnum::Mercantile:
+			tempval = 29;
+			break;
+		case ESM::Skill::SkillEnum::Mysticism:
+			tempval = 24;
+			break;
+		case ESM::Skill::SkillEnum::Restoration:
+			tempval = 25;
+			break;
+		case ESM::Skill::SkillEnum::Security:
+			tempval = 30;
+			break;
+		case ESM::Skill::SkillEnum::Sneak:
+			tempval = 31;
+			break;
+		case ESM::Skill::SkillEnum::Speechcraft:
+			tempval = 32;
+			break;
+		}
+
+		return tempval;
+	}
 
     void Class::blank()
     {

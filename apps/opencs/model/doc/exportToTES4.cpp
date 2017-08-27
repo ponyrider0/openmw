@@ -24,6 +24,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
+
 /*
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
 
@@ -33,8 +34,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
 		(mDocument.getData().getSkills(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
-		(mDocument.getData().getClasses(), currentSave));
 
 	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
 		(mDocument.getData().getFactions(), currentSave));
@@ -76,6 +75,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
+
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
+		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
 		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, false));

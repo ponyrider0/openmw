@@ -170,6 +170,15 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		// CNAM, class formID
+		uint32_t classFormID = esm.crossRefStringID(mClass);
+		if (classFormID != 0)
+		{
+			esm.startSubRecordTES4("CNAM");
+			esm.writeT<uint32_t>(classFormID);
+			esm.endSubRecordTES4("CNAM");
+		}
+
 /*
 		// ACBS group
 		esm.startSubRecordTES4("ACBS");
