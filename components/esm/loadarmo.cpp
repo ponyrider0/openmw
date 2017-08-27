@@ -113,7 +113,102 @@ namespace ESM
     }
 	bool Armor::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		std::string *tempStr;
+		std::ostringstream tempPath;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// BMDT Flags (dword)
+		uint32_t flags=0;
+		switch (mData.mType)
+		{
+		case Armor::Type::Helmet:
+			flags = 0x0001; // head=0x01, hair=0x02
+			break;
+		case Armor::Type::Cuirass:
+			flags = 0x0004; // upperbody 0x04
+			break;
+		case Armor::Type::Greaves:
+			flags = 0x0008; // lowerbody 0x08
+			break;
+		case Armor::Type::Boots:
+			flags = 0x0020; // foot 0x20
+			break;
+		case Armor::Type::Shield:
+			flags = 0x2000; // shield 0x2000
+			break;
+		case Armor::Type::RGauntlet:
+			flags = 0x0010; // hand 0x10
+			break;
+		}
+		esm.startSubRecordTES4("BMDT");
+		esm.writeT<uint32_t>(flags);
+		esm.endSubRecordTES4("BMDT");
+
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		tempPath << "armor\\morro\\" << *tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempPath.str());
+		esm.endSubRecordTES4("MODL");
+		delete tempStr;
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(0.0);
+		esm.endSubRecordTES4("MODB");
+
+		// MOD2, MOD3, MOD4
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, "_gnd");
+		tempPath.str(""); tempPath.clear();
+		tempPath << "armor\\morro\\" << *tempStr << ".nif";
+		esm.startSubRecordTES4("MOD2");
+		esm.writeHCString(tempPath.str());
+		esm.endSubRecordTES4("MOD2");
+		delete tempStr;
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MO2B");
+		esm.writeT<float>(0.0);
+		esm.endSubRecordTES4("MO2B");
+
+		// MO2B, MO3B, MO4B
+		// MODT
+		// MO2T, MO3T, MO4T
+
+		// ICON, mIcon
+		tempStr = esm.generateEDIDTES4(mIcon, true);
+		tempStr->replace(tempStr->size()-4, 4, ".dds");
+		tempPath.str(""); tempPath.clear();
+		tempPath << "armor\\morro\\" << *tempStr;
+		esm.startSubRecordTES4("ICON");
+		esm.writeHCString(tempPath.str());
+		esm.endSubRecordTES4("ICON");
+		delete tempStr;
+
+		// ICO2
+
+		// DATA, float (item weight)
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint16_t>(mData.mArmor * 100);
+		esm.writeT<uint32_t>(mData.mValue);
+		esm.writeT<uint32_t>(mData.mHealth);
+		esm.writeT<float>(mData.mWeight);
+		esm.endSubRecordTES4("DATA");
+
+		// SCRI (script formID) mScript
+		// ANAM (enchantment points)
+		// ENAM (enchantment formID) mEnchant
+
+		return true;
 	}
 
     void Armor::blank()

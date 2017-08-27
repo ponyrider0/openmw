@@ -121,7 +121,7 @@ namespace ESM
 
 		// SCRI (script formID)
 
-		return false;
+		return true;
 	}
 
     void Apparatus::blank()

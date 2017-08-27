@@ -85,6 +85,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
@@ -292,6 +293,75 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	if (stage == mActiveRefCount-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportArmorCollectionTES4Stage::ExportArmorCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportArmorCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getArmors().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "ARMO";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getArmors().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	bool exportOrSkip=false;
+	const CSMWorld::Record<ESM::Armor> armorRecord = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(stage);
+
+	if (mSkipMasterRecords == true)
+	{
+		// check for modified / deleted state, otherwise skip
+		exportOrSkip = armorRecord.isModified() || armorRecord.isDeleted();
+	}
+	else {
+		// no skipping, export all
+		exportOrSkip=true;
+	}
+
+	if (exportOrSkip)
+	{
+		switch (armorRecord.get().mData.mType)
+		{
+		case ESM::Armor::Type::Helmet:
+		case ESM::Armor::Type::Cuirass:
+		case ESM::Armor::Type::Greaves:
+		case ESM::Armor::Type::Boots:
+		case ESM::Armor::Type::Shield:
+		case ESM::Armor::Type::RGauntlet:
+			exportOrSkip = true;
+			break;
+		default:
+			exportOrSkip = false;
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(armorRecord.get().mId);
+		uint32_t flags=0;
+		if (armorRecord.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, armorRecord.get().mId);
+		armorRecord.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }
