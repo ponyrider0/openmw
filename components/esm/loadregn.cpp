@@ -140,7 +140,88 @@ namespace ESM
 
 		// Region Data Entries?
 			// Objects, Map, Grass, Sound, Weather
-		
+		esm.startSubRecordTES4("RDAT");
+		esm.writeT<uint32_t>(4); // Type (Map == 4)
+		esm.writeT<uint8_t>(0); // Flags
+		esm.writeT<uint8_t>(50); // Priority
+		esm.writeT<uint8_t>(4); // Unused
+		esm.writeT<uint8_t>(4); // Unused
+		esm.endSubRecordTES4("RDAT");
+		esm.startSubRecordTES4("RDMP");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("RDMP");
+
+		esm.startSubRecordTES4("RDAT");
+		esm.writeT<uint32_t>(3); // Type (Weather == 3)
+		esm.writeT<uint8_t>(0); // Flags
+		esm.writeT<uint8_t>(50); // Priority
+		esm.writeT<uint8_t>(4); // Unused
+		esm.writeT<uint8_t>(4); // Unused
+		esm.endSubRecordTES4("RDAT");
+		esm.startSubRecordTES4("RDWT");
+		uint32_t weatherFormID=0;
+		weatherFormID = esm.crossRefStringID("Clear");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Clear==0x38EEE)
+			esm.writeT<uint32_t>(mData.mClear); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Cloudy");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Cloudy==0x38EF0)
+			esm.writeT<uint32_t>(mData.mCloudy); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Fog");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Fog==0x38EEF)
+			esm.writeT<uint32_t>(mData.mFoggy); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Overcast");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Overcast==0x38EEC)
+			esm.writeT<uint32_t>(mData.mOvercast); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Rain");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Rain==0x38EF2)
+			esm.writeT<uint32_t>(mData.mRain); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Thunderstorm");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Thunder==0x38EF1)
+			esm.writeT<uint32_t>(mData.mThunder); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Ashstorm");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Ash==0x460000)
+			esm.writeT<uint32_t>(mData.mAsh); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Blightstorm");
+		if (weatherFormID != 0)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Blight==??)
+			esm.writeT<uint32_t>(mData.mBlight); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Snow");
+		if (weatherFormID != 0 && esm.getVersion() == ESM::VER_13)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Blight==??)
+			esm.writeT<uint32_t>(mData.mA); // Chance
+		}
+		weatherFormID = esm.crossRefStringID("Blizzard");
+		if (weatherFormID != 0 && esm.getVersion() == ESM::VER_13)
+		{
+			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Blight==??)
+			esm.writeT<uint32_t>(mData.mB); // Chance
+		}
+		esm.endSubRecordTES4("RDWT");
+
 		return true;
 	}
 
