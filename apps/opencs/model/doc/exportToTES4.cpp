@@ -88,6 +88,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
@@ -297,6 +298,76 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	if (stage == mActiveRefCount-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportClothingCollectionTES4Stage::ExportClothingCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportClothingCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getClothing().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "CLOT";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getClothing().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	bool exportOrSkip=false;
+	const CSMWorld::Record<ESM::Clothing> clothingRecord = mDocument.getData().getReferenceables().getDataSet().getClothing().mContainer.at(stage);
+
+	if (mSkipMasterRecords == true)
+	{
+		// check for modified / deleted state, otherwise skip
+		exportOrSkip = clothingRecord.isModified() || clothingRecord.isDeleted();
+	}
+	else {
+		// no skipping, export all
+		exportOrSkip=true;
+	}
+
+	if (exportOrSkip)
+	{
+		switch (clothingRecord.get().mData.mType)
+		{
+		case ESM::Clothing::Type::Shirt:
+		case ESM::Clothing::Type::Skirt:
+		case ESM::Clothing::Type::Pants:
+		case ESM::Clothing::Type::Robe:
+		case ESM::Clothing::Type::Shoes:
+		case ESM::Clothing::Type::RGlove:
+		case ESM::Clothing::Type::Belt:
+			exportOrSkip = true;
+			break;
+		default:
+			exportOrSkip = false;
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(clothingRecord.get().mId);
+		uint32_t flags=0;
+		if (clothingRecord.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, clothingRecord.get().mId);
+		clothingRecord.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }
