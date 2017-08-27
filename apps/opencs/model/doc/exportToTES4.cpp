@@ -81,6 +81,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
 		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, false));
 
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, false));
 
@@ -296,6 +297,40 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	if (stage == mActiveRefCount-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportClimateCollectionTES4Stage::ExportClimateCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportClimateCollectionTES4Stage::setup()
+{
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getBooks().getSize();
+	mActiveRefCount = mDocument.getData().getRegions().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "CLMT";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	writer.startRecordTES4("CLMT");
+	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
+	region.exportClimateTESx(writer, 4);
+	writer.endRecordTES4("CLMT");
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }

@@ -159,6 +159,38 @@ namespace ESM
 		esm.writeT<uint8_t>(4); // Unused
 		esm.endSubRecordTES4("RDAT");
 		esm.startSubRecordTES4("RDWT");
+		exportWeatherListTES4(esm);
+		esm.endSubRecordTES4("RDWT");
+
+		return true;
+	}
+
+	bool Region::exportClimateTESx(ESMWriter &esm, int export_format) const
+	{
+		std::ostringstream tempStream;
+		std::string *tempStr;
+		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStream << *tempStr << "Clmt";
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStream.str());
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("WLST");
+		exportWeatherListTES4(esm);
+		esm.endSubRecordTES4("WLST");
+
+		// FNAM, sun
+		// GNAM, sun glare
+		// MODL, night sky
+			// MODB
+		// TNAM, Settings
+
+		return true;
+	}
+
+	void Region::exportWeatherListTES4(ESMWriter &esm) const
+	{
 		uint32_t weatherFormID=0;
 		weatherFormID = esm.crossRefStringID("Clear");
 		if (weatherFormID != 0)
@@ -220,9 +252,6 @@ namespace ESM
 			esm.writeT<uint32_t>(weatherFormID); // Weather FormID (Blight==??)
 			esm.writeT<uint32_t>(mData.mB); // Chance
 		}
-		esm.endSubRecordTES4("RDWT");
-
-		return true;
 	}
 
     void Region::blank()
