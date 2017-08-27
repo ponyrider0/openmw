@@ -200,28 +200,42 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
-	class ExportPotionsCollectionTES4Stage : public Stage
+	class ExportApparatusCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
 		bool mSkipMasterRecords;
 	public:
-		ExportPotionsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+		ExportApparatusCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 		virtual int setup();
 		///< \return number of steps
 		virtual void perform (int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
-	class ExportActivatorsCollectionTES4Stage : public Stage
+	class ExportPotionCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
 		bool mSkipMasterRecords;
 	public:
-		ExportActivatorsCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+		ExportPotionCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+		virtual int setup();
+		///< \return number of steps
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
+	class ExportActivatorCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+		bool mSkipMasterRecords;
+	public:
+		ExportActivatorCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 		virtual int setup();
 		///< \return number of steps
 		virtual void perform (int stage, Messages& messages);
@@ -281,7 +295,7 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
-	class ExportCreaturesCollectionTES4Stage : public Stage
+	class ExportCreatureCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
@@ -289,7 +303,7 @@ namespace CSMDoc
 
 	public:
 
-		ExportCreaturesCollectionTES4Stage (Document& document, SavingState& state);
+		ExportCreatureCollectionTES4Stage (Document& document, SavingState& state);
 
 		virtual int setup();
 		///< \return number of steps
@@ -298,7 +312,7 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
-	class ExportLeveledCreaturesCollectionTES4Stage : public Stage
+	class ExportLeveledCreatureCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
 		SavingState& mState;
@@ -306,7 +320,7 @@ namespace CSMDoc
 
 	public:
 
-		ExportLeveledCreaturesCollectionTES4Stage (Document& document, SavingState& state);
+		ExportLeveledCreatureCollectionTES4Stage (Document& document, SavingState& state);
 
 		virtual int setup();
 		///< \return number of steps
