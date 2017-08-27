@@ -86,9 +86,17 @@ namespace ESM
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(1.0);
 		esm.endSubRecordTES4("MODB");
-
 		// MODT
+
 		// SCRI (script formID)
+		uint32_t tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
 		// SNAM (sound formID)
 
 		return true;

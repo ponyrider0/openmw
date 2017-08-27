@@ -122,6 +122,14 @@ namespace ESM
 		esm.endSubRecordTES4("DATA");
 
 		// SCRI --mScript (formID)
+		uint32_t tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
 		// ENIT {long, byte[1], byte[3]} -- flags
 		// EFID string[4] (magic effect ID)
 		// EFIT {string[4], long, long, long, long, long}

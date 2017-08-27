@@ -113,6 +113,7 @@ namespace ESM
     }
 	bool Armor::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		uint32_t tempFormID;
 		std::string *tempStr;
 		std::ostringstream tempPath;
 
@@ -205,6 +206,14 @@ namespace ESM
 		esm.endSubRecordTES4("DATA");
 
 		// SCRI (script formID) mScript
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
 		// ANAM (enchantment points)
 		// ENAM (enchantment formID) mEnchant
 

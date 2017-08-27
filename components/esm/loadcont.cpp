@@ -105,7 +105,69 @@ namespace ESM
     }
 	bool Container::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		uint32_t tempFormID;
+		std::string *tempStr;
+		std::ostringstream tempStream;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		tempStream << "morro\\" << *tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempStream.str());
+		esm.endSubRecordTES4("MODL");
+		delete tempStr;
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(1.0);
+		esm.endSubRecordTES4("MODB");
+		// MODT
+
+		// SCRI
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// CNTO: {formID, uint32}
+		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		{
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CNTO");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(inventoryItem->mCount);
+				esm.endSubRecordTES4("CNTO");
+			}
+		}
+
+		// DATA, float (item weight)
+		uint8_t flags=0;
+		if (mFlags == Container::Respawn)
+			flags = 0x02;
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint8_t>(flags); // flags
+		esm.writeT<float>(mWeight); // weight
+		esm.endSubRecordTES4("DATA");
+
+		// SNAM, open sound formID
+		// QNAM, close sound formID
+
+		return true;
 	}
 
     void Container::blank()

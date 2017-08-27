@@ -96,6 +96,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
+
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave));
@@ -294,6 +296,36 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 
 //	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
 //	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportContainerCollectionTES4Stage::ExportContainerCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportContainerCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getContainers().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "CONT";
+
+	// GRUP
+	if (stage == 0)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1028,7 +1060,9 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Apparatus) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Armor) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book)
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
+						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container)
 						) )
                     {
                         std::string sSIG;
@@ -1650,7 +1684,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Apparatus) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Armor) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book)
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container)
 								)
 							{
 								std::string sSIG;

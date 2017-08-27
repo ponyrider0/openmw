@@ -183,6 +183,13 @@ namespace ESM
 		esm.endSubRecordTES4("DATA");
 
 		// SCRI (script formID) mScript
+		uint32_t tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
 		// ENAM (enchantment formID) mEnchant
 
 		return true;
