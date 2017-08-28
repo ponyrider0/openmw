@@ -26,44 +26,42 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
 
 /*
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 		(mDocument.getData().getGmsts(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
 		(mDocument.getData().getSkills(), currentSave));
 
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
-		(mDocument.getData().getFactions(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
 		(mDocument.getData().getRaces(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
 		(mDocument.getData().getSounds(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
 		(mDocument.getData().getScripts(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
 		(mDocument.getData().getBirthsigns(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
 		(mDocument.getData().getSpells(), currentSave));
 
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
 		(mDocument.getData().getBodyParts(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::SoundGenerator> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::SoundGenerator> >
 		(mDocument.getData().getSoundGens(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::MagicEffect> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::MagicEffect> >
 		(mDocument.getData().getMagicEffects(), currentSave));
 
-	mExportOperation->appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
 		(mDocument.getData().getStartScripts(), currentSave));
 */
 	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
@@ -76,6 +74,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
 		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
+		(currentDoc.getData().getFactions(), currentSave, CSMWorld::Scope_Content, false));
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Enchantment> >
 		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, false));
 

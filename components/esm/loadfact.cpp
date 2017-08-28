@@ -113,6 +113,63 @@ namespace ESM
         }
     }
 
+	void Faction::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		uint32_t tempFormID;
+		std::string *tempStr;
+		std::ostringstream tempStream;
+
+		// export EDID
+		tempStr = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("EDID");
+		delete tempStr;
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// XNAMs, Relations: { faction/race formID, int32 modifier }
+		for (auto reaction = mReactions.begin(); reaction != mReactions.end(); reaction++)
+		{
+			tempFormID = esm.crossRefStringID(reaction->first);
+			esm.startSubRecordTES4("XNAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.writeT<int32_t>(reaction->second);
+			esm.endSubRecordTES4("XNAM");
+		}
+
+		// DATA
+		int flags=0;
+		if (mData.mIsHidden)
+			flags |= 0x01;
+		esm.startSubRecordTES4("DATA");
+		// uint8, flags [hidden, evil, special combat]
+		esm.writeT<uint8_t>(flags);
+		esm.endSubRecordTES4("DATA");
+
+		// CNAM, float (crime gold multilier)
+
+		// Ranks...
+		for (int i=0; i < 10; i++)
+		{
+			if (mRanks[i].size() > 0)
+			{
+				// RNAM, rank
+				esm.startSubRecordTES4("RNAM");
+				esm.writeT<int32_t>(i);
+				esm.endSubRecordTES4("RNAM");
+				// MNAM, male name
+				esm.startSubRecordTES4("MNAM");
+				esm.writeHCString(mRanks[i]);
+				esm.endSubRecordTES4("MNAM");
+				// FNAM string (female name)
+				// INAM string (insignia)
+			}
+		}
+	}
+
     void Faction::blank()
     {
         mName.clear();

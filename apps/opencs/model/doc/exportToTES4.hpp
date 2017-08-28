@@ -110,6 +110,20 @@ namespace CSMDoc
 	template<class CollectionT>
 	int ExportCollectionTES4Stage<CollectionT>::setup()
 	{
+		uint32_t formID;
+		ESM::ESMWriter& writer = mState.getWriter();
+
+		// assign all formIDs prior to perform()
+		for (int i=0; i < mCollection.getSize(); i++)
+		{
+			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
+			if (writer.crossRefStringID(record.mId) == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				formID = writer.reserveFormID(formID, record.mId);
+			}
+		}
+
 		return mCollection.getSize();
 	}
 
@@ -147,10 +161,11 @@ namespace CSMDoc
 
 		if (exportOrSkip)
 		{
+			uint32_t formID = writer.crossRefStringID(record.mId);
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
-			writer.startRecordTES4 (record.sRecordId, flags, 0, record.mId);
+			writer.startRecordTES4 (record.sRecordId, flags, formID, record.mId);
 			record.exportTESx (writer);
 			writer.endRecordTES4 (record.sRecordId);
 		}
