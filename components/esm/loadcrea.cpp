@@ -140,44 +140,134 @@ namespace ESM {
     }
 	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		// export CREA
-		std::string *newEDID = esm.generateEDIDTES4(mId);
+		uint32_t tempFormID;
+		std::string *tempStr;
+		std::ostringstream tempStream;
+
+		// export EDID
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*newEDID);
+		esm.writeHCString(*tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete newEDID;
+		delete tempStr;
 
 		// FULL, fullname
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		tempStream << "morro\\" << *tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempStream.str());
+		esm.endSubRecordTES4("MODL");
+		delete tempStr;
+		// MODB?
+		// MODT?
+
+		// CNTO: {formID, uint32}
+		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		{
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CNTO");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(inventoryItem->mCount);
+				esm.endSubRecordTES4("CNTO");
+			}
+		}
+
+		// SPLO
+		for (auto spellItem = mSpells.mList.begin(); spellItem != mSpells.mList.end(); spellItem++)
+		{
+			tempFormID = esm.crossRefStringID(*spellItem);
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("SPLO");
+				esm.writeT<uint32_t>(tempFormID); // spell or lvlspel formID
+				esm.endSubRecordTES4("SPLO");
+			}
+		}
+
+		// array - NIFZ
+		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		esm.startSubRecordTES4("NIFZ");
+		esm.writeHCString(*tempStr);
+		esm.endSubRecordTES4("NIFZ");
+		delete tempStr;
+		// NIFT
+
 		// ACBS group
+		uint32_t flags=0;
+		if (mFlags & ESM::Creature::Flags::Bipedal)
+			flags |= 0x01;
+		if (mFlags & ESM::Creature::Flags::Essential)
+			flags |= 0x02;
+		if (mFlags & ESM::Creature::Flags::Weapon)
+			flags |= 0x04;
+		if (mFlags & ESM::Creature::Flags::Respawn)
+			flags |= 0x08;
+		if (mFlags & ESM::Creature::Flags::Swims)
+			flags |= 0x10;
+		if (mFlags & ESM::Creature::Flags::Flies)
+			flags |= 0x20;
+		if (mFlags & ESM::Creature::Flags::Walks)
+			flags |= 0x40;
+		if (mFlags & ESM::Creature::Flags::Skeleton)
+			flags |= 0x800;
+		if (mFlags & ESM::Creature::Flags::Metal)
+			flags |= 0x800;
 		esm.startSubRecordTES4("ACBS");
-		esm.writeT<uint32_t>(0); //flags
-		esm.writeT<uint16_t>(0); // spell pts
-		esm.writeT<uint16_t>(0); // fatigue
-		esm.writeT<uint16_t>(0); // barter gold
+		esm.writeT<uint32_t>(flags); //flags
+		esm.writeT<uint16_t>(mData.mMana); // spell pts
+		esm.writeT<uint16_t>(mData.mFatigue); // fatigue
+		esm.writeT<uint16_t>(mData.mGold); // barter gold
 		esm.writeT<int16_t>(mData.mLevel); // level / offset level
 		esm.writeT<uint16_t>(0); // calc min
 		esm.writeT<uint16_t>(0); // calc max
 		esm.endSubRecordTES4("ACBS");
 
+		// Factions ...SNAM array
+		// INAM, death items (LVLI)
+
+		// SCRI
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
 		// AI Data
 		esm.startSubRecordTES4("AIDT");
-		esm.writeT<unsigned char>(0); // aggression
-		esm.writeT<unsigned char>(0); // confidence
-		esm.writeT<unsigned char>(0); // energy
+		esm.writeT<unsigned char>(mAiData.mFight); // aggression
+		esm.writeT<unsigned char>(100-mAiData.mFlee); // confidence
+		esm.writeT<unsigned char>(50); // energy
 		esm.writeT<unsigned char>(0); // responsibility
-		esm.writeT<uint32_t>(0); // flags (buy/sell/services)
+		flags = 0;
+		esm.writeT<uint32_t>(flags); // flags (buy/sell/services)
 		esm.writeT<unsigned char>(0); // trainer Skill
 		esm.writeT<unsigned char>(0); // trainer level
-		esm.writeT<uint16_t>(0); // ?
+		esm.writeT<uint16_t>(0); // unused
 		esm.endSubRecordTES4("AIDT");
+
+		// PKID, ai packages (formID)
+		for (auto aiPkg = mAiPackage.mList.begin(); aiPkg != mAiPackage.mList.end(); aiPkg++)
+		{
+			// aiPkg is full definition and not just a stringID...
+			// ... so must generate a full ESM4 AIPackage record from each aiPkg
+		}
+
+		// KFFZ, animations
 
 		// DATA
 		esm.startSubRecordTES4("DATA");
-		esm.writeT<unsigned char>(0); // Type Creature
+		esm.writeT<unsigned char>(mData.mType); // Type Creature
 		esm.writeT<unsigned char>(mData.mCombat); // Combat
 		esm.writeT<unsigned char>(mData.mMagic); // Magic
 		esm.writeT<unsigned char>(mData.mStealth); // Stealth
@@ -194,6 +284,28 @@ namespace ESM {
 		esm.writeT<unsigned char>(mData.mPersonality); // per
 		esm.writeT<unsigned char>(mData.mLuck); // luck
 		esm.endSubRecordTES4("DATA");
+
+		// RNAM, attack reach
+		// ZNAM, combat style formID (CSTY)
+		// TNAM, turning speed (float)
+		// BNAM, base scale (float)
+		esm.startSubRecordTES4("BNAM");
+		esm.writeT<float>(mScale); // spell or lvlspel formID
+		esm.endSubRecordTES4("BNAM");
+
+		// WNAM, foot weight (float)
+		// NAM0, blood spray (string)
+		// NAM1, blood decal (string)
+		// CSCR, inherit sound from: formID CREA
+		tempFormID = esm.crossRefStringID(mOriginal);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("CSCR");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("CSCR");
+		}
+
+		// CSDTs...
 
 		return true;
 	}
