@@ -163,78 +163,7 @@ namespace ESM
 		else
 			throw std::runtime_error ("ERROR: Class skill index out of bounds");
 
-		switch (mData.mSkills[ESM3index][ESM3index2])
-		{
-		case ESM::Skill::SkillEnum::Acrobatics:
-			tempval = 26;
-			break;
-		case ESM::Skill::SkillEnum::Alchemy:
-			tempval = 19;
-			break;
-		case ESM::Skill::SkillEnum::Alteration:
-			tempval = 20;
-			break;
-		case ESM::Skill::SkillEnum::Armorer:
-			tempval = 12;
-			break;
-		case ESM::Skill::SkillEnum::Athletics:
-			tempval = 13;
-			break;
-		case ESM::Skill::SkillEnum::Axe:
-		case ESM::Skill::SkillEnum::BluntWeapon:
-		case ESM::Skill::SkillEnum::Spear:
-			tempval = 16;
-			break;
-		case ESM::Skill::SkillEnum::Block:
-			tempval = 15;
-			break;
-		case ESM::Skill::SkillEnum::Conjuration:
-		case ESM::Skill::SkillEnum::Enchant:
-			tempval = 21;
-			break;
-		case ESM::Skill::SkillEnum::Destruction:
-			tempval = 22;
-			break;
-		case ESM::Skill::SkillEnum::HandToHand:
-			tempval = 17;
-			break;
-		case ESM::Skill::SkillEnum::HeavyArmor:
-		case ESM::Skill::SkillEnum::MediumArmor:
-			tempval = 18;
-			break;
-		case ESM::Skill::SkillEnum::Illusion:
-			tempval = 23;
-			break;
-		case ESM::Skill::SkillEnum::LightArmor:
-		case ESM::Skill::SkillEnum::Unarmored:
-			tempval = 27;
-			break;
-		case ESM::Skill::SkillEnum::LongBlade:
-		case ESM::Skill::SkillEnum::ShortBlade:
-			tempval = 14; // blade
-			break;
-		case ESM::Skill::SkillEnum::Marksman:
-			tempval = 28;
-			break;
-		case ESM::Skill::SkillEnum::Mercantile:
-			tempval = 29;
-			break;
-		case ESM::Skill::SkillEnum::Mysticism:
-			tempval = 24;
-			break;
-		case ESM::Skill::SkillEnum::Restoration:
-			tempval = 25;
-			break;
-		case ESM::Skill::SkillEnum::Security:
-			tempval = 30;
-			break;
-		case ESM::Skill::SkillEnum::Sneak:
-			tempval = 31;
-			break;
-		case ESM::Skill::SkillEnum::Speechcraft:
-			tempval = 32;
-			break;
-		}
+		tempval = ESM::ESMWriter::skillToActorValTES4(mData.mSkills[ESM3index][ESM3index2]);
 
 		return tempval;
 	}

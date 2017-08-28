@@ -149,6 +149,121 @@ namespace ESM
         startRecord (type, flags);
     }
 
+	int ESMWriter::attributeToActorValTES4(int attributeval)
+	{
+		int tempval = -1;
+
+		switch (attributeval)
+		{
+		case ESM::Attribute::AttributeID::Strength:
+			tempval = 0;
+			break;
+		case ESM::Attribute::AttributeID::Intelligence:
+			tempval = 1;
+			break;
+		case ESM::Attribute::AttributeID::Willpower:
+			tempval = 2;
+			break;
+		case ESM::Attribute::AttributeID::Agility:
+			tempval = 3;
+			break;
+		case ESM::Attribute::AttributeID::Speed:
+			tempval = 4;
+			break;
+		case ESM::Attribute::AttributeID::Endurance:
+			tempval = 5;
+			break;
+		case ESM::Attribute::AttributeID::Personality:
+			tempval = 6;
+			break;
+		case ESM::Attribute::AttributeID::Luck:
+			tempval = 7;
+			break;
+		}
+
+		return tempval;
+	}
+
+	int ESMWriter::skillToActorValTES4(int skillval)
+	{
+		int tempval = -1;
+
+		switch (skillval)
+		{
+		case ESM::Skill::SkillEnum::Acrobatics:
+			tempval = 26;
+			break;
+		case ESM::Skill::SkillEnum::Alchemy:
+			tempval = 19;
+			break;
+		case ESM::Skill::SkillEnum::Alteration:
+			tempval = 20;
+			break;
+		case ESM::Skill::SkillEnum::Armorer:
+			tempval = 12;
+			break;
+		case ESM::Skill::SkillEnum::Athletics:
+			tempval = 13;
+			break;
+		case ESM::Skill::SkillEnum::Axe:
+		case ESM::Skill::SkillEnum::BluntWeapon:
+		case ESM::Skill::SkillEnum::Spear:
+			tempval = 16;
+			break;
+		case ESM::Skill::SkillEnum::Block:
+			tempval = 15;
+			break;
+		case ESM::Skill::SkillEnum::Conjuration:
+		case ESM::Skill::SkillEnum::Enchant:
+			tempval = 21;
+			break;
+		case ESM::Skill::SkillEnum::Destruction:
+			tempval = 22;
+			break;
+		case ESM::Skill::SkillEnum::HandToHand:
+			tempval = 17;
+			break;
+		case ESM::Skill::SkillEnum::HeavyArmor:
+		case ESM::Skill::SkillEnum::MediumArmor:
+			tempval = 18;
+			break;
+		case ESM::Skill::SkillEnum::Illusion:
+			tempval = 23;
+			break;
+		case ESM::Skill::SkillEnum::LightArmor:
+		case ESM::Skill::SkillEnum::Unarmored:
+			tempval = 27;
+			break;
+		case ESM::Skill::SkillEnum::LongBlade:
+		case ESM::Skill::SkillEnum::ShortBlade:
+			tempval = 14; // blade
+			break;
+		case ESM::Skill::SkillEnum::Marksman:
+			tempval = 28;
+			break;
+		case ESM::Skill::SkillEnum::Mercantile:
+			tempval = 29;
+			break;
+		case ESM::Skill::SkillEnum::Mysticism:
+			tempval = 24;
+			break;
+		case ESM::Skill::SkillEnum::Restoration:
+			tempval = 25;
+			break;
+		case ESM::Skill::SkillEnum::Security:
+			tempval = 30;
+			break;
+		case ESM::Skill::SkillEnum::Sneak:
+			tempval = 31;
+			break;
+		case ESM::Skill::SkillEnum::Speechcraft:
+			tempval = 32;
+			break;
+		}
+
+		return tempval;
+	}
+
 	std::string* ESMWriter::generateEDIDTES4(const std::string& name, bool noLeadingZero)
 	{
 		std::string newEDID;

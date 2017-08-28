@@ -5,6 +5,8 @@
 #include <list>
 #include <map>
 
+#include "loadskil.hpp"
+#include "attr.hpp"
 #include "esmcommon.hpp"
 #include "loadtes3.hpp"
 #include "loadtes4.hpp"
@@ -155,6 +157,8 @@ public:
 		uint32_t mESMoffset=0;
 
 		std::string* generateEDIDTES4(const std::string& name, bool noLeadingZero=false);
+		static int skillToActorValTES4(int skillval);
+		static int attributeToActorValTES4(int attributeval);
 
     private:
         std::list<RecordData> mRecords;

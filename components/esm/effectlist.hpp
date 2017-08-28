@@ -26,6 +26,9 @@ namespace ESM
         // Other spell parameters
         int mRange; // 0 - self, 1 - touch, 2 - target (RangeType enum)
         int mArea, mDuration, mMagnMin, mMagnMax;
+
+		void exportTES4EFID(ESMWriter &esm) const;
+		void exportTES4EFIT(ESMWriter &esm) const;
     };
     #pragma pack(pop)
 

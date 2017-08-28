@@ -247,7 +247,7 @@ namespace ESM {
 		esm.startSubRecordTES4("AIDT");
 		esm.writeT<unsigned char>(mAiData.mFight); // aggression
 		esm.writeT<unsigned char>(100-mAiData.mFlee); // confidence
-		esm.writeT<unsigned char>(50); // energy
+		esm.writeT<unsigned char>(70); // energy
 		esm.writeT<unsigned char>(0); // responsibility
 		flags = 0;
 		esm.writeT<uint32_t>(flags); // flags (buy/sell/services)
