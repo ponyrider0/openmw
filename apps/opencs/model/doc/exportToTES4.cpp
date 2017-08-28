@@ -6,6 +6,7 @@ void inline OutputDebugString(char *c_string) { std::cout << c_string; };
 void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #endif
 
+#include <components/misc/stringops.hpp>
 #include <boost/filesystem.hpp>
 #include <QUndoStack>
 
@@ -93,9 +94,12 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
+
 	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportFurnitureCollectionTES4Stage (currentDoc, currentSave, false));
+
+	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, false));
 
@@ -287,11 +291,11 @@ int CSMDoc::ExportRefIdCollectionTES4Stage::setup()
 void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
@@ -300,7 +304,106 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportFurnitureCollectionTES4Stage::ExportFurnitureCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportFurnitureCollectionTES4Stage::setup()
+{
+	mActiveRefCount=1;
+	return mActiveRefCount;
+}
+void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::ostringstream debugstream;
+	std::string sSIG = "FURN";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		debugstream << "Exporting furniture: size=" << mActiveRefCount << "... ";
+//		OutputDebugString(debugstream.str().c_str());
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	for (auto furnIndex = mState.mFurnitureFromActivatorList.begin(); furnIndex != mState.mFurnitureFromActivatorList.end(); furnIndex++)
+	{
+		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
+		const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(*furnIndex);
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
+			uint32_t flags=0;
+			if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
+			activatorRec.get().exportTESx(writer, 4);
+			// MNAM
+			writer.startSubRecordTES4("MNAM");
+			writer.writeT<uint8_t>(0);
+			writer.endSubRecordTES4("MNAM");
+			writer.endRecordTES4(sSIG);
+			debugstream.str(""); debugstream.clear();
+			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
+//			OutputDebugString(debugstream.str().c_str());
+		}
+	}
+
+	for (auto furnIndex = mState.mFurnitureFromStaticList.begin(); furnIndex != mState.mFurnitureFromStaticList.end(); furnIndex++)
+	{
+		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
+		const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(*furnIndex);
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
+			uint32_t flags=0;
+			if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
+			staticRec.get().exportTESx(writer, 4);
+			// MNAM
+			writer.startSubRecordTES4("MNAM");
+			writer.writeT<uint8_t>(0);
+			writer.endSubRecordTES4("MNAM");
+			writer.endRecordTES4(sSIG);
+			debugstream.str(""); debugstream.clear();
+			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
+//			OutputDebugString(debugstream.str().c_str());
+		}
+	}
+
+
+	if (stage == mActiveRefCount-1)
+	{
+		debugstream.str(""); debugstream.clear();
+		debugstream << "complete." << std::endl;
+//		OutputDebugString(debugstream.str().c_str());
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -686,20 +789,66 @@ int CSMDoc::ExportActivatorCollectionTES4Stage::setup()
 }
 void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::ostringstream debugstream;
 	std::string sSIG = "ACTI";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	bool exportOrSkip=false;
+	const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(stage);
+
+	if (mSkipMasterRecords == true)
+	{
+		// check for modified / deleted state, otherwise skip
+		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
+	}
+	else {
+		// no skipping, export all
+		exportOrSkip=true;
+	}
+
+	if (exportOrSkip)
+	{
+		// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
+		std::string tempStr ;
+		if (activatorRec.get().mName.size() > 0)
+			tempStr = Misc::StringUtils::lowerCase(activatorRec.get().mName);
+		else
+			tempStr = Misc::StringUtils::lowerCase(activatorRec.get().mId);
+
+		if ( (tempStr.find("bed",0) != tempStr.npos) ||
+			(tempStr.find("chair", 0) != tempStr.npos) ||
+			(tempStr.find("bench", 0) != tempStr.npos) ||
+			(tempStr.find("hammock", 0) != tempStr.npos) ||
+			(tempStr.find("stool", 0) != tempStr.npos) 
+			)
+		{
+			exportOrSkip = false;
+			mState.mFurnitureFromActivatorList.push_back(stage);
+			debugstream << "Moving activator(" << stage << ") [" << tempStr << "] to furn collection (size=" << mState.mFurnitureFromActivatorList.size() << ")" << std::endl;
+//			OutputDebugString(debugstream.str().c_str());
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
+		uint32_t flags=0;
+		if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
+		activatorRec.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -806,19 +955,64 @@ int CSMDoc::ExportSTATCollectionTES4Stage::setup()
 }
 void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::ostringstream debugstream;
+	std::string sSIG = "STAT";
+	ESM::ESMWriter& writer = mState.getWriter();
+
 	// STAT GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
-		writer.startGroupTES4("STAT", 0);
+		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getStatics().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getStatics().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	bool exportOrSkip=false;
+	const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(stage);
+
+	if (mSkipMasterRecords == true)
+	{
+		// check for modified / deleted state, otherwise skip
+		exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
+	}
+	else {
+		// no skipping, export all
+		exportOrSkip=true;
+	}
+
+	if (exportOrSkip)
+	{
+		// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
+		std::string tempStr;
+		tempStr = Misc::StringUtils::lowerCase(staticRec.get().mId);
+
+		if ((tempStr.find("bed", 0) != tempStr.npos) ||
+			(tempStr.find("chair", 0) != tempStr.npos) ||
+			(tempStr.find("bench", 0) != tempStr.npos) ||
+			(tempStr.find("hammock", 0) != tempStr.npos) ||
+			(tempStr.find("stool", 0) != tempStr.npos)
+			)
+		{
+			exportOrSkip = false;
+			mState.mFurnitureFromStaticList.push_back(stage);
+			debugstream << "Moving static(" << stage << ") [" << tempStr << "] to furn collection (size=" << mState.mFurnitureFromStaticList.size() << ")" << std::endl;
+//			OutputDebugString(debugstream.str().c_str());
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
+		uint32_t flags=0;
+		if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
+		staticRec.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
-		writer.endGroupTES4("STAT");
+		writer.endGroupTES4(sSIG);
 	}
 }
 

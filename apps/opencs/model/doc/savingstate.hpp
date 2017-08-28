@@ -51,10 +51,12 @@ namespace CSMDoc
             ///< Currently saving project file? (instead of content file)
 
             std::map<std::string, std::deque<int> >& getSubRecords();
+
 			std::vector<int> mPersistentWorldRefs; // record ID, list of subrecords
-	
 			std::map<int, std::map <int, uint32_t> > mLandTexLookup_Plugin_Index;
-    };
+			std::vector<int> mFurnitureFromActivatorList;			
+			std::vector<int> mFurnitureFromStaticList;
+	};
 
 
 }
