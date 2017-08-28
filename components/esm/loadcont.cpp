@@ -142,30 +142,57 @@ namespace ESM
 			esm.endSubRecordTES4("SCRI");
 		}
 
-		// CNTO: {formID, uint32}
-		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		// Process non-organic containers
+		if ((mFlags & Flags::Organic) == 0)
 		{
-			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
-			if (tempFormID != 0)
+			// CNTO: {formID, uint32}
+			for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
 			{
-				esm.startSubRecordTES4("CNTO");
-				esm.writeT<uint32_t>(tempFormID);
-				esm.writeT<int32_t>(inventoryItem->mCount);
-				esm.endSubRecordTES4("CNTO");
+				tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+				if (tempFormID != 0)
+				{
+					esm.startSubRecordTES4("CNTO");
+					esm.writeT<uint32_t>(tempFormID);
+					esm.writeT<int32_t>(inventoryItem->mCount);
+					esm.endSubRecordTES4("CNTO");
+				}
 			}
+
+			// DATA, float (item weight)
+			uint8_t flags=0;
+			if (mFlags == Container::Respawn)
+				flags = 0x02;
+			esm.startSubRecordTES4("DATA");
+			esm.writeT<uint8_t>(flags); // flags
+			esm.writeT<float>(mWeight); // weight
+			esm.endSubRecordTES4("DATA");
+
+			// SNAM, open sound formID
+			// QNAM, close sound formID
 		}
+		else // Organic containers
+		{
+			// PFIG
+			auto ingredient = mInventory.mList.begin();
+			if (ingredient != mInventory.mList.end())
+			{
+				tempFormID = esm.crossRefStringID(ingredient->mItem.toString());
+				if (tempFormID != 0)
+				{
+					esm.startSubRecordTES4("PFIG");
+					esm.writeT<uint32_t>(tempFormID);
+					esm.endSubRecordTES4("PFIG");
+				}
+			}
 
-		// DATA, float (item weight)
-		uint8_t flags=0;
-		if (mFlags == Container::Respawn)
-			flags = 0x02;
-		esm.startSubRecordTES4("DATA");
-		esm.writeT<uint8_t>(flags); // flags
-		esm.writeT<float>(mWeight); // weight
-		esm.endSubRecordTES4("DATA");
-
-		// SNAM, open sound formID
-		// QNAM, close sound formID
+			// PFPC
+			esm.startSubRecordTES4("PFPC");
+			esm.writeT<uint8_t>(50); // spring
+			esm.writeT<uint8_t>(50); // summer
+			esm.writeT<uint8_t>(50); // fall
+			esm.writeT<uint8_t>(50); // winter
+			esm.endSubRecordTES4("PFPC");
+		}
 
 		return true;
 	}

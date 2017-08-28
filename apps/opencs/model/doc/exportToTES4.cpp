@@ -97,6 +97,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, false));
 
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
@@ -304,6 +305,59 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 	}
 }
 
+CSMDoc::ExportFloraCollectionTES4Stage::ExportFloraCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportFloraCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getContainers().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "FLOR";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
+	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) != 0)
+	{
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
+			uint32_t flags=0;
+			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
+			containerRecord.get().exportTESx(writer, 4);
+			writer.endRecordTES4(sSIG);
+		}
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
+		writer.endGroupTES4(sSIG);
+	}
+}
+
 CSMDoc::ExportContainerCollectionTES4Stage::ExportContainerCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
 {
@@ -317,19 +371,42 @@ int CSMDoc::ExportContainerCollectionTES4Stage::setup()
 void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "CONT";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
+	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) == 0)
+	{
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
+			uint32_t flags=0;
+			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
+			containerRecord.get().exportTESx(writer, 4);
+			writer.endRecordTES4(sSIG);
+		}
+	}
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
