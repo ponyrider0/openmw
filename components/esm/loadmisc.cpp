@@ -73,7 +73,66 @@ namespace ESM
     }
 	bool Miscellaneous::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("EDID");
+
+		if (mName.size() > 0)
+		{
+			esm.startSubRecordTES4("FULL");
+			esm.writeHCString(mName);
+			esm.endSubRecordTES4("FULL");
+		}
+
+		// MODL == Model Filename
+		if (mModel.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, ".nif");
+			tempPath << "clutter\\morro\\" << tempStr;
+			esm.startSubRecordTES4("MODL");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MODL");
+			// MODB == Bound Radius
+			esm.startSubRecordTES4("MODB");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MODB");
+			// MODT
+		}
+
+		// ICON, mIcon
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, true);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "clutter\\morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
+
+		// SCRI (script formID) mScript
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// DATA
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint32_t>(mData.mValue);
+		esm.writeT<float>(mData.mWeight);
+		esm.endSubRecordTES4("DATA");
+
+		return true;
 	}
 
     void Miscellaneous::blank()

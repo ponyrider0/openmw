@@ -85,6 +85,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
@@ -402,6 +403,109 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		debugstream.str(""); debugstream.clear();
 		debugstream << "complete." << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportMiscCollectionTES4Stage::ExportMiscCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportMiscCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().getSize();
+	for (int i=0; i < mActiveRefCount; i++)
+		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(i).get().mId);
+
+	return mActiveRefCount;
+}
+void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "MISC";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Miscellaneous> miscRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(stage);
+	bool exportOrSkip=false;
+	if (mSkipMasterRecords)
+	{
+		exportOrSkip = miscRecord.isModified() || miscRecord.isDeleted();
+	}
+	else
+	{
+		exportOrSkip = true;
+	}
+
+	// Put Keys in separate collection
+	if (exportOrSkip)
+	{
+		bool bIsKey = miscRecord.get().mData.mIsKey;
+		if (bIsKey == false)
+		{
+			std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
+			if (searchString.find("key", 0) != searchString.npos)
+			{
+				bIsKey = true;
+			}
+			else
+			{
+				std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
+				if (searchString.find("key", 0) != searchString.npos)
+					bIsKey = true;
+			}
+		}
+
+		if (bIsKey)
+		{
+			// add to KeyCollection, and skip
+			mState.mKeyFromMiscList.push_back(stage);
+			exportOrSkip = false;
+		}
+	}
+	// Put SoulGems in separate collection too
+	if (exportOrSkip)
+	{
+		bool bIsSoulGem = false;
+		std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
+		if (searchString.find("soulgem", 0) != searchString.npos)
+		{
+			bIsSoulGem = true;
+		}
+		else
+		{
+			std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
+			if (searchString.find("soulgem", 0) != searchString.npos)
+				bIsSoulGem = true;
+		}
+
+		if (bIsSoulGem)
+		{
+			// add to KeyCollection, and skip
+//			mState.mKeyFromMiscList.push_back(stage);
+			exportOrSkip = false;
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(miscRecord.get().mId);
+		uint32_t flags=0;
+		if (miscRecord.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, miscRecord.get().mId);
+		miscRecord.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }

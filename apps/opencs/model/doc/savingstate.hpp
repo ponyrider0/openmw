@@ -56,6 +56,7 @@ namespace CSMDoc
 			std::map<int, std::map <int, uint32_t> > mLandTexLookup_Plugin_Index;
 			std::vector<int> mFurnitureFromActivatorList;			
 			std::vector<int> mFurnitureFromStaticList;
+			std::vector<int> mKeyFromMiscList;
 	};
 
 
