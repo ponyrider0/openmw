@@ -116,15 +116,14 @@ namespace ESM
 	void Faction::exportTESx(ESMWriter &esm, int export_type) const
 	{
 		uint32_t tempFormID;
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempStream;
 
 		// export EDID
 		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);

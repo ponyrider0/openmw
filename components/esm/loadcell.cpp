@@ -275,26 +275,24 @@ namespace ESM
     void Cell::exportSubCellTES4(ESMWriter &esm, int subX, int subY, int offset) const
     {
         // Write EDID (TES4-style editor string identifier)
-		std::string *newEDID = esm.generateEDIDTES4(mName, true);
-        char *charbuf = new char[newEDID->size()+6];
+		std::string newEDID = esm.generateEDIDTES4(mName, true);
+        char *charbuf = new char[newEDID.size()+6];
 		std::ostringstream debugstream;
         
-        int len = snprintf(charbuf, newEDID->size()+6, "%s%02d", newEDID->c_str(), offset);
-        if (newEDID->compare("")!=0)
+        int len = snprintf(charbuf, newEDID.size()+6, "%s%02d", newEDID.c_str(), offset);
+        if (newEDID.compare("")!=0)
         {
-            if ((len < 0) || (len > newEDID->size()+6))
+            if ((len < 0) || (len > newEDID.size()+6))
             {
                 throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
             }
             charbuf[len] = '\0';
-            delete newEDID;
-            newEDID = new std::string(charbuf);
+            newEDID = std::string(charbuf);
         }
-		debugstream << "EDID=[" << *newEDID << "]; ";
+		debugstream << "EDID=[" << newEDID << "]; ";
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*newEDID);
+		esm.writeHCString(newEDID);
 		esm.endSubRecordTES4("EDID");
-		delete newEDID;
 
         // Write FULL (human readable name)
 		esm.startSubRecordTES4("FULL");

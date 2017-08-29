@@ -141,15 +141,14 @@ namespace ESM {
 	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempStream;
 
 		// export EDID
 		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		// FULL, fullname
 		esm.startSubRecordTES4("FULL");
@@ -158,12 +157,11 @@ namespace ESM {
 
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		tempStream << "morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempStream << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempStream.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 		// MODB?
 		// MODT?
 
@@ -194,11 +192,10 @@ namespace ESM {
 
 		// array - NIFZ
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		esm.startSubRecordTES4("NIFZ");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("NIFZ");
-		delete tempStr;
 		// NIFT
 
 		// ACBS group

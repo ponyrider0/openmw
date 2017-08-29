@@ -55,22 +55,20 @@ namespace ESM
 	bool Static::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		std::ostringstream modelPath;
-		std::string *tempStr;
+		std::string tempStr;
 
 		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		modelPath << "morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		modelPath << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");

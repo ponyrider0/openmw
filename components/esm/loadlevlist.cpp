@@ -111,11 +111,10 @@ namespace ESM
 	{
 
 		// export LVC
-		std::string *newEDID = esm.generateEDIDTES4(mId);
+		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*newEDID);
+		esm.writeHCString(newEDID);
 		esm.endSubRecordTES4("EDID");
-		delete newEDID;
 
 		// Chance, LVLD
 		esm.startSubRecordTES4("LVLD");

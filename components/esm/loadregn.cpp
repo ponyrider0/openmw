@@ -120,12 +120,11 @@ namespace ESM
 //		for (std::vector<SoundRef>::const_iterator it = mSoundList.begin(); it != mSoundList.end(); ++it)
 //			esm.writeHNT<SoundRef>("SNAM", *it);
 
-		std::string *tempStr;
+		std::string tempStr;
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		// ICON
 
@@ -168,13 +167,12 @@ namespace ESM
 	bool Region::exportClimateTESx(ESMWriter &esm, int export_format) const
 	{
 		std::ostringstream tempStream;
-		std::string *tempStr;
+		std::string tempStr;
 		tempStr = esm.generateEDIDTES4(mId, false);
-		tempStream << *tempStr << "Clmt";
+		tempStream << tempStr << "Clmt";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStream.str());
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("WLST");
 		exportWeatherListTES4(esm);

@@ -159,11 +159,10 @@ namespace ESM
 	bool NPC::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		// EDID
-		std::string *newEDID = esm.generateEDIDTES4(mId);
+		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*newEDID);
+		esm.writeHCString(newEDID);
 		esm.endSubRecordTES4("EDID");
-		delete newEDID;
 
 		// FULL name
 		esm.startSubRecordTES4("FULL");

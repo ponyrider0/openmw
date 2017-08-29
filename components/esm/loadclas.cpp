@@ -98,14 +98,13 @@ namespace ESM
 
 	void Class::exportTESx(ESMWriter &esm, int export_type) const
 	{
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempPath;
 
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);

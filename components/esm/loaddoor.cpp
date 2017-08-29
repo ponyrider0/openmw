@@ -69,15 +69,14 @@ namespace ESM
     }
 	bool Door::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream modelPath;
 
 		// EDID
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		// FULL
 		esm.startSubRecordTES4("FULL");
@@ -87,12 +86,11 @@ namespace ESM
 		// MODL, MODB, MODT
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		modelPath << "morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		modelPath << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(1.0);

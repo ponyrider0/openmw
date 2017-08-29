@@ -156,9 +156,10 @@ public:
 
 		uint32_t mESMoffset=0;
 
-		std::string* generateEDIDTES4(const std::string& name, bool noLeadingZero=false);
+		static std::string generateEDIDTES4(const std::string& name, bool noLeadingZero=false);
 		static int skillToActorValTES4(int skillval);
 		static int attributeToActorValTES4(int attributeval);
+		static std::string intToMagEffIDTES4(int magEffVal);
 
     private:
         std::list<RecordData> mRecords;

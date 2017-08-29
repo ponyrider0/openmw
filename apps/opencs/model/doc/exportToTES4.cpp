@@ -89,6 +89,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
@@ -367,7 +368,6 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 
 	for (auto furnIndex = mState.mFurnitureFromStaticList.begin(); furnIndex != mState.mFurnitureFromStaticList.end(); furnIndex++)
 	{
-		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
 		const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(*furnIndex);
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -404,6 +404,35 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		debugstream.str(""); debugstream.clear();
 		debugstream << "complete." << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportIngredientCollectionTES4Stage::ExportIngredientCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportIngredientCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getIngredients().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportIngredientCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "INGR";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getIngredients().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }

@@ -81,14 +81,13 @@ namespace ESM
 	bool Book::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempPath;
 
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
@@ -110,12 +109,11 @@ namespace ESM
 
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		tempPath << "clutter\\books\\morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempPath << "clutter\\books\\morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
@@ -125,13 +123,12 @@ namespace ESM
 		// MODT
 		// ICON, mIcon
 		tempStr = esm.generateEDIDTES4(mIcon, true);
-		tempStr->replace(tempStr->size()-4, 4, ".dds");
+		tempStr.replace(tempStr.size()-4, 4, ".dds");
 		tempPath.str(""); tempPath.clear();
-		tempPath << "clutter\\morro\\" << *tempStr;
+		tempPath << "clutter\\morro\\" << tempStr;
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");
-		delete tempStr;
 
 		// ANAM, enchantment points
 		// ENAM, enchantment formID

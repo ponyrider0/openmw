@@ -66,32 +66,30 @@ namespace ESM
 
 	void LandTexture::exportTESx(ESMWriter &esm, bool skipBaseRecords, int export_type) const
 	{
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream debugstream, iconpath;
 
 		// EDID
 		tempStr = esm.generateEDIDTES4(mId, false);
-		debugstream << "LTEX: EDID=[" << *tempStr << "]; ";
+		debugstream << "LTEX: EDID=[" << tempStr << "]; ";
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 //		esm.writeHNT("INTV", mIndex);
 
 		// ICON
 		tempStr = esm.generateEDIDTES4(mTexture, true);
-		int extIndex = tempStr->find("Ptga");
-		if (extIndex != tempStr->npos)
+		int extIndex = tempStr.find("Ptga");
+		if (extIndex != tempStr.npos)
 		{
-			tempStr->replace(extIndex, 4, ".dds");
+			tempStr.replace(extIndex, 4, ".dds");
 		}
-		iconpath << "morro\\" << *tempStr;
+		iconpath << "morro\\" << tempStr;
 		debugstream << "ICON=[" << iconpath.str() << "]; ";
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(iconpath.str());
 		esm.endSubRecordTES4("ICON");
-		delete tempStr;
 
 		debugstream << std::endl;
 //		OutputDebugString(debugstream.str().c_str());

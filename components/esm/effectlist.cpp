@@ -30,6 +30,7 @@ void EffectList::save(ESMWriter &esm) const
 
 void ENAMstruct::exportTES4EFID(ESMWriter &esm) const
 {
+/*
 	std::string effSIG;
 
 	switch (mEffectID)
@@ -443,7 +444,8 @@ void ENAMstruct::exportTES4EFID(ESMWriter &esm) const
 		effSIG = "WKSH";
 		break;
 	}
-
+*/
+	std::string effSIG = esm.intToMagEffIDTES4(mEffectID);
 	esm.writeName(effSIG);
 }
 

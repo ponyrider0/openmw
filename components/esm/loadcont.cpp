@@ -106,14 +106,13 @@ namespace ESM
 	bool Container::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempStream;
 
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
@@ -121,12 +120,11 @@ namespace ESM
 
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		tempStream << "morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempStream << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempStream.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(1.0);

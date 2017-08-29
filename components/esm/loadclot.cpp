@@ -88,14 +88,13 @@ namespace ESM
     }
 	bool Clothing::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		std::string *tempStr;
+		std::string tempStr;
 		std::ostringstream tempPath;
 
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(*tempStr);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
-		delete tempStr;
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
@@ -132,12 +131,11 @@ namespace ESM
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
 //		std::cout << "CLOTHING EXPORT: mModel=" << *tempStr << std::endl;
-		tempStr->replace(tempStr->size()-4, 4, ".nif");
-		tempPath << "clothes\\morro\\" << *tempStr;
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempPath << "clothes\\morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");
-		delete tempStr;
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(0.0);
@@ -145,13 +143,12 @@ namespace ESM
 
 		// MOD2, MOD3, MOD4
 		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr->replace(tempStr->size()-4, 4, "_gnd");
+		tempStr.replace(tempStr.size()-4, 4, "_gnd");
 		tempPath.str(""); tempPath.clear();
-		tempPath << "clothes\\morro\\" << *tempStr << ".nif";
+		tempPath << "clothes\\morro\\" << tempStr << ".nif";
 		esm.startSubRecordTES4("MOD2");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MOD2");
-		delete tempStr;
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MO2B");
 		esm.writeT<float>(0.0);
@@ -163,16 +160,15 @@ namespace ESM
 
 		// ICON, mIcon
 		tempStr = esm.generateEDIDTES4(mIcon, true);
-		if (tempStr->size() > 4)
+		if (tempStr.size() > 4)
 		{
-			tempStr->replace(tempStr->size()-4, 4, ".dds");
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
 			tempPath.str(""); tempPath.clear();
-			tempPath << "clothes\\morro\\" << *tempStr;
+			tempPath << "clothes\\morro\\" << tempStr;
 			esm.startSubRecordTES4("ICON");
 			esm.writeHCString(tempPath.str());
 			esm.endSubRecordTES4("ICON");
 		}
-		delete tempStr;
 
 		// ICO2
 
