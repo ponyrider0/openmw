@@ -97,7 +97,44 @@ namespace ESM
 
 	bool LevelledListBase::exportTESx(ESMWriter &esm, int export_format) const
 	{
-		return false;
+		std::string newEDID = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(newEDID);
+		esm.endSubRecordTES4("EDID");
+
+		// Chance, LVLD
+		esm.startSubRecordTES4("LVLD");
+		esm.writeT<unsigned char>(mChanceNone);
+		esm.endSubRecordTES4("LVLD");
+
+		// Flags, LVLF
+		unsigned char flags=0;
+		if (mFlags & ESM::ItemLevList::Flags::AllLevels)
+			flags |= 0x01;
+		esm.startSubRecordTES4("LVLF");
+		esm.writeT<unsigned char>(flags);
+		esm.endSubRecordTES4("LVLF");
+
+		// for each mList record, write LVLO subrecord
+		// LVLO
+		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
+		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
+		{
+			esm.startSubRecordTES4("LVLO");
+			esm.writeT<short>(it_LVLO->mLevel); // level
+			esm.writeT<uint16_t>(0); // unknown?
+			uint32_t refID = esm.crossRefStringID(it_LVLO->mId);
+			esm.writeT<uint32_t>(refID); //formID
+			esm.writeT<uint16_t>(1); //count
+			esm.writeT<uint16_t>(0); //unknown
+			esm.endSubRecordTES4("LVLO");
+		}
+
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<unsigned char>(0); // unused
+		esm.endSubRecordTES4("DATA");
+
+		return true;
 	}
 
     void LevelledListBase::blank()
@@ -109,7 +146,6 @@ namespace ESM
 
 	bool CreatureLevList::exportTESx(ESMWriter &esm, int export_format) const
 	{
-
 		// export LVC
 		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
@@ -129,16 +165,6 @@ namespace ESM
 		esm.writeT<unsigned char>(flags);
 		esm.endSubRecordTES4("LVLF");
 
-		// script formID, SCRI
-		esm.startSubRecordTES4("SCRI");
-		esm.writeT<uint32_t>(0);
-		esm.endSubRecordTES4("SCRI");
-
-		// creature template formID, TNAM
-		esm.startSubRecordTES4("TNAM");
-		esm.writeT<uint32_t>(0);
-		esm.endSubRecordTES4("TNAM");
-
 		// for each mList record, write LVLO subrecord
 		// LVLO
 		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
@@ -154,6 +180,16 @@ namespace ESM
 			esm.writeT<uint16_t>(0); //unknown
 			esm.endSubRecordTES4("LVLO");
 		}
+
+		// script formID, SCRI
+		esm.startSubRecordTES4("SCRI");
+		esm.writeT<uint32_t>(0);
+		esm.endSubRecordTES4("SCRI");
+
+		// creature template formID, TNAM
+		esm.startSubRecordTES4("TNAM");
+		esm.writeT<uint32_t>(0);
+		esm.endSubRecordTES4("TNAM");
 
 		return true;
 	}

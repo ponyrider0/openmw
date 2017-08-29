@@ -20,7 +20,6 @@ CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 
 void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingState& currentSave)
 {
-
 	// Export to ESM file
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
@@ -34,8 +33,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
 		(mDocument.getData().getSkills(), currentSave));
-
-
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
 		(mDocument.getData().getRaces(), currentSave));
@@ -51,7 +48,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
 		(mDocument.getData().getSpells(), currentSave));
-
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
 		(mDocument.getData().getBodyParts(), currentSave));
@@ -95,6 +91,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, false));
 
 	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
@@ -404,6 +401,43 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		debugstream.str(""); debugstream.clear();
 		debugstream << "complete." << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportLeveledItemCollectionTES4Stage::ExportLeveledItemCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+	int formID=0;
+
+	for (int i=0; i < mActiveRefCount; i++)
+	{
+		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i).get().mId);
+	}
+
+	return mActiveRefCount;
+}
+void CSMDoc::ExportLeveledItemCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "LVLI";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }

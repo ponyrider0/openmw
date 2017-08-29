@@ -1,5 +1,12 @@
 #include "loadcont.hpp"
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
+
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
 #include "defs.hpp"
@@ -107,7 +114,7 @@ namespace ESM
 	{
 		uint32_t tempFormID;
 		std::string tempStr;
-		std::ostringstream tempStream;
+		std::ostringstream tempStream, debugstream;
 
 		tempStr = esm.generateEDIDTES4(mId, false);
 		esm.startSubRecordTES4("EDID");
@@ -175,12 +182,11 @@ namespace ESM
 			if (ingredient != mInventory.mList.end())
 			{
 				tempFormID = esm.crossRefStringID(ingredient->mItem.toString());
-				if (tempFormID != 0)
-				{
-					esm.startSubRecordTES4("PFIG");
-					esm.writeT<uint32_t>(tempFormID);
-					esm.endSubRecordTES4("PFIG");
-				}
+				esm.startSubRecordTES4("PFIG");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.endSubRecordTES4("PFIG");
+				debugstream << "Flora (" << mId << "): ingredient='" << ingredient->mItem.toString() << "' [" << tempFormID << "]" << std::endl;
+				OutputDebugString(debugstream.str().c_str());
 			}
 
 			// PFPC

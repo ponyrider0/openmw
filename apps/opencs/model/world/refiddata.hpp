@@ -240,20 +240,9 @@ namespace CSMWorld
 			// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
 			switch (esmRecord.sRecordId)
 			{
-/*
-			case ESM::REC_DOOR:
-				sSIG = "DOOR";
+			case ESM::REC_LEVI:
+				sSIG = "LVLI";
 				break;
-			case ESM::REC_STAT:
-				sSIG = "STAT";
-				break;
-			case ESM::REC_NPC_:
-				sSIG = "NPC_";
-				break;
-			case ESM::REC_CREA:
-				sSIG = "CREA";
-				break;
-*/
 			case ESM::REC_LEVC:
 				sSIG = "LVLC";
 				break;
@@ -263,7 +252,6 @@ namespace CSMWorld
 					/// \todo make endianess agnostic
 					sSIG += reinterpret_cast<const char *> (&esmRecord.sRecordId)[i];
 				sSIG[4]='\0';
-
 			}
 			if ( sSIG != "" )
 			{
