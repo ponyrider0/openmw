@@ -158,16 +158,130 @@ namespace ESM
     }
 	bool NPC::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
 		// EDID
-		std::string newEDID = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(newEDID);
+		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
 
 		// FULL name
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
+
+		// MODL == Model Filename
+		if (mModel.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, ".nif");
+			tempPath << "clutter\\morro\\" << tempStr;
+			esm.startSubRecordTES4("MODL");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MODL");
+			// MODB == Bound Radius
+			esm.startSubRecordTES4("MODB");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MODB");
+			// MODT
+		}
+
+		// ACBS group
+		esm.startSubRecordTES4("ACBS");
+		uint32_t flags=0;
+		if (mFlags & Flags::Female)
+			flags |= 0x01;
+		if (mFlags & Flags::Essential)
+			flags |= 0x02;
+		if (mFlags & Flags::Respawn)
+			flags |= 0x08;
+		if (mFlags & Flags::Autocalc)
+			flags |= 0x10;
+		esm.writeT<uint32_t>(flags); //flags
+		esm.writeT<uint16_t>(mNpdt52.mMana); // base spell pts
+		esm.writeT<uint16_t>(mNpdt52.mFatigue); // fatigue
+		esm.writeT<uint16_t>(mNpdt52.mGold); // barter gold
+		esm.writeT<int16_t>(mNpdt52.mLevel); // level / offset level
+		esm.writeT<uint16_t>(0); // calc min
+		esm.writeT<uint16_t>(0); // calc max
+		esm.endSubRecordTES4("ACBS");
+
+		// SNAM, faction struct { formid, rank(byte), flags(ubyte[3]) }
+		tempFormID = esm.crossRefStringID(mFaction);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SNAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.writeT<int8_t>(mNpdt52.mRank);
+			esm.writeT<uint8_t>(0); // unused
+			esm.writeT<uint8_t>(0); // unused
+			esm.writeT<uint8_t>(0); // unused
+			esm.endSubRecordTES4("SNAM");
+		}
+
+		// INAM, death item formID [LVLI]
+		// RNAM, race formID
+		tempFormID = esm.crossRefStringID(mRace);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("RACE");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("RACE");
+		}
+
+		// CNTO: {formID, uint32}
+		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		{
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CNTO");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(inventoryItem->mCount);
+				esm.endSubRecordTES4("CNTO");
+			}
+		}
+
+		// SPLO
+		for (auto spellItem = mSpells.mList.begin(); spellItem != mSpells.mList.end(); spellItem++)
+		{
+			tempFormID = esm.crossRefStringID(*spellItem);
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("SPLO");
+				esm.writeT<uint32_t>(tempFormID); // spell or lvlspel formID
+				esm.endSubRecordTES4("SPLO");
+			}
+		}
+
+		// SCRI
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// AI Data
+		esm.startSubRecordTES4("AIDT");
+		esm.writeT<unsigned char>(mAiData.mFight); // aggression
+		esm.writeT<unsigned char>(100-mAiData.mFlee); // confidence
+		esm.writeT<unsigned char>(50); // energy
+		esm.writeT<unsigned char>(50); // responsibility
+		flags = 0;
+		// NPC services...
+		esm.writeT<uint32_t>(flags); // flags (buy/sell/services)
+		esm.writeT<unsigned char>(0); // trainer Skill
+		esm.writeT<unsigned char>(0); // trainer level
+		esm.writeT<uint16_t>(0); // unused
+		esm.endSubRecordTES4("AIDT");
+
+		// PKID, AIpackage formID
+		// KFFZ, animations
 
 		// CNAM, class formID
 		uint32_t classFormID = esm.crossRefStringID(mClass);
@@ -178,60 +292,49 @@ namespace ESM
 			esm.endSubRecordTES4("CNAM");
 		}
 
-/*
-		// ACBS group
-		esm.startSubRecordTES4("ACBS");
-		esm.writeT<uint32_t>(0); //flags
-		esm.writeT<uint16_t>(0); // spell pts
-		esm.writeT<uint16_t>(0); // fatigue
-		esm.writeT<uint16_t>(0); // barter gold
-		esm.writeT<int16_t>(0); // level / offset level
-		esm.writeT<uint16_t>(0); // calc min
-		esm.writeT<uint16_t>(0); // calc max
-		esm.endSubRecordTES4("ACBS");
-
-		// SNAM, faction struct { formid, rank(byte), flags(ubyte[3]) }
-		// INAM, death item formID
-		// RNAM, race formID
-		// *SPLO, spells formID
-		// SCRI, script formID
-		// CNTO, inventory items struct { formid, count(long) }
-
-		// AI Data
-		esm.startSubRecordTES4("AIDT");
-		esm.writeT<unsigned char>(0); // aggression
-		esm.writeT<unsigned char>(0); // confidence
-		esm.writeT<unsigned char>(0); // energy
-		esm.writeT<unsigned char>(0); // responsibility
-		esm.writeT<uint32_t>(0); // flags (buy/sell/services)
-		esm.writeT<unsigned char>(0); // trainer Skill
-		esm.writeT<unsigned char>(0); // trainer level
-		esm.writeT<uint16_t>(0); // ?
-		esm.endSubRecordTES4("AIDT");
-
-		// PKID, AIpackage formID
-		// CNAM, class formID
-
-		// DATA
-		esm.startSubRecordTES4("DATA");
-		esm.writeT<unsigned char>(0); // Type Creature
-		esm.writeT<unsigned char>(mData.mCombat); // Combat
-		esm.writeT<unsigned char>(mData.mMagic); // Magic
-		esm.writeT<unsigned char>(mData.mStealth); // Stealth
-		esm.writeT<uint16_t>(mData.mSoul); // soul size
-		esm.writeT<uint16_t>(mData.mHealth); // health
-		esm.writeT<uint16_t>(0); // ?
-		esm.writeT<uint16_t>((mData.mAttack[0]+mData.mAttack[1])/2); // attack damage
-		esm.writeT<unsigned char>(mData.mStrength); // strength
-		esm.writeT<unsigned char>(mData.mIntelligence); // int
-		esm.writeT<unsigned char>(mData.mWillpower); // will
-		esm.writeT<unsigned char>(mData.mAgility); // agi
-		esm.writeT<unsigned char>(mData.mSpeed); // speed
-		esm.writeT<unsigned char>(mData.mEndurance); // end
-		esm.writeT<unsigned char>(mData.mPersonality); // per
-		esm.writeT<unsigned char>(mData.mLuck); // luck
+		// DATA ***switch Npdt52 vs Npdt12***
+		esm.startSubRecordTES4("DATA"); // stats
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Armorer]); // armorer
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Athletics]); // athletics
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::LongBlade]); // blade
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Block]); // block
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::BluntWeapon]); // blunt
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::HandToHand]); // HtoH
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::HeavyArmor]); // heavy
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Alchemy]); // alchemy
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Alteration]); // alteration
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Conjuration]); // conjuration
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Destruction]); // destruction
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Illusion]); // illusion
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Mysticism]); // mysticism
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Restoration]); // restoration
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Acrobatics]); // acrobatics
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::LightArmor]); // light
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Marksman]); // marksman
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Mercantile]); // mercantile
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Security]); // security
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Sneak]); // sneak
+		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Speechcraft]); // speechcraft
+		esm.writeT<uint16_t>(mNpdt52.mHealth); // health
+		esm.writeT<unsigned char>(0); // Unused
+		esm.writeT<unsigned char>(0); // Unused
+		esm.writeT<unsigned char>(mNpdt52.mStrength); // strength
+		esm.writeT<unsigned char>(mNpdt52.mIntelligence); // int
+		esm.writeT<unsigned char>(mNpdt52.mWillpower); // will
+		esm.writeT<unsigned char>(mNpdt52.mAgility); // agi
+		esm.writeT<unsigned char>(mNpdt52.mSpeed); // speed
+		esm.writeT<unsigned char>(mNpdt52.mEndurance); // end
+		esm.writeT<unsigned char>(mNpdt52.mPersonality); // per
+		esm.writeT<unsigned char>(mNpdt52.mLuck); // luck
 		esm.endSubRecordTES4("DATA");
-*/
+
+		// HNAM (hair formid)
+		// LNAM (float, hair lenght)
+		// ENAM (eye formid)
+		// HCLR, hair color 32bit
+		// CSTY, combat style formid
+		// FaceGen...
+		// FNAM bytearray?? unknown
 
 		return true;
 	}
