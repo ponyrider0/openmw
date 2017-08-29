@@ -87,6 +87,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
@@ -408,6 +409,53 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 	}
 }
 
+CSMDoc::ExportSoulgemCollectionTES4Stage::ExportSoulgemCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportSoulgemCollectionTES4Stage::setup()
+{
+	mActiveRefCount = 1;
+	return mActiveRefCount;
+}
+void CSMDoc::ExportSoulgemCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "SLGM";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	//	mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	for (auto soulgemIndex = mState.mSoulgemFromMiscList.begin(); soulgemIndex != mState.mSoulgemFromMiscList.end(); soulgemIndex++)
+	{
+		const CSMWorld::Record<ESM::Miscellaneous> soulgemRec = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(*soulgemIndex);
+
+		uint32_t formID = writer.crossRefStringID(soulgemRec.get().mId);
+		uint32_t flags=0;
+		if (soulgemRec.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, soulgemRec.get().mId);
+		soulgemRec.get().exportTESx(writer, 4);
+		writer.startSubRecordTES4("SOUL");
+		writer.writeT<uint8_t>(0); // contained soul
+		writer.endSubRecordTES4("SOUL");
+		writer.startSubRecordTES4("SLCP");
+		writer.writeT<uint8_t>(0); // maximum capacity
+		writer.endSubRecordTES4("SLCP");
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
+		writer.endGroupTES4(sSIG);
+	}
+}
+
 CSMDoc::ExportKeyCollectionTES4Stage::ExportKeyCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
 {
@@ -530,7 +578,7 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 		if (bIsSoulGem)
 		{
 			// add to KeyCollection, and skip
-//			mState.mKeyFromMiscList.push_back(stage);
+			mState.mSoulgemFromMiscList.push_back(stage);
 			exportOrSkip = false;
 		}
 	}
