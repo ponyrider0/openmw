@@ -86,6 +86,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
@@ -403,6 +404,47 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		debugstream.str(""); debugstream.clear();
 		debugstream << "complete." << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportKeyCollectionTES4Stage::ExportKeyCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportKeyCollectionTES4Stage::setup()
+{
+	mActiveRefCount = 1;
+	return mActiveRefCount;
+}
+void CSMDoc::ExportKeyCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "KEYM";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	for (auto keyIndex = mState.mKeyFromMiscList.begin(); keyIndex != mState.mKeyFromMiscList.end(); keyIndex++)
+	{
+		const CSMWorld::Record<ESM::Miscellaneous> keyRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(*keyIndex);
+
+		uint32_t formID = writer.crossRefStringID(keyRecord.get().mId);
+		uint32_t flags=0;
+		if (keyRecord.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, keyRecord.get().mId);
+		keyRecord.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }

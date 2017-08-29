@@ -57,6 +57,7 @@ namespace CSMDoc
 			std::vector<int> mFurnitureFromActivatorList;			
 			std::vector<int> mFurnitureFromStaticList;
 			std::vector<int> mKeyFromMiscList;
+			std::vector<int> mSoulgemFromMiscList;
 	};
 
 

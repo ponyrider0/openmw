@@ -71,6 +71,7 @@ namespace ESM
         esm.writeHNOCString("SCRI", mScript);
         esm.writeHNOCString("ITEX", mIcon);
     }
+
 	bool Miscellaneous::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
