@@ -172,6 +172,55 @@ namespace ESM
         esm.writeHNOString("DESC", mDescription);
     }
 
+	void Skill::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
+		// EDID
+		tempStr = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("EDID");
+
+		// INDX
+		esm.startSubRecordTES4("INDX");
+		int actorVal = esm.skillToActorValTES4(mIndex);
+		esm.writeT<int32_t>(actorVal);
+		esm.endSubRecordTES4("INDX");
+
+		esm.startSubRecordTES4("DESC");
+		esm.writeHCString(mDescription);
+		esm.endSubRecordTES4("DESC");
+
+		// ICON, sIconNames[]
+		if (sIconNames[mIndex].size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(sIconNames[mIndex], true);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath << "morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
+
+		// DATA {action, attribute, specialization}
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<int32_t>(actorVal); // action (actorval)
+		esm.writeT<int32_t>(mData.mAttribute); // attribute (actorval)
+		esm.writeT<int32_t>(mData.mSpecialization); // specialization (specialization enum)
+		esm.writeT<float>(mData.mUseValue[0]); // use values #0
+		esm.writeT<float>(mData.mUseValue[1]); // use values #1
+		esm.endSubRecordTES4("DATA");
+
+		// ANAM text
+		// JNAM text
+		// ENAM text
+		// MNAM text
+
+	}
+
     void Skill::blank()
     {
         mData.mAttribute = 0;
