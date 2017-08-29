@@ -85,6 +85,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
@@ -401,6 +402,38 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		debugstream.str(""); debugstream.clear();
 		debugstream << "complete." << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportLightCollectionTES4Stage::ExportLightCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportLightCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getLights().getSize();
+	for (int i=0; i < mActiveRefCount; i++)
+		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i).get().mId);
+
+	return mActiveRefCount;
+}
+void CSMDoc::ExportLightCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "LIGH";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	mDocument.getData().getReferenceables().getDataSet().getLights().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+
+	if (stage == mActiveRefCount-1)
+	{
 		writer.endGroupTES4(sSIG);
 	}
 }
