@@ -31,15 +31,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 		(mDocument.getData().getGmsts(), currentSave));
 
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
-		(mDocument.getData().getSkills(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
-		(mDocument.getData().getRaces(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
-		(mDocument.getData().getSounds(), currentSave));
-
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
 		(mDocument.getData().getScripts(), currentSave));
 
@@ -68,6 +59,15 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
+
+//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
+//		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, false));
+
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
+		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, false));
+
+//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
+//		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
 		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));

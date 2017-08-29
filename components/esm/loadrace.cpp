@@ -62,6 +62,7 @@ namespace ESM
         if (!hasData && !isDeleted)
             esm.fail("Missing RADT subrecord");
     }
+
     void Race::save(ESMWriter &esm, bool isDeleted) const
     {
         esm.writeHNCString("NAME", mId);
@@ -77,6 +78,97 @@ namespace ESM
         mPowers.save(esm);
         esm.writeHNOString("DESC", mDescription);
     }
+
+	void Race::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
+		// EDID
+		tempStr = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("EDID");
+
+		// FULL name
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		esm.startSubRecordTES4("DESC");
+		esm.writeHCString(mDescription);
+		esm.endSubRecordTES4("DESC");
+
+		// SPLOs array
+		for (auto spellItem = mPowers.mList.begin(); spellItem != mPowers.mList.end(); spellItem++)
+		{
+			tempFormID = esm.crossRefStringID(*spellItem);
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("SPLO");
+				esm.writeT<uint32_t>(tempFormID); // spell or lvlspel formID
+				esm.endSubRecordTES4("SPLO");
+			}
+		}
+
+		// XNAMs, relations array
+
+		// DATA {skill boosts, sex height, weight, flags}
+		esm.startSubRecordTES4("DATA");
+		// skill boosts { skill ActorValue (signed byte), boost (signed byte) }
+		for (int i=0; i < 7; i++)
+		{
+			int actorVal = esm.skillToActorValTES4(mData.mBonus[i].mSkill);
+			esm.writeT<int8_t>(actorVal);
+			esm.writeT<int8_t>(mData.mBonus[i].mBonus);
+		}
+		esm.writeT<uint16_t>(8); // unused
+		esm.writeT<float>(mData.mHeight.mMale);
+		esm.writeT<float>(mData.mHeight.mFemale);
+		esm.writeT<float>(mData.mWeight.mMale);
+		esm.writeT<float>(mData.mWeight.mFemale);
+		uint32_t flags=0;
+		if (mData.mFlags & Flags::Playable)
+			flags |= 0x01;
+		esm.writeT<uint32_t>(flags);
+		esm.endSubRecordTES4("DATA");
+
+		// VNAM
+		// DNAM
+		// CNAM
+		// PNAM
+
+		// ATTR base attributes, male then female
+		esm.startSubRecordTES4("ATTR");
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Strength].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Intelligence].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Willpower].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Agility].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Speed].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Endurance].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Personality].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Luck].mMale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Strength].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Intelligence].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Willpower].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Agility].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Speed].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Endurance].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Personality].mFemale);
+		esm.writeT<int8_t>(mData.mAttributeValues[Attribute::Luck].mFemale);
+		esm.endSubRecordTES4("ATTR");
+
+		// Face Data
+		// NAM1, body data marker
+		// Male body data
+		// Female body data
+		// HNAM hairs
+		// ENAM eyes
+		// FaceGen Data
+		// SNAM unknown
+
+	}
 
     void Race::blank()
     {

@@ -186,8 +186,8 @@ namespace ESM
 			esm.startSubRecordTES4("MODB");
 			esm.writeT<float>(0.0);
 			esm.endSubRecordTES4("MODB");
-			// MODT
 		}
+		// MODT
 
 		// ACBS group
 		esm.startSubRecordTES4("ACBS");
@@ -223,13 +223,14 @@ namespace ESM
 		}
 
 		// INAM, death item formID [LVLI]
+
 		// RNAM, race formID
 		tempFormID = esm.crossRefStringID(mRace);
 		if (tempFormID != 0)
 		{
-			esm.startSubRecordTES4("RACE");
+			esm.startSubRecordTES4("RNAM");
 			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("RACE");
+			esm.endSubRecordTES4("RNAM");
 		}
 
 		// CNTO: {formID, uint32}
@@ -328,13 +329,39 @@ namespace ESM
 		esm.writeT<unsigned char>(mNpdt52.mLuck); // luck
 		esm.endSubRecordTES4("DATA");
 
+/*
 		// HNAM (hair formid)
+		esm.startSubRecordTES4("HNAM");
+		esm.endSubRecordTES4("HNAM");
+
 		// LNAM (float, hair lenght)
+		esm.startSubRecordTES4("LNAM");
+		esm.endSubRecordTES4("LNAM");
+
 		// ENAM (eye formid)
+		esm.startSubRecordTES4("ENAM");
+		esm.endSubRecordTES4("ENAM");
+
 		// HCLR, hair color 32bit
+		esm.startSubRecordTES4("HCLR");
+		esm.endSubRecordTES4("HCLR");
+
 		// CSTY, combat style formid
+		esm.startSubRecordTES4("CSTY");
+		esm.endSubRecordTES4("CSTY");
+
 		// FaceGen...
+		esm.startSubRecordTES4("FGGS");
+		esm.endSubRecordTES4("FGGS");
+		esm.startSubRecordTES4("FGGA");
+		esm.endSubRecordTES4("FGGA");
+		esm.startSubRecordTES4("FGTS");
+		esm.endSubRecordTES4("FGTS");
+*/
+
 		// FNAM bytearray?? unknown
+		esm.startSubRecordTES4("FNAM");
+		esm.endSubRecordTES4("FNAM");
 
 		return true;
 	}
