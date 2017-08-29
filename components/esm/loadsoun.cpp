@@ -60,6 +60,45 @@ namespace ESM
         esm.writeHNT("DATA", mData, 3);
     }
 
+	void Sound::exportTESx(ESMWriter &esm, int export_type) const
+	{
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
+		// EDID
+		tempStr = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("EDID");
+
+		// ICON, sIconNames[]
+		if (mSound.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mSound, true);
+			tempStr.replace(tempStr.size()-4, 1, ".");
+			tempPath << "fx\\morro\\" << tempStr;
+			esm.startSubRecordTES4("FNAM");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("FNAM");
+		}
+
+		// DATA
+		esm.startSubRecordTES4("SNDX");
+		esm.writeT<uint8_t>(mData.mMinRange);
+		esm.writeT<uint8_t>(mData.mMaxRange);
+		esm.writeT<int8_t>(0); // frequency adjustment %
+		esm.writeT<uint8_t>(0); // unused
+		uint16_t flags=0;
+		esm.writeT<uint16_t>(flags);
+		esm.writeT<uint16_t>(0); // unused
+		esm.writeT<uint16_t>(0); // static attenuation
+		esm.writeT<uint8_t>(0); // stop time
+		esm.writeT<uint8_t>(0); // start time
+		esm.endSubRecordTES4("SNDX");
+
+	}
+
     void Sound::blank()
     {
         mSound.clear();

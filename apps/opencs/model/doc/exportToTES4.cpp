@@ -66,8 +66,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
 		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, false));
 
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
-//		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
+		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
 		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));
