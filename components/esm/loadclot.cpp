@@ -88,6 +88,7 @@ namespace ESM
     }
 	bool Clothing::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempPath;
 
@@ -100,8 +101,31 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		// SCRI (script formID) mScript
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// ENAM (enchantment formID) mEnchant
+		tempFormID = esm.crossRefStringID(mEnchant);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("ENAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("ENAM");
+		}
+
+		// ANAM (enchantment points)
+		esm.startSubRecordTES4("ANAM");
+		esm.writeT<uint16_t>(mData.mEnchant);
+		esm.endSubRecordTES4("ANAM");
+
 		// BMDT Flags (dword)
-		uint32_t flags=0;
+		int flags=0;
 		switch (mData.mType)
 		{
 		case Clothing::Type::Shirt:
@@ -117,18 +141,28 @@ namespace ESM
 		case Clothing::Type::Shoes:
 			flags = 0x0020; // foot 0x20
 			break;
+		case Clothing::Type::LGlove:
 		case Clothing::Type::RGlove:
 			flags = 0x0010; // hand 0x10
 			break;
 		case Clothing::Type::Belt:
 			flags = 0x8000; // tail 0x8000
 			break;
+		case Clothing::Type::Ring:
+			flags = 0x0040; // right ring or (0x80 left ring)
+			break;
+		case Clothing::Type::Amulet:
+			flags = 0x100; // right ring or (0x80 left ring)
+			break;
 		}
 		esm.startSubRecordTES4("BMDT");
-		esm.writeT<uint32_t>(flags);
+		esm.writeT<uint16_t>(flags); // biped flags
+		flags=0;
+		esm.writeT<uint8_t>(flags); // general flags
+		esm.writeT<uint8_t>(0); // unused
 		esm.endSubRecordTES4("BMDT");
 
-		// MODL == Model Filename
+		// MODL, male model
 		tempStr = esm.generateEDIDTES4(mModel, true);
 //		std::cout << "CLOTHING EXPORT: mModel=" << *tempStr << std::endl;
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
@@ -140,8 +174,9 @@ namespace ESM
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(0.0);
 		esm.endSubRecordTES4("MODB");
+		// MODT
 
-		// MOD2, MOD3, MOD4
+		// MOD2, male gnd model
 		tempStr = esm.generateEDIDTES4(mModel, true);
 		tempStr.replace(tempStr.size()-4, 4, "_gnd");
 		tempPath.str(""); tempPath.clear();
@@ -153,12 +188,9 @@ namespace ESM
 		esm.startSubRecordTES4("MO2B");
 		esm.writeT<float>(0.0);
 		esm.endSubRecordTES4("MO2B");
+		// MO2T
 
-		// MO2B, MO3B, MO4B
-		// MODT
-		// MO2T, MO3T, MO4T
-
-		// ICON, mIcon
+		// ICON, male icon
 		tempStr = esm.generateEDIDTES4(mIcon, true);
 		if (tempStr.size() > 4)
 		{
@@ -170,23 +202,15 @@ namespace ESM
 			esm.endSubRecordTES4("ICON");
 		}
 
-		// ICO2
+		// MOD3, MO3B, MO3T -- female model
+		// MOD4, MO4B, MO4T -- female gnd model
+		// ICO2 -- female icon
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<uint32_t>(mData.mValue);
 		esm.writeT<float>(mData.mWeight);
 		esm.endSubRecordTES4("DATA");
-
-		// SCRI (script formID) mScript
-		uint32_t tempFormID = esm.crossRefStringID(mScript);
-		if (tempFormID != 0)
-		{
-			esm.startSubRecordTES4("SCRI");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("SCRI");
-		}
-		// ENAM (enchantment formID) mEnchant
 
 		return true;
 	}

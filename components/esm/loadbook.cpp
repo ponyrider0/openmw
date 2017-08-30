@@ -93,20 +93,6 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
-		// DESC, mText
-		esm.startSubRecordTES4("DESC");
-		esm.writeHCString(mText);
-		esm.endSubRecordTES4("DESC");
-
-		// SCRI
-		tempFormID = esm.crossRefStringID(mScript);
-		if (tempFormID != 0)
-		{
-			esm.startSubRecordTES4("SCRI");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("SCRI");
-		}
-
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, true);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
@@ -114,12 +100,10 @@ namespace ESM
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");
-
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(1.0);
 		esm.endSubRecordTES4("MODB");
-
 		// MODT
 		// ICON, mIcon
 		tempStr = esm.generateEDIDTES4(mIcon, true);
@@ -130,8 +114,33 @@ namespace ESM
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");
 
-		// ANAM, enchantment points
-		// ENAM, enchantment formID
+		// SCRI (script formID) mScript
+		tempFormID = esm.crossRefStringID(mScript);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// ENAM (enchantment formID) mEnchant
+		tempFormID = esm.crossRefStringID(mEnchant);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("ENAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("ENAM");
+		}
+
+		// ANAM (enchantment points)
+		esm.startSubRecordTES4("ANAM");
+		esm.writeT<uint16_t>(mData.mEnchant);
+		esm.endSubRecordTES4("ANAM");
+
+		// DESC, mText
+		esm.startSubRecordTES4("DESC");
+		esm.writeHCString(mText);
+		esm.endSubRecordTES4("DESC");
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");
@@ -139,7 +148,8 @@ namespace ESM
 		if (mData.mIsScroll)
 			flags |= 0x01;
 		esm.writeT<uint8_t>(flags); // flags
-		esm.writeT<uint8_t>(0xFF); // teaches
+		int skill = esm.skillToActorValTES4(mData.mSkillId)-12;
+		esm.writeT<uint8_t>(skill); // teaches skillenum (0-22)
 		esm.writeT<uint32_t>(mData.mValue); // value
 		esm.writeT<float>(mData.mWeight); // weight
 		esm.endSubRecordTES4("DATA");

@@ -839,23 +839,9 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 		exportOrSkip=true;
 	}
 
-	if (exportOrSkip)
-	{
-		switch (clothingRecord.get().mData.mType)
-		{
-		case ESM::Clothing::Type::Shirt:
-		case ESM::Clothing::Type::Skirt:
-		case ESM::Clothing::Type::Pants:
-		case ESM::Clothing::Type::Robe:
-		case ESM::Clothing::Type::Shoes:
-		case ESM::Clothing::Type::RGlove:
-		case ESM::Clothing::Type::Belt:
-			exportOrSkip = true;
-			break;
-		default:
-			exportOrSkip = false;
-		}
-	}
+	// filter out left glove
+	if ((exportOrSkip) && (clothingRecord.get().mData.mType == ESM::Clothing::Type::LGlove))
+		exportOrSkip = false;
 
 	if (exportOrSkip)
 	{

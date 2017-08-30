@@ -126,6 +126,20 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		// ENAM (enchantment formID) mEnchant
+		tempFormID = esm.crossRefStringID(mEnchant);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("ENAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("ENAM");
+		}
+
+		// ANAM (enchantment points)
+		esm.startSubRecordTES4("ANAM");
+		esm.writeT<uint16_t>(mData.mEnchant);
+		esm.endSubRecordTES4("ANAM");
+
 		// BMDT Flags (dword)
 		uint32_t flags=0;
 		switch (mData.mType)
@@ -209,9 +223,6 @@ namespace ESM
 			esm.writeT<uint32_t>(tempFormID);
 			esm.endSubRecordTES4("SCRI");
 		}
-
-		// ANAM (enchantment points)
-		// ENAM (enchantment formID) mEnchant
 
 		return true;
 	}
