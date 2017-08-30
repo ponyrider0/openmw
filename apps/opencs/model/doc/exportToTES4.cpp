@@ -85,6 +85,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
+	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
@@ -303,6 +304,70 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 
 //	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
 //	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportWeaponCollectionTES4Stage::ExportWeaponCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getWeapons().getSize();
+	for (int i=0; i < mActiveRefCount; i++)
+		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(i).get().mId);
+
+	return mActiveRefCount;
+}
+void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "WEAP";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+//	mDocument.getData().getReferenceables().getDataSet().getWeapons().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(stage);
+	bool exportOrSkip=false;
+	if (mSkipMasterRecords)
+	{
+		exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted();
+	}
+	else
+	{
+		exportOrSkip = true;
+	}
+
+	// Move ammunition (arrows, bolts) to ammo collection
+	if (exportOrSkip)
+	{
+		if ( (weaponRec.get().mData.mType == ESM::Weapon::Type::Arrow) || 
+			(weaponRec.get().mData.mType == ESM::Weapon::Type::Bolt) )
+		{
+			mState.mAmmoFromWeaponList.push_back(stage);
+			exportOrSkip = false;
+		}
+	}
+
+	if (exportOrSkip)
+	{
+		uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
+		uint32_t flags=0;
+		if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
+			flags |= 0x01;
+		writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
+		weaponRec.get().exportTESx(writer, 4);
+		writer.endRecordTES4(sSIG);
+	}
 
 	if (stage == mActiveRefCount-1)
 	{

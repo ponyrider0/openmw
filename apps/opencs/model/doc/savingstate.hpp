@@ -58,6 +58,8 @@ namespace CSMDoc
 			std::vector<int> mFurnitureFromStaticList;
 			std::vector<int> mKeyFromMiscList;
 			std::vector<int> mSoulgemFromMiscList;
+			std::vector<int> mAmmoFromWeaponList;
+
 	};
 
 
