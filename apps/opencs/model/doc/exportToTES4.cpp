@@ -37,9 +37,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
 		(mDocument.getData().getBirthsigns(), currentSave));
 
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
-		(mDocument.getData().getSpells(), currentSave));
-
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
 		(mDocument.getData().getBodyParts(), currentSave));
 
@@ -59,6 +56,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
+
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
+		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
 		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, false));

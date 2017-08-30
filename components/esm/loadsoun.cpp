@@ -72,7 +72,7 @@ namespace ESM
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
 
-		// ICON, sIconNames[]
+		// FNAM, soundfile
 		if (mSound.size() > 4)
 		{
 			tempStr = esm.generateEDIDTES4(mSound, true);
