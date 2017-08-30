@@ -148,7 +148,9 @@ namespace ESM
 		if (mData.mIsScroll)
 			flags |= 0x01;
 		esm.writeT<uint8_t>(flags); // flags
-		int skill = esm.skillToActorValTES4(mData.mSkillId)-12;
+		int skill = esm.skillToActorValTES4(mData.mSkillId);
+		if (skill >= 12)
+			skill = skill-12;
 		esm.writeT<uint8_t>(skill); // teaches skillenum (0-22)
 		esm.writeT<uint32_t>(mData.mValue); // value
 		esm.writeT<float>(mData.mWeight); // weight
