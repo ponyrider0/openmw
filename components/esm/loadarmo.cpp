@@ -167,51 +167,95 @@ namespace ESM
 		esm.writeT<uint32_t>(flags);
 		esm.endSubRecordTES4("BMDT");
 
-		if (mModel.size() > 4)
+		
+		if (mParts.mParts.size() > 0)
 		{
 			// MODL, male model
-			tempStr = esm.generateEDIDTES4(mModel, true);
-			tempStr.replace(tempStr.size()-4, 4, ".nif");
-			tempPath << "armor\\morro\\" << tempStr;
-			esm.startSubRecordTES4("MODL");
-			esm.writeHCString(tempPath.str());
-			esm.endSubRecordTES4("MODL");
-			// MODB, bounding radius
-			esm.startSubRecordTES4("MODB");
-			esm.writeT<float>(0.0);
-			esm.endSubRecordTES4("MODB");
-			// MODT
+			if (mParts.mParts.begin()->mMale.size() > 0)
+			{
+				tempStr = mParts.mParts.begin()->mMale;
+				tempStr = esm.generateEDIDTES4(tempStr, true);
+				tempPath.str(""); tempPath.clear();
+				tempPath << "armor\\morro\\" << tempStr << mData.mType << ".nif";
+				esm.startSubRecordTES4("MODL");
+				esm.writeHCString(tempPath.str());
+				esm.endSubRecordTES4("MODL");
+				esm.startSubRecordTES4("MODB");
+				esm.writeT<float>(0.0);
+				esm.endSubRecordTES4("MODB");
+				// MODT
+				// MOD2, male gnd model
+				if (mModel.size() > 4)
+				{
+					tempStr = esm.generateEDIDTES4(mModel, true);
+					tempStr.replace(tempStr.size()-4, 4, "_gnd");
+					tempPath.str(""); tempPath.clear();
+					tempPath << "armor\\morro\\" << tempStr << ".nif";
+					esm.startSubRecordTES4("MOD2");
+					esm.writeHCString(tempPath.str());
+					esm.endSubRecordTES4("MOD2");
+					esm.startSubRecordTES4("MO2B");
+					esm.writeT<float>(0.0);
+					esm.endSubRecordTES4("MO2B");
+					// MO2T
+				}
+				// ICON, mIcon
+				if (mIcon.size() > 4)
+				{
+					tempStr = esm.generateEDIDTES4(mIcon, true);
+					tempStr.replace(tempStr.size()-4, 4, ".dds");
+					tempPath.str(""); tempPath.clear();
+					tempPath << "armor\\morro\\" << tempStr;
+					esm.startSubRecordTES4("ICON");
+					esm.writeHCString(tempPath.str());
+					esm.endSubRecordTES4("ICON");
+				}
+			}
 
-			// MOD2, male gnd model
-			tempStr = esm.generateEDIDTES4(mModel, true);
-			tempStr.replace(tempStr.size()-4, 4, "_gnd");
-			tempPath.str(""); tempPath.clear();
-			tempPath << "armor\\morro\\" << tempStr << ".nif";
-			esm.startSubRecordTES4("MOD2");
-			esm.writeHCString(tempPath.str());
-			esm.endSubRecordTES4("MOD2");
-			// MODB, Bound Radius
-			esm.startSubRecordTES4("MO2B");
-			esm.writeT<float>(0.0);
-			esm.endSubRecordTES4("MO2B");
-			// MO2T
+			// MOD3, MO3B, MO3T
+			if (mParts.mParts.begin()->mFemale.size() > 0)
+			{
+				// MOD3, female model
+				tempStr = mParts.mParts.begin()->mMale; // Oblivion uses male filename + F
+				tempStr = esm.generateEDIDTES4(tempStr, true);
+				tempPath.str(""); tempPath.clear();
+				tempPath << "armor\\morro\\" << tempStr << mData.mType << "F.nif";
+				esm.startSubRecordTES4("MOD3");
+				esm.writeHCString(tempPath.str());
+				esm.endSubRecordTES4("MOD3");
+				esm.startSubRecordTES4("MO3B");
+				esm.writeT<float>(0.0);
+				esm.endSubRecordTES4("MO3B");
+				// MO3T
+				// MOD4, female gnd model
+				if (mModel.size() > 4)
+				{
+					tempStr = esm.generateEDIDTES4(mModel, true);
+					tempStr.replace(tempStr.size()-4, 4, "_gnd");
+					tempPath.str(""); tempPath.clear();
+					tempPath << "armor\\morro\\" << tempStr << ".nif";
+					esm.startSubRecordTES4("MOD4");
+					esm.writeHCString(tempPath.str());
+					esm.endSubRecordTES4("MOD4");
+					esm.startSubRecordTES4("MO4B");
+					esm.writeT<float>(0.0);
+					esm.endSubRecordTES4("MO4B");
+					// MO4T
+				}
+				// ICON, mIcon
+				if (mIcon.size() > 4)
+				{
+					tempStr = esm.generateEDIDTES4(mIcon, true);
+					tempStr.replace(tempStr.size()-4, 4, ".dds");
+					tempPath.str(""); tempPath.clear();
+					tempPath << "armor\\morro\\" << tempStr;
+					esm.startSubRecordTES4("ICO2");
+					esm.writeHCString(tempPath.str());
+					esm.endSubRecordTES4("ICO2");
+				}
+			}
+
 		}
-		// MOD3, MO3B, MO3T
-		// MOD4, MO4B, MO4T
-
-		// ICON, mIcon
-		if (mIcon.size() > 4)
-		{
-			tempStr = esm.generateEDIDTES4(mIcon, true);
-			tempStr.replace(tempStr.size()-4, 4, ".dds");
-			tempPath.str(""); tempPath.clear();
-			tempPath << "armor\\morro\\" << tempStr;
-			esm.startSubRecordTES4("ICON");
-			esm.writeHCString(tempPath.str());
-			esm.endSubRecordTES4("ICON");
-		}
-
-		// ICO2
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");

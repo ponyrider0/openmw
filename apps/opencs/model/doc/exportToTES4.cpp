@@ -352,7 +352,7 @@ void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messag
 			uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
 			uint32_t flags=0;
 			if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x01;
+				flags |= 0x20;
 			writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
 			weaponRec.get().exportAmmoTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
@@ -417,7 +417,7 @@ void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& mess
 		uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
 		uint32_t flags=0;
 		if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
 		weaponRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -472,7 +472,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 			uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
 			uint32_t flags=0;
 			if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x01;
+				flags |= 0x20;
 			writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
 			activatorRec.get().exportTESx(writer, 4);
 			// MNAM
@@ -504,7 +504,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 			uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
 			uint32_t flags=0;
 			if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x01;
+				flags |= 0x20;
 			writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
 			staticRec.get().exportTESx(writer, 4);
 			// MNAM
@@ -557,7 +557,7 @@ void CSMDoc::ExportSoulgemCollectionTES4Stage::perform (int stage, Messages& mes
 		uint32_t formID = writer.crossRefStringID(soulgemRec.get().mId);
 		uint32_t flags=0;
 		if (soulgemRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, soulgemRec.get().mId);
 		soulgemRec.get().exportTESx(writer, 4);
 		writer.startSubRecordTES4("SOUL");
@@ -604,7 +604,7 @@ void CSMDoc::ExportKeyCollectionTES4Stage::perform (int stage, Messages& message
 		uint32_t formID = writer.crossRefStringID(keyRecord.get().mId);
 		uint32_t flags=0;
 		if (keyRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, keyRecord.get().mId);
 		keyRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -707,7 +707,7 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 		uint32_t formID = writer.crossRefStringID(miscRecord.get().mId);
 		uint32_t flags=0;
 		if (miscRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, miscRecord.get().mId);
 		miscRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -857,7 +857,7 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
 			uint32_t flags=0;
 			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x01;
+				flags |= 0x20;
 			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
 			containerRecord.get().exportTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
@@ -910,7 +910,7 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
 			uint32_t flags=0;
 			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x01;
+				flags |= 0x20;
 			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
 			containerRecord.get().exportTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
@@ -967,7 +967,7 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 		uint32_t formID = writer.crossRefStringID(clothingRecord.get().mId);
 		uint32_t flags=0;
 		if (clothingRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, clothingRecord.get().mId);
 		clothingRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -1100,7 +1100,7 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 		uint32_t formID = writer.crossRefStringID(armorRecord.get().mId);
 		uint32_t flags=0;
 		if (armorRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, armorRecord.get().mId);
 		armorRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -1236,7 +1236,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 		uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
 		uint32_t flags=0;
 		if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
 		activatorRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -1399,7 +1399,7 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 		uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
 		uint32_t flags=0;
 		if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
 		staticRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
@@ -1664,7 +1664,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         // prepare record flags
         uint32_t flags=0;
         if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
-            flags |= 0x01;
+            flags |= 0x20;
 
         //***********EXPORT INTERIOR CELL*****************************/
         writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
@@ -1717,6 +1717,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     refFormID = writer.reserveFormID(refFormID, refRecord.mId);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
+/*
                     if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
@@ -1730,6 +1731,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
 						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container)
 						) )
+*/
+					if (baseRefID != 0)
                     {
                         std::string sSIG;
                         switch (baseRefIndex.second)
@@ -1740,14 +1743,14 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                         case CSMWorld::UniversalId::Type::Type_Creature:
                             sSIG = "ACRE";
                             break;
-                        case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+//                        case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
                         default:
                             sSIG = "REFR";
                             break;
                         }
                         uint32_t refFlags=0;
                         if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-                            refFlags |= 0x01;
+                            refFlags |= 0x20;
                         // start record
                         
                         writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
@@ -1928,6 +1931,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		uint32_t flags=0x400;
 		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "");
 		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
+		writer.startSubRecordTES4("DATA");
+		writer.writeT<uint8_t>(0x02); // flag: has water=0x02
+		writer.endSubRecordTES4("DATA");
+		writer.startSubRecordTES4("XCLC");
+		writer.writeT<long>(0); // X=0
+		writer.writeT<long>(0); // Y=0
+		writer.endSubRecordTES4("XCLC");
 		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group
 		writer.startGroupTES4(dummyCellFormID, 6); // top Cell Children Group
@@ -1947,12 +1957,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-			if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
+/*
+			if ( (baseRefID != 0) && 
+				( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
 				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door)
+				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) )
 				)
+*/
+			if (baseRefID != 0)
 			{
 				std::string sSIG;
 				switch (baseRefIndex.second)
@@ -1963,14 +1977,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					case CSMWorld::UniversalId::Type::Type_Creature:
 						sSIG = "ACRE";
 						break;
-					case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+//					case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
 					default:
 						sSIG = "REFR";
 						break;
 				}
-				uint32_t refFlags=0;
+				uint32_t refFlags= 0x0400; // persistent ref on
 				if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-					refFlags |= 0x01;
+					refFlags |= 0x0020;
 				// start record
 				writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
 				refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
@@ -2341,6 +2355,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
+/*
 							if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
@@ -2352,8 +2367,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Armor) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book) ||
 								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container)
-								)
+								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container) )
+*/
+							if (baseRefID != 0)
 							{
 								std::string sSIG;
 								switch (baseRefIndex.second)
@@ -2364,14 +2380,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								case CSMWorld::UniversalId::Type::Type_Creature:
 									sSIG = "ACRE";
 									break;
-								case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+//								case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
 								default:
 									sSIG = "REFR";
 									break;
 								}
 								uint32_t refFlags=0;
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-									refFlags |= 0x01;
+									refFlags |= 0x20;
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
 								refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
@@ -3271,7 +3287,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x01;
+			flags |= 0x20;
 		writer.startRecordTES4("LTEX", flags, formID, record.mId);
 		record.exportTESx (writer, true, 4);
 		writer.endRecordTES4 ("LTEX");
