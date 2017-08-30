@@ -86,6 +86,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
@@ -304,6 +305,59 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 
 //	mDocument.getData().getReferenceables().exportTESx (stage, mState.getWriter(), 4);
 //	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
+
+	if (stage == mActiveRefCount-1)
+	{
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportAmmoCollectionTES4Stage::ExportAmmoCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
+	: mDocument (document), mState (state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportAmmoCollectionTES4Stage::setup()
+{
+	mActiveRefCount = 1;
+	return mActiveRefCount;
+}
+void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messages)
+{
+	std::string sSIG = "AMMO";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	//	mDocument.getData().getReferenceables().getDataSet().getWeapons().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	for (auto ammoIndex = mState.mAmmoFromWeaponList.begin(); ammoIndex != mState.mAmmoFromWeaponList.end(); ammoIndex++)
+	{
+		const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(*ammoIndex);
+		bool exportOrSkip=false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
+			uint32_t flags=0;
+			if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
+			weaponRec.get().exportAmmoTESx(writer, 4);
+			writer.endRecordTES4(sSIG);
+		}
+	}
 
 	if (stage == mActiveRefCount-1)
 	{

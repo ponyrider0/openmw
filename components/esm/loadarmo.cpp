@@ -167,43 +167,49 @@ namespace ESM
 		esm.writeT<uint32_t>(flags);
 		esm.endSubRecordTES4("BMDT");
 
-		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
-		tempPath << "armor\\morro\\" << tempStr;
-		esm.startSubRecordTES4("MODL");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("MODL");
-		// MODB == Bound Radius
-		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(0.0);
-		esm.endSubRecordTES4("MODB");
+		if (mModel.size() > 4)
+		{
+			// MODL, male model
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, ".nif");
+			tempPath << "armor\\morro\\" << tempStr;
+			esm.startSubRecordTES4("MODL");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MODL");
+			// MODB, bounding radius
+			esm.startSubRecordTES4("MODB");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MODB");
+			// MODT
 
-		// MOD2, MOD3, MOD4
-		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr.replace(tempStr.size()-4, 4, "_gnd");
-		tempPath.str(""); tempPath.clear();
-		tempPath << "armor\\morro\\" << tempStr << ".nif";
-		esm.startSubRecordTES4("MOD2");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("MOD2");
-		// MODB == Bound Radius
-		esm.startSubRecordTES4("MO2B");
-		esm.writeT<float>(0.0);
-		esm.endSubRecordTES4("MO2B");
-
-		// MO2B, MO3B, MO4B
-		// MODT
-		// MO2T, MO3T, MO4T
+			// MOD2, male gnd model
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, "_gnd");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "armor\\morro\\" << tempStr << ".nif";
+			esm.startSubRecordTES4("MOD2");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MOD2");
+			// MODB, Bound Radius
+			esm.startSubRecordTES4("MO2B");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MO2B");
+			// MO2T
+		}
+		// MOD3, MO3B, MO3T
+		// MOD4, MO4B, MO4T
 
 		// ICON, mIcon
-		tempStr = esm.generateEDIDTES4(mIcon, true);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
-		tempPath.str(""); tempPath.clear();
-		tempPath << "armor\\morro\\" << tempStr;
-		esm.startSubRecordTES4("ICON");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("ICON");
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, true);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "armor\\morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
 
 		// ICO2
 

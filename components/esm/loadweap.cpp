@@ -73,6 +73,7 @@ namespace ESM
         esm.writeHNOCString("ITEX", mIcon);
         esm.writeHNOCString("ENAM", mEnchant);
     }
+
 	bool Weapon::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
@@ -89,25 +90,31 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
-		tempPath << "weapons\\morro\\" << tempStr;
-		esm.startSubRecordTES4("MODL");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("MODL");
-		// MODB == Bound Radius
-		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(0.0);
-		esm.endSubRecordTES4("MODB");
+		if (mModel.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, ".nif");
+			tempPath << "weapons\\morro\\" << tempStr;
+			esm.startSubRecordTES4("MODL");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MODL");
+			// MODB == Bound Radius
+			esm.startSubRecordTES4("MODB");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MODB");
+		}
 
 		// ICON, mIcon
-		tempStr = esm.generateEDIDTES4(mIcon, true);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
-		tempPath.str(""); tempPath.clear();
-		tempPath << "weapons\\morro\\" << tempStr;
-		esm.startSubRecordTES4("ICON");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("ICON");
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, true);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "weapons\\morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
 
 		// SCRI (script formID) mScript
 		tempFormID = esm.crossRefStringID(mScript);
@@ -189,6 +196,92 @@ namespace ESM
 
 		return true;
 	}
+
+	bool Weapon::exportAmmoTESx(ESMWriter &esm, int export_format) const
+	{
+		uint32_t tempFormID;
+		std::string tempStr;
+		std::ostringstream tempPath;
+
+		tempStr = esm.generateEDIDTES4(mId, false);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("EDID");
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// MODL == Model Filename
+		if (mModel.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mModel, true);
+			tempStr.replace(tempStr.size()-4, 4, ".nif");
+			tempPath << "weapons\\morro\\" << tempStr;
+			esm.startSubRecordTES4("MODL");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("MODL");
+			// MODB == Bound Radius
+			esm.startSubRecordTES4("MODB");
+			esm.writeT<float>(0.0);
+			esm.endSubRecordTES4("MODB");
+		}
+
+		// ICON, mIcon
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, true);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "weapons\\morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
+
+		// ENAM (enchantment formID) mEnchant
+		tempFormID = esm.crossRefStringID(mEnchant);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("ENAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("ENAM");
+		}
+
+		// ANAM (enchantment points)
+		esm.startSubRecordTES4("ANAM");
+		esm.writeT<uint16_t>(mData.mEnchant);
+		esm.endSubRecordTES4("ANAM");
+
+		// DATA
+		esm.startSubRecordTES4("DATA");
+		// float speed
+		esm.writeT<float>(mData.mSpeed);
+		// uint32 flags [ ignores normal weapon resistance ]
+		int flags=0;
+		if (mData.mFlags > 0)
+			flags |= 0x01;
+		esm.writeT<uint8_t>(flags);
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused						
+		// uint32 value
+		esm.writeT<uint32_t>(mData.mValue);
+		// float weight
+		esm.writeT<float>(mData.mWeight);
+		// uint16 damage
+		uint16_t damage=0;
+		int chop = (mData.mChop[0] + mData.mChop[1])/2;
+		int slash = (mData.mSlash[0] + mData.mSlash[1])/2;
+		int thrust = (mData.mThrust[0] + mData.mThrust[1])/2;
+		damage = (chop > slash) ? chop : slash;
+		damage = (damage > thrust) ? damage : thrust;
+		esm.writeT<uint16_t>(damage);
+		esm.endSubRecordTES4("DATA");
+
+		return true;
+	}
+
 
     void Weapon::blank()
     {

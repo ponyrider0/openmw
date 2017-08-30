@@ -215,6 +215,20 @@ namespace CSMDoc
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
+	class ExportAmmoCollectionTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount;
+		bool mSkipMasterRecords;
+	public:
+		ExportAmmoCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
+		virtual int setup();
+		///< \return number of steps
+		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
 	class ExportWeaponCollectionTES4Stage : public Stage
 	{
 		Document& mDocument;
