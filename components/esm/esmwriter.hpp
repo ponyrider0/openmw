@@ -161,6 +161,13 @@ public:
 		static int attributeToActorValTES4(int attributeval);
 		static std::string intToMagEffIDTES4(int magEffVal);
 
+		void exportMODxTES4(std::string sSIG, 
+			std::string sFilename, std::string sPrefix, std::string sPostfix, std::string sExt);
+
+		void exportBipedModelTES4(std::string sPrefix, std::string sPostfix,
+			std::string sFilename, std::string sFilenameFem="", 
+			std::string sFilenameGnd="", std::string sFilenameIcon="");
+
     private:
         std::list<RecordData> mRecords;
         std::ostream* mStream;

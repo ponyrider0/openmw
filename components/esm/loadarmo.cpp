@@ -167,36 +167,22 @@ namespace ESM
 		esm.writeT<uint32_t>(flags);
 		esm.endSubRecordTES4("BMDT");
 
-		
+/*
 		if (mParts.mParts.size() > 0)
 		{
 			// MODL, male model
 			if (mParts.mParts.begin()->mMale.size() > 0)
 			{
 				tempStr = mParts.mParts.begin()->mMale;
-				tempStr = esm.generateEDIDTES4(tempStr, true);
-				tempPath.str(""); tempPath.clear();
-				tempPath << "armor\\morro\\" << tempStr << mData.mType << ".nif";
-				esm.startSubRecordTES4("MODL");
-				esm.writeHCString(tempPath.str());
-				esm.endSubRecordTES4("MODL");
-				esm.startSubRecordTES4("MODB");
-				esm.writeT<float>(0.0);
-				esm.endSubRecordTES4("MODB");
+				tempPath.str(""); tempPath << mData.mType;
+				esm.exportTES4MODx(esm, "MODL", tempStr, "armor\\morro\\", tempPath.str(), ".nif");
 				// MODT
 				// MOD2, male gnd model
 				if (mModel.size() > 4)
 				{
-					tempStr = esm.generateEDIDTES4(mModel, true);
-					tempStr.replace(tempStr.size()-4, 4, "_gnd");
-					tempPath.str(""); tempPath.clear();
-					tempPath << "armor\\morro\\" << tempStr << ".nif";
-					esm.startSubRecordTES4("MOD2");
-					esm.writeHCString(tempPath.str());
-					esm.endSubRecordTES4("MOD2");
-					esm.startSubRecordTES4("MO2B");
-					esm.writeT<float>(0.0);
-					esm.endSubRecordTES4("MO2B");
+					tempStr = mModel;
+					tempPath.str(""); tempPath << mData.mType;
+					esm.exportTES4MODx(esm, "MODL", tempStr, "armor\\morro\\", tempPath.str(), ".nif");
 					// MO2T
 				}
 				// ICON, mIcon
@@ -254,8 +240,28 @@ namespace ESM
 					esm.endSubRecordTES4("ICO2");
 				}
 			}
-
 		}
+*/
+		std::ostringstream postFixStream; 
+		std::string maleStr, femaleStr, modelStr;
+		if (mParts.mParts.size() > 0)
+		{
+			if (mParts.mParts.begin()->mMale.size() > 0)
+				maleStr = mParts.mParts.begin()->mMale;
+			else
+				maleStr = mModel;
+			if (mParts.mParts.begin()->mFemale.size() > 0)
+				femaleStr = maleStr;
+			else
+				femaleStr = "";
+			postFixStream << mData.mType;
+		}
+		else
+		{
+			maleStr = mModel;
+		}
+		modelStr = mModel;
+		esm.exportBipedModelTES4("armor\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon);
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");
