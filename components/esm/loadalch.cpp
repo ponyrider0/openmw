@@ -97,13 +97,11 @@ namespace ESM
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");
-
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(1.0);
 		esm.endSubRecordTES4("MODB");
 
-		// MODT
 		// ICON, mIcon
 		tempStr = esm.generateEDIDTES4(mIcon, true);
 		tempStr.replace(tempStr.size()-4, 4, ".dds");
@@ -112,11 +110,6 @@ namespace ESM
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");
-
-		// DATA, float (item weight)
-		esm.startSubRecordTES4("DATA");
-		esm.writeT<float>(mData.mWeight);
-		esm.endSubRecordTES4("DATA");
 
 		// SCRI --mScript (formID)
 		uint32_t tempFormID = esm.crossRefStringID(mScript);
@@ -127,10 +120,51 @@ namespace ESM
 			esm.endSubRecordTES4("SCRI");
 		}
 
+		// DATA, float (item weight)
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<float>(mData.mWeight);
+		esm.endSubRecordTES4("DATA");
+
 		// ENIT {long, byte[1], byte[3]} -- flags
-		// EFID string[4] (magic effect ID)
-		// EFIT {string[4], long, long, long, long, long}
-		// SCIT {formID, long, string[4], byte[1], byte[3]}
+		esm.startSubRecordTES4("ENIT");
+		// value
+		esm.writeT<int32_t>(mData.mValue);
+		// flags [ no autocalc, food item ]
+		int flags=0;
+		if (mData.mAutoCalc == 0)
+			flags |= 0x01; // no-autocalc on
+		esm.writeT<uint8_t>(flags);
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused
+		esm.endSubRecordTES4("ENIT");
+
+		// wbEffects...
+		for (auto magicEffect = mEffects.mList.begin(); magicEffect != mEffects.mList.end(); magicEffect++)
+		{
+			// EFID
+			esm.startSubRecordTES4("EFID");
+			// write char[4] magic effect
+			magicEffect->exportTES4EFID(esm);
+			esm.endSubRecordTES4("EFID");
+			// EFIT
+			esm.startSubRecordTES4("EFIT");
+			magicEffect->exportTES4EFIT(esm);
+			esm.endSubRecordTES4("EFIT");
+			// SCIT
+			bool isScriptEffect=false;
+			if (isScriptEffect)
+			{
+				esm.startSubRecordTES4("SCIT");
+				// formID (SCPT)
+				// magic school (uint32)
+				// visual effect name (char[4]) (uint32)
+				// flags (uint8) [Hostile]
+				// unused x3 (uint8)
+				esm.endSubRecordTES4("SCIT");
+			}
+
+		}
 
 		return true;
 	}
