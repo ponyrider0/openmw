@@ -121,7 +121,7 @@ namespace ESM
 //			esm.writeHNT<SoundRef>("SNAM", *it);
 
 		std::string tempStr;
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId, 2);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -168,7 +168,7 @@ namespace ESM
 	{
 		std::ostringstream tempStream;
 		std::string tempStr;
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		tempStream << tempStr << "Clmt";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStream.str());

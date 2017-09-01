@@ -275,20 +275,41 @@ namespace ESM
     void Cell::exportSubCellTES4(ESMWriter &esm, int subX, int subY, int offset) const
     {
         // Write EDID (TES4-style editor string identifier)
-		std::string newEDID = esm.generateEDIDTES4(mName, true);
+		std::string newEDID = esm.generateEDIDTES4(mName, 1);
+//		std::string tempStr;
         char *charbuf = new char[newEDID.size()+6];
 		std::ostringstream debugstream;
-        
-        int len = snprintf(charbuf, newEDID.size()+6, "%s%02d", newEDID.c_str(), offset);
-        if (newEDID.compare("")!=0)
+
+		bool isValidCellname = false;
+		int nameOffset = offset;
+
+//		if (newEDID.compare("") == 0)
+//			isValidCellname = true;
+
+		while ( (isValidCellname != true) && (newEDID.size() > 0) )
         {
-            if ((len < 0) || (len > newEDID.size()+6))
-            {
-                throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
-            }
-            charbuf[len] = '\0';
-            newEDID = std::string(charbuf);
-        }
+			int len = snprintf(charbuf, newEDID.size()+6, "%s%02d", newEDID.c_str(), nameOffset);
+			if ((len < 0) || (len > newEDID.size()+6))
+			{
+				throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
+			}
+			charbuf[len] = '\0';
+//			tempStr = std::string(charbuf);
+			if ( esm.mCellnameMgr.find(charbuf) != esm.mCellnameMgr.end() )
+			{
+				// name found, increase offset and try again
+				nameOffset += 4;
+				continue;
+			}
+			else
+			{
+				// name not found, add to mCellnameMgr and break;
+				newEDID = std::string(charbuf);
+				esm.mCellnameMgr.insert(std::make_pair(newEDID, 0));
+				isValidCellname = true;
+			}
+		}
+
 		debugstream << "EDID=[" << newEDID << "]; ";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(newEDID);

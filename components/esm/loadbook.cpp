@@ -84,7 +84,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempPath;
 
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -94,9 +94,10 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
-		tempPath << "clutter\\books\\morro\\" << tempStr;
+//		tempStr = esm.generateEDIDTES4(mModel, 1);
+//		tempStr.replace(tempStr.size()-4, 4, ".nif");
+//		tempPath << "clutter\\books\\morro\\" << tempStr;
+		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 0);
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");
@@ -106,10 +107,11 @@ namespace ESM
 		esm.endSubRecordTES4("MODB");
 		// MODT
 		// ICON, mIcon
-		tempStr = esm.generateEDIDTES4(mIcon, true);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
+//		tempStr = esm.generateEDIDTES4(mIcon, 1);
+//		tempStr.replace(tempStr.size()-4, 4, ".dds");
 		tempPath.str(""); tempPath.clear();
-		tempPath << "clutter\\morro\\" << tempStr;
+//		tempPath << "clutter\\morro\\" << tempStr;
+		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 1);
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");

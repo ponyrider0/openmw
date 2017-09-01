@@ -63,7 +63,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream modelPath;
 
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -73,7 +73,7 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");

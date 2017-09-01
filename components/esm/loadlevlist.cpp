@@ -124,6 +124,8 @@ namespace ESM
 			esm.writeT<short>(it_LVLO->mLevel); // level
 			esm.writeT<uint16_t>(0); // unknown?
 			uint32_t refID = esm.crossRefStringID(it_LVLO->mId);
+			if (refID == 0)
+				refID = 0x19116; // default item for null ref: Fork
 			esm.writeT<uint32_t>(refID); //formID
 			esm.writeT<uint16_t>(1); //count
 			esm.writeT<uint16_t>(0); //unknown

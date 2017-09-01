@@ -92,7 +92,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempPath;
 
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -162,103 +162,8 @@ namespace ESM
 		esm.writeT<uint8_t>(0); // unused
 		esm.endSubRecordTES4("BMDT");
 
-/*
-		if (mParts.mParts.size() > 0)
-		{
-			// MODL, male model
-			if (mParts.mParts.begin()->mMale.size() > 0)
-				tempStr = mParts.mParts.begin()->mMale;
-			else
-				tempStr = mModel;
-			if (tempStr.size() > 4)
-			{
-				tempStr = esm.generateEDIDTES4(tempStr, true);
-				tempPath.str(""); tempPath.clear();
-				tempPath << "clothes\\morro\\" << tempStr << mData.mType << ".nif";
-				esm.startSubRecordTES4("MODL");
-				esm.writeHCString(tempPath.str());
-				esm.endSubRecordTES4("MODL");
-				esm.startSubRecordTES4("MODB");
-				esm.writeT<float>(0.0);
-				esm.endSubRecordTES4("MODB");
-				// MODT
-				// MOD2, male gnd model
-				if (mModel.size() > 4)
-				{
-					tempStr = esm.generateEDIDTES4(mModel, true);
-					tempStr.replace(tempStr.size()-4, 4, "_gnd");
-					tempPath.str(""); tempPath.clear();
-					tempPath << "clothes\\morro\\" << tempStr << ".nif";
-					esm.startSubRecordTES4("MOD2");
-					esm.writeHCString(tempPath.str());
-					esm.endSubRecordTES4("MOD2");
-					esm.startSubRecordTES4("MO2B");
-					esm.writeT<float>(0.0);
-					esm.endSubRecordTES4("MO2B");
-					// MO2T
-				}
-				// ICON, mIcon
-				if (mIcon.size() > 4)
-				{
-					tempStr = esm.generateEDIDTES4(mIcon, true);
-					tempStr.replace(tempStr.size()-4, 4, ".dds");
-					tempPath.str(""); tempPath.clear();
-					tempPath << "clothes\\morro\\" << tempStr;
-					esm.startSubRecordTES4("ICON");
-					esm.writeHCString(tempPath.str());
-					esm.endSubRecordTES4("ICON");
-				}
-			}
-
-			// MOD3, MO3B, MO3T
-			if (mParts.mParts.begin()->mFemale.size() > 0)
-			{
-				// MOD3, female model
-				if (mParts.mParts.begin()->mMale.size() > 0)
-					tempStr = mParts.mParts.begin()->mMale; // Oblivion uses male filename + F
-				else
-					tempStr = mModel;
-				tempStr = esm.generateEDIDTES4(tempStr, true);
-				tempPath.str(""); tempPath.clear();
-				tempPath << "clothes\\morro\\" << tempStr << mData.mType << "F.nif";
-				esm.startSubRecordTES4("MOD3");
-				esm.writeHCString(tempPath.str());
-				esm.endSubRecordTES4("MOD3");
-				esm.startSubRecordTES4("MO3B");
-				esm.writeT<float>(0.0);
-				esm.endSubRecordTES4("MO3B");
-				// MO3T
-				// MOD4, female gnd model
-				if (mModel.size() > 4)
-				{
-					tempStr = esm.generateEDIDTES4(mModel, true);
-					tempStr.replace(tempStr.size()-4, 4, "_gnd");
-					tempPath.str(""); tempPath.clear();
-					tempPath << "clothes\\morro\\" << tempStr << ".nif";
-					esm.startSubRecordTES4("MOD4");
-					esm.writeHCString(tempPath.str());
-					esm.endSubRecordTES4("MOD4");
-					esm.startSubRecordTES4("MO4B");
-					esm.writeT<float>(0.0);
-					esm.endSubRecordTES4("MO4B");
-					// MO4T
-				}
-				// ICON, mIcon
-				if (mIcon.size() > 4)
-				{
-					tempStr = esm.generateEDIDTES4(mIcon, true);
-					tempStr.replace(tempStr.size()-4, 4, ".dds");
-					tempPath.str(""); tempPath.clear();
-					tempPath << "clothes\\morro\\" << tempStr;
-					esm.startSubRecordTES4("ICO2");
-					esm.writeHCString(tempPath.str());
-					esm.endSubRecordTES4("ICO2");
-				}
-			}
-		}
-*/
 		std::ostringstream postFixStream;
-		std::string maleStr, femaleStr, modelStr;
+		std::string maleStr, femaleStr, modelStr, iconStr;
 		if (mParts.mParts.size() > 0)
 		{
 			if (mParts.mParts.begin()->mMale.size() > 0)
@@ -276,7 +181,13 @@ namespace ESM
 			maleStr = mModel;
 		}
 		modelStr = mModel;
-		esm.exportBipedModelTES4("clothes\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon);
+//		esm.exportBipedModelTES4("clothes\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon, ESMWriter::ExportBipedFlags::postfixF);
+
+		maleStr = esm.substituteClothingModel(mName, 0);
+		femaleStr = esm.substituteClothingModel(mName, 1);
+		modelStr = esm.substituteClothingModel(mName, 2);
+		iconStr = esm.substituteClothingModel(mName, 4);
+		esm.exportBipedModelTES4("", "", maleStr, femaleStr, modelStr, iconStr, ESMWriter::ExportBipedFlags::noNameMangling);
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");

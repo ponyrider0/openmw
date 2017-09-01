@@ -75,7 +75,7 @@ namespace ESM
 		// FNAM, soundfile
 		if (mSound.size() > 4)
 		{
-			tempStr = esm.generateEDIDTES4(mSound, true);
+			tempStr = esm.generateEDIDTES4(mSound, 1);
 			tempStr.replace(tempStr.size()-4, 1, ".");
 			tempPath << "fx\\morro\\" << tempStr;
 			esm.startSubRecordTES4("FNAM");

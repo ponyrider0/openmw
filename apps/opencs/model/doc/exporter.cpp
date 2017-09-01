@@ -37,16 +37,16 @@ void CSMDoc::Exporter::startExportOperation(boost::filesystem::path filename)
 
     mExportPath = filename;
     std::cout << "Extension = " << filename.extension().string() << std::endl;
-    if (filename.extension().string() == ".ESM4")
+    if (filename.extension().string() == ".ESM3")
     {
-        mExportOperation = new ExportToTES4();
-        std::cout << "TES4 Export Path = " << mExportPath << std::endl;
+		mExportOperation = new ExportToTES3();
+		std::cout << "TES3 Export Path = " << mExportPath << std::endl;
     }
-    else
+    else // default to ESM4 format
     {
-        mExportOperation = new ExportToTES3();
-        std::cout << "TES3 Export Path = " << mExportPath << std::endl;
-    }
+		mExportOperation = new ExportToTES4();
+		std::cout << "TES4 Export Path = " << mExportPath << std::endl;
+	}
     
     mStatePtr = new SavingState(*mExportOperation, mExportPath, mEncoding);
     

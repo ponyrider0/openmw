@@ -116,7 +116,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempStream, debugstream;
 
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -126,7 +126,7 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		tempStream << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
@@ -186,7 +186,7 @@ namespace ESM
 				esm.writeT<uint32_t>(tempFormID);
 				esm.endSubRecordTES4("PFIG");
 				debugstream << "Flora (" << mId << "): ingredient='" << ingredient->mItem.toString() << "' [" << tempFormID << "]" << std::endl;
-				OutputDebugString(debugstream.str().c_str());
+//				OutputDebugString(debugstream.str().c_str());
 			}
 
 			// PFPC

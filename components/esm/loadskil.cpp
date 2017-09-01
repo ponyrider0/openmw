@@ -197,7 +197,7 @@ namespace ESM
 		// ICON, sIconNames[]
 		if (sIconNames[mIndex].size() > 4)
 		{
-			tempStr = esm.generateEDIDTES4(sIconNames[mIndex], true);
+			tempStr = esm.generateEDIDTES4(sIconNames[mIndex], 1);
 			tempStr.replace(tempStr.size()-4, 4, ".dds");
 			tempPath << "morro\\" << tempStr;
 			esm.startSubRecordTES4("ICON");

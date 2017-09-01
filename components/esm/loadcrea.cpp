@@ -143,6 +143,8 @@ namespace ESM {
 		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempStream;
+		int tempVal;
+		float tempFloat;
 
 		// export EDID
 		tempStr = esm.generateEDIDTES4(mId);
@@ -155,8 +157,9 @@ namespace ESM {
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+/*
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		tempStream << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
@@ -164,6 +167,12 @@ namespace ESM {
 		esm.endSubRecordTES4("MODL");
 		// MODB?
 		// MODT?
+*/
+		tempStr = "morro\\creatures\\centspider\\skeleton.nif";
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("MODL");
+		
 
 		// CNTO: {formID, uint32}
 		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
@@ -190,13 +199,19 @@ namespace ESM {
 			}
 		}
 
+/*
 		// array - NIFZ
-		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		esm.startSubRecordTES4("NIFZ");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
+*/
+		tempStr = "centurion.nif";
+		esm.startSubRecordTES4("NIFZ");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("NIFZ");
 
 		// ACBS group
 		uint32_t flags=0;
@@ -232,7 +247,11 @@ namespace ESM {
 		// INAM, death items (LVLI)
 
 		// SCRI
-		tempFormID = esm.crossRefStringID(mScript);
+		if (Misc::StringUtils::lowerCase(mScript).find("script") == std::string::npos)
+			tempStr = mScript + "Script";
+		else
+			tempStr = mScript;
+		tempFormID = esm.crossRefStringID(tempStr);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -259,7 +278,7 @@ namespace ESM {
 			// aiPkg is full definition and not just a stringID...
 			// ... so must generate a full ESM4 AIPackage record from each aiPkg
 		}
-
+		
 		// KFFZ, animations
 
 		// DATA
@@ -268,9 +287,22 @@ namespace ESM {
 		esm.writeT<unsigned char>(mData.mCombat); // Combat
 		esm.writeT<unsigned char>(mData.mMagic); // Magic
 		esm.writeT<unsigned char>(mData.mStealth); // Stealth
-		esm.writeT<uint16_t>(mData.mSoul); // soul size
+		if (mData.mSoul == 0)
+			tempVal = 0;
+		else if (mData.mSoul <= 150) // petty
+			tempVal = 1;
+		else if (mData.mSoul <= 300) // lesser
+			tempVal = 2;
+		else if (mData.mSoul <= 800) // common
+			tempVal = 3;
+		else if (mData.mSoul <= 1200) // greater
+			tempVal = 4;
+		else if (mData.mSoul <= 1600) // grand
+			tempVal = 5;
+		esm.writeT<uint8_t>(tempVal); // soul size
+		esm.writeT<uint8_t>(0); // unused
 		esm.writeT<uint16_t>(mData.mHealth); // health
-		esm.writeT<uint16_t>(0); // ?
+		esm.writeT<uint16_t>(0); // unused
 		esm.writeT<uint16_t>( (mData.mAttack[0]+mData.mAttack[1])/2 ); // attack damage
 		esm.writeT<unsigned char>(mData.mStrength); // strength
 		esm.writeT<unsigned char>(mData.mIntelligence); // int
@@ -283,14 +315,30 @@ namespace ESM {
 		esm.endSubRecordTES4("DATA");
 
 		// RNAM, attack reach
+		tempVal = 64;
+		esm.startSubRecordTES4("RNAM");
+		esm.writeT<uint8_t>(tempVal);
+		esm.endSubRecordTES4("RNAM");
+
 		// ZNAM, combat style formID (CSTY)
+
 		// TNAM, turning speed (float)
+		tempFloat = 0;
+		esm.startSubRecordTES4("TNAM");
+		esm.writeT<float>(tempFloat);
+		esm.endSubRecordTES4("TNAM");
+
 		// BNAM, base scale (float)
 		esm.startSubRecordTES4("BNAM");
-		esm.writeT<float>(mScale); // spell or lvlspel formID
+		esm.writeT<float>(mScale); 
 		esm.endSubRecordTES4("BNAM");
 
 		// WNAM, foot weight (float)
+		tempFloat = 0;
+		esm.startSubRecordTES4("WNAM");
+		esm.writeT<float>(tempFloat);
+		esm.endSubRecordTES4("WNAM");
+
 		// NAM0, blood spray (string)
 		// NAM1, blood decal (string)
 		// CSCR, inherit sound from: formID CREA

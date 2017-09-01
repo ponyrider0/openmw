@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 
+#include <components/misc/stringops.hpp>
 #include <components/to_utf8/to_utf8.hpp>
 
 namespace ESM
@@ -1170,72 +1171,84 @@ namespace ESM
 		return tempval;
 	}
 
-	std::string ESMWriter::generateEDIDTES4(const std::string& name, bool noLeadingZero)
+	std::string ESMWriter::generateEDIDTES4(const std::string& name, int conversion_mode)
 	{
-		std::string newEDID;
+		std::string tempEDID, finalEDID;
+		bool removeOther=false;
 
-		if (noLeadingZero == true)
-			newEDID = name;
-		else
-			newEDID = "0" + name;
+		switch (conversion_mode)
+		{
+		case 0:
+			tempEDID = "0" + name;
+			break;
+		case 1:
+			tempEDID = name;
+			break;
+		case 2:
+			tempEDID = name;
+			removeOther = true;
+			break;
+		}
 
-		int len = newEDID.length();
+		int len = tempEDID.length();
 
+		finalEDID = "";
 		for (int index=0; index < len; index++)
 		{
-			switch (newEDID[index])
+			switch (tempEDID[index])
 			{
 			case '_':
-				newEDID[index] = 'U';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'U';
 				break;
 			case '+':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '-':
-				newEDID[index] = 'T';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'T';
 				break;
 			case ' ':
-				newEDID[index] = 'S';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'S';
 				break;
 			case ',':
-				newEDID[index] = 'V';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'V';
 				break;
 			case '\'':
-				newEDID[index] = 'A';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'A';
 				break;
 			case ':':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '.':
-				newEDID[index] = 'P';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'P';
 				break;
 			case '#':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '[':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case ']':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '’':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '(':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case ')':
-				newEDID[index] = 'X';
+				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
-
+			default:
+				finalEDID = finalEDID + tempEDID[index];
 			}
 		}
 
-		return newEDID;
+		return finalEDID;
 	}
 
 	void ESMWriter::exportMODxTES4(std::string sSIG, std::string sFilename,
-			std::string sPrefix, std::string sPostfix, std::string sExt)
+			std::string sPrefix, std::string sPostfix, std::string sExt, int flags)
 	{
 		std::string tempStr, sSIGB="";
 		std::ostringstream tempPath;
@@ -1248,7 +1261,8 @@ namespace ESM
 				tempStr.erase(tempStr.size()-4, 4);
 		}
 
-		tempStr = generateEDIDTES4(tempStr, true);
+		if (flags & ESMWriter::ExportBipedFlags::noNameMangling == 0)
+			tempStr = generateEDIDTES4(tempStr, 1);
 		tempPath << sPrefix << tempStr << sPostfix << sExt;
 		startSubRecordTES4(sSIG);
 		writeHCString(tempPath.str());
@@ -1274,7 +1288,7 @@ namespace ESM
 
 	void ESMWriter::exportBipedModelTES4(std::string sPrefix, std::string sPostfix,
 			std::string sFilename, std::string sFilenameFem, 
-			std::string sFilenameGnd, std::string sFilenameIcon)
+			std::string sFilenameGnd, std::string sFilenameIcon, int flags)
 	{
 		std::string tempStr, sSIG;
 		std::ostringstream tempPath;
@@ -1282,7 +1296,8 @@ namespace ESM
 		// MODL, male model
 		sSIG = "MODL";
 		tempStr = sFilename;
-		exportMODxTES4(sSIG, tempStr, sPrefix, sPostfix, ".nif");
+		if (sFilename.size() > 0)
+			exportMODxTES4(sSIG, tempStr, sPrefix, sPostfix, ".nif", flags);
 		// MODT
 
 		// MOD2, male gnd model
@@ -1290,10 +1305,10 @@ namespace ESM
 		if (sFilenameGnd.size() > 4)
 		{
 			tempStr = sFilenameGnd;
-			if (sPrefix.find("armor") == sPrefix.npos)
-				exportMODxTES4(sSIG, tempStr, sPrefix, "", ".nif");
+			if (flags & ESMWriter::ExportBipedFlags::postfix_gnd)
+				exportMODxTES4(sSIG, tempStr, sPrefix, "_gnd", ".nif", flags);
 			else
-				exportMODxTES4(sSIG, tempStr, sPrefix, "_gnd", ".nif");
+				exportMODxTES4(sSIG, tempStr, sPrefix, "", ".nif", flags);
 			// MO2T
 		}
 		// ICON, mIcon
@@ -1301,7 +1316,7 @@ namespace ESM
 		if (sFilenameIcon.size() > 4)
 		{
 			tempStr = sFilenameIcon;
-			exportMODxTES4(sSIG, tempStr, sPrefix, "", ".dds");
+			exportMODxTES4(sSIG, tempStr, sPrefix, "", ".dds", flags);
 		}
 
 		// MOD3, MO3B, MO3T
@@ -1310,16 +1325,19 @@ namespace ESM
 		{
 			// MOD3, female model
 			tempStr = sFilenameFem;
-			exportMODxTES4(sSIG, tempStr, sPrefix, sPostfix + "F", ".nif");
+			if (flags & ESMWriter::ExportBipedFlags::postfixF)
+				exportMODxTES4(sSIG, tempStr, sPrefix, sPostfix + "F", ".nif", flags);
+			else
+				exportMODxTES4(sSIG, tempStr, sPrefix, sPostfix, ".nif", flags);
 
 			sSIG = "MOD4";
 			if (sFilenameGnd.size() > 4)
 			{
 				tempStr = sFilenameGnd;
-				if (sPrefix.find("armor") == sPrefix.npos)
-					exportMODxTES4(sSIG, tempStr, sPrefix, "", ".nif");
+				if (flags & ESMWriter::ExportBipedFlags::postfix_gnd)
+					exportMODxTES4(sSIG, tempStr, sPrefix, "_gnd", ".nif", flags);
 				else
-					exportMODxTES4(sSIG, tempStr, sPrefix, "_gnd", ".nif");
+					exportMODxTES4(sSIG, tempStr, sPrefix, "", ".nif", flags);
 				// MO2T
 			}
 			// ICON, mIcon
@@ -1327,11 +1345,677 @@ namespace ESM
 			if (sFilenameIcon.size() > 4)
 			{
 				tempStr = sFilenameIcon;
-				exportMODxTES4(sSIG, tempStr, sPrefix, "", ".dds");
+				exportMODxTES4(sSIG, tempStr, sPrefix, "", ".dds", flags);
 			}
 
 		}
 
 	}
+
+	uint32_t ESMWriter::substituteRaceID(const std::string& raceName)
+	{
+		uint32_t retVal;
+		std::string tempStr;
+
+		tempStr = Misc::StringUtils::lowerCase(raceName);
+
+		if (tempStr == "argonian")
+			retVal = 0x23FE9;
+		else if (tempStr == "breton")
+			retVal = 0x224FC;
+		else if (tempStr == "dark elf")
+			retVal = 0x191C1;
+		else if (tempStr == "high elf")
+			retVal = 0x19204;
+		else if (tempStr == "imperial")
+			retVal = 0x907;
+		else if (tempStr == "khajiit")
+			retVal = 0x223C7;
+		else if (tempStr == "nord")
+			retVal = 0x224FD;
+		else if (tempStr == "orc")
+			retVal = 0x191C0;
+		else if (tempStr == "redguard")
+			retVal = 0xD43;
+		else if (tempStr == "wood elf")
+			retVal = 0x223C8;
+		else
+			retVal = 0; // no match found
+
+		return retVal;		
+	}
+
+	std::string ESMWriter::substituteArmorModel(const std::string& model, int modelType)
+	{
+		std::string retString = "";
+		std::string tempString;
+
+		tempString = Misc::StringUtils::lowerCase(model);
+
+		// leather armor suite
+//		if (tempString.find("leather") != std::string::npos)
+		if (true)
+		{
+
+			// default model if nothing else found
+			if (true)
+//			if (tempString.find("cuirass") != std::string::npos)
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Armor\\Thief\\M\\Cuirass.NIF";
+					break;
+				case 1: // female model
+					retString = "Armor\\Thief\\F\\Cuirass.NIF";
+					break;
+				case 2: // male gnd
+					retString = "Armor\\Thief\\M\\Cuirass_gnd.NIF";
+					break;
+				case 3: // female gnd
+					retString = "Armor\\Thief\\F\\Cuirass_gnd.NIF";
+					break;
+				case 4: // male ico
+					retString = "Armor\\Thief\\M\\Cuirass.dds";
+					break;
+				case 5: // female ico
+					retString = "Armor\\Thief\\F\\Cuirass.dds";
+					break;
+				}
+			}
+
+			if (tempString.find("greaves") != std::string::npos)
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Armor\\Thief\\M\\Greaves.NIF";
+					break;
+				case 1: // female model
+					retString = "Armor\\Thief\\F\\Greaves.NIF";
+					break;
+				case 2: // male gnd
+					retString = "Armor\\Thief\\M\\Greaves_gnd.NIF";
+					break;
+				case 4: // male ico
+					retString = "Armor\\Thief\\M\\Greaves.dds";
+					break;
+				case 3: // female gnd
+				case 5: // female ico
+					retString = "";
+					break;
+				}
+			}
+
+			if (tempString.find("gauntlet") != std::string::npos)
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Armor\\Thief\\M\\Gauntlets.NIF";
+					break;
+				case 1: // female model
+					retString = "Armor\\Thief\\F\\Gauntlets.NIF";
+					break;
+				case 2: // male gnd
+					retString = "Armor\\Thief\\M\\Gauntlets_gnd.NIF";
+					break;
+				case 4: // male ico
+					retString = "Armor\\Thief\\M\\Gauntlets.dds";
+					break;
+				case 3: // female gnd
+				case 5: // female ico
+					retString = "";
+					break;
+				}
+			}
+
+			if (tempString.find("boots") != std::string::npos)
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Armor\\Thief\\M\\Boots.NIF";
+					break;
+				case 1: // female model
+					retString = "Armor\\Thief\\F\\Boots.NIF";
+					break;
+				case 2: // male gnd
+					retString = "Armor\\Thief\\M\\Boots_gnd.NIF";
+					break;
+				case 4: // male ico
+					retString = "Armor\\Thief\\M\\Boots.dds";
+					break;
+				case 3: // female gnd
+				case 5: // female ico
+					retString = "";
+					break;
+				}
+			}
+
+			if (tempString.find("helm") != std::string::npos)
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Armor\\Thief\\Helmet.NIF";
+					break;
+				case 1: // female model
+					retString = "Armor\\Thief\\Helmet.NIF";
+					break;
+				case 2: // male gnd
+					retString = "Armor\\Thief\\Helmet_gnd.NIF";
+					break;
+				case 4: // male ico
+					retString = "Armor\\Thief\\M\\Helmet.dds";
+					break;
+				case 3: // female gnd
+				case 5: // female ico
+					retString = "";
+					break;
+				}
+			}
+
+			if ( (tempString.find("shield") != std::string::npos) ||
+				(tempString.find("buckler") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+				case 2: // male gnd
+					retString = "Armor\\Leather\\Shield.NIF";
+					break;
+				case 4: // male ico
+				case 5: // female ico
+					retString = "Armor\\Leather\\Shield.dds";
+					break;
+				case 1: // female model
+				case 3: // female gnd
+					retString = "";
+					break;
+				}
+			}
+
+		}
+		
+		return retString;
+	}
+
+	std::string ESMWriter::substituteClothingModel(const std::string& model, int modelType)
+	{
+		std::string retString = "";
+		std::string tempString;
+
+		tempString = Misc::StringUtils::lowerCase(model);
+
+		// default model if nothing else found
+		if (true)
+//		if (tempString.find("amulet") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Morroblivion\\Clothes\\Amulets\\AmuletExpensive3.nif";
+				break;
+			case 2: // male gnd
+				retString = "Morroblivion\\Clothes\\Amulets\\AmuletExpensive3GND.nif";
+				break;
+			case 4: // male ico
+				retString = "darthsouth\\Clothing\\Amulets\\expensiveamulet3.dds";
+				break;
+			case 1: // female model
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
+			}
+		}
+
+		if ((tempString.find("shirt") != std::string::npos) ||
+			(tempString.find("vest") != std::string::npos)
+			)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Clothes\\LowerClass\\05\\M\\Shirt.NIF";
+				break;
+			case 1: // female model
+				retString = "Clothes\\LowerClass\\05\\F\\Shirt.NIF";
+				break;
+			case 2: // male gnd
+				retString = "Clothes\\LowerClass\\05\\M\\Shirt_gnd.NIF";
+				break;
+			case 3: // female gnd
+				retString = "Clothes\\LowerClass\\05\\F\\Shirt_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = "Clothes\\LowerClass\\05\\M\\Shirt.dds";
+				break;
+			case 5: // female ico
+				retString = "Clothes\\LowerClass\\05\\F\\Shirt.dds";
+				break;
+			}
+		}
+
+		if ( (tempString.find("pants") != std::string::npos) ||
+			(tempString.find("skirt") != std::string::npos) ||
+			(tempString.find("trousers") != std::string::npos)
+			)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Clothes\\LowerClass\\05\\M\\Pants.NIF";
+				break;
+			case 1: // female model
+				retString = "Clothes\\LowerClass\\05\\F\\Pants.NIF";
+				break;
+			case 2: // male gnd
+				retString = "Clothes\\LowerClass\\05\\M\\Pants_gnd.NIF";
+				break;
+			case 3: // female gnd
+				retString = "Clothes\\LowerClass\\05\\F\\Pants_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = "Clothes\\LowerClass\\05\\M\\Pants.dds";
+				break;
+			case 5: // female ico
+				retString = "Clothes\\LowerClass\\05\\F\\Pants.dds";
+				break;
+			}
+		}
+
+		if (tempString.find("shoes") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Clothes\\LowerClass\\05\\M\\Shoes.NIF";
+				break;
+			case 1: // female model
+				retString = "Clothes\\LowerClass\\05\\F\\Shoes.NIF";
+				break;
+			case 2: // male gnd
+				retString = "Clothes\\LowerClass\\05\\M\\Shoes_gnd.NIF";
+				break;
+			case 3: // female gnd
+				retString = "Clothes\\LowerClass\\05\\F\\Shoes_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = "Clothes\\LowerClass\\05\\M\\Shoes.dds";
+				break;
+			case 5: // female ico
+				retString = "Clothes\\LowerClass\\05\\F\\Shoes.dds";
+				break;
+			}
+		}
+
+		if (tempString.find("robe") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Clothes\\RobeLC01\\M\\RobeLC01M.NIF";
+				break;
+			case 1: // female model
+				retString = "Clothes\\RobeLC01\\F\\RobeLC01F.NIF";
+				break;
+			case 2: // male gnd
+				retString = "Clothes\\RobeLC01\\M\\RobeLC01M_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = "Clothes\\Monk\\Shirt.dds";
+				break;
+			case 5: // female ico
+			case 3: // female gnd
+				retString = "";
+				break;
+			}
+		}
+
+		if (tempString.find("glove") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+				retString = "Morroblivion\\Clothes\\Gloves\\extravagantgloves.nif";
+				break;
+			case 2: // male gnd
+				retString = "Morroblivion\\Clothes\\Gloves\\extravagantgloves_gnd.nif";
+				break;
+			case 1: // female model
+			case 3: // female gnd
+				retString = "";
+				break;
+			case 4: // male ico
+			case 5: // female ico
+				retString = "Morroblivion\\Clothes\\Gloves\\ExtravagantGloves.dds";
+				break;
+			}
+		}
+
+
+		if (tempString.find("belt") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+			case 1: // female model
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
+			case 2: // male gnd
+				retString = "Morroblivion\\Clothes\\Belts\\CommonBelt1.nif";
+				break;
+			case 4: // male ico
+				retString = "Morroblivion\\Clothes\\Belts\\CommonBelt1.dds";
+				break;
+			}
+		}
+
+		if (tempString.find("ring") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0: // male model
+			case 2: // male gnd
+				retString = "Clothes\\Ring\\RingSilver.NIF";
+				break;
+			case 1: // female model
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
+			case 4: // male ico
+				retString = "darthsouth\\Clothing\\Rings\\expensive1.dds";
+				break;
+			}
+		}
+
+		return retString;
+	}
+
+	std::string ESMWriter::substituteBookModel(const std::string& model, int modelType)
+	{
+		std::string retString = "";
+		std::string tempString;
+
+		tempString = Misc::StringUtils::lowerCase(model);
+
+		// default model
+		if (true)
+//		if (tempString.find("book") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Clutter\\Books\\Quarto04.NIF";
+				break;
+			case 1:
+				retString = "Clutter\\IconBook12.dds";
+			}
+		}
+
+		if (tempString.find("scroll") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Clutter\\Books\\Scroll08.NIF";
+				break;
+			case 1:
+				retString = "Clutter\\IconScroll2.dds";
+			}
+		}
+
+		return retString;
+
+	}
+
+	std::string ESMWriter::substituteLightModel(const std::string& model, int modelType)
+	{
+		std::string retString = "";
+		std::string tempString;
+
+		tempString = Misc::StringUtils::lowerCase(model);
+
+		// default model
+		if (true)
+//		if (tempString.find("torch") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\TorchNoHavok.nif";
+				break;
+			case 1:
+				retString = "Lights\\IconTorch02.dds";
+			}
+		}
+
+		if (tempString.find("candle") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dunmer\\candle_03.nif";
+				break;
+			case 1:
+				retString = "lights\\Candle Icon.dds";
+			}
+		}
+
+		if (tempString.find("lantern") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Common\\lantern_01.nif";
+				break;
+			case 1:
+				retString = "lights\\0lightUcomUlanterU01.dds";
+			}
+		}
+
+		return retString;
+
+	}
+
+	std::string ESMWriter::substituteWeaponModel(const std::string& model, int modelType)
+	{
+		std::string retString = "";
+		std::string tempString;
+
+		tempString = Misc::StringUtils::lowerCase(model);
+
+		// metal type
+		if (true)
+		{
+
+			// default model if nothing else found
+			if (true)
+//			if ( (tempString.find("longsword") != std::string::npos) ||
+//				(tempString.find("saber") != std::string::npos) ||
+//				(tempString.find("sword") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\longsword.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\ironlongsword.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("shortsword") != std::string::npos) ||
+				(tempString.find("tanto") != std::string::npos) ||
+				(tempString.find("blade") != std::string::npos) || 
+				(tempString.find("wakizashi") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\shortsword.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\ironshortsword.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("mace") != std::string::npos) ||
+				(tempString.find("club") != std::string::npos) ||
+				(tempString.find("morningstar") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\mace.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blunt\\ironmace.dds";
+					break;
+				}
+			}
+
+			if ((tempString.find("axe") != std::string::npos))
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\battleaxe.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Axes\\ironbattleaxe.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("halberd") != std::string::npos) ||
+				(tempString.find("cleaver") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\halberd.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\ironhalberd.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("hammer") != std::string::npos) ||
+				(tempString.find("maul") != std::string::npos) ||
+				(tempString.find("bat") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\warhammer.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blunt\\ironwarhammer.dds";
+					break;
+				}
+			}
+
+			if ((tempString.find("spear") != std::string::npos) ||
+				(tempString.find("skewer") != std::string::npos) ||
+				(tempString.find("javelin") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\spear.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\ironspear.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("claymore") != std::string::npos) ||
+				(tempString.find("slayer") != std::string::npos) ||
+				(tempString.find("dai") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\claymore.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\ironclaymore.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("dagger") != std::string::npos) ||
+				(tempString.find("knife") != std::string::npos) || 
+				(tempString.find("fang") != std::string::npos) ||
+				(tempString.find("dart") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Iron\\dagger.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Blades\\irondagger.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("bow") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Bows\\longbow.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Bows\\longbow.dds";
+					break;
+				}
+			}
+
+			if ((tempString.find("staff") != std::string::npos))
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Morroblivion\\Weapons\\Staffs\\silver.nif";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Staff\\silverstaff.dds";
+					break;
+				}
+			}
+
+			if ( (tempString.find("arrow") != std::string::npos) || 
+				(tempString.find("bolt") != std::string::npos) )
+			{
+				switch (modelType)
+				{
+				case 0: // male model
+					retString = "Weapons\\Iron\\Arrow.NIF";
+					break;
+				case 1: // male ico
+					retString = "darthsouth\\Weapons\\Arrows\\ironarrow.dds";
+					break;
+				}
+			}
+
+
+
+		} // default metal type
+
+		return retString;
+	}
+
 
 }

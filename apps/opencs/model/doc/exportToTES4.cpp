@@ -173,14 +173,19 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 		std::vector<boost::filesystem::path> dependencies = mDocument.getContentFiles();
 		std::vector<boost::filesystem::path>::const_iterator end (--dependencies.end());
 
+/*
 		for (std::vector<boost::filesystem::path>::const_iterator iter (dependencies.begin());
 			iter!=end; ++iter)
 		{
 			std::string name = iter->filename().string();
 			uint64_t size = boost::filesystem::file_size (*iter);
 			
-//			mState.getWriter().addMaster (name, size);
+			mState.getWriter().addMaster (name, size);
 		}
+*/
+		mState.getWriter().addMaster ("Oblivion.esm", 0);
+		mState.getWriter().addMaster ("Morrowind_ob.esm", 0);
+
 	}
 
 	return 1;

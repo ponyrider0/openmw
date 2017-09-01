@@ -156,17 +156,30 @@ public:
 
 		uint32_t mESMoffset=0;
 
-		static std::string generateEDIDTES4(const std::string& name, bool noLeadingZero=false);
+		static std::string generateEDIDTES4(const std::string& name, int conversion_mode=0);
 		static int skillToActorValTES4(int skillval);
 		static int attributeToActorValTES4(int attributeval);
 		static std::string intToMagEffIDTES4(int magEffVal);
 
 		void exportMODxTES4(std::string sSIG, 
-			std::string sFilename, std::string sPrefix, std::string sPostfix, std::string sExt);
+			std::string sFilename, std::string sPrefix, std::string sPostfix, std::string sExt, int flags=0);
+
+		enum ExportBipedFlags { postfixF=0x01, postfix_gnd=0x02, noNameMangling=0x04 };
 
 		void exportBipedModelTES4(std::string sPrefix, std::string sPostfix,
 			std::string sFilename, std::string sFilenameFem="", 
-			std::string sFilenameGnd="", std::string sFilenameIcon="");
+			std::string sFilenameGnd="", std::string sFilenameIcon="", int flags=0);
+
+		std::map<std::string, int> mCellnameMgr;
+		static uint32_t substituteRaceID(const std::string& raceName);
+		static std::string substituteArmorModel(const std::string& model, int modelType);
+		static std::string substituteClothingModel(const std::string& model, int modelType);
+		static std::string substituteBookModel(const std::string& model, int modelType);
+		static std::string substituteLightModel(const std::string& model, int modelType);
+		static std::string substituteWeaponModel(const std::string& model, int modelType);
+
+		static std::string substituteHairID(const std::string& hairName);
+		void exportFaceGen(const std::string& headName);
 
     private:
         std::list<RecordData> mRecords;

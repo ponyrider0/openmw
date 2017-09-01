@@ -63,7 +63,7 @@ namespace ESM
 		esm.endSubRecordTES4("EDID");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, true);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");

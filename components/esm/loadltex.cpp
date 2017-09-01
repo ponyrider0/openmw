@@ -70,7 +70,7 @@ namespace ESM
 		std::ostringstream debugstream, iconpath;
 
 		// EDID
-		tempStr = esm.generateEDIDTES4(mId, false);
+		tempStr = esm.generateEDIDTES4(mId);
 		debugstream << "LTEX: EDID=[" << tempStr << "]; ";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
@@ -79,7 +79,7 @@ namespace ESM
 //		esm.writeHNT("INTV", mIndex);
 
 		// ICON
-		tempStr = esm.generateEDIDTES4(mTexture, true);
+		tempStr = esm.generateEDIDTES4(mTexture, 1);
 		int extIndex = tempStr.find("Ptga");
 		if (extIndex != tempStr.npos)
 		{

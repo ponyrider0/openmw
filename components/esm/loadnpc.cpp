@@ -158,9 +158,12 @@ namespace ESM
     }
 	bool NPC::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		int tempVal;
 		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempPath;
+		bool autocalc = (mFlags & Flags::Autocalc);
+		bool beast_race = false;
 
 		// EDID
 		tempStr = esm.generateEDIDTES4(mId);
@@ -174,6 +177,7 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
+/*
 		if (mModel.size() > 4)
 		{
 			tempStr = esm.generateEDIDTES4(mModel, true);
@@ -186,8 +190,20 @@ namespace ESM
 			esm.startSubRecordTES4("MODB");
 			esm.writeT<float>(0.0);
 			esm.endSubRecordTES4("MODB");
+			// MODT
 		}
-		// MODT
+*/
+		tempStr = Misc::StringUtils::lowerCase(mRace);
+		if ( (tempStr.find("argonian") != tempStr.npos) || (tempStr.find("khajiit") != tempStr.npos) )
+		{
+			beast_race = true;
+			tempStr = "characters\\_male\\skeletonbeast.nif";
+		}
+		else
+			tempStr = "characters\\_male\\skeleton.nif";
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempStr);
+		esm.endSubRecordTES4("MODL");
 
 		// ACBS group
 		esm.startSubRecordTES4("ACBS");
@@ -201,11 +217,15 @@ namespace ESM
 		if (mFlags & Flags::Autocalc)
 			flags |= 0x10;
 		esm.writeT<uint32_t>(flags); //flags
-		esm.writeT<uint16_t>(mNpdt52.mMana); // base spell pts
-		esm.writeT<uint16_t>(mNpdt52.mFatigue); // fatigue
-		esm.writeT<uint16_t>(mNpdt52.mGold); // barter gold
-		esm.writeT<int16_t>(mNpdt52.mLevel); // level / offset level
-		esm.writeT<uint16_t>(0); // calc min
+		tempVal = (autocalc) ? 50 : mNpdt52.mMana;
+		esm.writeT<uint16_t>(tempVal); // base spell pts
+		tempVal = (autocalc) ? 50 : mNpdt52.mFatigue;
+		esm.writeT<uint16_t>(tempVal); // fatigue
+		tempVal = (autocalc) ? mNpdt12.mGold : mNpdt52.mGold;
+		esm.writeT<uint16_t>(tempVal); // barter gold
+		tempVal = (autocalc) ? mNpdt12.mLevel : mNpdt52.mLevel;
+		esm.writeT<int16_t>(tempVal); // level / offset level
+		esm.writeT<uint16_t>(1); // calc min
 		esm.writeT<uint16_t>(0); // calc max
 		esm.endSubRecordTES4("ACBS");
 
@@ -215,7 +235,8 @@ namespace ESM
 		{
 			esm.startSubRecordTES4("SNAM");
 			esm.writeT<uint32_t>(tempFormID);
-			esm.writeT<int8_t>(mNpdt52.mRank);
+			tempVal = (autocalc) ? mNpdt12.mRank : mNpdt52.mRank;
+			esm.writeT<int8_t>(tempVal);
 			esm.writeT<uint8_t>(0); // unused
 			esm.writeT<uint8_t>(0); // unused
 			esm.writeT<uint8_t>(0); // unused
@@ -225,7 +246,9 @@ namespace ESM
 		// INAM, death item formID [LVLI]
 
 		// RNAM, race formID
-		tempFormID = esm.crossRefStringID(mRace);
+		tempFormID = esm.substituteRaceID(mRace);
+		if (tempFormID == 0)
+			tempFormID = esm.crossRefStringID(mRace);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("RNAM");
@@ -259,7 +282,11 @@ namespace ESM
 		}
 
 		// SCRI
-		tempFormID = esm.crossRefStringID(mScript);
+		if ( Misc::StringUtils::lowerCase(mScript).find("script") == std::string::npos )
+			tempStr = mScript + "Script";
+		else
+			tempStr = mScript;
+		tempFormID = esm.crossRefStringID(tempStr);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -295,60 +322,105 @@ namespace ESM
 
 		// DATA ***switch Npdt52 vs Npdt12***
 		esm.startSubRecordTES4("DATA"); // stats
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Armorer]); // armorer
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Athletics]); // athletics
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::LongBlade]); // blade
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Block]); // block
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::BluntWeapon]); // blunt
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::HandToHand]); // HtoH
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::HeavyArmor]); // heavy
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Alchemy]); // alchemy
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Alteration]); // alteration
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Conjuration]); // conjuration
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Destruction]); // destruction
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Illusion]); // illusion
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Mysticism]); // mysticism
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Restoration]); // restoration
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Acrobatics]); // acrobatics
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::LightArmor]); // light
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Marksman]); // marksman
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Mercantile]); // mercantile
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Security]); // security
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Sneak]); // sneak
-		esm.writeT<unsigned char>(mNpdt52.mSkills[ESM::Skill::Speechcraft]); // speechcraft
-		esm.writeT<uint16_t>(mNpdt52.mHealth); // health
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Armorer];
+		esm.writeT<unsigned char>(tempVal); // armorer
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Athletics];
+		esm.writeT<unsigned char>(tempVal); // athletics
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::LongBlade];
+		esm.writeT<unsigned char>(tempVal); // blade
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Block];
+		esm.writeT<unsigned char>(tempVal); // block
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::BluntWeapon];
+		esm.writeT<unsigned char>(tempVal); // blunt
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::HandToHand];
+		esm.writeT<unsigned char>(tempVal); // HtoH
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::HeavyArmor];
+		esm.writeT<unsigned char>(tempVal); // heavy
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Alchemy];
+		esm.writeT<unsigned char>(tempVal); // alchemy
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Alteration];
+		esm.writeT<unsigned char>(tempVal); // alteration
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Conjuration];
+		esm.writeT<unsigned char>(tempVal); // conjuration
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Destruction];
+		esm.writeT<unsigned char>(tempVal); // destruction
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Illusion];
+		esm.writeT<unsigned char>(tempVal); // illusion
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Mysticism];
+		esm.writeT<unsigned char>(tempVal); // mysticism
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Restoration];
+		esm.writeT<unsigned char>(tempVal); // restoration
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Acrobatics];
+		esm.writeT<unsigned char>(tempVal); // acrobatics
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::LightArmor];
+		esm.writeT<unsigned char>(tempVal); // light
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Marksman];
+		esm.writeT<unsigned char>(tempVal); // marksman
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Mercantile];
+		esm.writeT<unsigned char>(tempVal); // mercantile
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Security];
+		esm.writeT<unsigned char>(tempVal); // security
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Sneak];
+		esm.writeT<unsigned char>(tempVal); // sneak
+		tempVal = (autocalc) ? 5 : mNpdt52.mSkills[ESM::Skill::Speechcraft];
+		esm.writeT<unsigned char>(tempVal); // speechcraft
+		tempVal = (autocalc) ? 50 : mNpdt52.mHealth;
+		esm.writeT<uint16_t>(tempVal); // health
 		esm.writeT<unsigned char>(0); // Unused
 		esm.writeT<unsigned char>(0); // Unused
-		esm.writeT<unsigned char>(mNpdt52.mStrength); // strength
-		esm.writeT<unsigned char>(mNpdt52.mIntelligence); // int
-		esm.writeT<unsigned char>(mNpdt52.mWillpower); // will
-		esm.writeT<unsigned char>(mNpdt52.mAgility); // agi
-		esm.writeT<unsigned char>(mNpdt52.mSpeed); // speed
-		esm.writeT<unsigned char>(mNpdt52.mEndurance); // end
-		esm.writeT<unsigned char>(mNpdt52.mPersonality); // per
-		esm.writeT<unsigned char>(mNpdt52.mLuck); // luck
+		tempVal = (autocalc) ? 50 : mNpdt52.mStrength;
+		esm.writeT<unsigned char>(tempVal); // strength
+		tempVal = (autocalc) ? 50 : mNpdt52.mIntelligence;
+		esm.writeT<unsigned char>(tempVal); // int
+		tempVal = (autocalc) ? 50 : mNpdt52.mWillpower;
+		esm.writeT<unsigned char>(tempVal); // will
+		tempVal = (autocalc) ? 50 : mNpdt52.mAgility;
+		esm.writeT<unsigned char>(tempVal); // agi
+		tempVal = (autocalc) ? 50 : mNpdt52.mSpeed;
+		esm.writeT<unsigned char>(tempVal); // speed
+		tempVal = (autocalc) ? 50 : mNpdt52.mEndurance;
+		esm.writeT<unsigned char>(tempVal); // end
+		tempVal = (autocalc) ? 30 : mNpdt52.mPersonality;
+		esm.writeT<unsigned char>(tempVal); // per
+		tempVal = (autocalc) ? 50 : mNpdt52.mLuck;
+		esm.writeT<unsigned char>(tempVal); // luck
 		esm.endSubRecordTES4("DATA");
 
-/*
 		// HNAM (hair formid)
-		esm.startSubRecordTES4("HNAM");
-		esm.endSubRecordTES4("HNAM");
+		tempFormID = (beast_race) ? 0 : 0x1DA82; // elf ponytail
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("HNAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("HNAM");
+		}
 
 		// LNAM (float, hair lenght)
 		esm.startSubRecordTES4("LNAM");
+		esm.writeT<float>(0);
 		esm.endSubRecordTES4("LNAM");
 
+/*
 		// ENAM (eye formid)
+		tempFormID = 0;
 		esm.startSubRecordTES4("ENAM");
+		esm.writeT<uint32_t>(tempFormID);
 		esm.endSubRecordTES4("ENAM");
+*/
 
 		// HCLR, hair color 32bit
+		tempFormID = 0;
 		esm.startSubRecordTES4("HCLR");
+		esm.writeT<uint32_t>(tempFormID);
 		esm.endSubRecordTES4("HCLR");
 
-		// CSTY, combat style formid
+/*
+		// CSTY, combat style formid ????ZNAM???
+		tempFormID = 0;
 		esm.startSubRecordTES4("CSTY");
+		esm.writeT<uint32_t>(tempFormID);
 		esm.endSubRecordTES4("CSTY");
+*/
 
 		// FaceGen...
 		esm.startSubRecordTES4("FGGS");
@@ -357,7 +429,6 @@ namespace ESM
 		esm.endSubRecordTES4("FGGA");
 		esm.startSubRecordTES4("FGTS");
 		esm.endSubRecordTES4("FGTS");
-*/
 
 		// FNAM bytearray?? unknown
 		esm.startSubRecordTES4("FNAM");
