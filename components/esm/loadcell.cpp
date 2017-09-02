@@ -282,7 +282,7 @@ namespace ESM
 		bool isValidCellname = false;
 		int nameOffset = offset;
 
-		if (isExterior())
+		if (isExterior() == false)
 			isValidCellname = true;
 
 		while ( (isValidCellname != true) && (newEDID.size() > 0) )

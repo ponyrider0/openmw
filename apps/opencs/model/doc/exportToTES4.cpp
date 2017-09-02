@@ -1492,8 +1492,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 
 				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
 					persistentRef = true;
-				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
-					persistentRef = true;
+//				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
+//					persistentRef = true;
 	
 				if (persistentRef == true)
 				{
@@ -2003,7 +2003,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		// Create CELL dummy persistent children subgroup
 		writer.startGroupTES4(dummyCellFormID, 8); // grouptype=8 (persistent children)
 
-		// Write out persistent refs (aka NPCs) here...
+		// Write out persistent refs here...
 		std::vector<int>& worldspacePersistentRefList = mState.mPersistentRefMap["worldspace-dummycell"];
 		for (std::vector<int>::const_iterator refindex_iter = worldspacePersistentRefList.begin();
 			 refindex_iter != worldspacePersistentRefList.end(); refindex_iter++)
