@@ -312,6 +312,9 @@ namespace ESM
 		esm.endSubRecordTES4("AIDT");
 
 		// PKID, AIpackage formID
+		esm.startSubRecordTES4("PKID");
+		esm.writeT<uint32_t>(0x02E56E); // Oblivion ID: aaaDefaultStayAtCurrentLocation
+		esm.endSubRecordTES4("PKID");
 		// KFFZ, animations
 
 		// CNAM, class formID
@@ -427,10 +430,16 @@ namespace ESM
 
 		// FaceGen...
 		esm.startSubRecordTES4("FGGS");
+		for (int i=0; i < sizeof(FGGS_default); i++)
+			esm.writeT<uint8_t>(FGGS_default[i]);
 		esm.endSubRecordTES4("FGGS");
 		esm.startSubRecordTES4("FGGA");
+		for (int i=0; i < sizeof(FGGA_default); i++)
+			esm.writeT<uint8_t>(FGGA_default[i]);
 		esm.endSubRecordTES4("FGGA");
 		esm.startSubRecordTES4("FGTS");
+		for (int i=0; i < sizeof(FGTS_default); i++)
+			esm.writeT<uint8_t>(FGTS_default[i]);
 		esm.endSubRecordTES4("FGTS");
 
 		// FNAM bytearray?? unknown

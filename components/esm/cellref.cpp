@@ -249,7 +249,22 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
 	// lookup base record's FormID based on mRefID or mRefNum
-	uint32_t baseFormID = esm.crossRefStringID(mRefID);
+	uint32_t baseFormID;
+
+	// Substitutions
+	if (mRefID == "DoorMarker")
+		baseFormID = 0x01;
+	else if (mRefID == "TravelMarker")
+		baseFormID = 0x02;
+	else if (mRefID == "NorthMarker")
+		baseFormID = 0x03;
+	else if (mRefID == "DivineMarker")
+		baseFormID = 0x05;
+	else if (mRefID == "TempleMarker")
+		baseFormID = 0x06;
+	else
+		baseFormID = esm.crossRefStringID(mRefID);
+
 	esm.startSubRecordTES4("NAME");
 	esm.writeT<uint32_t>(baseFormID);
 	esm.endSubRecordTES4("NAME");
