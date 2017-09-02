@@ -204,6 +204,9 @@ namespace ESM
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("MODL");
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(72);
+		esm.endSubRecordTES4("MODB");
 
 		// ACBS group
 		esm.startSubRecordTES4("ACBS");

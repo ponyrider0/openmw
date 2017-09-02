@@ -1979,15 +1979,47 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.writeHCString("WrldMorrowind");
 		writer.endSubRecordTES4("EDID");
 		writer.startSubRecordTES4("FULL");
-		writer.writeHCString("Morrowind");
+		writer.writeHCString("Morroblivion");
 		writer.endSubRecordTES4("FULL");
+		// WNAM (parent world WRLD)
+		// CNAM (climate CLMT)
+		// NAM2 (water WATR)
+		writer.startSubRecordTES4("NAM2");
+		writer.writeT<uint32_t>(0x18);
+		writer.endSubRecordTES4("NAM2");
+		writer.startSubRecordTES4("ICON");
+		writer.writeHCString("Menus\\map\\world\\Vvardenfell.dds");
+		writer.endSubRecordTES4("ICON");
+		// MNAM { 32{X, Y}, 16{ {X,Y}, {X,Y} } }
+		writer.startSubRecordTES4("MNAM");
+		// usable dimensions
+		writer.writeT<int32_t>(2048); // X dimension
+		writer.writeT<int32_t>(2048); // Y dimension
+		writer.writeT<int16_t>(-88); // NW, X
+		writer.writeT<int16_t>(63); // NW, Y
+		writer.writeT<int16_t>(103); // SE, X
+		writer.writeT<int16_t>(-128); // SE, Y
+		writer.endSubRecordTES4("MNAM");
+		// DATA (flags)
+		uint32_t flags = 0;
+		writer.startSubRecordTES4("DATA");
+		writer.writeT<uint8_t>(flags);
+		writer.endSubRecordTES4("DATA");
+		writer.startSubRecordTES4("NAM0");
+		writer.writeT<float>(-71); // min x
+		writer.writeT<float>(-62); // min y
+		writer.endSubRecordTES4("NAM0");
+		writer.startSubRecordTES4("NAM9");
+		writer.writeT<float>(100); // max x
+		writer.writeT<float>(61); // max y
+		writer.endSubRecordTES4("NAM9");
 		writer.endRecordTES4("WRLD");
 		
 		// Create WRLD Children Top Group
 		writer.startGroupTES4(wrldFormID, 1);
 		
 		// Create CELL dummy record
-		uint32_t flags=0x400;
+		flags=0x400;
 		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "");
 		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
 		writer.startSubRecordTES4("DATA");

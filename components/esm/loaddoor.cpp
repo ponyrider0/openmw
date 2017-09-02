@@ -93,7 +93,7 @@ namespace ESM
 		esm.endSubRecordTES4("MODL");
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(1.0);
+		esm.writeT<float>(120.0);
 		esm.endSubRecordTES4("MODB");
 
 		// SCRI, script

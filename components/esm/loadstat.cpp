@@ -72,7 +72,7 @@ namespace ESM
 
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(1.0);
+		esm.writeT<float>(100.0);
 		esm.endSubRecordTES4("MODB");
 
 		// Optional: MODT == "Texture Files Hashes" (byte array)
