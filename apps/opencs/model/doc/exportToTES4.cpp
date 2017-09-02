@@ -2006,12 +2006,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.writeT<uint8_t>(flags);
 		writer.endSubRecordTES4("DATA");
 		writer.startSubRecordTES4("NAM0");
-		writer.writeT<float>(-71); // min x
-		writer.writeT<float>(-62); // min y
+		writer.writeT<float>(-71 * 4096); // min x
+		writer.writeT<float>(-62 * 4096); // min y
 		writer.endSubRecordTES4("NAM0");
 		writer.startSubRecordTES4("NAM9");
-		writer.writeT<float>(100); // max x
-		writer.writeT<float>(61); // max y
+		writer.writeT<float>(100 * 4096); // max x
+		writer.writeT<float>(61 * 4096); // max y
 		writer.endSubRecordTES4("NAM9");
 		writer.endRecordTES4("WRLD");
 		
