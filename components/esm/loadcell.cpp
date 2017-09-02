@@ -276,15 +276,14 @@ namespace ESM
     {
         // Write EDID (TES4-style editor string identifier)
 		std::string newEDID = esm.generateEDIDTES4(mName, 1);
-//		std::string tempStr;
         char *charbuf = new char[newEDID.size()+6];
 		std::ostringstream debugstream;
 
 		bool isValidCellname = false;
 		int nameOffset = offset;
 
-//		if (newEDID.compare("") == 0)
-//			isValidCellname = true;
+		if (isExterior())
+			isValidCellname = true;
 
 		while ( (isValidCellname != true) && (newEDID.size() > 0) )
         {
@@ -294,7 +293,6 @@ namespace ESM
 				throw std::runtime_error("exportSubCellTES4 EDID snprintf error");
 			}
 			charbuf[len] = '\0';
-//			tempStr = std::string(charbuf);
 			if ( esm.mCellnameMgr.find(charbuf) != esm.mCellnameMgr.end() )
 			{
 				// name found, increase offset and try again
@@ -316,9 +314,12 @@ namespace ESM
 		esm.endSubRecordTES4("EDID");
 
         // Write FULL (human readable name)
-		esm.startSubRecordTES4("FULL");
-		esm.writeHCString(mName);
-		esm.endSubRecordTES4("FULL");
+		if (isExterior() == false)
+		{
+			esm.startSubRecordTES4("FULL");
+			esm.writeHCString(mName);
+			esm.endSubRecordTES4("FULL");
+		}
 
         // Write DATA (flags)
 		char dataFlags=0;

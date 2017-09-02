@@ -52,7 +52,7 @@ namespace CSMDoc
 
             std::map<std::string, std::deque<int> >& getSubRecords();
 
-			std::vector<int> mPersistentWorldRefs; // record ID, list of subrecords
+			std::map<std::string, std::vector<int> > mPersistentRefMap; // record ID, list of subrecords
 			std::map<int, std::map <int, uint32_t> > mLandTexLookup_Plugin_Index;
 			std::vector<int> mFurnitureFromActivatorList;			
 			std::vector<int> mFurnitureFromStaticList;

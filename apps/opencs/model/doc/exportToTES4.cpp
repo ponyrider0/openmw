@@ -637,6 +637,7 @@ int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "MISC";
+	std::string searchString;
 	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
@@ -663,14 +664,14 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 		bool bIsKey = miscRecord.get().mData.mIsKey;
 		if (bIsKey == false)
 		{
-			std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
+			searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
 			if (searchString.find("key", 0) != searchString.npos)
 			{
 				bIsKey = true;
 			}
 			else
 			{
-				std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
+				searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
 				if (searchString.find("key", 0) != searchString.npos)
 					bIsKey = true;
 			}
@@ -687,14 +688,14 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 	if (exportOrSkip)
 	{
 		bool bIsSoulGem = false;
-		std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
+		searchString = Misc::StringUtils::lowerCase(miscRecord.get().mId);
 		if (searchString.find("soulgem", 0) != searchString.npos)
 		{
 			bIsSoulGem = true;
 		}
 		else
 		{
-			std::string searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
+			searchString = Misc::StringUtils::lowerCase(miscRecord.get().mName);
 			if (searchString.find("soulgem", 0) != searchString.npos)
 				bIsSoulGem = true;
 		}
@@ -1477,32 +1478,40 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 			std::deque<int>& indices =
 				mState.getSubRecords()[Misc::StringUtils::lowerCase (cellId)];
 
-			// collect moved references at the end of the container
+			// determine if cell is interior or exterior
 			bool interior = cellId.substr (0, 1)!="#";
-			std::ostringstream stream;
+
+			// Collect and build DoorRef database: <position-cell, refIndex=i, formID >
 			if (!interior)
 			{
 				// if NPC or teleport door in exterior worldspace
 				// then add to a global worldspace dummy cell
 				// and skip to the next loop iteration
-				bool exportRef=false;
-				uint32_t baseRefID = mState.getWriter().crossRefStringID(record.get().mRefID);
+				bool persistentRef=false;
 				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
 
 				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
-					exportRef = true;
-				else if ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true) )
-					exportRef = true;
-
-				if (exportRef == true)
+					persistentRef = true;
+				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
+					persistentRef = true;
+	
+				if (persistentRef == true)
 				{
 					debugstream.str(""); debugstream.clear();
 					debugstream << "Collecting Persistent reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
 //					OutputDebugString(debugstream.str().c_str());
-					mState.mPersistentWorldRefs.push_back(i);
+					std::string tempCellReference = cellId;
+					if (!interior)
+						tempCellReference = "worldspace-dummycell";
+					std::vector<int>& persistentRefListOfCurrentCell = mState.mPersistentRefMap[Misc::StringUtils::lowerCase (tempCellReference)];
+					persistentRefListOfCurrentCell.push_back(i);
 					continue;
 				}
+			}
 
+			std::ostringstream stream;
+			if (!interior)
+			{
 				// recalculate the ref's cell location
 				std::pair<int, int> index = record.get().getCellIndex();
 				stream << "#" << index.first << " " << index.second;
@@ -1692,7 +1701,65 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
             // Create Cell children group
             writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
 
-			// TODO Export Persistent Children Group
+			//***************** Persistent Children Group ****************/
+			writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+/*
+			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
+				iter != references->second.rend(); ++iter)
+			{
+				const CSMWorld::Record<CSMWorld::CellRef>& ref =
+					mDocument.getData().getReferences().getRecord (*iter);
+
+				if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
+				{
+					CSMWorld::CellRef refRecord = ref.get();
+
+					// Check for uninitialized content file
+					if (!refRecord.mRefNum.hasContentFile())
+						refRecord.mRefNum.mContentFile = 0;
+
+					// recalculate the ref's cell location
+					std::ostringstream stream;
+
+					if (refRecord.mNew)
+						refRecord.mRefNum.mIndex = newRefNum++;
+
+					uint32_t refFormID = writer.getNextAvailableFormID();
+					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
+					if (baseRefID != 0)
+					{
+						std::string sSIG;
+						switch (baseRefIndex.second)
+						{
+						case CSMWorld::UniversalId::Type::Type_Npc:
+							sSIG = "ACHR";
+							break;
+						case CSMWorld::UniversalId::Type::Type_Door:
+							if (refRecord.mTeleport != true)
+								continue;
+							sSIG = "REFR";
+							break;
+						default:
+							continue;
+						}
+						uint32_t refFlags=0;
+						if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+							refFlags |= 0x20;
+						refFlags |= 0x400; // persistent flag
+						// start record
+						writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+						refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+						// end record
+						writer.endRecordTES4(sSIG);
+					}
+				}
+			}
+			// close cell children group
+*/
+			writer.endGroupTES4(cellFormID); // cell children subgroup
+
 
 			//************EXPORT TEMPORARY CHILDREN GROUP*******************/
             writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
@@ -1722,33 +1789,20 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                     refFormID = writer.reserveFormID(refFormID, refRecord.mId);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-/*
-                    if ( (baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Apparatus) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Armor) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
-						(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container)
-						) )
-*/
+
 					if (baseRefID != 0)
                     {
                         std::string sSIG;
                         switch (baseRefIndex.second)
                         {
                         case CSMWorld::UniversalId::Type::Type_Npc:
-                            sSIG = "ACHR";
-                            break;
+                            continue;
+						case CSMWorld::UniversalId::Type::Type_Door:
+							if (refRecord.mTeleport)
+								continue;
                         case CSMWorld::UniversalId::Type::Type_Creature:
                             sSIG = "ACRE";
                             break;
-//                        case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
                         default:
                             sSIG = "REFR";
                             break;
@@ -1950,8 +2004,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startGroupTES4(dummyCellFormID, 8); // grouptype=8 (persistent children)
 
 		// Write out persistent refs (aka NPCs) here...
-		for (std::vector<int>::const_iterator refindex_iter = mState.mPersistentWorldRefs.begin();
-			 refindex_iter != mState.mPersistentWorldRefs.end(); refindex_iter++)
+		std::vector<int>& worldspacePersistentRefList = mState.mPersistentRefMap["worldspace-dummycell"];
+		for (std::vector<int>::const_iterator refindex_iter = worldspacePersistentRefList.begin();
+			 refindex_iter != worldspacePersistentRefList.end(); refindex_iter++)
 		{
 			const CSMWorld::Record<CSMWorld::CellRef>& ref =
 			mDocument.getData().getReferences().getRecord (*refindex_iter);
@@ -1962,18 +2017,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-/*
-			if ( (baseRefID != 0) && 
-				( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
-				 (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) )
-				)
-*/
 			if (baseRefID != 0)
 			{
-				std::string sSIG;
+				sSIG="";
 				switch (baseRefIndex.second)
 				{
 					case CSMWorld::UniversalId::Type::Type_Npc:
@@ -2225,7 +2271,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					debugstream << "ID retrieved.  exporting land ... ";
 					writer.startRecordTES4("LAND");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
-					int plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
+//					int plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
 
 					// VTEX, LTEX formIDs (each morroblivion subcell maps to 8x8 portion of the original 16x16 morrowind cell vtex grid)
 					// each Subcell is further divided into quadrants containing a 4x4 portion of the original 16x16 morrowind cell vtex grid
@@ -3138,7 +3184,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 
 	debugstream << "Create Opacity Map: layerID=[" << layerID << "] ";
 	int texindex=0;
-	int quadIndex=0;
+//	int quadIndex=0;
 	uint32_t formID;
 	int gridpos=0;
 	for (int i=0; i < 4; i++)
@@ -3163,7 +3209,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 			}
 
 			formID = lookup->second;
-			float opacity = (1.0f / mSubCellQuadTexList.size());
+//			float opacity = (1.0f / mSubCellQuadTexList.size());
 			if (layerID == formID)
 			{
 				debugstream << "[" << gridpos << "] pos=";
@@ -3264,7 +3310,6 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	// LTEX GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4("LTEX", 0);
 	}
 
@@ -3300,7 +3345,6 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 
 	if (stage == mActiveRefCount-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4("LTEX");
 	}
 
