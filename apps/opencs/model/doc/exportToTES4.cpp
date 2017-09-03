@@ -1724,6 +1724,11 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 			//***************** INTERIOR CELL Persistent Children Group ****************/
 			writer.startGroupTES4(cellFormID, 8); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+//			std::vector<int>& interiorCellPersistentRefList = mState.mPersistentRefMap[cellRecordPtr->get().mId];
+//			for (std::vector<int>::const_iterator refindex_iter = worldspacePersistentRefList.begin();
+//				refindex_iter != worldspacePersistentRefList.end(); refindex_iter++)
+//			{
+
 /*
 			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 				iter != references->second.rend(); ++iter)
@@ -1817,14 +1822,16 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                         switch (baseRefIndex.second)
                         {
                         case CSMWorld::UniversalId::Type::Type_Npc:
-                            continue;
-						case CSMWorld::UniversalId::Type::Type_Door:
-							if (refRecord.mTeleport)
-								continue;
+							sSIG = "ACHR";
+							break;
+//                            continue;
                         case CSMWorld::UniversalId::Type::Type_Creature:
                             sSIG = "ACRE";
                             break;
-                        default:
+						case CSMWorld::UniversalId::Type::Type_Door:
+//							if (refRecord.mTeleport)
+//								continue;
+						default:
                             sSIG = "REFR";
                             break;
                         }

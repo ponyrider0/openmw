@@ -651,13 +651,13 @@ namespace ESM
 			effSIG = "ABSP";
 			break;
 		case 89: // Absorb Skill
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 63: // Almsivi Intervention
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 47: // Blind
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 123: // Bound Battle Axe
 			effSIG = "BWAX";
@@ -690,7 +690,7 @@ namespace ESM
 			effSIG = "BASH";
 			break;
 		case 124: // Bound Spear
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 7: // Burden
 			effSIG = "BRDN";
@@ -714,16 +714,16 @@ namespace ESM
 			effSIG = "COHU";
 			break;
 		case 132: // Corprus
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 70: // Cure Blight
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 69: // Cure Common Disease
 			effSIG = "CUDI";
 			break;
 		case 71: // Cure Corprus Disease
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 73: // Cure Paralyzation
 			effSIG = "CUPA";
@@ -744,22 +744,22 @@ namespace ESM
 			effSIG = "DGSP";
 			break;
 		case 26: // Damage Skill
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 54: // Demoralize Creature
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 53: // Demoralize Humanoid
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 64: // Detect Animal
 			effSIG = "DTCT"; // detect life
 			break;
 		case 65: // Detect Enchantment
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 66: // Detect Key
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 38: // Disintegrate Armor
 			effSIG = "DIAR";
@@ -771,7 +771,7 @@ namespace ESM
 			effSIG = "DSPL";
 			break;
 		case 62: // Divine Intervention
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 17: // Drain Attribute
 			effSIG = "DRAT";
@@ -798,7 +798,7 @@ namespace ESM
 			effSIG = "FISH";
 			break;
 		case 117: // Fortify Attack
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 79: // Fortify Attribute
 			effSIG = "FOAT";
@@ -813,7 +813,7 @@ namespace ESM
 			effSIG = "FOMM"; // fortify magicka multiplier
 			break;
 		case 84: // Fortify Maximum Magicka
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 83: // Fortify Skill
 			effSIG = "FOSK";
@@ -834,10 +834,10 @@ namespace ESM
 			effSIG = "INVI";
 			break;
 		case 9: // Jump
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 10: // Levitate
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 41: // Light
 			effSIG = "LGHT";
@@ -846,10 +846,10 @@ namespace ESM
 			effSIG = "LISH";
 			break;
 		case 12: // Lock
-			effSIG = "????"; // DO NOT USE? LOCK
+			effSIG = "SEFF"; // DO NOT USE? LOCK
 			break;
 		case 60: // Mark
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 43: // Night Eye
 			effSIG = "NEYE";
@@ -861,7 +861,7 @@ namespace ESM
 			effSIG = "PARA";
 			break;
 		case 27: // Poison
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 56: // Rally Creature
 			effSIG = "RALY"; // RALLY
@@ -870,22 +870,22 @@ namespace ESM
 			effSIG = "RALY"; // RALLY
 			break;
 		case 61: // Recall
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 68: // Reflect
 			effSIG = "REDG"; // reflect damage
 			break;
 		case 100: // Remove Curse
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 95: // Resist Blight
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 94: // Resist Common Disease
 			effSIG = "RSDI";
 			break;
 		case 96: // Resist Corprus
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 90: // Resist Fire
 			effSIG = "RSFI";
@@ -921,10 +921,10 @@ namespace ESM
 			effSIG = "RESP";
 			break;
 		case 78: // Restore Skill
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 42: // Sanctuary
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 3: // Shield
 			effSIG = "SHLD";
@@ -936,13 +936,13 @@ namespace ESM
 			effSIG = "SLNC";
 			break;
 		case 11: // SlowFall
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 58: // Soultrap
 			effSIG = "STRP";
 			break;
 		case 48: // Sound
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 67: // Spell Absorption
 			effSIG = "SABS";
@@ -960,7 +960,7 @@ namespace ESM
 			effSIG = "ZZOM"; // ZOMBIE
 			break;
 		case 134: // Summon Centurion Sphere
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 103: // Summon Clannfear
 			effSIG = "ZCLA";
@@ -996,13 +996,13 @@ namespace ESM
 			effSIG = "ZSTA";
 			break;
 		case 111: // Summon Winged Twilight
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 135: // Sun Damage
 			effSIG = "SUDG";
 			break;
 		case 1: // Swift Swim
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 59: // Telekinesis
 			effSIG = "TELE";
@@ -1020,13 +1020,13 @@ namespace ESM
 			effSIG = "WAWA";
 			break;
 		case 33: // Weakness to Blight
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 32: // Weakness to Common Disease
 			effSIG = "WKDI";
 			break;
 		case 34: // Weakness to Corprus
-			effSIG = "????";
+			effSIG = "SEFF";
 			break;
 		case 28: // Weakness to Fire
 			effSIG = "WKFI";
@@ -1047,7 +1047,7 @@ namespace ESM
 			effSIG = "WKSH";
 			break;
 		default:
-			effSIG = "?ERR";
+			effSIG = "SEFF";
 		}
 
 		if (effSIG.size() != 4)
