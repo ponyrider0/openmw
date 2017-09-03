@@ -356,7 +356,7 @@ namespace ESM
 		}
 
         // Write XCLW (water level)
-        if (mData.mFlags & HasWater)
+        if ( (mData.mFlags & HasWater) && (mWater != 0) )
         {
             esm.startSubRecordTES4("XCLW");
             esm.writeT<float>(mWater);
