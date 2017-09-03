@@ -168,12 +168,12 @@ namespace ESM {
 		// MODB?
 		// MODT?
 */
-		tempStr = "morro\\creatures\\centspider\\skeleton.nif";
+		tempStr = "creatures\\minotaur\\skeleton.nif";
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("MODL");
 		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(100);
+		esm.writeT<float>(140);
 		esm.endSubRecordTES4("MODB");
 
 
@@ -211,13 +211,20 @@ namespace ESM {
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
 */
-		tempStr = "centurion.nif";
 		esm.startSubRecordTES4("NIFZ");
-		esm.writeHCString(tempStr);
+		esm.writeHCString("eyelids.nif");
+		esm.writeHCString("goz.nif");
+		esm.writeHCString("hair01.nif");
+		esm.writeHCString("hair02.nif");
+		esm.writeHCString("head.nif");
+		esm.writeHCString("hornsb.nif");
+		esm.writeHCString("minotaur.nif");
+		esm.writeHCString("minotaurbodyhair.nif");
 		esm.endSubRecordTES4("NIFZ");
 
 		// ACBS group
 		uint32_t flags=0;
+		flags |= 0x200; // No Low Level Processing (needed for LVLC)
 		if (mFlags & ESM::Creature::Flags::Bipedal)
 			flags |= 0x01;
 		if (mFlags & ESM::Creature::Flags::Essential)
@@ -247,6 +254,11 @@ namespace ESM {
 		esm.endSubRecordTES4("ACBS");
 
 		// Factions ...SNAM array
+		tempFormID = 0x13; // CreatureFaction
+		esm.startSubRecordTES4("SNAM");
+		esm.writeT<uint32_t>(tempFormID);
+		esm.endSubRecordTES4("SNAM");
+
 		// INAM, death items (LVLI)
 
 		// SCRI
@@ -281,6 +293,10 @@ namespace ESM {
 			// aiPkg is full definition and not just a stringID...
 			// ... so must generate a full ESM4 AIPackage record from each aiPkg
 		}
+		tempFormID = 0xaa01d;  // aaaCreatureExterior1500
+		esm.startSubRecordTES4("PKID");
+		esm.writeT<uint32_t>(tempFormID);
+		esm.endSubRecordTES4("PKID");
 		
 		// KFFZ, animations
 
@@ -324,6 +340,10 @@ namespace ESM {
 		esm.endSubRecordTES4("RNAM");
 
 		// ZNAM, combat style formID (CSTY)
+		tempFormID = 0x2d6f4; // defaultminotaurlord
+		esm.startSubRecordTES4("ZNAM");
+		esm.writeT<uint32_t>(tempFormID);
+		esm.endSubRecordTES4("ZNAM");
 
 		// TNAM, turning speed (float)
 		tempFloat = 0;
@@ -344,6 +364,7 @@ namespace ESM {
 
 		// NAM0, blood spray (string)
 		// NAM1, blood decal (string)
+
 		// CSCR, inherit sound from: formID CREA
 		tempFormID = esm.crossRefStringID(mOriginal);
 		if (tempFormID != 0)

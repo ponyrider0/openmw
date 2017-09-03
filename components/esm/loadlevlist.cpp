@@ -183,6 +183,7 @@ namespace ESM
 			esm.endSubRecordTES4("LVLO");
 		}
 
+/*
 		// script formID, SCRI
 		esm.startSubRecordTES4("SCRI");
 		esm.writeT<uint32_t>(0);
@@ -192,6 +193,7 @@ namespace ESM
 		esm.startSubRecordTES4("TNAM");
 		esm.writeT<uint32_t>(0);
 		esm.endSubRecordTES4("TNAM");
+*/
 
 		return true;
 	}

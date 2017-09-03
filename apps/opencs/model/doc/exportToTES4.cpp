@@ -57,14 +57,14 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
-//		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
+		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, false));
 
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
-//		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
+		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, false));
 
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
-//		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
+		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, false));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
 		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, false));
@@ -87,29 +87,29 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, false));
 
-//	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportFurnitureCollectionTES4Stage (currentDoc, currentSave, false));
 
-//	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
-//	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, false));
 
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
-//	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
-//	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave));
 
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
@@ -1519,6 +1519,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
 
 				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
+					persistentRef = true;
+				else if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)
 					persistentRef = true;
 	//				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
 	//					persistentRef = true;
