@@ -278,7 +278,8 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 	//   1. iterate through stack of all door references with mTeleport==true
 	//   2. match mDestCell+mDoorDest with searchable list of doorRefID+Cell+location
 	//   3. replace XTEL subrecord with referenceID from #2
-	if (mTeleport == true)
+//	if (mTeleport == true)
+	if (false)
 	{
 		// find teleport door (reference) near the doordest location...
 		uint32_t teleportDoorRefID=0;
