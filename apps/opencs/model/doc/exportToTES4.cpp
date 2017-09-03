@@ -1673,22 +1673,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
 		references != mState.getSubRecords().end())
 	{
-/*
-        // count new references and adjust RefNumCount accordingly
-        int newRefNum = cellRecordPtr->get().mRefNumCounter;
-        if (references != mState.getSubRecords().end())
-        {
-            for (std::deque<int>::const_iterator iter (references->second.begin());
-                iter != references->second.end(); ++iter)
-            {
-                const CSMWorld::Record<CSMWorld::CellRef>& ref =
-                    mDocument.getData().getReferences().getRecord (*iter);
-                if (ref.get().mNew )
-                    ++(cellRecordPtr->get().mRefNumCounter);
-            }
-        }
-*/
-		
+	
 		bool bHasPersistentRefs = false;
 		auto interiorCellPersistentRefList = mState.mPersistentRefMap[cellRecordPtr->get().mId];
 		if (interiorCellPersistentRefList.empty() != true)
@@ -1791,15 +1776,6 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                 {
                     CSMWorld::CellRef refRecord = ref.get();
 
-/*
-                    // Check for uninitialized content file
-                    if (!refRecord.mRefNum.hasContentFile())
-                        refRecord.mRefNum.mContentFile = 0;
-                    // recalculate the ref's cell location
-                    std::ostringstream stream;
-                    if (refRecord.mNew)
-                        refRecord.mRefNum.mIndex = newRefNum++;
-*/
                     // reserve formID
 
                     uint32_t refFormID = writer.getNextAvailableFormID();
@@ -1820,8 +1796,6 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                             sSIG = "ACRE";
                             break;
 						case CSMWorld::UniversalId::Type::Type_Door:
-//							if (refRecord.mTeleport)
-//								continue;
 						default:
                             sSIG = "REFR";
                             break;
@@ -2079,7 +2053,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					case CSMWorld::UniversalId::Type::Type_Creature:
 						sSIG = "ACRE";
 						break;
-//					case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
 					default:
 						sSIG = "REFR";
 						break;
@@ -2501,7 +2474,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								case CSMWorld::UniversalId::Type::Type_Creature:
 									sSIG = "ACRE";
 									break;
-	//								case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
 								default:
 									sSIG = "REFR";
 									break;
