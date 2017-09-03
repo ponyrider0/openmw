@@ -1510,8 +1510,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				mState.getSubRecords()[Misc::StringUtils::lowerCase (cellId)];
 
 			// Collect and build DoorRef database: <position-cell, refIndex=i, formID >
-			if (!interior)
-			{
+//			if (!interior)
+//			{
 				// if NPC or teleport door in exterior worldspace
 				// then add to a global worldspace dummy cell
 				// and skip to the next loop iteration
@@ -1522,8 +1522,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 					persistentRef = true;
 				else if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)
 					persistentRef = true;
-	//				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
-	//					persistentRef = true;
+				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
+					persistentRef = true;
 	
 				if (persistentRef == true)
 				{
@@ -1537,7 +1537,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 					persistentRefListOfCurrentCell.push_back(i);
 					continue;
 				}
-			}
+//			}
 			cellRefIndexList.push_back (i);
 		}
 	}
@@ -1673,9 +1673,9 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
 		references != mState.getSubRecords().end())
 	{
+/*
         // count new references and adjust RefNumCount accordingly
         int newRefNum = cellRecordPtr->get().mRefNumCounter;
-
         if (references != mState.getSubRecords().end())
         {
             for (std::deque<int>::const_iterator iter (references->second.begin());
@@ -1683,11 +1683,16 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
             {
                 const CSMWorld::Record<CSMWorld::CellRef>& ref =
                     mDocument.getData().getReferences().getRecord (*iter);
-
                 if (ref.get().mNew )
                     ++(cellRecordPtr->get().mRefNumCounter);
             }
         }
+*/
+		
+		bool bHasPersistentRefs = false;
+		auto interiorCellPersistentRefList = mState.mPersistentRefMap[cellRecordPtr->get().mId];
+		if (interiorCellPersistentRefList.empty() != true)
+			bHasPersistentRefs = true;
 
         // formID was previously generated in setup() method, so throw an error if it's zero
         if (cellFormID == 0)
@@ -1723,69 +1728,56 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
             writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
 
 			//***************** INTERIOR CELL Persistent Children Group ****************/
-			writer.startGroupTES4(cellFormID, 8); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
-//			std::vector<int>& interiorCellPersistentRefList = mState.mPersistentRefMap[cellRecordPtr->get().mId];
-//			for (std::vector<int>::const_iterator refindex_iter = worldspacePersistentRefList.begin();
-//				refindex_iter != worldspacePersistentRefList.end(); refindex_iter++)
-//			{
-
-/*
-			for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
-				iter != references->second.rend(); ++iter)
+			if (bHasPersistentRefs)
 			{
-				const CSMWorld::Record<CSMWorld::CellRef>& ref =
-					mDocument.getData().getReferences().getRecord (*iter);
-
-				if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
+				writer.startGroupTES4(cellFormID, 8); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+				for (std::vector<int>::const_iterator refindex_iter = interiorCellPersistentRefList.begin();
+					refindex_iter != interiorCellPersistentRefList.end(); refindex_iter++)
 				{
-					CSMWorld::CellRef refRecord = ref.get();
+					const CSMWorld::Record<CSMWorld::CellRef>& ref =
+						mDocument.getData().getReferences().getRecord (*refindex_iter);
 
-					// Check for uninitialized content file
-					if (!refRecord.mRefNum.hasContentFile())
-						refRecord.mRefNum.mContentFile = 0;
-
-					// recalculate the ref's cell location
-					std::ostringstream stream;
-
-					if (refRecord.mNew)
-						refRecord.mRefNum.mIndex = newRefNum++;
-
-					uint32_t refFormID = writer.getNextAvailableFormID();
-					refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-					uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
-					CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-					if (baseRefID != 0)
+					if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
 					{
-						std::string sSIG;
-						switch (baseRefIndex.second)
+						CSMWorld::CellRef refRecord = ref.get();
+
+						uint32_t refFormID = writer.getNextAvailableFormID();
+						refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
+						if (baseRefID != 0)
 						{
-						case CSMWorld::UniversalId::Type::Type_Npc:
-							sSIG = "ACHR";
-							break;
-						case CSMWorld::UniversalId::Type::Type_Door:
-							if (refRecord.mTeleport != true)
-								continue;
-							sSIG = "REFR";
-							break;
-						default:
-							continue;
+							std::string sSIG;
+							switch (baseRefIndex.second)
+							{
+							case CSMWorld::UniversalId::Type::Type_Npc:
+								sSIG = "ACHR";
+								break;
+							case CSMWorld::UniversalId::Type::Type_Creature:
+								sSIG = "ACRE";
+								break;
+							case CSMWorld::UniversalId::Type::Type_Door:
+							default:
+//								if (refRecord.mTeleport != true)
+//									continue;
+								sSIG = "REFR";
+								break;
+							}
+							uint32_t refFlags=0;
+							if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+								refFlags |= 0x800; // DISABLED
+							refFlags |= 0x400; // persistent flag
+							// start record
+							writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+							refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
+							// end record
+							writer.endRecordTES4(sSIG);
 						}
-						uint32_t refFlags=0;
-						if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-							refFlags |= 0x800; // DISABLED
-						refFlags |= 0x400; // persistent flag
-						// start record
-						writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-						refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
-						// end record
-						writer.endRecordTES4(sSIG);
 					}
 				}
-			}
-			// close cell children group
-*/
-			writer.endGroupTES4(cellFormID); // cell children subgroup
-
+				// close cell children group
+				writer.endGroupTES4(cellFormID); // cell children subgroup
+			} // if (bHasPersistentRefs)
 
 			//************EXPORT INTERIOR CELL TEMPORARY CHILDREN GROUP*******************/
             writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
@@ -1799,16 +1791,15 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                 {
                     CSMWorld::CellRef refRecord = ref.get();
 
+/*
                     // Check for uninitialized content file
                     if (!refRecord.mRefNum.hasContentFile())
                         refRecord.mRefNum.mContentFile = 0;
-
                     // recalculate the ref's cell location
                     std::ostringstream stream;
-
                     if (refRecord.mNew)
                         refRecord.mRefNum.mIndex = newRefNum++;
-
+*/
                     // reserve formID
 
                     uint32_t refFormID = writer.getNextAvailableFormID();
