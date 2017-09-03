@@ -257,6 +257,11 @@ namespace ESM {
 		tempFormID = 0x13; // CreatureFaction
 		esm.startSubRecordTES4("SNAM");
 		esm.writeT<uint32_t>(tempFormID);
+		tempVal = 0; // Faction Rank
+		esm.writeT<uint8_t>(tempVal); 
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused
+		esm.writeT<uint8_t>(0); // unused
 		esm.endSubRecordTES4("SNAM");
 
 		// INAM, death items (LVLI)
