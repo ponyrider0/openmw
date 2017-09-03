@@ -108,18 +108,27 @@ namespace ESM
 			magicEffect->exportTES4EFIT(esm);
 			esm.endSubRecordTES4("EFIT");
 			// SCIT
-			bool isScriptEffect=false;
+			std::string effSIG = esm.intToMagEffIDTES4(magicEffect->mEffectID);
+			bool isScriptEffect = (effSIG == "SEFF");
 			if (isScriptEffect)
 			{
 				esm.startSubRecordTES4("SCIT");
 				// formID (SCPT)
+				tempFormID = 0x1470351; // mwSpellCastScript
+				esm.writeT<uint32_t>(tempFormID);
 				// magic school (uint32)
+				esm.writeT<uint32_t>(0);
 				// visual effect name (char[4]) (uint32)
+				esm.writeT<uint32_t>(0);
 				// flags (uint8) [Hostile]
+				uint8_t flags = 0;
+				esm.writeT<uint8_t>(flags);
 				// unused x3 (uint8)
+				esm.writeT<uint8_t>(0);
+				esm.writeT<uint8_t>(0);
+				esm.writeT<uint8_t>(0);
 				esm.endSubRecordTES4("SCIT");
 			}
-
 		}
 
 	}
