@@ -2010,12 +2010,23 @@ namespace ESM
 				}
 			}
 
-
-
 		} // default metal type
 
 		return retString;
 	}
+
+	float ESM::ESMWriter::calcDistance(ESM::Position pointA, ESM::Position pointB)
+	{
+		float deltaX = pointB.pos[0] - pointA.pos[0];
+		float deltaY = pointB.pos[1] - pointA.pos[1];
+		float deltaZ = pointB.pos[2] - pointA.pos[2];
+
+		float distance_XY = sqrtf( (deltaX*deltaX) + (deltaY*deltaY) );
+		float distance_XYZ = sqrtf( (distance_XY*distance_XY) + (deltaZ*deltaZ) );
+
+		return distance_XYZ;		
+	}
+
 
 
 }

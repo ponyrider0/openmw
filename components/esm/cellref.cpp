@@ -244,7 +244,7 @@ void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeHNT("DATA", mPos, 24);
 }
 
-void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory, bool isDeleted) const
+void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID) const
 {
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
@@ -278,31 +278,21 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 	//   1. iterate through stack of all door references with mTeleport==true
 	//   2. match mDestCell+mDoorDest with searchable list of doorRefID+Cell+location
 	//   3. replace XTEL subrecord with referenceID from #2
-//	if (mTeleport == true)
-	if (false)
+	if (mTeleport == true)
 	{
 		// find teleport door (reference) near the doordest location...
-		uint32_t teleportDoorRefID=0;
-		// add this reference + teleportDoorRefID ESM file offset to stack for second pass
-
-		if (mDestCell.length() == 0)
+		if (teleportRefID != 0)
 		{
-			// dest cell is exterior worldspace, search worldspace for dest position
+			esm.startSubRecordTES4("XTEL");
+			esm.writeT<uint32_t>(teleportRefID);
+			esm.writeT<float>(mDoorDest.pos[0]);
+			esm.writeT<float>(mDoorDest.pos[1]);
+			esm.writeT<float>(mDoorDest.pos[2]);
+			esm.writeT<float>(mDoorDest.rot[0]);
+			esm.writeT<float>(mDoorDest.rot[1]);
+			esm.writeT<float>(mDoorDest.rot[2]);
+			esm.endSubRecordTES4("XTEL");
 		}
-		else
-		{
-			// dest is an interior cell, search dest cell for dest position
-			uint32_t destID = esm.crossRefStringID(mDestCell);
-		}
-		esm.startSubRecordTES4("XTEL");
-		esm.writeT<uint32_t>(teleportDoorRefID);
-		esm.writeT<float>(mDoorDest.pos[0]);
-		esm.writeT<float>(mDoorDest.pos[1]);
-		esm.writeT<float>(mDoorDest.pos[2]);
-		esm.writeT<float>(mDoorDest.rot[0]);
-		esm.writeT<float>(mDoorDest.rot[1]);
-		esm.writeT<float>(mDoorDest.rot[2]);
-		esm.endSubRecordTES4("XTEL");
 	}
 
 	// EDID = EditorID
@@ -313,7 +303,6 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 
 	// XRGD, ragdoll
 	// XESP, parent object
-/*
 	if ( (mOwner != "") || (mFaction != "") )
 	{
 		esm.startSubRecordTES4("XOWN");
@@ -337,7 +326,6 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeT<int32_t>(mFactionRank);
 		esm.endSubRecordTES4("XRNK");
 	}
-*/
 
 	// XSCL
 	if (mScale != 1.0) {

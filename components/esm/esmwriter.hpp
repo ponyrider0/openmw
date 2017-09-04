@@ -180,6 +180,7 @@ public:
 
 		static std::string substituteHairID(const std::string& hairName);
 		void exportFaceGen(const std::string& headName);
+		static float calcDistance(ESM::Position pointA, ESM::Position pointB);
 
     private:
         std::list<RecordData> mRecords;
