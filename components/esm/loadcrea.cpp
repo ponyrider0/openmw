@@ -176,20 +176,6 @@ namespace ESM {
 		esm.writeT<float>(140);
 		esm.endSubRecordTES4("MODB");
 
-
-		// CNTO: {formID, uint32}
-		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
-		{
-			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
-			if (tempFormID != 0)
-			{
-				esm.startSubRecordTES4("CNTO");
-				esm.writeT<uint32_t>(tempFormID);
-				esm.writeT<int32_t>(inventoryItem->mCount);
-				esm.endSubRecordTES4("CNTO");
-			}
-		}
-
 		// SPLO
 		for (auto spellItem = mSpells.mList.begin(); spellItem != mSpells.mList.end(); spellItem++)
 		{
@@ -220,7 +206,12 @@ namespace ESM {
 		esm.writeHCString("hornsb.nif");
 		esm.writeHCString("minotaur.nif");
 		esm.writeHCString("minotaurbodyhair.nif");
+		esm.writeT<uint8_t>(0); // terminating null character for string list
 		esm.endSubRecordTES4("NIFZ");
+		// NIFT
+		esm.startSubRecordTES4("NIFT");
+		esm.writeT<uint32_t>(0);
+		esm.endSubRecordTES4("NIFT");
 
 		// ACBS group
 		uint32_t flags=0;
@@ -263,6 +254,19 @@ namespace ESM {
 		esm.writeT<uint8_t>(0); // unused
 		esm.writeT<uint8_t>(0); // unused
 		esm.endSubRecordTES4("SNAM");
+
+		// CNTO: {formID, uint32}
+		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		{
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CNTO");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(inventoryItem->mCount);
+				esm.endSubRecordTES4("CNTO");
+			}
+		}
 
 		// INAM, death items (LVLI)
 
