@@ -59,6 +59,7 @@ namespace CSMDoc
 			std::vector<int> mKeyFromMiscList;
 			std::vector<int> mSoulgemFromMiscList;
 			std::vector<int> mAmmoFromWeaponList;
+			std::map<uint32_t, uint32_t> mReferenceToReferenceMap;
 
 	};
 
