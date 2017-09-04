@@ -323,6 +323,7 @@ namespace ESM
 
         // Write DATA (flags)
 		char dataFlags=0;
+		dataFlags |= 0x40; // DEFAULT: 0x40, Hand changed
 		if (mData.mFlags & Interior) // Interior Cell
 			dataFlags |= 0x01; // Can't fast travel? Interior?
 		if (mData.mFlags & HasWater)
@@ -332,7 +333,6 @@ namespace ESM
 		// 0x10, Unknown or reserved?
         if (!(mData.mFlags & NoSleep))
             dataFlags |= 0x20; // 0x20, Public place
-		// 0x40, Hand changed
         if (mData.mFlags & QuasiEx)
             dataFlags |= 0x08; // 0x80, Behave like exterior
 		esm.startSubRecordTES4("DATA");
