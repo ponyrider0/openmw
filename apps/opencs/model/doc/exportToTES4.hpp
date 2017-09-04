@@ -24,7 +24,6 @@ namespace ESM
 
 namespace CSMWorld
 {
-	struct CellRef;
     struct Cell;
     class InfoCollection;
 	class RefIdCollection;
@@ -32,8 +31,6 @@ namespace CSMWorld
 
 namespace CSMDoc
 {
-	uint32_t FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID);
-
     class Document;
     class SavingState;
     

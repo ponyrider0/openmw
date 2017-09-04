@@ -112,8 +112,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave));
 
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
-	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
 	// close file and clean up
 	appendStage (new CloseExportTES4Stage (currentSave));
@@ -1510,41 +1510,34 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				mState.getSubRecords()[Misc::StringUtils::lowerCase (cellId)];
 
 			// Collect and build DoorRef database: <position-cell, refIndex=i, formID >
-			// if NPC or teleport door in exterior worldspace
-			// then add to a global worldspace dummy cell
-			// and skip to the next loop iteration
+//			if (!interior)
+//			{
+				// if NPC or teleport door in exterior worldspace
+				// then add to a global worldspace dummy cell
+				// and skip to the next loop iteration
+				bool persistentRef=false;
+				CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
 
-			bool persistentRef=false;
-			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
-
-			std::string tempStr = Misc::StringUtils::lowerCase(record.get().mRefID);
-			if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
-				persistentRef = true;
-			else if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)
-				persistentRef = true;
-			else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
-				persistentRef = true;
-			else if (tempStr.find("marker") != std::string::npos)
-				persistentRef = true;
+				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
+					persistentRef = true;
+				else if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature)
+					persistentRef = true;
+				else if ((baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) && (record.get().mTeleport == true))
+					persistentRef = true;
 	
-			if (persistentRef == true)
-			{
-				debugstream.str(""); debugstream.clear();
-				debugstream << "Collecting Persistent reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
-				OutputDebugString(debugstream.str().c_str());
-				std::string tempCellReference = cellId;
-				if (!interior)
-					tempCellReference = "worldspace-dummycell";
-				std::vector<int>& persistentRefListOfCurrentCell = mState.mPersistentRefMap[Misc::StringUtils::lowerCase (tempCellReference)];
-				// reserve FormID here, then push back the pair
-				std::ostringstream refEDIDstr;
-				uint32_t formID = mState.getWriter().getNextAvailableFormID();
-				refEDIDstr << "*refindex" << i;
-				formID = mState.getWriter().reserveFormID(formID,refEDIDstr.str());
-				persistentRefListOfCurrentCell.push_back(i);
-				continue;
-			}
-
+				if (persistentRef == true)
+				{
+					debugstream.str(""); debugstream.clear();
+					debugstream << "Collecting Persistent reference: BaseID=[" << record.get().mRefID << "] cellID=[" << cellId << "]" << std::endl;
+						OutputDebugString(debugstream.str().c_str());
+					std::string tempCellReference = cellId;
+					if (!interior)
+						tempCellReference = "worldspace-dummycell";
+					std::vector<int>& persistentRefListOfCurrentCell = mState.mPersistentRefMap[Misc::StringUtils::lowerCase (tempCellReference)];
+					persistentRefListOfCurrentCell.push_back(i);
+					continue;
+				}
+//			}
 			cellRefIndexList.push_back (i);
 		}
 	}
@@ -1682,7 +1675,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 	{
 	
 		bool bHasPersistentRefs = false;
-		std::vector<int>& interiorCellPersistentRefList = mState.mPersistentRefMap[Misc::StringUtils::lowerCase(cellRecordPtr->get().mId)];
+		auto interiorCellPersistentRefList = mState.mPersistentRefMap[cellRecordPtr->get().mId];
 		if (interiorCellPersistentRefList.empty() != true)
 			bHasPersistentRefs = true;
 
@@ -1733,13 +1726,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 					{
 						CSMWorld::CellRef refRecord = ref.get();
 
-						std::ostringstream refEDIDstr;
-						refEDIDstr << "*refindex" << *refindex_iter;
-						uint32_t refFormID = writer.crossRefStringID(refEDIDstr.str());
-						if (refFormID == 0)
-						{
-							throw std::runtime_error ("Interior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
-						}
+						uint32_t refFormID = writer.getNextAvailableFormID();
+						refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 						if (baseRefID != 0)
@@ -1760,22 +1748,13 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 								sSIG = "REFR";
 								break;
 							}
-							uint32_t teleportDoorRefID = 0;
-							//**************************TELEPORT DOOR*****************************/
-							if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door &&
-								refRecord.mTeleport == true)
-							{
-								teleportDoorRefID = FindSiblingDoor(mDocument, mState, refRecord, refFormID);
-							}
-							//**************************TELEPORT DOOR*****************************/
-
 							uint32_t refFlags=0;
 							if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 								refFlags |= 0x800; // DISABLED
 							refFlags |= 0x400; // persistent flag
 							// start record
 							writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-							refRecord.exportTES4 (writer, teleportDoorRefID);
+							refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 							// end record
 							writer.endRecordTES4(sSIG);
 						}
@@ -1827,7 +1806,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                         // start record
                         
                         writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-                        refRecord.exportTES4 (writer);
+                        refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
                         // end record
                         writer.endRecordTES4(sSIG);
                     }
@@ -2059,13 +2038,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			
 			CSMWorld::CellRef refRecord = ref.get();
 			
-			std::ostringstream refEDIDstr;
-			refEDIDstr << "*refindex" << *refindex_iter;
-			uint32_t refFormID = writer.crossRefStringID(refEDIDstr.str());
-			if (refFormID == 0)
-			{
-				throw std::runtime_error ("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
-			}
+			uint32_t refFormID = writer.getNextAvailableFormID();
+			refFormID = writer.reserveFormID(refFormID, refRecord.mId);
 			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 			if (baseRefID != 0)
@@ -2083,20 +2057,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						sSIG = "REFR";
 						break;
 				}
-				uint32_t teleportDoorRefID=0;
-				//**************************TELEPORT DOOR*****************************/
-				if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door &&
-					refRecord.mTeleport == true)
-				{
-					teleportDoorRefID = FindSiblingDoor(mDocument, mState, refRecord, refFormID);
-				}
-				//**************************TELEPORT DOOR*****************************/
 				uint32_t refFlags= 0x0400; // persistent ref on
 				if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 					refFlags |= 0x800; // DISABLED
 				// start record
 				writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-				refRecord.exportTES4 (writer, teleportDoorRefID);
+				refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 				// end record
 				writer.endRecordTES4(sSIG);
 				debugstream.str(""); debugstream.clear();
@@ -2517,7 +2483,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									refFlags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-								refRecord.exportTES4 (writer);
+								refRecord.exportTES4 (writer, false, false, ref.mState == CSMWorld::RecordBase::State_Deleted);
 								// end record
 								writer.endRecordTES4(sSIG);
 								debugstream << "(" << sSIG << ")[" << refFormID << "] ";
@@ -3477,60 +3443,4 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 		mDocument.getUndoStack().setClean();
 	}
-}
-
-uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID)
-{
-	uint32_t teleportDoorRefID = 0;
-
-	ESM::ESMWriter& writer = mState.getWriter();
-
-	// find teleport door (reference) near the doordest location...
-	// add this reference + teleportDoorRefID ESM file offset to stack for second pass
-	auto matchResult = mState.mReferenceToReferenceMap.find(refFormID);
-	if (matchResult != mState.mReferenceToReferenceMap.end())
-	{
-		return teleportDoorRefID = matchResult->second;
-	}
-
-	std::map<std::string, std::vector<int>>::iterator destCellPersistentRefList;
-	if (refRecord.mDestCell.length() != 0)
-		// interior cell persistent ref list
-		destCellPersistentRefList = mState.mPersistentRefMap.find(Misc::StringUtils::lowerCase (refRecord.mDestCell) );
-	else
-		// exterior cell persistent ref list
-		destCellPersistentRefList = mState.mPersistentRefMap.find("worldspace-dummycell");
-
-	for (auto dest_refIndex = destCellPersistentRefList->second.begin();
-		dest_refIndex != destCellPersistentRefList->second.end(); dest_refIndex++)
-	{
-		auto destRef = mDocument.getData().getReferences().getRecord(*dest_refIndex);
-		auto destRefBaseRecord = mDocument.getData().getReferenceables().getDataSet().searchId(destRef.get().mRefID);
-		if (destRefBaseRecord.second == CSMWorld::UniversalId::Type_Door)
-		{
-			// TODO: calculate if near dest location, since there may be multiple doors in cell
-			float distanceDoorToDest = writer.calcDistance(refRecord.mDoorDest, destRef.get().mPos);
-			if (distanceDoorToDest > 300) 
-			{
-				continue;
-			}
-			std::ostringstream destRefStringID;
-			destRefStringID << "*refindex" << *dest_refIndex;
-			teleportDoorRefID = writer.crossRefStringID(destRefStringID.str());
-			// WORKAROUND: check if this door is already registered in map, if so, look for another door
-			if (mState.mReferenceToReferenceMap.find(teleportDoorRefID) != mState.mReferenceToReferenceMap.end() ||
-				teleportDoorRefID == refFormID)
-			{
-				continue;
-			}
-			else
-			{
-				// add matching door ID as index to retrieve current Reference Door ID
-				mState.mReferenceToReferenceMap.insert(std::make_pair(teleportDoorRefID, refFormID));
-				break;
-			}
-		}
-	}
-
-	return teleportDoorRefID;
 }
