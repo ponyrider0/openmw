@@ -145,6 +145,7 @@ public:
 
 		std::vector<std::pair<uint32_t, std::string> > mReservedFormIDs;
 		std::map<std::string, uint32_t> mStringIDMap;
+		std::map<uint32_t, int> mUniqueIDcheck;
 
 		uint32_t mLastReservedFormID=0;
 		uint32_t getNextAvailableFormID();

@@ -173,7 +173,10 @@ namespace ESM
 			activeID = getNextAvailableFormID();
 			activeID = reserveFormID(activeID, stringID);
 		}
+		if (mUniqueIDcheck.find(activeID) != mUniqueIDcheck.end())
+			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
 		writeT<uint32_t>(activeID);
+		mUniqueIDcheck.insert( std::make_pair(activeID, mUniqueIDcheck.size()) );
 
 		writeT<uint32_t>(0); // version control
 
