@@ -331,7 +331,7 @@ namespace ESM
 		// 0x04, Invert Fast Travel Behavior?
         // 0x08, Force hide land (exterior cell) / Oblivion interior
 		// 0x10, Unknown or reserved?
-        if (!(mData.mFlags & NoSleep))
+        if ((mData.mFlags & NoSleep))
             dataFlags |= 0x20; // 0x20, Public place
         if (mData.mFlags & QuasiEx)
             dataFlags |= 0x08; // 0x80, Behave like exterior
