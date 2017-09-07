@@ -52,7 +52,7 @@ namespace CSMDoc
 
             std::map<std::string, std::deque<int> >& getSubRecords();
 
-			std::map<std::string, std::vector<int> > mPersistentRefMap; // record ID, list of subrecords
+			std::map<std::string, std::deque<int> > mPersistentRefMap; // record ID, list of subrecords
 			std::map<int, std::map <int, uint32_t> > mLandTexLookup_Plugin_Index;
 			std::vector<int> mFurnitureFromActivatorList;			
 			std::vector<int> mFurnitureFromStaticList;
@@ -60,6 +60,7 @@ namespace CSMDoc
 			std::vector<int> mSoulgemFromMiscList;
 			std::vector<int> mAmmoFromWeaponList;
 			std::map<uint32_t, uint32_t> mReferenceToReferenceMap;
+			std::map<std::string, std::deque<int> > mBaseGameDoorList;
 
 	};
 

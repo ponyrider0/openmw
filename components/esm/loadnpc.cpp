@@ -193,6 +193,7 @@ namespace ESM
 			// MODT
 		}
 */
+
 		tempStr = Misc::StringUtils::lowerCase(mRace);
 		if ( (tempStr.find("argonian") != tempStr.npos) || (tempStr.find("khajiit") != tempStr.npos) )
 		{
@@ -414,10 +415,12 @@ namespace ESM
 		esm.endSubRecordTES4("ENAM");
 */
 
-		// HCLR, hair color 32bit
-		tempFormID = 0;
+		// HCLR, hair color 24bit
 		esm.startSubRecordTES4("HCLR");
-		esm.writeT<uint32_t>(tempFormID);
+		esm.writeT<uint8_t>(0x4B); // 75
+		esm.writeT<uint8_t>(0x32); // 50
+		esm.writeT<uint8_t>(0x19); // 25
+		esm.writeT<uint8_t>(0x00); //unused
 		esm.endSubRecordTES4("HCLR");
 
 /*
@@ -444,6 +447,8 @@ namespace ESM
 
 		// FNAM bytearray?? unknown
 		esm.startSubRecordTES4("FNAM");
+		esm.writeT<uint8_t>(0x23);
+		esm.writeT<uint8_t>(0x17);
 		esm.endSubRecordTES4("FNAM");
 
 		return true;

@@ -446,13 +446,18 @@ void CSMDoc::Document::runMerge (std::unique_ptr<CSMDoc::Document> target)
 
 void CSMDoc::Document::abortOperation (int type)
 {
-    if (type==State_Saving)
-		if (mExporter->mExportManager.isRunning())
-			mExporter->mExportManager.abort();
-		else
-	        mSaving.abort();
-    else
+    if (type==State_Exporting)
+	{
+		mExporter->mExportManager.abort();
+	}	
+	else if (type==State_Saving)
+	{	
+		mSaving.abort();
+	}
+	else
+	{
         mTools.abortOperation (type);
+	}
 }
 
 void CSMDoc::Document::modificationStateChanged (bool clean)

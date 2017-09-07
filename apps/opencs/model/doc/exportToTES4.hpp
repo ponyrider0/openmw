@@ -32,7 +32,7 @@ namespace CSMWorld
 
 namespace CSMDoc
 {
-	uint32_t FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID);
+	uint32_t FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition);
 
     class Document;
     class SavingState;

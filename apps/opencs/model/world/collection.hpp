@@ -558,15 +558,25 @@ namespace CSMWorld
 
 //        typename std::map<std::string, int>::iterator iter = mIndex.begin();
 //        while (iter != mIndex.end())
-		typename std::map<std::string, int>::iterator iter;
+		typename std::map<std::string, int>::iterator iter, deleteMe=mIndex.end();
 		for (iter = mIndex.begin(); iter != mIndex.end(); iter++) 
 		{
+			if (deleteMe != mIndex.end())
+			{
+				mIndex.erase(deleteMe);
+				deleteMe = mIndex.end();
+			}
 			if (iter->second >= index) 
 			{
 				if (iter->second >= index + count)
+				{
 					iter->second -= count;
+				}
                 else
-                    mIndex.erase(iter);
+				{
+					deleteMe = iter;
+//                    mIndex.erase(iter);
+				}
 			}
 		}
 

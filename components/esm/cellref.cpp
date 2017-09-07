@@ -244,7 +244,7 @@ void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeHNT("DATA", mPos, 24);
 }
 
-void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID) const
+void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Position *returnPosition) const
 {
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
@@ -281,16 +281,25 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID) const
 	if (mTeleport == true)
 	{
 		// find teleport door (reference) near the doordest location...
-		if (teleportRefID != 0)
+		if (teleportRefID != 0 && returnPosition != 0)
 		{
 			esm.startSubRecordTES4("XTEL");
 			esm.writeT<uint32_t>(teleportRefID);
+/*
+			esm.writeT<float>(returnPosition->pos[0]);
+			esm.writeT<float>(returnPosition->pos[1]);
+			esm.writeT<float>(returnPosition->pos[2]);
+			esm.writeT<float>(returnPosition->rot[0]);
+			esm.writeT<float>(returnPosition->rot[1]);
+			esm.writeT<float>(returnPosition->rot[2]);
+*/
 			esm.writeT<float>(mDoorDest.pos[0]);
 			esm.writeT<float>(mDoorDest.pos[1]);
 			esm.writeT<float>(mDoorDest.pos[2]);
 			esm.writeT<float>(mDoorDest.rot[0]);
 			esm.writeT<float>(mDoorDest.rot[1]);
 			esm.writeT<float>(mDoorDest.rot[2]);
+
 			esm.endSubRecordTES4("XTEL");
 		}
 	}
