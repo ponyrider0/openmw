@@ -3200,21 +3200,23 @@ bool CSMDoc::ExportExteriorCellCollectionTES4Stage::getLandDataFromXY(int origX,
 
 void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM::Land::LandData *landData, int plugindex, int subCX, int subCY, int quadX, int quadY, int inputX, int inputY, int outputX, int outputY)
 {
+	uint32_t defaultTex = 0x8C0; // TerrainHDDirt01dds
 	std::ostringstream debugstream;
 
 	int yoffset = (subCY*8) + (quadY*4) + inputY;
 	int xoffset = (subCX*8) + (quadX*4) + inputX;
 	if (landData == 0)
 	{
-		debugstream << "ERROR: drawPreBlendMapXY - landData=0!" << std::endl;
+		debugstream << "ERROR: drawPreBlendMapXY - landData is null!" << std::endl;
 		OutputDebugString(debugstream.str().c_str());
 		throw std::runtime_error(debugstream.str().c_str());
 	}
 	int texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
 	if (texindex == -1)
 	{
-		mPreBlendMap[outputX][outputY] = 0;
-		return; // todo: figure out what the default texture is
+		// using locally defined defaultTex above
+		mPreBlendMap[outputX][outputY] = defaultTex;
+		return; 
 	}
 	auto lookup = mState.mLandTexLookup_Plugin_Index[plugindex].find(texindex);
 	if (lookup == mState.mLandTexLookup_Plugin_Index[plugindex].end())
@@ -3223,9 +3225,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM:
 		lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
 		if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
 		{
-			debugstream << "ERROR: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << std::endl;
+			debugstream << "ERROR: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << ", using defaultTexture." << std::endl;
 			OutputDebugString(debugstream.str().c_str());
-			throw std::runtime_error("ERROR: drawPreBlendMapXY - couldn't resolve texindex");
+			// just use defaultTex to continue gracefully instead of crashing
+			mPreBlendMap[outputX][outputY] = defaultTex;
+			return;
+//			throw std::runtime_error("ERROR: drawPreBlendMapXY - couldn't resolve texindex");
 		}
 	}
 	uint32_t texformID = lookup->second;
