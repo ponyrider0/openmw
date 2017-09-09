@@ -225,7 +225,7 @@ namespace CSMWorld
 		Record<RecordT> record = mContainer.at(index);
 		RecordT esmRecord = record.get();
 		std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		bool exportOrSkip=false;
 		if (skipBaseRecords == true)

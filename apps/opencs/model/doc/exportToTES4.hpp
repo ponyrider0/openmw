@@ -141,6 +141,8 @@ namespace CSMDoc
 		ESM::ESMWriter& writer = mState.getWriter();
 		CSMWorld::RecordBase::State state = mCollection.getRecord (stage).mState;
 		typename CollectionT::ESXRecord record = mCollection.getRecord (stage).get();
+		std::string strEDID = writer.generateEDIDTES4(record.mId);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		// if stage == 0, then add the group record first
 		if (stage == 0)
@@ -157,7 +159,8 @@ namespace CSMDoc
 			// check for modified / deleted state, otherwise skip
 			exportOrSkip = ( (state == CSMWorld::RecordBase::State_Modified) || 
 				(state == CSMWorld::RecordBase::State_ModifiedOnly) ||
-				(state == CSMWorld::RecordBase::State_Deleted) );
+				(state == CSMWorld::RecordBase::State_Deleted) ||
+				(formID == 0) );
 		}
 		else {
 			// no skipping, export all
@@ -166,8 +169,6 @@ namespace CSMDoc
 
 		if (exportOrSkip)
 		{
-			std::string strEDID = writer.generateEDIDTES4(record.mId);
-			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;

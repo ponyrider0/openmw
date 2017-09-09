@@ -492,7 +492,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
 		const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(*furnIndex);
 		std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -531,7 +531,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 	{
 		const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(*furnIndex);
 		std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -686,7 +686,7 @@ int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 	{
 		const CSMWorld::Record<ESM::Miscellaneous>& record = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		if (formID == 0)
 		{
 			formID = writer.getNextAvailableFormID();
@@ -711,7 +711,7 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 	const CSMWorld::Record<ESM::Miscellaneous> miscRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(stage);
 
 	std::string strEDID = writer.generateEDIDTES4(miscRecord.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
@@ -808,7 +808,7 @@ int CSMDoc::ExportLightCollectionTES4Stage::setup()
 	{
 		const CSMWorld::Record<ESM::Light>& record =  mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		writer.reserveFormID(formID, strEDID);
 	}
 
@@ -849,7 +849,7 @@ int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
 //		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i).get().mId);
 		const CSMWorld::Record<ESM::ItemLevList>& record = mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		writer.reserveFormID(formID, strEDID);
 	}
 
@@ -929,7 +929,7 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) != 0)
 	{
 		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -989,7 +989,7 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) == 0)
 	{
 		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
@@ -1305,7 +1305,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(stage);
 	std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	if (mSkipMasterRecords == true)
 	{
@@ -1375,7 +1375,7 @@ int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 //		std::cout << "export: LVLC[" << i << "] " << mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId << " = " << formID << std::endl;
 		const CSMWorld::Record<ESM::CreatureLevList>& record = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		writer.reserveFormID(formID, strEDID);
 	}
 
@@ -1480,7 +1480,7 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(stage);
 	std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	if (mSkipMasterRecords == true)
 	{
@@ -1731,7 +1731,7 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 		{	
 			// add to one of 100 subblocks
 			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
-			uint32_t formID = writer.crossRefStringID(strEDID);
+			uint32_t formID = writer.crossRefStringID(strEDID, false);
 //			uint32_t formID = writer.getNextAvailableFormID();
 			formID = writer.reserveFormID(formID, strEDID);
 			int block = formID % 100;
@@ -2043,7 +2043,7 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 			// assign formID
 			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
 //			int formID = writer.getNextAvailableFormID();
-			uint32_t formID = writer.crossRefStringID(strEDID);
+			uint32_t formID = writer.crossRefStringID(strEDID, false);
 			formID = writer.reserveFormID(formID, strEDID);
 			exportData->formID = formID;
 			debugstream << "formID[" << formID << "] ";
@@ -2153,7 +2153,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		
 		// Create WRLD record
 //		uint32_t wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
-		uint32_t wrldFormID = writer.crossRefStringID("WrldMorrowind");
+		uint32_t wrldFormID = writer.crossRefStringID("WrldMorrowind", false);
 		if (wrldFormID == 0)
 			wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind", true);
 		writer.startRecordTES4("WRLD", 0, wrldFormID, "WrldMorrowind");
@@ -3716,8 +3716,9 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 			}
 //			std::ostringstream destRefStringID;
 //			destRefStringID << "*refindex" << *dest_refIndex;
-			std::string strEDID = writer.generateEDIDTES4(destRef.get().mId);
-			teleportDoorRefID = writer.crossRefStringID(strEDID);
+//			std::string strEDID = writer.generateEDIDTES4(destRef.get().mId);
+			std::string strEDID = destRef.get().mId;
+			teleportDoorRefID = writer.crossRefStringID(strEDID, false);
 			if (teleportDoorRefID == 0)
 			{
 //				throw std::runtime_error("Find Sibling Door: ERROR: Destination door does not have a formID.");
@@ -3749,7 +3750,7 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 void CSMDoc::StartModRecord(const std::string& sSIG,  const std::string& mId, ESM::ESMWriter& esm, const CSMWorld::RecordBase::State& state)
 {
 	std::string strEDID = esm.generateEDIDTES4(mId);
-	uint32_t formID = esm.crossRefStringID(strEDID);
+	uint32_t formID = esm.crossRefStringID(strEDID, false);
 	uint32_t flags=0;
 	if (state == CSMWorld::RecordBase::State_Deleted)
 		flags |= 0x800; // DISABLED
