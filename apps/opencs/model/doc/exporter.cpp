@@ -1,4 +1,11 @@
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
+
 #include <QFileDialog>
 #include <QObject>
 
@@ -47,6 +54,8 @@ void CSMDoc::Exporter::startExportOperation(boost::filesystem::path filename)
 		mExportOperation = new ExportToTES4();
 		std::cout << "TES4 Export Path = " << mExportPath << std::endl;
 	}
+
+	OutputDebugString("\n***************Starting Export***************\n");
     
     mStatePtr = new SavingState(*mExportOperation, mExportPath, mEncoding);
     

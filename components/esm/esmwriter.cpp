@@ -475,6 +475,12 @@ namespace ESM
 		uint32_t formID = paramformID;
 		if (disableOffset == false)
 			formID |= mESMoffset;
+
+		if (formID == 0x01380001 && stringID != "wrldmorrowind-dummycell")
+		{
+			formID = getNextAvailableFormID();
+		}
+
 /*
 		std::vector<std::pair<uint32_t, std::string>>::iterator insertionPoint;
 		std::pair<uint32_t, std::string> recordID(formID, std::string(stringID));
@@ -602,6 +608,7 @@ namespace ESM
 //		mStringIDMap.insert(stringMap);
 //		mReservedFormIDs.insert(insertionPoint, recordID);
 
+
 		// make sure formID is not already used
 		if ( mFormIDMap.find(formID) != mFormIDMap.end() )
 		{
@@ -628,13 +635,13 @@ namespace ESM
 		mCellnameMgr.clear();
 	}
 
-	uint32_t ESMWriter::crossRefStringID(const std::string& stringID)
+	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, bool convertToEDID)
 	{
 //		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
 		std::map<std::string, uint32_t>::iterator searchResult;
 
-//		if (stringID == "")
-//			return 0;
+		if (stringID == "")
+			return 0;
 
 		// worst case: N
 /*
@@ -644,7 +651,13 @@ namespace ESM
 				return currentRecord->first;
 		}
 */
-		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(stringID));
+		std::string tempString = stringID;
+		if (convertToEDID)
+		{
+			tempString = generateEDIDTES4(stringID);
+		}
+
+		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
 		if (searchResult == mStringIDMap.end())
 		{
 			return 0;
@@ -1247,7 +1260,8 @@ namespace ESM
 		switch (conversion_mode)
 		{
 		case 0:
-			tempEDID = "0" + name;
+			if (name.size() > 0 && name[0] != '0')
+				tempEDID = "0" + name;
 			break;
 		case 1:
 			tempEDID = name;

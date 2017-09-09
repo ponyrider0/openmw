@@ -153,7 +153,7 @@ public:
 		uint32_t getLastReservedFormID();
 		uint32_t reserveFormID(uint32_t formID, const std::string& stringID, bool disableOffset=false);
 		void clearReservedFormIDs();
-		uint32_t crossRefStringID(const std::string& mId);
+		uint32_t crossRefStringID(const std::string& mId, bool convertToEDID=true);
 		std::string crossRefFormID(uint32_t formID);
 
 		uint32_t mESMoffset=0;

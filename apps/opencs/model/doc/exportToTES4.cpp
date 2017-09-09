@@ -346,10 +346,13 @@ void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messag
 	for (auto ammoIndex = mState.mAmmoFromWeaponList.begin(); ammoIndex != mState.mAmmoFromWeaponList.end(); ammoIndex++)
 	{
 		const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(*ammoIndex);
+		std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted();
+			exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted() || (formID == 0);
 		}
 		else
 		{
@@ -415,10 +418,13 @@ void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& mess
 
 //	mDocument.getData().getReferenceables().getDataSet().getWeapons().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(stage);
+	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID);
+
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
 	{
-		exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted();
+		exportOrSkip = weaponRec.isModified() || weaponRec.isDeleted() || (formID == 0);
 	}
 	else
 	{
@@ -485,10 +491,13 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 	{
 		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
 		const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(*furnIndex);
+		std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
+			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || (formID == 0);
 		}
 		else
 		{
@@ -521,10 +530,13 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 	for (auto furnIndex = mState.mFurnitureFromStaticList.begin(); furnIndex != mState.mFurnitureFromStaticList.end(); furnIndex++)
 	{
 		const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(*furnIndex);
+		std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
+			exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || (formID == 0);
 		}
 		else
 		{
@@ -697,10 +709,14 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 
 //	mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Miscellaneous> miscRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(stage);
+
+	std::string strEDID = writer.generateEDIDTES4(miscRecord.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID);
+
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
 	{
-		exportOrSkip = miscRecord.isModified() || miscRecord.isDeleted();
+		exportOrSkip = miscRecord.isModified() || miscRecord.isDeleted() || (formID == 0);
 	}
 	else
 	{
@@ -912,10 +928,13 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
 	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) != 0)
 	{
+		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted();
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || (formID == 0);
 		}
 		else
 		{
@@ -969,10 +988,12 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
 	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) == 0)
 	{
+		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted();
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || (formID == 0);
 		}
 		else
 		{
@@ -1283,11 +1304,13 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 //	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(stage);
+	std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID);
 
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
+		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || (formID == 0);
 	}
 	else {
 		// no skipping, export all
@@ -1367,7 +1390,7 @@ void CSMDoc::ExportLeveledCreatureCollectionTES4Stage::perform (int stage, Messa
 		writer.startGroupTES4("LVLC", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), false, 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), true, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1393,7 +1416,7 @@ void CSMDoc::ExportCreatureCollectionTES4Stage::perform (int stage, Messages& me
 		writer.startGroupTES4("CREA", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), false, 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), true, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1456,11 +1479,13 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 //	mDocument.getData().getReferenceables().getDataSet().getStatics().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(stage);
+	std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID);
 
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
+		exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || (formID == 0);
 	}
 	else {
 		// no skipping, export all
@@ -1524,7 +1549,7 @@ void CSMDoc::ExportNPCCollectionTES4Stage::perform (int stage, Messages& message
 		writer.startGroupTES4("NPC_", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), false, 4);
+	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), true, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1569,8 +1594,11 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 	{
 		const CSMWorld::Record<CSMWorld::CellRef>& record =
 			mDocument.getData().getReferences().getRecord (i);
+//		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		std::string strEDID = record.get().mId;
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
-		if (record.isModified() || record.mState == CSMWorld::RecordBase::State_Deleted)
+		if (record.isModified() || record.mState == CSMWorld::RecordBase::State_Deleted || (formID == 0))
 		{
 			std::string cellId = ( record.get().mOriginalCell.empty() ? record.get().mCell : record.get().mOriginalCell );
 
@@ -1631,8 +1659,6 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 //				std::ostringstream refEDIDstr;
 //				uint32_t formID = mState.getWriter().getNextAvailableFormID();
 //				refEDIDstr << "*refindex" << i;
-				std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-				uint32_t formID = writer.crossRefStringID(strEDID);
 				formID = writer.reserveFormID(formID,strEDID);
 				persistentRefListOfCurrentCell.push_back(i);
 				continue;
@@ -1866,8 +1892,9 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 //						std::ostringstream refEDIDstr;
 //						refEDIDstr << "*refindex" << *refindex_iter;
-						std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
-						uint32_t refFormID = writer.crossRefStringID(strEDID);
+//						std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+						std::string strEDID = refRecord.mId;
+						uint32_t refFormID = writer.crossRefStringID(strEDID, false);
 						if (refFormID == 0)
 						{
 							throw std::runtime_error ("Interior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
@@ -1926,16 +1953,17 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                 const CSMWorld::Record<CSMWorld::CellRef>& ref =
                     mDocument.getData().getReferences().getRecord (*iter);
 
-                if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
+				CSMWorld::CellRef refRecord = ref.get();
+//				std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+				std::string strEDID = refRecord.mId;
+				uint32_t refFormID = writer.crossRefStringID(strEDID, false);
+				if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
                 {
-                    CSMWorld::CellRef refRecord = ref.get();
 
                     // reserve formID
 
-					std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
 //                    uint32_t refFormID = writer.getNextAvailableFormID();
 //                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-					uint32_t refFormID = writer.crossRefStringID(strEDID);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
 
@@ -2174,7 +2202,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		
 		// Create persistent CELL dummy record
 		flags=0x400;
-		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "", true);
+		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "wrldmorrowind-dummycell", true);
 		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
 		writer.startSubRecordTES4("DATA");
 		writer.writeT<uint8_t>(0x02); // flag: has water=0x02
@@ -2201,11 +2229,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			
 //			std::ostringstream refEDIDstr;
 //			refEDIDstr << "*refindex" << *refindex_iter;
-			std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
-			uint32_t refFormID = writer.crossRefStringID(strEDID);
+//			std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+			std::string strEDID = refRecord.mId;
+			uint32_t refFormID = writer.crossRefStringID(strEDID, false);
 			if (refFormID == 0)
 			{
-				throw std::runtime_error ("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
+				throw std::runtime_error ("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup: " + strEDID);
 			}
 			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
@@ -2608,10 +2637,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					{
 						const CSMWorld::Record<CSMWorld::CellRef>& ref =
 							mDocument.getData().getReferences().getRecord (*iter);
+						CSMWorld::CellRef refRecord = ref.get();
+//						std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+						std::string strEDID = refRecord.mId;
+						uint32_t refFormID = writer.crossRefStringID(strEDID, false);
 
 						if ( (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted) )
 						{
-							CSMWorld::CellRef refRecord = ref.get();
 
 							// Check for uninitialized content file
 							if (!refRecord.mRefNum.hasContentFile())
@@ -2628,8 +2660,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							// reserve formID
 //							uint32_t refFormID = writer.getNextAvailableFormID();
 //							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-							std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
-							uint32_t refFormID = writer.crossRefStringID(strEDID);
 							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 	/*

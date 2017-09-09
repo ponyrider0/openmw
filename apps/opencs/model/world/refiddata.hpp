@@ -223,12 +223,15 @@ namespace CSMWorld
 		bool retval=false;
 		std::string sSIG="";
 		Record<RecordT> record = mContainer.at(index);
+		RecordT esmRecord = record.get();
+		std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 
 		bool exportOrSkip=false;
 		if (skipBaseRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
-			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted;
+			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted || formID == 0;
 		} else {
 			// no skipping, export all
 			exportOrSkip=true;
@@ -236,7 +239,6 @@ namespace CSMWorld
 
 		if (exportOrSkip)
 		{
-			RecordT esmRecord = record.get();
 			// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
 			switch (esmRecord.sRecordId)
 			{
@@ -255,8 +257,6 @@ namespace CSMWorld
 			}
 			if ( sSIG != "" )
 			{
-				std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
-				uint32_t formID = writer.crossRefStringID(strEDID);
 				uint32_t flags=0;
 				if (record.mState == CSMWorld::RecordBase::State_Deleted)
 					flags |= 0x01;
