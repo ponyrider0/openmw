@@ -62,6 +62,9 @@ namespace CSMDoc
 			std::map<uint32_t, uint32_t> mReferenceToReferenceMap;
 			std::map<std::string, std::deque<int> > mBaseGameDoorList;
 
+			int loadSubstitutionMap(std::string filename);
+			int initializeSubstitutions();
+
 	};
 
 

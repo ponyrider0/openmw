@@ -143,17 +143,18 @@ public:
 		void endGroupTES4(const std::string& name);
 		void endGroupTES4(const uint32_t name);
 
-		std::vector<std::pair<uint32_t, std::string> > mReservedFormIDs;
+//		std::vector<std::pair<uint32_t, std::string> > mReservedFormIDs;
+		std::map<uint32_t, std::string> mFormIDMap;
 		std::map<std::string, uint32_t> mStringIDMap;
 		std::map<uint32_t, int> mUniqueIDcheck;
 
 		uint32_t mLastReservedFormID=0;
 		uint32_t getNextAvailableFormID();
 		uint32_t getLastReservedFormID();
-		uint32_t reserveFormID(uint32_t formID, const std::string& stringID);
+		uint32_t reserveFormID(uint32_t formID, const std::string& stringID, bool disableOffset=false);
 		void clearReservedFormIDs();
 		uint32_t crossRefStringID(const std::string& mId);
-		const std::string& crossRefFormID(uint32_t formID);
+		std::string crossRefFormID(uint32_t formID);
 
 		uint32_t mESMoffset=0;
 

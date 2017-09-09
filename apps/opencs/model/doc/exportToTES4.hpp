@@ -33,6 +33,7 @@ namespace CSMWorld
 namespace CSMDoc
 {
 	uint32_t FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition);
+	void StartModRecord(const std::string& sSIG, const std::string& mId, ESM::ESMWriter& esm, const CSMWorld::RecordBase::State& state);
 
     class Document;
     class SavingState;
@@ -120,10 +121,11 @@ namespace CSMDoc
 		for (int i=0; i < mCollection.getSize(); i++)
 		{
 			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
-			if (writer.crossRefStringID(record.mId) == 0)
+			std::string strEDID = writer.generateEDIDTES4(record.mId);
+			if (writer.crossRefStringID(strEDID) == 0)
 			{
 				formID = writer.getNextAvailableFormID();
-				formID = writer.reserveFormID(formID, record.mId);
+				formID = writer.reserveFormID(formID, strEDID);
 			}
 		}
 
@@ -164,11 +166,12 @@ namespace CSMDoc
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(record.mId);
+			std::string strEDID = writer.generateEDIDTES4(record.mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
-			writer.startRecordTES4 (record.sRecordId, flags, formID, record.mId);
+			writer.startRecordTES4 (record.sRecordId, flags, formID, strEDID);
 			record.exportTESx (writer);
 			writer.endRecordTES4 (record.sRecordId);
 		}

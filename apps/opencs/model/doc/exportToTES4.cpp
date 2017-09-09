@@ -20,6 +20,9 @@ CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 
 void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingState& currentSave)
 {
+	currentSave.getWriter().clearReservedFormIDs();
+	currentSave.initializeSubstitutions();
+
 	// Export to ESM file
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
@@ -149,7 +152,6 @@ CSMDoc::ExportHeaderTES4Stage::ExportHeaderTES4Stage (Document& document, Saving
 
 int CSMDoc::ExportHeaderTES4Stage::setup()
 {
-	mState.getWriter().clearReservedFormIDs();
 	mState.getWriter().setVersion();
 
 	mState.getWriter().clearMaster();
@@ -185,6 +187,8 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 */
 		mState.getWriter().addMaster ("Oblivion.esm", 0);
 		mState.getWriter().addMaster ("Morrowind_ob.esm", 0);
+		mState.getWriter().addMaster ("Morrowind_ob - UCWUS.esp", 0);
+		mState.getWriter().addMaster ("morroblivion-fixes.esp", 0);
 
 	}
 
@@ -354,11 +358,15 @@ void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messag
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
+/*
+			std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+			StartModRecord(sSIG, weaponRec.get().mId, writer, weaponRec.mState);
 			weaponRec.get().exportAmmoTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
 		}
@@ -377,9 +385,20 @@ CSMDoc::ExportWeaponCollectionTES4Stage::ExportWeaponCollectionTES4Stage (Docume
 }
 int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
 {
+	ESM::ESMWriter& writer = mState.getWriter();
+
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getWeapons().getSize();
 	for (int i=0; i < mActiveRefCount; i++)
-		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(i).get().mId);
+	{
+		const CSMWorld::Record<ESM::Weapon>& record = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+		}
+		writer.reserveFormID(formID, strEDID, true);
+	}
 
 	return mActiveRefCount;
 }
@@ -419,11 +438,15 @@ void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& mess
 
 	if (exportOrSkip)
 	{
-		uint32_t formID = writer.crossRefStringID(weaponRec.get().mId);
+/*
+		std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		uint32_t flags=0;
 		if (weaponRec.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, weaponRec.get().mId);
+		writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+		StartModRecord(sSIG, weaponRec.get().mId, writer, weaponRec.mState);
 		weaponRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -474,19 +497,23 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
+/*
+			std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+			StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
 			activatorRec.get().exportTESx(writer, 4);
 			// MNAM
 			writer.startSubRecordTES4("MNAM");
 			writer.writeT<uint8_t>(0);
 			writer.endSubRecordTES4("MNAM");
 			writer.endRecordTES4(sSIG);
-			debugstream.str(""); debugstream.clear();
-			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
+//			debugstream.str(""); debugstream.clear();
+//			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
 //			OutputDebugString(debugstream.str().c_str());
 		}
 	}
@@ -506,11 +533,15 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
+/*
+			std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+			StartModRecord(sSIG, staticRec.get().mId, writer, staticRec.mState);
 			staticRec.get().exportTESx(writer, 4);
 			// MNAM
 			writer.startSubRecordTES4("MNAM");
@@ -518,7 +549,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 			writer.endSubRecordTES4("MNAM");
 			writer.endRecordTES4(sSIG);
 			debugstream.str(""); debugstream.clear();
-			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
+//			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
 //			OutputDebugString(debugstream.str().c_str());
 		}
 	}
@@ -559,11 +590,15 @@ void CSMDoc::ExportSoulgemCollectionTES4Stage::perform (int stage, Messages& mes
 	{
 		const CSMWorld::Record<ESM::Miscellaneous> soulgemRec = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(*soulgemIndex);
 
-		uint32_t formID = writer.crossRefStringID(soulgemRec.get().mId);
+/*
+		std::string strEDID = writer.generateEDIDTES4(soulgemRec.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		uint32_t flags=0;
 		if (soulgemRec.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, soulgemRec.get().mId);
+		writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+		StartModRecord(sSIG, soulgemRec.get().mId, writer, soulgemRec.mState);
 		soulgemRec.get().exportTESx(writer, 4);
 		writer.startSubRecordTES4("SOUL");
 		writer.writeT<uint8_t>(0); // contained soul
@@ -606,11 +641,15 @@ void CSMDoc::ExportKeyCollectionTES4Stage::perform (int stage, Messages& message
 	{
 		const CSMWorld::Record<ESM::Miscellaneous> keyRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(*keyIndex);
 
-		uint32_t formID = writer.crossRefStringID(keyRecord.get().mId);
+/*
+		std::string strEDID = writer.generateEDIDTES4(keyRecord.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		uint32_t flags=0;
 		if (keyRecord.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, keyRecord.get().mId);
+		writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+		StartModRecord(sSIG, keyRecord.get().mId, writer, keyRecord.mState);
 		keyRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -628,10 +667,20 @@ CSMDoc::ExportMiscCollectionTES4Stage::ExportMiscCollectionTES4Stage (Document& 
 }
 int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 {
+	ESM::ESMWriter& writer = mState.getWriter();
+
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().getSize();
 	for (int i=0; i < mActiveRefCount; i++)
-		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(i).get().mId);
-
+	{
+		const CSMWorld::Record<ESM::Miscellaneous>& record = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+		}
+		writer.reserveFormID(formID, strEDID, true);
+	}
 	return mActiveRefCount;
 }
 void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messages)
@@ -710,11 +759,15 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 
 	if (exportOrSkip)
 	{
-		uint32_t formID = writer.crossRefStringID(miscRecord.get().mId);
+/*
+		std::string strEDID = writer.generateEDIDTES4(miscRecord.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		uint32_t flags=0;
 		if (miscRecord.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, miscRecord.get().mId);
+		writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+		StartModRecord(sSIG, miscRecord.get().mId, writer, miscRecord.mState);
 		miscRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -732,9 +785,16 @@ CSMDoc::ExportLightCollectionTES4Stage::ExportLightCollectionTES4Stage (Document
 }
 int CSMDoc::ExportLightCollectionTES4Stage::setup()
 {
+	ESM::ESMWriter& writer = mState.getWriter();
+
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getLights().getSize();
 	for (int i=0; i < mActiveRefCount; i++)
-		mState.getWriter().reserveFormID(0, mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i).get().mId);
+	{
+		const CSMWorld::Record<ESM::Light>& record =  mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+		writer.reserveFormID(formID, strEDID);
+	}
 
 	return mActiveRefCount;
 }
@@ -770,7 +830,11 @@ int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
 
 	for (int i=0; i < mActiveRefCount; i++)
 	{
-		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i).get().mId);
+//		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i).get().mId);
+		const CSMWorld::Record<ESM::ItemLevList>& record = mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+		writer.reserveFormID(formID, strEDID);
 	}
 
 	return mActiveRefCount;
@@ -860,11 +924,15 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
+/*
+			std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+			StartModRecord(sSIG, containerRecord.get().mId, writer, containerRecord.mState);
 			containerRecord.get().exportTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
 		}
@@ -913,11 +981,15 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 
 		if (exportOrSkip)
 		{
-			uint32_t formID = writer.crossRefStringID(containerRecord.get().mId);
+/*
+			std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
 			uint32_t flags=0;
 			if (containerRecord.mState == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, containerRecord.get().mId);
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+			StartModRecord(sSIG, containerRecord.get().mId, writer, containerRecord.mState);
 			containerRecord.get().exportTESx(writer, 4);
 			writer.endRecordTES4(sSIG);
 		}
@@ -970,11 +1042,15 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 
 	if (exportOrSkip)
 	{
-		uint32_t formID = writer.crossRefStringID(clothingRecord.get().mId);
+/*
+		std::string strEDID = writer.generateEDIDTES4(clothingRecord.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		uint32_t flags=0;
 		if (clothingRecord.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, clothingRecord.get().mId);
+		writer.startRecordTES4(sSIG, flags, formID, strEDID);
+*/
+		StartModRecord(sSIG, clothingRecord.get().mId, writer, clothingRecord.mState);
 		clothingRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -1103,11 +1179,14 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 
 	if (exportOrSkip)
 	{
+/*
 		uint32_t formID = writer.crossRefStringID(armorRecord.get().mId);
 		uint32_t flags=0;
 		if (armorRecord.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
 		writer.startRecordTES4(sSIG, flags, formID, armorRecord.get().mId);
+*/
+		StartModRecord(sSIG, armorRecord.get().mId, writer, armorRecord.mState);
 		armorRecord.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -1239,11 +1318,14 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 
 	if (exportOrSkip)
 	{
+/*
 		uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
 		uint32_t flags=0;
 		if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
 		writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
+*/
+		StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
 		activatorRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -1265,8 +1347,12 @@ int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 
 	for (int i=0; i < mActiveRefCount; i++)
 	{
-		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId );
+//		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId );
 //		std::cout << "export: LVLC[" << i << "] " << mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId << " = " << formID << std::endl;
+		const CSMWorld::Record<ESM::CreatureLevList>& record = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
+		writer.reserveFormID(formID, strEDID);
 	}
 
 	return mActiveRefCount;
@@ -1402,11 +1488,14 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 
 	if (exportOrSkip)
 	{
+/*
 		uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
 		uint32_t flags=0;
 		if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DISABLED
 		writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
+*/
+		StartModRecord(sSIG, staticRec.get().mId, writer, staticRec.mState);
 		staticRec.get().exportTESx(writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
@@ -1466,6 +1555,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 {
 	int size = mDocument.getData().getReferences().getSize();
 	std::ostringstream debugstream;
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	if (stage == 0)
 	{
@@ -1537,10 +1627,12 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 					tempCellReference = "worldspace-dummycell";
 				std::deque<int>& persistentRefListOfCurrentCell = mState.mPersistentRefMap[Misc::StringUtils::lowerCase (tempCellReference)];
 				// reserve FormID here, then push back the pair
-				std::ostringstream refEDIDstr;
-				uint32_t formID = mState.getWriter().getNextAvailableFormID();
-				refEDIDstr << "*refindex" << i;
-				formID = mState.getWriter().reserveFormID(formID,refEDIDstr.str());
+//				std::ostringstream refEDIDstr;
+//				uint32_t formID = mState.getWriter().getNextAvailableFormID();
+//				refEDIDstr << "*refindex" << i;
+				std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+				uint32_t formID = writer.crossRefStringID(strEDID);
+				formID = writer.reserveFormID(formID,strEDID);
 				persistentRefListOfCurrentCell.push_back(i);
 				continue;
 			}
@@ -1611,8 +1703,10 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 		if (interior == true)
 		{	
 			// add to one of 100 subblocks
-			uint32_t formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
+			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID);
+//			uint32_t formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, strEDID);
 			int block = formID % 100;
 			int subblock = block % 10;
 			block -= subblock;
@@ -1729,12 +1823,13 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         }
 
         // prepare record flags
+		std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
         uint32_t flags=0;
         if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
             flags |= 0x800; // DISABLED
 
         //***********EXPORT INTERIOR CELL*****************************/
-        writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
+        writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, strEDID);
         cellRecordPtr->get().exportTES4 (writer);
         // write supplemental records requiring cross-referenced data...
         // Owner formID subrecord: XOWN
@@ -1768,9 +1863,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 					{
 						CSMWorld::CellRef refRecord = ref.get();
 
-						std::ostringstream refEDIDstr;
-						refEDIDstr << "*refindex" << *refindex_iter;
-						uint32_t refFormID = writer.crossRefStringID(refEDIDstr.str());
+//						std::ostringstream refEDIDstr;
+//						refEDIDstr << "*refindex" << *refindex_iter;
+						std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+						uint32_t refFormID = writer.crossRefStringID(strEDID);
 						if (refFormID == 0)
 						{
 							throw std::runtime_error ("Interior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
@@ -1810,7 +1906,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 								refFlags |= 0x800; // DISABLED
 							refFlags |= 0x400; // persistent flag
 							// start record
-							writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+							writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
 							refRecord.exportTES4 (writer, teleportDoorRefID, &returnPosition);
 							// end record
 							writer.endRecordTES4(sSIG);
@@ -1835,8 +1931,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 
                     // reserve formID
 
-                    uint32_t refFormID = writer.getNextAvailableFormID();
-                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+					std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+//                    uint32_t refFormID = writer.getNextAvailableFormID();
+//                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+					uint32_t refFormID = writer.crossRefStringID(strEDID);
                     uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
                     CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
 
@@ -1862,7 +1960,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
                             refFlags |= 0x800; // DISABLED
                         // start record
                         
-                        writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+                        writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
                         refRecord.exportTES4 (writer);
                         // end record
                         writer.endRecordTES4(sSIG);
@@ -1914,8 +2012,10 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
             exportData->cellRecordPtr = cellRecordPtr;
 
 			// assign formID
-			int formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, cellRecordPtr->get().mId);
+			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+//			int formID = writer.getNextAvailableFormID();
+			uint32_t formID = writer.crossRefStringID(strEDID);
+			formID = writer.reserveFormID(formID, strEDID);
 			exportData->formID = formID;
 			debugstream << "formID[" << formID << "] ";
 
@@ -2023,7 +2123,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 		
 		// Create WRLD record
-		uint32_t wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
+//		uint32_t wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
+		uint32_t wrldFormID = writer.crossRefStringID("WrldMorrowind");
+		if (wrldFormID == 0)
+			wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind", true);
 		writer.startRecordTES4("WRLD", 0, wrldFormID, "WrldMorrowind");
 		writer.startSubRecordTES4("EDID");
 		writer.writeHCString("WrldMorrowind");
@@ -2070,7 +2173,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		
 		// Create persistent CELL dummy record
 		flags=0x400;
-		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "");
+		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "", true);
 		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
 		writer.startSubRecordTES4("DATA");
 		writer.writeT<uint8_t>(0x02); // flag: has water=0x02
@@ -2095,9 +2198,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			
 			CSMWorld::CellRef refRecord = ref.get();
 			
-			std::ostringstream refEDIDstr;
-			refEDIDstr << "*refindex" << *refindex_iter;
-			uint32_t refFormID = writer.crossRefStringID(refEDIDstr.str());
+//			std::ostringstream refEDIDstr;
+//			refEDIDstr << "*refindex" << *refindex_iter;
+			std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+			uint32_t refFormID = writer.crossRefStringID(strEDID);
 			if (refFormID == 0)
 			{
 				throw std::runtime_error ("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
@@ -2134,7 +2238,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 					refFlags |= 0x800; // DISABLED
 				// start record
-				writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+				writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
 				refRecord.exportTES4 (writer, teleportDoorRefID, &returnPosition);
 				// end record
 				writer.endRecordTES4(sSIG);
@@ -2350,14 +2454,17 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				if (subCell > 0)
 				{
 					// request new formID, so subcell siblings don't share a single formID
+//					cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
+					std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
 					cellFormID = writer.getNextAvailableFormID();
-					cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
+					cellFormID = writer.reserveFormID(cellFormID, strEDID);
 				}
 				// ********************EXPORT SUBCELL HERE **********************
+				std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
 				flags = 0;
 				if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 					flags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
-				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, cellRecordPtr->get().mId);
+				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, strEDID);
 				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);
 				// crossRef Region stringID to formID to make XCLR subrecord
 				uint32_t regnID = writer.crossRefStringID(cellRecordPtr->get().mRegion);
@@ -2518,8 +2625,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								refRecord.mRefNum.mIndex = newRefNum++;
 
 							// reserve formID
-							uint32_t refFormID = writer.getNextAvailableFormID();
-							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+//							uint32_t refFormID = writer.getNextAvailableFormID();
+//							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+							std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+							uint32_t refFormID = writer.crossRefStringID(strEDID);
 							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
 	/*
@@ -2555,7 +2664,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 									refFlags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
 								// start record
-								writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
+								writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
 								refRecord.exportTES4 (writer);
 								// end record
 								writer.endRecordTES4(sSIG);
@@ -3446,12 +3555,13 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		CSMWorld::LandTexture record = landTexture.get();
 
 		// create separate lookup tables for each plugin loaded
-		uint32_t formID = writer.crossRefStringID(record.mId);
+		std::string strEDID = writer.generateEDIDTES4(record.mId);
+		uint32_t formID = writer.crossRefStringID(strEDID);
 		if (formID == 0)
 		{
 			// reserve new formID
 			formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, record.mId);
+			formID = writer.reserveFormID(formID, strEDID);
 		}
 		// create lookup table for TextureIndex
 		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
@@ -3461,7 +3571,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DO NOT USE DELETED, USE DISABLED
-		writer.startRecordTES4("LTEX", flags, formID, record.mId);
+		writer.startRecordTES4("LTEX", flags, formID, strEDID);
 		record.exportTESx (writer, true, 4);
 		writer.endRecordTES4 ("LTEX");
 	}
@@ -3573,9 +3683,10 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 			{
 				continue;
 			}
-			std::ostringstream destRefStringID;
-			destRefStringID << "*refindex" << *dest_refIndex;
-			teleportDoorRefID = writer.crossRefStringID(destRefStringID.str());
+//			std::ostringstream destRefStringID;
+//			destRefStringID << "*refindex" << *dest_refIndex;
+			std::string strEDID = writer.generateEDIDTES4(destRef.get().mId);
+			teleportDoorRefID = writer.crossRefStringID(strEDID);
 			if (teleportDoorRefID == 0)
 			{
 //				throw std::runtime_error("Find Sibling Door: ERROR: Destination door does not have a formID.");
@@ -3602,4 +3713,14 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 	}
 
 	return teleportDoorRefID;
+}
+
+void CSMDoc::StartModRecord(const std::string& sSIG,  const std::string& mId, ESM::ESMWriter& esm, const CSMWorld::RecordBase::State& state)
+{
+	std::string strEDID = esm.generateEDIDTES4(mId);
+	uint32_t formID = esm.crossRefStringID(strEDID);
+	uint32_t flags=0;
+	if (state == CSMWorld::RecordBase::State_Deleted)
+		flags |= 0x800; // DISABLED
+	esm.startRecordTES4(sSIG, flags, formID, strEDID);
 }

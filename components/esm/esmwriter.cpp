@@ -1,5 +1,13 @@
 #include "esmwriter.hpp"
 
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
+
 #include <sstream>
 #include <cassert>
 #include <fstream>
@@ -153,7 +161,8 @@ namespace ESM
 
 	void ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID, const std::string& stringID)
 	{
-		int activeID = formID;
+		std::stringstream debugstream;
+		uint32_t activeID = formID;
 		mRecordCount++;
 
 		writeName(name);
@@ -174,7 +183,11 @@ namespace ESM
 			activeID = reserveFormID(activeID, stringID);
 		}
 		if (mUniqueIDcheck.find(activeID) != mUniqueIDcheck.end())
-			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
+		{
+//			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
+			debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM." << std::endl;
+			OutputDebugString(debugstream.str().c_str());
+		}
 		writeT<uint32_t>(activeID);
 		mUniqueIDcheck.insert( std::make_pair(activeID, mUniqueIDcheck.size()) );
 
@@ -432,12 +445,22 @@ namespace ESM
 	uint32_t ESMWriter::getNextAvailableFormID()
 	{
 		uint32_t returnVal;
-		if (mReservedFormIDs.size() == 0)
-			return 0x10001 | mESMoffset;
+//		if (mReservedFormIDs.size() == 0)
+		if (mFormIDMap.size() == 0)
+		{
+			returnVal = 0x10001;
+			return returnVal | mESMoffset;
+		}
 
-		returnVal = mReservedFormIDs.back().first;
+//		returnVal = mReservedFormIDs.back().first;
 
-		return (returnVal + 1) | mESMoffset;
+		returnVal = mLastReservedFormID + 1;
+		while ( mFormIDMap.find(returnVal) != mFormIDMap.end() )
+		{
+			returnVal++;
+		}
+
+		return returnVal | mESMoffset;
 	}
 
 	uint32_t ESMWriter::getLastReservedFormID()
@@ -447,10 +470,12 @@ namespace ESM
 		return returnVal;
 	}
 
-	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID)
+	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, bool disableOffset)
 	{
-		uint32_t formID = paramformID | mESMoffset;
-
+		uint32_t formID = paramformID;
+		if (disableOffset == false)
+			formID |= mESMoffset;
+/*
 		std::vector<std::pair<uint32_t, std::string>>::iterator insertionPoint;
 		std::pair<uint32_t, std::string> recordID(formID, std::string(stringID));
 		std::pair<std::string, uint32_t> stringMap(std::string(stringID), formID);
@@ -573,9 +598,21 @@ namespace ESM
 			for (int i=mReservedFormIDs.size(); i > currentIndex; i--)
 				insertionPoint--;
 		}
+*/
+//		mStringIDMap.insert(stringMap);
+//		mReservedFormIDs.insert(insertionPoint, recordID);
 
-		mStringIDMap.insert(stringMap);
-		mReservedFormIDs.insert(insertionPoint, recordID);
+		// make sure formID is not already used
+		if ( mFormIDMap.find(formID) != mFormIDMap.end() )
+		{
+			// formID already used so get a new formID
+			formID = getNextAvailableFormID();
+		}
+		mFormIDMap.insert( std::make_pair(formID, stringID) );
+
+		// create entry for the stringID crossreference
+		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
+
 		mLastReservedFormID = formID;
 
 		return mLastReservedFormID;
@@ -584,16 +621,20 @@ namespace ESM
 	void ESMWriter::clearReservedFormIDs()
 	{
 		mLastReservedFormID = 0;
-		mReservedFormIDs.clear();
+//		mReservedFormIDs.clear();
+		mFormIDMap.clear();
+		mStringIDMap.clear();
+		mUniqueIDcheck.clear();
+		mCellnameMgr.clear();
 	}
 
 	uint32_t ESMWriter::crossRefStringID(const std::string& stringID)
 	{
-		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
+//		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
 		std::map<std::string, uint32_t>::iterator searchResult;
 
-		if (stringID == "")
-			return 0;
+//		if (stringID == "")
+//			return 0;
 
 		// worst case: N
 /*
@@ -603,18 +644,26 @@ namespace ESM
 				return currentRecord->first;
 		}
 */
-		searchResult = mStringIDMap.find(stringID);
+		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(stringID));
 		if (searchResult == mStringIDMap.end())
+		{
 			return 0;
+		}
 		else
+		{
 			return searchResult->second;
+		}
 
 //		return 0;
 	}
 
-	const std::string& ESMWriter::crossRefFormID(uint32_t formID)
+	std::string ESMWriter::crossRefFormID(uint32_t formID)
 	{
 //		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
+/*
+		if (mReservedFormIDs.size() == 0)
+			return "";
+
 		int currentIndex = mReservedFormIDs.size() / 2;
 
 		if (mReservedFormIDs[currentIndex].first == formID)
@@ -622,17 +671,33 @@ namespace ESM
 
 		// worst case: N/2 (re-implement as binary search, NlogN)
 		if (mReservedFormIDs[currentIndex].first > formID)
+		{
 			// start searching down
 			while (--currentIndex >= 0)
+			{
 				if (mReservedFormIDs[currentIndex].first == formID)
 					return mReservedFormIDs[currentIndex].second;
+			}
+		}
 		else
+		{
 			// start searching up
 			while (++currentIndex < mReservedFormIDs.size())
+			{
 				if (mReservedFormIDs[currentIndex].first == formID)
 					return mReservedFormIDs[currentIndex].second;
+			}
+		}
+*/
+		std::string retstring = "";
 
-		return 0;
+		auto searchResult = mFormIDMap.find(formID);
+		if ( searchResult == mFormIDMap.end() )
+			retstring = "";
+		else
+			retstring = searchResult->second;
+
+		return retstring;
 	}
 
 	std::string ESMWriter::intToMagEffIDTES4(int magEffVal)
@@ -1264,7 +1329,7 @@ namespace ESM
 				tempStr.erase(tempStr.size()-4, 4);
 		}
 
-		if (flags & ESMWriter::ExportBipedFlags::noNameMangling == 0)
+		if ((flags & ESMWriter::ExportBipedFlags::noNameMangling) == 0)
 			tempStr = generateEDIDTES4(tempStr, 1);
 		tempPath << sPrefix << tempStr << sPostfix << sExt;
 		startSubRecordTES4(sSIG);

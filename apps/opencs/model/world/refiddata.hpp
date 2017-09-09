@@ -255,11 +255,12 @@ namespace CSMWorld
 			}
 			if ( sSIG != "" )
 			{
-				uint32_t formID = writer.crossRefStringID(esmRecord.mId);
+				std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
+				uint32_t formID = writer.crossRefStringID(strEDID);
 				uint32_t flags=0;
 				if (record.mState == CSMWorld::RecordBase::State_Deleted)
 					flags |= 0x01;
-				writer.startRecordTES4(sSIG, flags, formID, esmRecord.mId);
+				writer.startRecordTES4(sSIG, flags, formID, strEDID);
 				retval = esmRecord.exportTESx(writer, export_format);
 				writer.endRecordTES4(sSIG);
 			}
