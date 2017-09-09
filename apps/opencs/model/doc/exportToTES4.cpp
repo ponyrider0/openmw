@@ -61,54 +61,54 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
-		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
-		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
-		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Sound> >
-		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
-		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, true));
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
-		(currentDoc.getData().getFactions(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getFactions(), currentSave, CSMWorld::Scope_Content, true));
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Enchantment> >
-		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, false));
+		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, false));
-	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, false));
+		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, true));
+//	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, true));
 
-	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, true));
 
 // Separate Landscape export stage unneccessary -- now combined with export cell
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
-	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportLightCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportIngredientCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportClothingCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportBookCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, true));
 
-	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportFurnitureCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportFurnitureCollectionTES4Stage (currentDoc, currentSave, true));
 
-	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, false));
-	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, false));
+	appendStage (new ExportDoorCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, true));
 
 	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
@@ -1084,8 +1084,9 @@ void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& mes
 	}
 
 //	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
-	writer.startRecordTES4("CLMT");
 	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
+	std::string strEDID = writer.generateEDIDTES4(region.mId) + "Clmt";
+	writer.startRecordTES4("CLMT", 0, 0, strEDID);
 	region.exportClimateTESx(writer, 4);
 	writer.endRecordTES4("CLMT");
 
