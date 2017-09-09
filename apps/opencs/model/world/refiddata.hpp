@@ -231,7 +231,7 @@ namespace CSMWorld
 		if (skipBaseRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
-			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted || formID == 0;
+			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted || (formID == 0);
 		} else {
 			// no skipping, export all
 			exportOrSkip=true;

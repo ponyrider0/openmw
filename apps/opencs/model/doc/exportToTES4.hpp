@@ -135,14 +135,10 @@ namespace CSMDoc
 	template<class CollectionT>
 	void ExportCollectionTES4Stage<CollectionT>::perform (int stage, Messages& messages)
 	{
-		if (CSMWorld::getScopeFromId (mCollection.getRecord (stage).get().mId)!=mScope)
-			return;
-
+		bool exportOrSkip=false;
 		ESM::ESMWriter& writer = mState.getWriter();
 		CSMWorld::RecordBase::State state = mCollection.getRecord (stage).mState;
 		typename CollectionT::ESXRecord record = mCollection.getRecord (stage).get();
-		std::string strEDID = writer.generateEDIDTES4(record.mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		// if stage == 0, then add the group record first
 		if (stage == 0)
@@ -153,7 +149,16 @@ namespace CSMDoc
 			writer.startGroupTES4(sSIG, 0);
 		}
 
-		bool exportOrSkip=false;
+		if (CSMWorld::getScopeFromId (mCollection.getRecord (stage).get().mId)!=mScope)
+			return;
+		
+		std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
+		if (record.sRecordId == ESM::REC_REGN || record.sRecordId == ESM::REC_CLAS)
+			strEDID = writer.generateEDIDTES4(record.mId, 2);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
+		if (formID == 0 && record.sRecordId == ESM::REC_CLAS)
+			strEDID = writer.generateEDIDTES4(record.mId, 0);
+
 		if (mSkipMasterRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
@@ -166,6 +171,9 @@ namespace CSMDoc
 			// no skipping, export all
 			exportOrSkip=true;
 		}
+
+		if ( (record.sRecordId == ESM::REC_CLAS) && ((formID & 0xFF000000) <= 0x01000000) )
+			exportOrSkip = false;
 
 		if (exportOrSkip)
 		{

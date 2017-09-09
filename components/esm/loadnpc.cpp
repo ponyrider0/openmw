@@ -319,8 +319,9 @@ namespace ESM
 		// KFFZ, animations
 
 		// CNAM, class formID
-		uint32_t classFormID = esm.crossRefStringID(mClass);
-		if (classFormID != 0)
+		uint32_t classFormID = esm.crossRefStringID(mClass,2);
+		if (classFormID == 0)
+			classFormID = esm.crossRefStringID(mClass, 0);
 		{
 			esm.startSubRecordTES4("CNAM");
 			esm.writeT<uint32_t>(classFormID);

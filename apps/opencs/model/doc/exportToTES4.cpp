@@ -73,15 +73,15 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		(currentDoc.getData().getSounds(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Class> >
-		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, true));
+		(currentDoc.getData().getClasses(), currentSave, CSMWorld::Scope_Content, false));
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Faction> >
-		(currentDoc.getData().getFactions(), currentSave, CSMWorld::Scope_Content, true));
+		(currentDoc.getData().getFactions(), currentSave, CSMWorld::Scope_Content, false));
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Enchantment> >
 		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, true));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, true));
-//	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, true));
+		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, false));
+	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, true));
 
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, true));
 
@@ -89,7 +89,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, true));
-	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, false));
 	appendStage (new ExportMiscCollectionTES4Stage (currentDoc, currentSave, true));
 	appendStage (new ExportKeyCollectionTES4Stage (currentDoc, currentSave, true));
 	appendStage (new ExportSoulgemCollectionTES4Stage (currentDoc, currentSave, true));
@@ -100,7 +100,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportArmorCollectionTES4Stage (currentDoc, currentSave, true));
 	appendStage (new ExportApparatusCollectionTES4Stage (currentDoc, currentSave, true));
 	appendStage (new ExportPotionCollectionTES4Stage (currentDoc, currentSave, true));
-	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, true));
+	appendStage (new ExportLeveledItemCollectionTES4Stage (currentDoc, currentSave, false));
 
 	appendStage (new ExportActivatorCollectionTES4Stage (currentDoc, currentSave, true));
 	appendStage (new ExportSTATCollectionTES4Stage (currentDoc, currentSave, true));
@@ -347,7 +347,7 @@ void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messag
 	{
 		const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(*ammoIndex);
 		std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -395,7 +395,7 @@ int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
 	{
 		const CSMWorld::Record<ESM::Weapon>& record = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		if (formID == 0)
 		{
 			formID = writer.getNextAvailableFormID();
@@ -419,7 +419,7 @@ void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& mess
 //	mDocument.getData().getReferenceables().getDataSet().getWeapons().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(stage);
 	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
@@ -1390,7 +1390,7 @@ void CSMDoc::ExportLeveledCreatureCollectionTES4Stage::perform (int stage, Messa
 		writer.startGroupTES4("LVLC", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), true, 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), false, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1730,10 +1730,11 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 		if (interior == true)
 		{	
 			// add to one of 100 subblocks
-			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
 			uint32_t formID = writer.crossRefStringID(strEDID, false);
 //			uint32_t formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, strEDID);
+			if (formID == 0)
+				formID = writer.reserveFormID(formID, strEDID);
 			int block = formID % 100;
 			int subblock = block % 10;
 			block -= subblock;
@@ -1832,16 +1833,19 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 	std::map<std::string, std::deque<int> >::const_iterator references =
 		mState.getSubRecords().find (Misc::StringUtils::lowerCase (cellRecordPtr->get().mId));
 
-	if (cellRecordPtr->isModified() ||
-        cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
-		references != mState.getSubRecords().end())
-	{
-	
-		bool bHasPersistentRefs = false;
-		std::deque<int>& interiorCellPersistentRefList = mState.mPersistentRefMap[Misc::StringUtils::lowerCase(cellRecordPtr->get().mId)];
-		if (interiorCellPersistentRefList.empty() != true)
-			bHasPersistentRefs = true;
+	bool bHasPersistentRefs = false;
+	bool bHasTempRefs = false;
 
+	std::deque<int>& interiorCellPersistentRefList = mState.mPersistentRefMap[Misc::StringUtils::lowerCase(cellRecordPtr->get().mId)];
+	if (interiorCellPersistentRefList.empty() != true)
+		bHasPersistentRefs = true;
+
+	if (references != mState.getSubRecords().end() && references->second.empty() != true)
+		bHasTempRefs = true;
+
+	if (cellRecordPtr->isModified() || cellRecordPtr->isDeleted() &&
+		(bHasPersistentRefs || bHasTempRefs) )
+	{
         // formID was previously generated in setup() method, so throw an error if it's zero
         if (cellFormID == 0)
         {
@@ -1850,7 +1854,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         }
 
         // prepare record flags
-		std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+		std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
         uint32_t flags=0;
         if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
             flags |= 0x800; // DISABLED
@@ -1871,7 +1875,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 
         // write reference records
-        if (references!=mState.getSubRecords().end())
+        if (bHasPersistentRefs || bHasTempRefs)
         {
             // Create Cell children group
             writer.startGroupTES4(cellFormID, 6); // top Cell Children Group
@@ -1946,60 +1950,59 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			} // if (bHasPersistentRefs)
 
 			//************EXPORT INTERIOR CELL TEMPORARY CHILDREN GROUP*******************/
-            writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
-            for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
-                iter != references->second.rend(); ++iter)
-            {
-                const CSMWorld::Record<CSMWorld::CellRef>& ref =
-                    mDocument.getData().getReferences().getRecord (*iter);
+			if (bHasTempRefs)
+			{
+				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+				for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
+					iter != references->second.rend(); ++iter)
+				{
+					const CSMWorld::Record<CSMWorld::CellRef>& ref =
+						mDocument.getData().getReferences().getRecord (*iter);
 
-				CSMWorld::CellRef refRecord = ref.get();
-//				std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
-				std::string strEDID = refRecord.mId;
-				uint32_t refFormID = writer.crossRefStringID(strEDID, false);
-				if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
-                {
+					CSMWorld::CellRef refRecord = ref.get();
+	//				std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
+					std::string strEDID = refRecord.mId;
+					uint32_t refFormID = writer.crossRefStringID(strEDID, false);
+					if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
+					{
+	//                    uint32_t refFormID = writer.getNextAvailableFormID();
+	//                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
+						uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+						CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
 
-                    // reserve formID
-
-//                    uint32_t refFormID = writer.getNextAvailableFormID();
-//                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-                    uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
-                    CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-
-					if (baseRefID != 0)
-                    {
-                        std::string sSIG;
-                        switch (baseRefIndex.second)
-                        {
-                        case CSMWorld::UniversalId::Type::Type_Npc:
-							sSIG = "ACHR";
-							break;
-//                            continue;
-                        case CSMWorld::UniversalId::Type::Type_Creature:
-                            sSIG = "ACRE";
-                            break;
-						case CSMWorld::UniversalId::Type::Type_Door:
-						default:
-                            sSIG = "REFR";
-                            break;
-                        }
-                        uint32_t refFlags=0;
-                        if (ref.mState == CSMWorld::RecordBase::State_Deleted)
-                            refFlags |= 0x800; // DISABLED
-                        // start record
+						if (baseRefID != 0)
+						{
+							std::string sSIG;
+							switch (baseRefIndex.second)
+							{
+							case CSMWorld::UniversalId::Type::Type_Npc:
+								sSIG = "ACHR";
+								break;
+	//                            continue;
+							case CSMWorld::UniversalId::Type::Type_Creature:
+								sSIG = "ACRE";
+								break;
+							case CSMWorld::UniversalId::Type::Type_Door:
+							default:
+								sSIG = "REFR";
+								break;
+							}
+							uint32_t refFlags=0;
+							if (ref.mState == CSMWorld::RecordBase::State_Deleted)
+								refFlags |= 0x800; // DISABLED
+							// start record
                         
-                        writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
-                        refRecord.exportTES4 (writer);
-                        // end record
-                        writer.endRecordTES4(sSIG);
-                    }
+							writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
+							refRecord.exportTES4 (writer);
+							// end record
+							writer.endRecordTES4(sSIG);
+						}
+					}
+				}
+				// close cell children group
+				writer.endGroupTES4(cellFormID); // cell temp children subgroup
+			}
 
-                }
-
-            }
-            // close cell children group
-            writer.endGroupTES4(cellFormID); // cell children subgroup
             writer.endGroupTES4(cellFormID); // 6 top cell children group
         }
 	}
@@ -2041,7 +2044,7 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
             exportData->cellRecordPtr = cellRecordPtr;
 
 			// assign formID
-			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
 //			int formID = writer.getNextAvailableFormID();
 			uint32_t formID = writer.crossRefStringID(strEDID, false);
 			formID = writer.reserveFormID(formID, strEDID);
@@ -2462,9 +2465,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //			OutputDebugString(debugstream.str().c_str());
 			debugstream.str(""); debugstream.clear();
 
-			if (cellRecordPtr->isModified() ||
-				cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted ||
-				bTempRefsPresent )
+			if ( (cellRecordPtr->isModified() || cellRecordPtr->isDeleted()) &&
+				(bTempRefsPresent || bLandscapePresent) )
 			{
 				// TODO: Fix ReferenceCounter?
 				// count new references and adjust RefNumCount accordingsly
@@ -2490,14 +2492,14 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					cellFormID = writer.reserveFormID(cellFormID, strEDID);
 				}
 				// ********************EXPORT SUBCELL HERE **********************
-				std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+				std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
 				flags = 0;
 				if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 					flags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
 				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, strEDID);
 				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);
 				// crossRef Region stringID to formID to make XCLR subrecord
-				uint32_t regnID = writer.crossRefStringID(cellRecordPtr->get().mRegion);
+				uint32_t regnID = writer.crossRefStringID(cellRecordPtr->get().mRegion, false);
 				if (regnID != 0)				
 				{
 					writer.startSubRecordTES4("XCLR");
@@ -3587,7 +3589,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 
 		// create separate lookup tables for each plugin loaded
 		std::string strEDID = writer.generateEDIDTES4(record.mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
+		uint32_t formID = writer.crossRefStringID(strEDID, false);
 		if (formID == 0)
 		{
 			// reserve new formID
