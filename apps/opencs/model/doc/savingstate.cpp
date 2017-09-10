@@ -143,7 +143,7 @@ int CSMDoc::SavingState::loadSubstitutionMap(std::string filename)
 		if ( (formID != 0 && searchStr.size() == 0) && (strEDID != "" && searchInt == 0) )
 		{
 			// add to formID map
-			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, true);
+			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID);
 			if (reserveResult != formID)
 			{
 				// error: formID couldn't be reserved??

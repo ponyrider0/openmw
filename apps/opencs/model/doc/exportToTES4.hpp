@@ -121,9 +121,18 @@ namespace CSMDoc
 		for (int i=0; i < mCollection.getSize(); i++)
 		{
 			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
-			std::string strEDID = writer.generateEDIDTES4(record.mId);
-			if (writer.crossRefStringID(strEDID) == 0)
+			std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
+			formID = writer.crossRefStringID(strEDID, false);
+			if (formID == 0)
 			{
+				// first fall-back
+				strEDID = writer.generateEDIDTES4(record.mId, 2);
+				formID = writer.crossRefStringID(strEDID, false);
+			}
+			if (formID == 0)
+			{
+				// second fall-back
+				strEDID = writer.generateEDIDTES4(record.mId, 0);
 				formID = writer.getNextAvailableFormID();
 				formID = writer.reserveFormID(formID, strEDID);
 			}
@@ -153,11 +162,13 @@ namespace CSMDoc
 			return;
 		
 		std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
-		if (record.sRecordId == ESM::REC_REGN || record.sRecordId == ESM::REC_CLAS)
-			strEDID = writer.generateEDIDTES4(record.mId, 2);
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
-		if (formID == 0 && record.sRecordId == ESM::REC_CLAS)
-			strEDID = writer.generateEDIDTES4(record.mId, 0);
+		if (formID == 0)
+		{
+			// fall-back
+			strEDID = writer.generateEDIDTES4(record.mId, 2);
+			formID = writer.crossRefStringID(strEDID, false);
+		}
 
 		if (mSkipMasterRecords == true)
 		{
@@ -165,15 +176,17 @@ namespace CSMDoc
 			exportOrSkip = ( (state == CSMWorld::RecordBase::State_Modified) || 
 				(state == CSMWorld::RecordBase::State_ModifiedOnly) ||
 				(state == CSMWorld::RecordBase::State_Deleted) ||
-				(formID == 0) );
+				(formID == 0) ||
+				((formID & 0xFF000000) > 0x01000000) );
 		}
 		else {
 			// no skipping, export all
 			exportOrSkip=true;
 		}
 
-		if ( (record.sRecordId == ESM::REC_CLAS) && ((formID & 0xFF000000) <= 0x01000000) )
-			exportOrSkip = false;
+//		if ( (record.sRecordId == ESM::REC_CLAS || record.sRecordId == ESM::REC_REGN) && 
+//		if ( (mSkipMasterRecords == true) && ((formID & 0xFF000000) <= 0x01000000) && (formID != 0) )
+//			exportOrSkip = false;
 
 		if (exportOrSkip)
 		{

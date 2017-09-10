@@ -373,13 +373,7 @@ namespace ESM
             esm.endSubRecordTES4("XCLC");
 			debugstream << "X,Y=[" << (subX) <<"," << (subY) << "]; ";
         }
-        
-        // XCLR (Region formID) == must cross-ref with Region StringID
-        if (isExterior())
-        {
-			debugstream << "Region=[" << mRegion << "]";
-        }
-        
+               
         // XOWN == ?? morrowind equivalent unknown
 		debugstream << std::endl;
 //		OutputDebugString(debugstream.str().c_str());

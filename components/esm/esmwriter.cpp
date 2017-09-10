@@ -470,11 +470,11 @@ namespace ESM
 		return returnVal;
 	}
 
-	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, bool disableOffset)
+	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID)
 	{
 		uint32_t formID = paramformID;
-		if (disableOffset == false)
-			formID |= mESMoffset;
+//		if (addESMOffset == true)
+//			formID |= mESMoffset;
 
 		if (formID == 0x01380001 && stringID != "wrldmorrowind-dummycell")
 		{
