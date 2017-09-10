@@ -319,9 +319,14 @@ namespace ESM
 		// KFFZ, animations
 
 		// CNAM, class formID
-		uint32_t classFormID = esm.crossRefStringID(mClass,2);
+		std::string strClass = esm.generateEDIDTES4(mClass, 2);
+		uint32_t classFormID = esm.crossRefStringID(strClass, false);
 		if (classFormID == 0)
-			classFormID = esm.crossRefStringID(mClass, 0);
+		{
+			strClass = esm.generateEDIDTES4(mClass, 0);
+			classFormID = esm.crossRefStringID(strClass, false);
+		}
+		if (classFormID != 0)
 		{
 			esm.startSubRecordTES4("CNAM");
 			esm.writeT<uint32_t>(classFormID);

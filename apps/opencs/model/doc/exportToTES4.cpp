@@ -501,7 +501,8 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || (formID == 0);
+			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || 
+				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 		}
 		else
 		{
@@ -540,7 +541,8 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || (formID == 0);
+			exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || 
+				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 		}
 		else
 		{
@@ -720,7 +722,8 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
 	{
-		exportOrSkip = miscRecord.isModified() || miscRecord.isDeleted() || (formID == 0);
+		exportOrSkip = miscRecord.isModified() || miscRecord.isDeleted() || 
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 	}
 	else
 	{
@@ -946,7 +949,8 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || (formID == 0);
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || 
+				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 		}
 		else
 		{
@@ -1005,7 +1009,8 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
-			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || (formID == 0);
+			exportOrSkip = containerRecord.isModified() || containerRecord.isDeleted() || 
+				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 		}
 		else
 		{
@@ -1120,7 +1125,7 @@ void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& mes
 	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
 	std::string strEDID = writer.generateEDIDTES4(region.mId) + "Clmt";
 	uint32_t formID = writer.crossRefStringID(strEDID, false);
-	if (formID == 0)
+	if ((formID & 0xFF000000) > 0x01000000 || formID == 0)
 	{
 		writer.startRecordTES4("CLMT", 0, formID, strEDID);
 		region.exportClimateTESx(writer, 4);
@@ -1326,7 +1331,8 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || (formID == 0);
+		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || 
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 	}
 	else {
 		// no skipping, export all
@@ -1509,7 +1515,8 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || (formID == 0);
+		exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || 
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 	}
 	else {
 		// no skipping, export all
@@ -1624,7 +1631,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		std::string strEDID = record.get().mId;
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
-		if (record.isModified() || record.mState == CSMWorld::RecordBase::State_Deleted || (formID == 0))
+		if ( record.isModified() || record.mState == CSMWorld::RecordBase::State_Deleted || 
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000) )
 		{
 			std::string cellId = ( record.get().mOriginalCell.empty() ? record.get().mCell : record.get().mOriginalCell );
 
