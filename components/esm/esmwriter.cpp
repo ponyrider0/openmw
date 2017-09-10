@@ -446,7 +446,7 @@ namespace ESM
 	{
 		uint32_t returnVal;
 //		if (mReservedFormIDs.size() == 0)
-		if (mFormIDMap.size() == 0)
+		if (mFormIDMap.size() == 0 || mLastReservedFormID == 0)
 		{
 			returnVal = 0x10001;
 			return returnVal | mESMoffset;
@@ -460,7 +460,10 @@ namespace ESM
 			returnVal++;
 		}
 
-		return returnVal | mESMoffset;
+		// strip existing plugin offset and assign current offset
+		returnVal = (returnVal & 0x00FFFFFF) | mESMoffset;
+
+		return returnVal;
 	}
 
 	uint32_t ESMWriter::getLastReservedFormID()
@@ -470,8 +473,9 @@ namespace ESM
 		return returnVal;
 	}
 
-	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID)
+	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, bool setup_phase)
 	{
+		std::stringstream debugstream;
 		uint32_t formID = paramformID;
 //		if (addESMOffset == true)
 //			formID |= mESMoffset;
@@ -610,19 +614,35 @@ namespace ESM
 
 
 		// make sure formID is not already used
-		if ( mFormIDMap.find(formID) != mFormIDMap.end() )
+		if ( mFormIDMap.find(formID) != mFormIDMap.end() || formID == 0)
 		{
-			// formID already used so get a new formID
-			formID = getNextAvailableFormID();
+			if (setup_phase == false)
+			{
+				// formID already used so get a new formID
+				formID = getNextAvailableFormID();
+			}
+			else
+			{
+				return 0;
+			}
 		}
 		mFormIDMap.insert( std::make_pair(formID, stringID) );
 
 		// create entry for the stringID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
 
-		mLastReservedFormID = formID;
+		if (setup_phase == false && formID != 0)
+		{
+			if ((formID & 0xFF000000) < 0x04000000)
+			{
+				debugstream.str(""); debugstream.clear();
+				debugstream << "ERROR: invalid formID requested: " << formID << std::endl;
+				throw std::runtime_error(debugstream.str().c_str());
+			}
+			mLastReservedFormID = formID;
+		}
 
-		return mLastReservedFormID;
+		return formID;
 	}
 
 	void ESMWriter::clearReservedFormIDs()

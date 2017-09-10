@@ -402,8 +402,8 @@ int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
 		if (formID == 0)
 		{
 			formID = writer.getNextAvailableFormID();
+			writer.reserveFormID(formID, strEDID);
 		}
-		writer.reserveFormID(formID, strEDID);
 	}
 
 	return mActiveRefCount;
@@ -694,8 +694,8 @@ int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 		if (formID == 0)
 		{
 			formID = writer.getNextAvailableFormID();
+			writer.reserveFormID(formID, strEDID);
 		}
-		writer.reserveFormID(formID, strEDID);
 	}
 	return mActiveRefCount;
 }
@@ -813,7 +813,11 @@ int CSMDoc::ExportLightCollectionTES4Stage::setup()
 		const CSMWorld::Record<ESM::Light>& record =  mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
-		writer.reserveFormID(formID, strEDID);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+			writer.reserveFormID(formID, strEDID);
+		}
 	}
 
 	return mActiveRefCount;
@@ -854,7 +858,11 @@ int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
 		const CSMWorld::Record<ESM::ItemLevList>& record = mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
-		writer.reserveFormID(formID, strEDID);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+			writer.reserveFormID(formID, strEDID);
+		}
 	}
 
 	return mActiveRefCount;
@@ -1380,7 +1388,11 @@ int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 		const CSMWorld::Record<ESM::CreatureLevList>& record = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
-		writer.reserveFormID(formID, strEDID);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+			writer.reserveFormID(formID, strEDID);
+		}
 	}
 
 	return mActiveRefCount;
@@ -1663,7 +1675,11 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 //				std::ostringstream refEDIDstr;
 //				uint32_t formID = mState.getWriter().getNextAvailableFormID();
 //				refEDIDstr << "*refindex" << i;
-				formID = writer.reserveFormID(formID,strEDID);
+				if (formID == 0)
+				{
+					formID = writer.getNextAvailableFormID();
+					formID = writer.reserveFormID(formID, strEDID);
+				}
 				persistentRefListOfCurrentCell.push_back(i);
 				continue;
 			}
@@ -1738,7 +1754,10 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 			uint32_t formID = writer.crossRefStringID(strEDID, false);
 //			uint32_t formID = writer.getNextAvailableFormID();
 			if (formID == 0)
-				formID = writer.reserveFormID(formID, strEDID);
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 			int block = formID % 100;
 			int subblock = block % 10;
 			block -= subblock;
@@ -1853,7 +1872,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         // formID was previously generated in setup() method, so throw an error if it's zero
         if (cellFormID == 0)
         {
-            throw std::runtime_error ("export: cellFormID is 0");
+            throw std::runtime_error ("export: cellFormID is 0: " + cellRecordPtr->get().mId);
             return;
         }
 
@@ -2049,19 +2068,22 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
             CellExportData *exportData = new CellExportData;
             exportData->cellRecordPtr = cellRecordPtr;
 
-			// assign formID
-			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
-//			int formID = writer.getNextAvailableFormID();
-			uint32_t formID = writer.crossRefStringID(strEDID, false);
-			formID = writer.reserveFormID(formID, strEDID);
-			exportData->formID = formID;
-			debugstream << "formID[" << formID << "] ";
-
             // translate to Oblivion coords, then calculate block and subblock
             int baseX = cellRecordPtr->get().mData.mX*2;
             int baseY = cellRecordPtr->get().mData.mY*2;
 			debugstream << "X,Y[" << baseX << "," << baseY << "] ";
-			
+
+			// assign formID
+			std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
+			uint32_t formID = mState.crossRefCellXY(baseX, baseY);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				formID = writer.reserveFormID(formID, strEDID);
+			}
+			exportData->formID = formID;
+			debugstream << "formID[" << formID << "] ";
+
 			// calculate block and subblock coordinates
 			// Thanks to Zilav's forum posting for the Oblivion/Fallout Grid algorithm
 			subblockX = baseX/8;
@@ -2165,7 +2187,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //		uint32_t wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
 		uint32_t wrldFormID = writer.crossRefStringID("WrldMorrowind", false);
 		if (wrldFormID == 0)
-			wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind");
+			wrldFormID = writer.reserveFormID(0x01380000, "WrldMorrowind", true);
 		writer.startRecordTES4("WRLD", 0, wrldFormID, "WrldMorrowind");
 		writer.startSubRecordTES4("EDID");
 		writer.writeHCString("WrldMorrowind");
@@ -2212,7 +2234,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		
 		// Create persistent CELL dummy record
 		flags=0x400;
-		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "wrldmorrowind-dummycell");
+		uint32_t dummyCellFormID = writer.reserveFormID(0x01380001, "wrldmorrowind-dummycell", true);
 		writer.startRecordTES4("CELL", flags, dummyCellFormID, "");
 		writer.startSubRecordTES4("DATA");
 		writer.writeT<uint8_t>(0x02); // flag: has water=0x02
@@ -2394,7 +2416,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	//******************* END CELL SELECTION ***********************/
 
 	debugstream.str(""); debugstream.clear();
-	debugstream << "Examining exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
+	debugstream << "Processing exterior cell: BLOCK[" << blockX << "," << blockY << "] SUBBLOCK[" << subblockX << "," << subblockY << "] ";
 	debugstream << "X,Y[" << cellRecordPtr->get().mData.mX*2 << "," << cellRecordPtr->get().mData.mY*2 << "] ";
 	debugstream << "CellCount=[" << ++cellCount << "]" << std::endl;
 //	OutputDebugString(debugstream.str().c_str());
@@ -2496,16 +2518,20 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					}
 				}
 
+				std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
 				if (subCell > 0)
 				{
 					// request new formID, so subcell siblings don't share a single formID
 //					cellFormID = writer.reserveFormID(cellFormID, cellRecordPtr->get().mId);
-					std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
-					cellFormID = writer.getNextAvailableFormID();
-					cellFormID = writer.reserveFormID(cellFormID, strEDID);
+//					std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId);
+//					cellFormID = writer.getNextAvailableFormID();
+					cellFormID = mState.crossRefCellXY(baseX+x, baseY+y);
+					if (cellFormID == 0)
+					{
+						cellFormID = writer.reserveFormID(cellFormID, strEDID);
+					}
 				}
 				// ********************EXPORT SUBCELL HERE **********************
-				std::string strEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
 				flags = 0;
 				if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
 					flags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
@@ -2545,7 +2571,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				{
 					int landIndex = mDocument.getData().getLand().getIndex(landID.str());
 //					debugstream << "ID retrieved.  exporting land ... ";
-					writer.startRecordTES4("LAND");
+					uint32_t landFormID = mState.crossRefLandXY(baseX+x, baseY+y);
+					writer.startRecordTES4("LAND", 0, landFormID, "");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
 	//					int plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
 

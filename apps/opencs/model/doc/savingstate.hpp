@@ -62,8 +62,16 @@ namespace CSMDoc
 			std::map<uint32_t, uint32_t> mReferenceToReferenceMap;
 			std::map<std::string, std::deque<int> > mBaseGameDoorList;
 
-			int loadSubstitutionMap(std::string filename);
+			int loadEDIDmap(std::string filename);
 			int initializeSubstitutions();
+
+			int loadCellIDmap(std::string filename);
+			std::map<int, std::map<int, uint32_t[2]> > mExteriorCellMap;
+			uint32_t crossRefCellXY(int cellX, int cellY);
+			uint32_t crossRefLandXY(int cellX, int cellY);
+
+			int loadEDIDmap2(std::string filename);
+			int loadCellIDmap2(std::string filename);
 
 	};
 

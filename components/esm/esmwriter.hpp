@@ -151,7 +151,7 @@ public:
 		uint32_t mLastReservedFormID=0;
 		uint32_t getNextAvailableFormID();
 		uint32_t getLastReservedFormID();
-		uint32_t reserveFormID(uint32_t formID, const std::string& stringID);
+		uint32_t reserveFormID(uint32_t formID, const std::string& stringID, bool setup_phase=false);
 		void clearReservedFormIDs();
 		uint32_t crossRefStringID(const std::string& mId, bool convertToEDID=true);
 		std::string crossRefFormID(uint32_t formID);
