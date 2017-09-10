@@ -456,6 +456,7 @@ int CSMDoc::SavingState::initializeSubstitutions()
 	loadEDIDmap2("MorroblivionFormIDlist.csv");
 	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
 	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
+//	loadEDIDmap2("TR_MainlandFormIDlist.csv");
 	loadCellIDmap2("MorroblivionCellIDmap.csv");
 //	loadCellIDmap2("TR_MainlandCellIDmap.csv");
 

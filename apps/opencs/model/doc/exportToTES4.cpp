@@ -112,9 +112,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportContainerCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 	appendStage (new ExportFloraCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
-	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave));
-	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave));
-	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave));
+	appendStage (new ExportNPCCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
+	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
+	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
@@ -1376,9 +1376,11 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 	}
 }
 
-CSMDoc::ExportLeveledCreatureCollectionTES4Stage::ExportLeveledCreatureCollectionTES4Stage (Document& document, SavingState& state)
+CSMDoc::ExportLeveledCreatureCollectionTES4Stage::ExportLeveledCreatureCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
-{}
+{
+	mSkipMasterRecords = skipMasters;
+}
 int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 {
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
@@ -1410,7 +1412,7 @@ void CSMDoc::ExportLeveledCreatureCollectionTES4Stage::perform (int stage, Messa
 		writer.startGroupTES4("LVLC", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), false, 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1419,9 +1421,11 @@ void CSMDoc::ExportLeveledCreatureCollectionTES4Stage::perform (int stage, Messa
 	}
 }
 
-CSMDoc::ExportCreatureCollectionTES4Stage::ExportCreatureCollectionTES4Stage (Document& document, SavingState& state)
+CSMDoc::ExportCreatureCollectionTES4Stage::ExportCreatureCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
-{}
+{
+	mSkipMasterRecords = skipMasters;
+}
 int CSMDoc::ExportCreatureCollectionTES4Stage::setup()
 {
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
@@ -1436,7 +1440,7 @@ void CSMDoc::ExportCreatureCollectionTES4Stage::perform (int stage, Messages& me
 		writer.startGroupTES4("CREA", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), true, 4);
+	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{
@@ -1552,9 +1556,11 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 	}
 }
 
-CSMDoc::ExportNPCCollectionTES4Stage::ExportNPCCollectionTES4Stage (Document& document, SavingState& state)
+CSMDoc::ExportNPCCollectionTES4Stage::ExportNPCCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters)
 	: mDocument (document), mState (state)
-{}
+{
+	mSkipMasterRecords = skipMasters;
+}
 int CSMDoc::ExportNPCCollectionTES4Stage::setup()
 {
 	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getNPCs().getSize();
@@ -1569,7 +1575,7 @@ void CSMDoc::ExportNPCCollectionTES4Stage::perform (int stage, Messages& message
 		writer.startGroupTES4("NPC_", 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), true, 4);
+	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRefCount-1)
 	{

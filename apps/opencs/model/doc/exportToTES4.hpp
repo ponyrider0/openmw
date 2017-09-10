@@ -544,10 +544,11 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
+		bool mSkipMasterRecords;
 
 	public:
 
-		ExportNPCCollectionTES4Stage (Document& document, SavingState& state);
+		ExportNPCCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps
@@ -561,10 +562,11 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
+		bool mSkipMasterRecords;
 
 	public:
 
-		ExportCreatureCollectionTES4Stage (Document& document, SavingState& state);
+		ExportCreatureCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps
@@ -578,10 +580,11 @@ namespace CSMDoc
 		Document& mDocument;
 		SavingState& mState;
 		int mActiveRefCount;
+		bool mSkipMasterRecords;
 
 	public:
 
-		ExportLeveledCreatureCollectionTES4Stage (Document& document, SavingState& state);
+		ExportLeveledCreatureCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps
