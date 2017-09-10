@@ -1119,9 +1119,13 @@ void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& mes
 //	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
 	std::string strEDID = writer.generateEDIDTES4(region.mId) + "Clmt";
-	writer.startRecordTES4("CLMT", 0, 0, strEDID);
-	region.exportClimateTESx(writer, 4);
-	writer.endRecordTES4("CLMT");
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
+	if (formID == 0)
+	{
+		writer.startRecordTES4("CLMT", 0, formID, strEDID);
+		region.exportClimateTESx(writer, 4);
+		writer.endRecordTES4("CLMT");
+	}
 
 	if (stage == mActiveRefCount-1)
 	{
