@@ -132,7 +132,10 @@ namespace CSMDoc
 			if (formID == 0)
 			{
 				// second fall-back
-				strEDID = writer.generateEDIDTES4(record.mId, 0);
+				if (record.sRecordId == ESM::REC_REGN || record.sRecordId == ESM::REC_CLAS)
+					strEDID = writer.generateEDIDTES4(record.mId, 2);
+				else
+					strEDID = writer.generateEDIDTES4(record.mId, 0);
 				formID = writer.getNextAvailableFormID();
 				formID = writer.reserveFormID(formID, strEDID);
 			}
@@ -169,6 +172,12 @@ namespace CSMDoc
 			strEDID = writer.generateEDIDTES4(record.mId, 2);
 			formID = writer.crossRefStringID(strEDID, false);
 		}
+		if (formID == 0)
+		{
+			// error
+//			std::cout << "ERROR: found collection item without pre-assigned FormID: " << strEDID << std::endl;
+			throw std::runtime_error("ERROR: found collection item without pre-assigned FormID: " + strEDID);
+		}
 
 		if (mSkipMasterRecords == true)
 		{
@@ -176,7 +185,6 @@ namespace CSMDoc
 			exportOrSkip = ( (state == CSMWorld::RecordBase::State_Modified) || 
 				(state == CSMWorld::RecordBase::State_ModifiedOnly) ||
 				(state == CSMWorld::RecordBase::State_Deleted) ||
-				(formID == 0) ||
 				((formID & 0xFF000000) > 0x01000000) );
 		}
 		else {

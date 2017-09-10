@@ -2515,7 +2515,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				// crossRef Region stringID to formID to make XCLR subrecord
 				std::string strREGN = writer.generateEDIDTES4(cellRecordPtr->get().mRegion, 2);
 				uint32_t regnID = writer.crossRefStringID(strREGN, false);
-				if (regnID != 0)				
+				if (regnID == 0)
+				{
+					strREGN = writer.generateEDIDTES4(cellRecordPtr->get().mRegion, 0);
+					regnID = writer.crossRefStringID(strREGN, false);
+				}
+				if (regnID != 0)
 				{
 					writer.startSubRecordTES4("XCLR");
 					writer.writeT<uint32_t>(regnID);
