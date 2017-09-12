@@ -2129,6 +2129,24 @@ namespace ESM
 		return distance_XYZ;		
 	}
 
+	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, ESM::RecNameInts recordType)
+	{
+		std::string morroblivionEDID = genericEDID;
+
+		switch (recordType)
+		{
+		case ESM::REC_FACT:
+			// inline or call subroutine and break
+			if (genericEDID == "0FightersSGuild")
+				morroblivionEDID = "fbmwFightersGuild";
+			else if (genericEDID == "0MagesSGuild")
+				morroblivionEDID = "fbmwMagesGuild";
+			break;
+		}
+
+		return morroblivionEDID;
+	}
+
 
 
 }
