@@ -1,4 +1,11 @@
 #include "loadfact.hpp"
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
 
 #include <stdexcept>
 
@@ -117,7 +124,7 @@ namespace ESM
 	{
 		uint32_t tempFormID;
 		std::string tempStr;
-		std::ostringstream tempStream;
+		std::ostringstream tempStream, debugstream;
 
 		// export EDID
 		tempStr = esm.generateEDIDTES4(mId);
@@ -133,10 +140,20 @@ namespace ESM
 		for (auto reaction = mReactions.begin(); reaction != mReactions.end(); reaction++)
 		{
 			tempFormID = esm.crossRefStringID(reaction->first);
-			esm.startSubRecordTES4("XNAM");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.writeT<int32_t>(reaction->second);
-			esm.endSubRecordTES4("XNAM");
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("XNAM");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(reaction->second);
+				esm.endSubRecordTES4("XNAM");
+			}
+			else
+			{
+				debugstream.str(""); debugstream.clear();
+				debugstream << "Export FACT ERROR: could not resolve Faction name relation: FACT[ " << mId << "] " << "relation: " << reaction->first << std::endl;
+				std::cout << debugstream.str();
+				OutputDebugString(debugstream.str().c_str());
+			}
 		}
 
 		// DATA
@@ -149,6 +166,10 @@ namespace ESM
 		esm.endSubRecordTES4("DATA");
 
 		// CNAM, float (crime gold multilier)
+		float fCrimeGoldModifier = 1.0;
+		esm.startSubRecordTES4("CNAM");
+		esm.writeT<float>(fCrimeGoldModifier);
+		esm.endSubRecordTES4("CNAM");
 
 		// Ranks...
 		for (int i=0; i < 10; i++)
