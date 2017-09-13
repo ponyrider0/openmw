@@ -96,13 +96,46 @@ namespace ESM
 		esm.writeT<float>(120.0);
 		esm.endSubRecordTES4("MODB");
 
-		// SCRI, script
+		// SCRI (script formID) mScript
+		std::string strScript = esm.generateEDIDTES4(mScript);
+		if (strScript.size() != 0 && 
+			Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		{
+			strScript += "Script";
+		}
+		uint32_t tempFormID = esm.crossRefStringID(strScript, false);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
 
 		// SNAM, OpenSound
+		tempFormID = esm.crossRefStringID(mOpenSound);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SNAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SNAM");
+		}
+
 		// ANAM, CloseSound
+		tempFormID = esm.crossRefStringID(mCloseSound);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("ANAM");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("ANAM");
+		}
+
 		// BNAM, LoopSound
 
 		// FNAM, Flags 0x01=Oblivion Gate, 0x02=Automatic, 0x04=Hidden, 0x08=Minimal Use
+		uint8_t flags=0;
+		esm.startSubRecordTES4("FNAM");
+		esm.writeT<uint8_t>(flags);
+		esm.endSubRecordTES4("FNAM");
 
 		// TNAM, Array: Teleport Destination: [Cell, WRLD]
 		return true;

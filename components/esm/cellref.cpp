@@ -312,28 +312,32 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 
 	// XRGD, ragdoll
 	// XESP, parent object
-	if ( (mOwner != "") || (mFaction != "") )
+	uint32_t factionID = esm.crossRefStringID(mFaction);
+	uint32_t ownerID = 0;
+	if (factionID == 0)
+		ownerID = esm.crossRefStringID(mOwner);
+	else
+		ownerID = factionID;
+	if (ownerID != 0)
 	{
 		esm.startSubRecordTES4("XOWN");
-		if (mFaction != "")
-			esm.writeT<uint32_t>(esm.crossRefStringID(mFaction) );
-		else
-			esm.writeT<uint32_t>(esm.crossRefStringID(mOwner) );
+		esm.writeT<uint32_t>(ownerID);
 		esm.endSubRecordTES4("XOWN");
 	}
-	// XGLB
-	if ( (mOwner != "") && (mGlobalVariable != "") )
-	{
-		esm.startSubRecordTES4("XGLB");
-		esm.writeT<uint32_t>(esm.crossRefStringID(mGlobalVariable) );
-		esm.endSubRecordTES4("XGLB");
-	}
 	// XRNK, faction rank
-	if ( (mFaction != "") && (mFactionRank != -2) )
+	if (factionID != 0 && mFactionRank != -2)
 	{
 		esm.startSubRecordTES4("XRNK");
 		esm.writeT<int32_t>(mFactionRank);
 		esm.endSubRecordTES4("XRNK");
+	}
+	// XGLB
+	uint32_t globalVarID = esm.crossRefStringID(mGlobalVariable);
+	if (ownerID != 0 && globalVarID != 0)
+	{
+		esm.startSubRecordTES4("XGLB");
+		esm.writeT<uint32_t>(globalVarID);
+		esm.endSubRecordTES4("XGLB");
 	}
 
 	// XSCL

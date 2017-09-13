@@ -1631,8 +1631,9 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		std::string strEDID = record.get().mId;
 		uint32_t formID = writer.crossRefStringID(strEDID, false);
 
-		if ( record.isModified() || record.mState == CSMWorld::RecordBase::State_Deleted || 
-			(formID == 0) || ((formID & 0xFF000000) > 0x01000000) )
+//		if ( record.isModified() || record.isDeleted || 
+//			(formID == 0) || ((formID & 0xFF000000) > 0x01000000) )
+		if ( record.isModified() || record.isDeleted() )
 		{
 			std::string cellId = ( record.get().mOriginalCell.empty() ? record.get().mCell : record.get().mOriginalCell );
 
