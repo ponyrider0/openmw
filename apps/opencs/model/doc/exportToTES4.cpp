@@ -3643,28 +3643,47 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		writer.startGroupTES4("LTEX", 0);
 	}
 
-	bool bIdenticalToMaster = !(landTexture.isModified() || landTexture.mState == CSMWorld::RecordBase::State_Deleted);
-	if (bIdenticalToMaster && mSkipMasterRecords)
+	CSMWorld::LandTexture record = landTexture.get();
+
+	// create separate lookup tables for each plugin loaded
+	std::string strEDID = writer.generateEDIDTES4(record.mId);
+	// TODO: substitute Morroblivion EDID
+	strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
+
+	bool bExportRecord = false;
+	if (mSkipMasterRecords)
 	{
-		// do nothing
+//		bExportRecord = landTexture.isModified() || landTexture.isDeleted() ||
+//			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
+		bExportRecord = false;
+//		bExportRecord |= landTexture.isModified();
+		bExportRecord |= landTexture.isDeleted();
+		bExportRecord |= (formID == 0);
+		bExportRecord |= ( (formID & 0xFF000000) > 0x01000000 );
+		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
 	}
 	else
 	{
-		CSMWorld::LandTexture record = landTexture.get();
+		bExportRecord = true;
+	}
 
-		// create separate lookup tables for each plugin loaded
-		std::string strEDID = writer.generateEDIDTES4(record.mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
+	if (formID != 0 && writer.mUniqueIDcheck.find(formID) != writer.mUniqueIDcheck.end())
+	{
+		// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
+		// just go ahead and skip to mapping index
+		bExportRecord = false;
+		std::cout << "record already written, skipping ahead." << std::endl;
+	}
+
+	if (bExportRecord)
+	{
 		if (formID == 0)
 		{
 			// reserve new formID
 			formID = writer.getNextAvailableFormID();
 			formID = writer.reserveFormID(formID, strEDID);
 		}
-		// create lookup table for TextureIndex
-		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
-		debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
-//		OutputDebugString(debugstream.str().c_str());
 
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
@@ -3672,6 +3691,14 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		writer.startRecordTES4("LTEX", flags, formID, strEDID);
 		record.exportTESx (writer, true, 4);
 		writer.endRecordTES4 ("LTEX");
+	}
+
+	if (formID != 0)
+	{
+		// create lookup table for TextureIndex
+		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
+		debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
+		//		OutputDebugString(debugstream.str().c_str());
 	}
 
 	if (stage == mActiveRefCount-1)

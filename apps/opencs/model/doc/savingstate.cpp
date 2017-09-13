@@ -439,7 +439,46 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 
 	} // while getline(inputFile, inputLine)
 
-	return 0;
+	return errorcode;
+}
+
+int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
+{
+	int errorcode = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strMwEDID, strGenEDID;
+		uint32_t formID;
+
+		for (int i=0; i < 2; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strMwEDID = token;
+				break;
+			case 1:
+				strGenEDID = token;
+				break;
+			}
+		}
+
+		if (strMwEDID == "" || strGenEDID == "")
+			continue;
+
+		mWriter.mMorroblivionEDIDmap[strGenEDID] = strMwEDID;
+
+	}
+
+	return errorcode;
 }
 
 int CSMDoc::SavingState::initializeSubstitutions()
@@ -459,6 +498,8 @@ int CSMDoc::SavingState::initializeSubstitutions()
 	loadEDIDmap2("TR_MainlandFormIDlist.csv");
 	loadCellIDmap2("MorroblivionCellIDmap.csv");
 	loadCellIDmap2("TR_MainlandCellIDmap.csv");
+
+	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
 
 	return 0;
 }

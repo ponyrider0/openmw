@@ -184,7 +184,9 @@ public:
 		void exportFaceGen(const std::string& headName);
 		static float calcDistance(ESM::Position pointA, ESM::Position pointB);
 
-		static std::string substituteMorroblivionEDID(const std::string& genericEDID, ESM::RecNameInts recordType);
+		std::string substituteMorroblivionEDID(const std::string& genericEDID, ESM::RecNameInts recordType);
+		std::map<std::string, std::string> mMorroblivionEDIDmap;
+		
 
     private:
         std::list<RecordData> mRecords;

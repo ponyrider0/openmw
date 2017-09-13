@@ -1317,6 +1317,9 @@ namespace ESM
 			case '\'':
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'A';
 				break;
+			case '\\':
+//				finalEDID = finalEDID;
+				break;
 			case ':':
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
@@ -2133,6 +2136,12 @@ namespace ESM
 	{
 		std::string morroblivionEDID = genericEDID;
 
+		if (mMorroblivionEDIDmap.find(genericEDID) != mMorroblivionEDIDmap.end())
+		{
+			morroblivionEDID = mMorroblivionEDIDmap[genericEDID];
+			return morroblivionEDID;
+		}
+
 		switch (recordType)
 		{
 		case ESM::REC_FACT:
@@ -2141,6 +2150,15 @@ namespace ESM
 				morroblivionEDID = "fbmwFightersGuild";
 			else if (genericEDID == "0MagesSGuild")
 				morroblivionEDID = "fbmwMagesGuild";
+			break;
+
+		case ESM::REC_LTEX:
+			if (genericEDID == "0Sand")
+				morroblivionEDID = "mwComSand01Tex";
+			if (genericEDID == "0RockUCoastal")
+				morroblivionEDID = "mwComRockCoastalTex";
+			if (genericEDID == "0RoadSDirt")
+				morroblivionEDID = "mwComRoadDirtTex";
 			break;
 		}
 
