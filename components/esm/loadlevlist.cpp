@@ -1,4 +1,11 @@
 #include "loadlevlist.hpp"
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
 
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
@@ -118,6 +125,10 @@ namespace ESM
 		// for each mList record, write LVLO subrecord
 		// LVLO
 		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
+		if (it_LVLO == mList.end())
+		{
+			std::cout << "WARNING, Leveled List contains no items: " << newEDID << std::endl;
+		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
 			esm.startSubRecordTES4("LVLO");
@@ -170,6 +181,10 @@ namespace ESM
 		// for each mList record, write LVLO subrecord
 		// LVLO
 		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
+		if (it_LVLO == mList.end())
+		{
+			std::cout << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
+		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
 			esm.startSubRecordTES4("LVLO");
@@ -185,6 +200,12 @@ namespace ESM
 
 /*
 		// script formID, SCRI
+		std::string strScript = esm.generateEDIDTES4(mScript);
+		if (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		{
+		strScript += "Script";
+		}
+		uint32_t tempFormID = esm.crossRefStringID(strScript, false);
 		esm.startSubRecordTES4("SCRI");
 		esm.writeT<uint32_t>(0);
 		esm.endSubRecordTES4("SCRI");

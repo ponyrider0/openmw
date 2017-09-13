@@ -271,11 +271,12 @@ namespace ESM {
 		// INAM, death items (LVLI)
 
 		// SCRI
-		if (Misc::StringUtils::lowerCase(mScript).find("script") == std::string::npos)
-			tempStr = mScript + "Script";
-		else
-			tempStr = mScript;
-		tempFormID = esm.crossRefStringID(tempStr);
+		std::string strScript = esm.generateEDIDTES4(mScript);
+		if (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		{
+			strScript += "Script";
+		}
+		tempFormID = esm.crossRefStringID(strScript, false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
