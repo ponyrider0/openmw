@@ -1,4 +1,11 @@
 #include "loadnpc.hpp"
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
 
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
@@ -238,9 +245,20 @@ namespace ESM
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SNAM");
-			esm.writeT<uint32_t>(tempFormID);
+			esm.writeT<uint32_t>(tempFormID); // faction formID
 			tempVal = (autocalc) ? mNpdt12.mRank : mNpdt52.mRank;
-			esm.writeT<int8_t>(tempVal);
+			esm.writeT<int8_t>(tempVal); // rank
+			esm.writeT<uint8_t>(0); // unused
+			esm.writeT<uint8_t>(0); // unused
+			esm.writeT<uint8_t>(0); // unused
+			esm.endSubRecordTES4("SNAM");
+		}
+		tempFormID = esm.crossRefStringID("0factMorrowind", false);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SNAM");
+			esm.writeT<uint32_t>(tempFormID); // faction formID
+			esm.writeT<int8_t>(0); // rank
 			esm.writeT<uint8_t>(0); // unused
 			esm.writeT<uint8_t>(0); // unused
 			esm.writeT<uint8_t>(0); // unused
@@ -300,11 +318,30 @@ namespace ESM
 		}
 
 		// AI Data
+		uint8_t aggression=0;
+		if (mAiData.mFight <= 0)
+			aggression = 5;
+		else if (mAiData.mFight <= 10)
+			aggression = 6;
+		else if (mAiData.mFight <= 30)
+			aggression = 7;
+		else if (mAiData.mFight <= 70)
+			aggression = 10;
+		else if (mAiData.mFight <= 80)
+			aggression = 30;
+		else if (mAiData.mFight > 80)
+			aggression = 80;
+
 		esm.startSubRecordTES4("AIDT");
-		esm.writeT<unsigned char>(mAiData.mFight); // aggression
+		esm.writeT<unsigned char>(aggression); // aggression
 		esm.writeT<unsigned char>(100-mAiData.mFlee); // confidence
 		esm.writeT<unsigned char>(50); // energy
-		esm.writeT<unsigned char>(50); // responsibility
+		uint8_t responsibility = 50;
+		if (mAiData.mAlarm >= 75)
+			responsibility = 75;
+		else if (mAiData.mAlarm < 25)
+			responsibility = 30;
+		esm.writeT<unsigned char>(responsibility); // responsibility
 		flags = 0;
 		// NPC services...
 		esm.writeT<uint32_t>(flags); // flags (buy/sell/services)
@@ -314,9 +351,84 @@ namespace ESM
 		esm.endSubRecordTES4("AIDT");
 
 		// PKID, AIpackage formID
+		// read AIPackageList and assign Oblivion equivalent
+		int pkgcount=0;
+		std::string pkgEDID;
+		uint32_t pkgFormID=0;
+		pkgEDID = "aaaEatCurrent6x2";
+		pkgFormID = esm.crossRefStringID(pkgEDID, false);
 		esm.startSubRecordTES4("PKID");
-		esm.writeT<uint32_t>(0x02E56E); // Oblivion ID: aaaDefaultStayAtCurrentLocation
+		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
+		pkgEDID = "aaaEatCurrent19x2";
+		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		esm.startSubRecordTES4("PKID");
+		esm.writeT<uint32_t>(pkgFormID);
+		esm.endSubRecordTES4("PKID");
+		tempStr = esm.generateEDIDTES4(mId);
+		for (auto it_aipackage = mAiPackage.mList.begin(); it_aipackage != mAiPackage.mList.end(); it_aipackage++)
+		{
+			int duration=0, distance=0;
+			std::ostringstream ai_debugstream;
+			ai_debugstream << "NPC[" << tempStr << "] AIPackage[" << pkgcount++ << "]: ";
+			switch (it_aipackage->mType)
+			{
+			case ESM::AI_Wander:
+				duration = it_aipackage->mWander.mDuration;
+				distance = it_aipackage->mWander.mDistance;
+				if (distance == 0)
+					pkgEDID = "aaaDefaultStayAtEditorLocation";
+				else if (distance <= 128)
+					pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				else if (distance <= 512)
+					pkgEDID = "aaaDefaultExploreEditorLoc512";
+				else if (distance <= 1000)
+					pkgEDID = "aaaDefaultExploreEditorLoc1024";
+				else if (distance <= 2000)
+					pkgEDID = "aaaDefaultExploreEditorLoc3000";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
+				break;
+			case ESM::AI_Travel:
+				pkgEDID = "aaaDefaultExploreEditorLoc512";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
+				break;
+			case ESM::AI_Activate:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Activate target:" << it_aipackage->mActivate.mName.ro_data();
+				break;
+			case ESM::AI_Follow:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Follow target:" << it_aipackage->mTarget.mId.ro_data();
+				break;
+			case ESM::AI_Escort:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Escort target:" << it_aipackage->mTarget.mId.ro_data();
+				break;
+			}
+			ai_debugstream << std::endl;
+			std::cout << ai_debugstream.str();
+			OutputDebugString(ai_debugstream.str().c_str());
+		}
 		// KFFZ, animations
 
 		// CNAM, class formID

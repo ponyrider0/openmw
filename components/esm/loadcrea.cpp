@@ -1,6 +1,11 @@
 #include "loadcrea.hpp"
-
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
 
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
@@ -285,8 +290,21 @@ namespace ESM {
 		}
 
 		// AI Data
+		uint8_t aggression=0;
+		if (mAiData.mFight <= 0)
+			aggression = 5;
+		else if (mAiData.mFight <= 10)
+			aggression = 6;
+		else if (mAiData.mFight <= 30)
+			aggression = 7;
+		else if (mAiData.mFight <= 70)
+			aggression = 10;
+		else if (mAiData.mFight <= 80)
+			aggression = 30;
+		else if (mAiData.mFight > 80)
+			aggression = 80;
 		esm.startSubRecordTES4("AIDT");
-		esm.writeT<unsigned char>(mAiData.mFight); // aggression
+		esm.writeT<unsigned char>(aggression); // aggression
 		esm.writeT<unsigned char>(100-mAiData.mFlee); // confidence
 		esm.writeT<unsigned char>(70); // energy
 		esm.writeT<unsigned char>(0); // responsibility
@@ -298,16 +316,54 @@ namespace ESM {
 		esm.endSubRecordTES4("AIDT");
 
 		// PKID, ai packages (formID)
-		for (auto aiPkg = mAiPackage.mList.begin(); aiPkg != mAiPackage.mList.end(); aiPkg++)
+		tempStr = esm.generateEDIDTES4(mId);
+		std::string pkgEDID;
+		int pkgcount = 0;
+		uint32_t pkgFormID;
+		for (auto it_aipackage = mAiPackage.mList.begin(); it_aipackage != mAiPackage.mList.end(); it_aipackage++)
 		{
 			// aiPkg is full definition and not just a stringID...
 			// ... so must generate a full ESM4 AIPackage record from each aiPkg
+			int duration=0, distance=0;
+			std::ostringstream ai_debugstream;
+			ai_debugstream << "CREA[" << tempStr << "] AIPackage[" << pkgcount++ << "]: ";
+			switch (it_aipackage->mType)
+			{
+			case ESM::AI_Wander:
+				duration = it_aipackage->mWander.mDuration;
+				distance = it_aipackage->mWander.mDistance;
+				if (distance == 0)
+					pkgEDID = "aaaDefaultStayAtEditorLocation";
+				else if (distance <= 128)
+					pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				else if (distance <= 512)
+					pkgEDID = "aaaDefaultExploreEditorLoc512";
+				else if (distance <= 1000)
+					pkgEDID = "aaaDefaultExploreEditorLoc1024";
+				else if (distance <= 2000)
+					pkgEDID = "aaaDefaultExploreEditorLoc3000";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
+				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
+				break;
+			}
+			ai_debugstream << std::endl;
+			std::cout << ai_debugstream.str();
+			OutputDebugString(ai_debugstream.str().c_str());
 		}
-		tempFormID = 0xaa01d;  // aaaCreatureExterior1500
+		pkgEDID = "aaaCreatureExterior1500";
+		pkgFormID = esm.crossRefStringID(pkgEDID, false);
 		esm.startSubRecordTES4("PKID");
-		esm.writeT<uint32_t>(tempFormID);
+		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
-		
+		pkgEDID = "aaaCreatureInterior512";
+		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		esm.startSubRecordTES4("PKID");
+		esm.writeT<uint32_t>(pkgFormID);
+		esm.endSubRecordTES4("PKID");
+
 		// KFFZ, animations
 
 		// DATA
