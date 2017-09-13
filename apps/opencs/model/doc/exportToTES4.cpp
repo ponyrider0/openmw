@@ -1906,14 +1906,6 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
         //***********EXPORT INTERIOR CELL*****************************/
         writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, strEDID);
         cellRecordPtr->get().exportTES4 (writer);
-        // write supplemental records requiring cross-referenced data...
-        // Owner formID subrecord: XOWN
-        
-        // Faction rank long subrecord: XRNK (if owner is a faction)
-        
-        // Water formID subrecord: XCWT (if included as flag in record flags and present in cell record)
-        
-        // Region formID subrecord: XCLR (if present in cell record)
         
         // Cell record ends before creation of child records (which are full records and not subrecords)
         writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
@@ -2557,20 +2549,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				writer.startRecordTES4 (cellRecordPtr->get().sRecordId, flags, cellFormID, strEDID);
 				cellRecordPtr->get().exportSubCellTES4 (writer, baseX+x, baseY+y, subCell++);
 
-				// crossRef Region stringID to formID to make XCLR subrecord
-				std::string strREGN = writer.generateEDIDTES4(cellRecordPtr->get().mRegion, 2);
-				uint32_t regnID = writer.crossRefStringID(strREGN, false);
-				if (regnID == 0)
-				{
-					strREGN = writer.generateEDIDTES4(cellRecordPtr->get().mRegion, 0);
-					regnID = writer.crossRefStringID(strREGN, false);
-				}
-				if (regnID != 0)
-				{
-					writer.startSubRecordTES4("XCLR");
-					writer.writeT<uint32_t>(regnID);
-					writer.endSubRecordTES4("XCLR");
-				}
 				// Cell record ends before creation of child records (which are full records and not subrecords)
 				writer.endRecordTES4 (cellRecordPtr->get().sRecordId);
 
@@ -3662,7 +3640,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		bExportRecord |= landTexture.isDeleted();
 		bExportRecord |= (formID == 0);
 		bExportRecord |= ( (formID & 0xFF000000) > 0x01000000 );
-		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
+//		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
 	}
 	else
 	{
@@ -3674,7 +3652,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
 		// just go ahead and skip to mapping index
 		bExportRecord = false;
-		std::cout << "record already written, skipping ahead." << std::endl;
+//		std::cout << "record already written, skipping ahead." << std::endl;
 	}
 
 	if (bExportRecord)

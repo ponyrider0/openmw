@@ -339,7 +339,17 @@ namespace ESM
 		esm.writeT<char>(dataFlags);
 		esm.endSubRecordTES4("DATA");
 
-        // Write XCLL (lighting)
+		// Write XCLC (X,Y coordinates)
+		if (isExterior())
+		{
+			esm.startSubRecordTES4("XCLC");
+			esm.writeT<long>(subX);
+			esm.writeT<long>(subY);
+			esm.endSubRecordTES4("XCLC");
+			debugstream << "X,Y=[" << (subX) <<"," << (subY) << "]; ";
+		}
+
+		// Write XCLL (lighting)
 		if (!isExterior())
 		{
 			esm.startSubRecordTES4("XCLL");
@@ -356,6 +366,21 @@ namespace ESM
 			esm.endSubRecordTES4("XCLL");
 		}
 
+		// crossRef Region stringID to formID to make XCLR subrecord
+		std::string strREGN = esm.generateEDIDTES4(mRegion, 2);
+		uint32_t regnID = esm.crossRefStringID(strREGN, false);
+		if (regnID == 0)
+		{
+			strREGN = esm.generateEDIDTES4(mRegion, 0);
+			regnID = esm.crossRefStringID(strREGN, false);
+		}
+		if (regnID != 0)
+		{
+			esm.startSubRecordTES4("XCLR");
+			esm.writeT<uint32_t>(regnID);
+			esm.endSubRecordTES4("XCLR");
+		}
+		// XCMT uint8_t MusicEnum
         // Write XCLW (water level)
         if ( (mData.mFlags & HasWater) && (mWater != 0) )
         {
@@ -363,17 +388,9 @@ namespace ESM
             esm.writeT<float>(mWater);
             esm.endSubRecordTES4("XCLW");
         }
+		// XCCM, climate formID
+		// XCWT, water formID
         
-        // Write XCLC (X,Y coordinates)
-        if (isExterior())
-        {
-            esm.startSubRecordTES4("XCLC");
-            esm.writeT<long>(subX);
-            esm.writeT<long>(subY);
-            esm.endSubRecordTES4("XCLC");
-			debugstream << "X,Y=[" << (subX) <<"," << (subY) << "]; ";
-        }
-               
         // XOWN == ?? morrowind equivalent unknown
 		debugstream << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
