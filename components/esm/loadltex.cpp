@@ -81,10 +81,9 @@ namespace ESM
 
 		// ICON
 		tempStr = esm.generateEDIDTES4(mTexture, 1);
-		int extIndex = tempStr.find("Ptga");
-		if (extIndex != tempStr.npos)
+		if (tempStr.size() > 4)
 		{
-			tempStr.replace(extIndex, 4, ".dds");
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
 		}
 		iconpath << "morro\\" << tempStr;
 		debugstream << "ICON=[" << iconpath.str() << "]; ";
