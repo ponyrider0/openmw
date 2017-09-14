@@ -500,6 +500,7 @@ int CSMDoc::SavingState::initializeSubstitutions()
 	loadCellIDmap2("TR_MainlandCellIDmap.csv");
 
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
+	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
 
 	return 0;
 }
