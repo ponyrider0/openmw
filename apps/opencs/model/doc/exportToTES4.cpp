@@ -941,10 +941,18 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 
 //	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
-	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) != 0)
+	std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
+	bool isFlora = false;
+
+	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) != 0 &&
+			Misc::StringUtils::lowerCase(strEDID).find("chest") == std::string::npos)
 	{
-		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
+			isFlora = true;
+	}
+
+	if (isFlora) 
+	{
 
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
@@ -1002,10 +1010,18 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 
 //	mDocument.getData().getReferenceables().getDataSet().getContainers().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(stage);
-	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) == 0)
+	std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
+	bool isFlora = true;
+
+	if ((containerRecord.get().mFlags & ESM::Container::Flags::Organic) == 0 ||
+		Misc::StringUtils::lowerCase(strEDID).find("chest") != std::string::npos)
 	{
-		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
+		isFlora = false;
+	}
+
+	if (isFlora == false)
+	{
 		bool exportOrSkip=false;
 		if (mSkipMasterRecords)
 		{
