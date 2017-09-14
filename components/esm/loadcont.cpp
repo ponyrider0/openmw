@@ -115,6 +115,16 @@ namespace ESM
 		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempStream, debugstream;
+		bool isFlora = false;
+		if ((mFlags & Flags::Organic) == 0 ||
+			Misc::StringUtils::lowerCase(mId).find("chest") != std::string::npos)
+		{
+			isFlora = false;
+		}
+		else
+		{
+			isFlora = true;
+		}
 
 		tempStr = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
@@ -153,7 +163,7 @@ namespace ESM
 		}
 
 		// Process non-organic containers
-		if ((mFlags & Flags::Organic) == 0)
+		if (isFlora == false)
 		{
 			// CNTO: {formID, uint32}
 			for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
