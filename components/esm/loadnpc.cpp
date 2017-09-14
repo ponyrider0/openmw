@@ -406,7 +406,7 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Activate target:" << it_aipackage->mActivate.mName.ro_data();
+				ai_debugstream << "Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
 				break;
 			case ESM::AI_Follow:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
@@ -414,7 +414,7 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Follow target:" << it_aipackage->mTarget.mId.ro_data();
+				ai_debugstream << "Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 				break;
 			case ESM::AI_Escort:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
@@ -422,12 +422,12 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Escort target:" << it_aipackage->mTarget.mId.ro_data();
+				ai_debugstream << "Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 				break;
 			}
 			ai_debugstream << std::endl;
-			std::cout << ai_debugstream.str();
-			OutputDebugString(ai_debugstream.str().c_str());
+//			std::cout << ai_debugstream.str();
+//			OutputDebugString(ai_debugstream.str().c_str());
 		}
 		// KFFZ, animations
 
