@@ -151,6 +151,8 @@ namespace ESM {
 		std::ostringstream tempStream;
 		int tempVal;
 		float tempFloat;
+		bool canSwim=false;
+		bool canFly=false;
 
 		// export EDID
 		tempStr = esm.generateEDIDTES4(mId);
@@ -324,10 +326,22 @@ namespace ESM {
 		if (mFlags & ESM::Creature::Flags::Flies)
 		{
 			// Flying package
+			canFly = true;
 		}
 		if (mFlags & ESM::Creature::Flags::Swims)
 		{
 			// Swimming package
+			canSwim = true;
+			pkgEDID = "aaaCreatureInteriorSwims512";
+			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			esm.startSubRecordTES4("PKID");
+			esm.writeT<uint32_t>(pkgFormID);
+			esm.endSubRecordTES4("PKID");
+			pkgEDID = "aaaCreatureExteriorSwims1500";
+			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			esm.startSubRecordTES4("PKID");
+			esm.writeT<uint32_t>(pkgFormID);
+			esm.endSubRecordTES4("PKID");
 		}
 		for (auto it_aipackage = mAiPackage.mList.begin(); it_aipackage != mAiPackage.mList.end(); it_aipackage++)
 		{
