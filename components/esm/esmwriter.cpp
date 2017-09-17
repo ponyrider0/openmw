@@ -2646,7 +2646,7 @@ namespace ESM
 			}
 		}
 
-		if (creatureEDID.find("cenutrion") != std::string::npos)
+		if (creatureEDID.find("centurion") != std::string::npos)
 		{
 			stringList.clear();
 			switch (modelType)
@@ -2684,6 +2684,8 @@ namespace ESM
 		if (mMorroblivionEDIDmap.find(genericEDID) != mMorroblivionEDIDmap.end())
 		{
 			morroblivionEDID = mMorroblivionEDIDmap[genericEDID];
+			if (morroblivionEDID == "")
+				throw std::runtime_error("ERROR: Creature - empty EDID substituted for: " + genericEDID);
 			return morroblivionEDID;
 		}
 
@@ -2723,7 +2725,8 @@ namespace ESM
 				morroblivionEDID = "FrostSalts";
 			if (genericEDID == "0TRUm1UFWCEUCTPosU05UUG")
 				morroblivionEDID = "0miscUlwUplatter";
-
+			if (genericEDID == "0CollisionSWallSTSINVISO")
+				morroblivionEDID = "CollisionBoxStatic";
 
 		}
 

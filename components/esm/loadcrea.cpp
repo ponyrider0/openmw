@@ -159,7 +159,7 @@ namespace ESM {
 		strEDID = esm.generateEDIDTES4(mId);
 		strEDID = esm.substituteMorroblivionEDID(strEDID, (ESM::RecNameInts)sRecordId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(tempStr);
+		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
 
 		// FULL, fullname
@@ -207,7 +207,7 @@ namespace ESM {
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
 */
-		std::vector<std::string>& modelList = esm.substituteCreatureModel("", 1);
+		std::vector<std::string>& modelList = esm.substituteCreatureModel(strEDID, 1);
 		esm.startSubRecordTES4("NIFZ");
 		for (auto stringIter = modelList.begin(); stringIter != modelList.end(); stringIter++)
 		{
