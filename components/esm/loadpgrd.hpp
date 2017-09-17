@@ -55,7 +55,7 @@ struct Pathgrid
 
     void load(ESMReader &esm, bool &isDeleted);
     void save(ESMWriter &esm, bool isDeleted = false) const;
-	void exportSubCellTES4(ESMWriter &esm, int offsetX, int offsetY) const;
+	void exportSubCellTES4(ESMWriter &esm, int offsetX, int offsetY, bool isInterior=false) const;
 
     void blank();
 };

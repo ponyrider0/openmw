@@ -1887,8 +1887,8 @@ namespace ESM
 		tempString = Misc::StringUtils::lowerCase(model);
 
 		// default model
-		if (true)
-//		if (tempString.find("torch") != std::string::npos)
+//		if (true)
+		if (tempString.find("torch") != std::string::npos)
 		{
 			switch (modelType)
 			{
@@ -2160,6 +2160,26 @@ namespace ESM
 			if (genericEDID == "0RoadSDirt")
 				morroblivionEDID = "mwComRoadDirtTex";
 			break;
+	
+		default:
+			if (genericEDID == "0ActiveUComUBarUDoor")
+				morroblivionEDID = "mwComBarDoor";
+			if (genericEDID == "0ActiveUDeUBarUDoor")
+				morroblivionEDID = "mwDeBarDoor";
+			if (genericEDID == "0potionUcyroUbrandyU01")
+				morroblivionEDID = "PotionCyrodiilicBrandy";
+			if (genericEDID == "0TUImpUDrinkUWineSurilieBrU01")
+				morroblivionEDID = "DrinkWine1SurilieGood";
+			if (genericEDID == "0TUImpUDrinkUWineFreeEstatU01")
+				morroblivionEDID = "DrinkWine0Cheap";
+			if (genericEDID == "0MiscUQuill")
+				morroblivionEDID = "Quill01";
+			if (genericEDID == "0ingredUfrostUsaltsU01")
+				morroblivionEDID = "FrostSalts";
+			if (genericEDID == "0TRUm1UFWCEUCTPosU05UUG")
+				morroblivionEDID = "0miscUlwUplatter";
+
+
 		}
 
 		return morroblivionEDID;

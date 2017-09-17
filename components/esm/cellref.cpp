@@ -290,13 +290,17 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "PotionCyrodiilicBrandy";
 		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
 			baseEDID = "CheydinhalWell01";
+		else if (baseEDID.find("0TRUm1UFWUgate") != std::string::npos &&
+				baseEDID.find("UbarU0") != std::string::npos )
+			baseEDID = "0miscUcomUwoodUforkUUNI1";
 
 		baseFormID = esm.crossRefStringID(baseEDID, false);
 
 		// load substitutionOffsets
 		if (baseEDID == "FireSmokeMedium" ||
-			baseEDID.find("0LightUComUCandle") != std::string::npos ||
-			baseEDID.find("0lightUcomUtorch") != std::string::npos )
+			baseEDID.find("candle") != std::string::npos ||
+			baseEDID.find("torch") != std::string::npos ||
+			baseEDID.find("lantern") != std::string::npos )
 		{
 			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + 4.7124; // 270 deg == 4.7124 radians
 			substitutionOffset.rot[1] = -1*mPos.rot[1];
@@ -305,7 +309,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 		else if (baseEDID == "CheydinhalWell01" ||
 				baseEDID == "0TUImpUSetNordUXUWellU01" )
 		{
-			substitutionOffset.pos[3] = 100;
+			substitutionOffset.pos[2] = 100;
 		}
 		else if (baseEDID == "Dbush15")
 		{

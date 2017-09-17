@@ -2012,6 +2012,20 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (bHasTempRefs)
 			{
 				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
+													  //****************EXPORT PATHGRID*****************/
+				int pathgridIndex = mDocument.getData().getPathgrids().searchId(cellRecordPtr->get().mId);
+				if (pathgridIndex != -1 && cellRecordPtr->isModified())
+				{
+					const CSMWorld::Record<CSMWorld::Pathgrid>& pathgrid
+						= mDocument.getData().getPathgrids().getRecord (pathgridIndex);
+					// check for over-riding and deleting and stuff
+					uint32_t pathgridFormID = 0;
+					writer.startRecordTES4("PGRD", 0, pathgridFormID, "");
+					pathgrid.get().exportSubCellTES4(writer, 0, 0, true);
+					writer.endSubRecordTES4("PGRD");
+				}
+
+
 				for (std::deque<int>::const_reverse_iterator iter(references->second.rbegin());
 					iter != references->second.rend(); ++iter)
 				{
@@ -2629,10 +2643,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //				OutputDebugString(debugstream.str().c_str());
 				//**********END EXPORT LANDSCAPE************************/
 				
-				// TODO: export PATHGRID
-				// Find PathGrid XY -- look through list? compare XY?
-				// Export PathGrid
-//				int pathgridIndex = mDocument.getData().getPathgrids().searchId(landID.str());
+				//****************EXPORT PATHGRID*****************/
 				int pathgridIndex = mDocument.getData().getPathgrids().searchId(cellRecordPtr->get().mId);
 				if (pathgridIndex != -1 && bLandscapePresent && cellRecordPtr->isModified() )
 				{
