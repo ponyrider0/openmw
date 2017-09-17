@@ -2230,6 +2230,9 @@ namespace ESM
 
 		if (creatureEDID.find("zombie") != std::string::npos ||
 			creatureEDID.find("bonewalker") != std::string::npos ||
+			creatureEDID.find("uboneld") != std::string::npos ||
+			creatureEDID.find("ubonewk") != std::string::npos ||
+			creatureEDID.find("mwuundumum") != std::string::npos ||
 			creatureEDID.find("mummy") != std::string::npos)
 		{
 			stringList.clear();
@@ -2385,7 +2388,9 @@ namespace ESM
 			}
 		}
 
-		if (creatureEDID.find("fly") != std::string::npos)
+		if (creatureEDID.find("fly") != std::string::npos ||
+			creatureEDID.find("mwufauuswfly") != std::string::npos ||
+			creatureEDID.find("muskf") != std::string::npos )
 		{
 			stringList.clear();
 			switch (modelType)
@@ -2400,7 +2405,10 @@ namespace ESM
 			}
 		}
 
-		if (creatureEDID.find("crab") != std::string::npos)
+		if (creatureEDID.find("crab") != std::string::npos ||
+			creatureEDID.find("mudc") != std::string::npos ||
+			creatureEDID.find("molec") != std::string::npos ||
+			creatureEDID.find("moonc") != std::string::npos)
 		{
 			stringList.clear();
 			switch (modelType)
