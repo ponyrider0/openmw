@@ -147,6 +147,7 @@ namespace ESM {
 	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
+		std::string strEDID;
 		std::string tempStr;
 		std::ostringstream tempStream;
 		int tempVal;
@@ -155,7 +156,8 @@ namespace ESM {
 		bool canFly=false;
 
 		// export EDID
-		tempStr = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId);
+		strEDID = esm.substituteMorroblivionEDID(strEDID, (ESM::RecNameInts)sRecordId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -176,9 +178,9 @@ namespace ESM {
 		// MODB?
 		// MODT?
 */
-		tempStr = "creatures\\minotaur\\skeleton.nif";
+		std::vector<std::string>& skeletonString = esm.substituteCreatureModel(strEDID, 0);
 		esm.startSubRecordTES4("MODL");
-		esm.writeHCString(tempStr);
+		esm.writeHCString(skeletonString[0]);
 		esm.endSubRecordTES4("MODL");
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(140);
@@ -205,15 +207,12 @@ namespace ESM {
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
 */
+		std::vector<std::string>& modelList = esm.substituteCreatureModel("", 1);
 		esm.startSubRecordTES4("NIFZ");
-		esm.writeHCString("eyelids.nif");
-		esm.writeHCString("goz.nif");
-		esm.writeHCString("hair01.nif");
-		esm.writeHCString("hair02.nif");
-		esm.writeHCString("head.nif");
-		esm.writeHCString("hornsb.nif");
-		esm.writeHCString("minotaur.nif");
-		esm.writeHCString("minotaurbodyhair.nif");
+		for (auto stringIter = modelList.begin(); stringIter != modelList.end(); stringIter++)
+		{
+			esm.writeHCString(*stringIter);
+		}
 		esm.writeT<uint8_t>(0); // terminating null character for string list
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT

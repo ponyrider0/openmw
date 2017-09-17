@@ -2120,6 +2120,551 @@ namespace ESM
 		return retString;
 	}
 
+	std::vector<std::string> ESMWriter::substituteCreatureModel(const std::string & strEDID, int modelType)
+	{
+		std::string creatureEDID = Misc::StringUtils::lowerCase(strEDID);
+		std::vector<std::string> stringList;
+
+//		if (creatureEDID.find("deer") != std::string::npos)
+		if (true)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Deer\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("antlar8point.nif");
+				stringList.push_back("deereyes.nif");
+				stringList.push_back("skinbuck.nif");
+				break;
+			}
+		}
+
+		// default
+		if (creatureEDID.find("minotaur") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("creatures\\minotaur\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("minotaurbodyhair.nif");
+				stringList.push_back("minotaur.nif");
+				stringList.push_back("hornsb.nif");
+				stringList.push_back("head.nif");
+				stringList.push_back("hair02.nif");
+				stringList.push_back("hair01.nif");
+				stringList.push_back("goz.nif");
+				stringList.push_back("eyelids.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("goblin") != std::string::npos ||
+			creatureEDID.find("gob") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Goblin\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("goblegs01.nif");
+				stringList.push_back("goblinchest01.nif");
+				stringList.push_back("goblinhandl.nif");
+				stringList.push_back("gonblinhandr.nif");
+				stringList.push_back("goblinhead.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("ghost") != std::string::npos ||
+			creatureEDID.find("ghst") != std::string::npos ||
+			creatureEDID.find("wrait") != std::string::npos ||
+			creatureEDID.find("spirit") != std::string::npos ||
+			creatureEDID.find("spr") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Ghost\\Skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("heademissive.nif");
+				stringList.push_back("innerbodyemissive.nif");
+				stringList.push_back("lefthandemissive.nif");
+				stringList.push_back("outerbodyemissive.nif");
+				stringList.push_back("righthandemissive.nif");
+				stringList.push_back("shrink.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("skeleton") != std::string::npos ||
+			creatureEDID.find("lich") != std::string::npos ||
+			creatureEDID.find("skel") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Skeleton\\skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("skellie.nif");
+				stringList.push_back("skull.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("zombie") != std::string::npos ||
+			creatureEDID.find("bonewalker") != std::string::npos ||
+			creatureEDID.find("mummy") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Zombie\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("hair02.nif");
+				stringList.push_back("head02.nif");
+				stringList.push_back("leftarm02.nif");
+				stringList.push_back("lefthand02.nif");
+				stringList.push_back("leftleg01.nif");
+				stringList.push_back("lefttorso01.nif");
+				stringList.push_back("neckplug.nif");
+				stringList.push_back("rightarm02.nif");
+				stringList.push_back("righthand02.nif");
+				stringList.push_back("rightleg02.nif");
+				stringList.push_back("righttorso02.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("draugr") != std::string::npos ||
+			creatureEDID.find("drgr") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Aa_Blood\\Draugr\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("body.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("dog") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Dog\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("dogbody.nif");
+				stringList.push_back("dogeyes01.nif");
+				stringList.push_back("doghead.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("elytra") != std::string::npos ||
+			creatureEDID.find("ornada") != std::string::npos ||
+			creatureEDID.find("orn") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Elytra\\Skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("elytrabody.nif");
+				stringList.push_back("head1.nif");
+				stringList.push_back("stinger.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("netch") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("morroblivion\\creatures\\bullnetch\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("body.nif");
+				stringList.push_back("jelly.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("kwama") != std::string::npos ||
+			creatureEDID.find("kwa") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Morroblivion\\Creatures\\Kwama\\KwamaForager\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("mesh.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("nix") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("creatures\\nixhound\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("nixhound.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("drid") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("creatures\\spiderdaedra\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("daedra hair.nif");
+				stringList.push_back("trdridreaf.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("fish") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Slaughterfish\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("slaughterfish.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("fly") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("morroblivion\\creatures\\swampfly\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("body.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("crab") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\MudCrab\\skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("mud crbeye l00.nif");
+				stringList.push_back("mud crbeye r00.nif");
+				stringList.push_back("mudcrabjawl.nif");
+				stringList.push_back("mudcrabjawr.nif");
+				stringList.push_back("skincrab.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("rat") != std::string::npos ||
+			creatureEDID.find("mouse") != std::string::npos ||
+			creatureEDID.find("mous") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Rat\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("eyes.nif");
+				stringList.push_back("head.nif");
+				stringList.push_back("mange.nif");
+				stringList.push_back("rat.nif");
+				stringList.push_back("whiskers.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("bear") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Bear\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("bearbody.nif");
+				stringList.push_back("bearhead.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("boar") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Boar\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("blackhair.nif");
+				stringList.push_back("boarbody.nif");
+				stringList.push_back("boarhead.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("cow") != std::string::npos ||
+			creatureEDID.find("hrs") != std::string::npos ||
+			creatureEDID.find("horse") != std::string::npos ||
+			creatureEDID.find("donkey") != std::string::npos ||
+			creatureEDID.find("donk") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Horse\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("bridle.nif");
+				stringList.push_back("horseheadpaint.nif");
+				stringList.push_back("horsepaint.nif");
+				stringList.push_back("lefteye.nif");
+				stringList.push_back("mane.nif");
+				stringList.push_back("righteyeblue.nif");
+				stringList.push_back("saddle.nif");
+				stringList.push_back("tail.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("wolf") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Dog\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("wolfbody.nif");
+				stringList.push_back("wolfeyes.nif");
+				stringList.push_back("wolfhead.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("troll") != std::string::npos ||
+			creatureEDID.find("trll") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Troll\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("troll.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("chicken") != std::string::npos ||
+			creatureEDID.find("clannfear") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Clannfear\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("clannfear.nif");
+				stringList.push_back("head.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("daedroth") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Daedroth\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("daedroth.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("dreu") != std::string::npos ||
+			creatureEDID.find("cephalopod") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\dreugh\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("body.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("atronach") != std::string::npos ||
+			creatureEDID.find("atro") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\FrostAtronach\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("frostatronach.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("guar") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Morroblivion\\Creatures\\Guar\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("stripedguar.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("scrib") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Morroblivion\\Creatures\\Kwama\\Scrib\\skeleton.nif");
+				break;
+
+			case 1:
+//				stringList.push_back("skeleton.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("ogrim") != std::string::npos ||
+			creatureEDID.find("ogrm") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\Ogre\\Skeleton.NIF");
+				break;
+
+			case 1:
+				stringList.push_back("flask.nif");
+				stringList.push_back("furtufts.nif");
+				stringList.push_back("head.nif");
+				stringList.push_back("ogre.nif");
+				stringList.push_back("pouch.nif");
+				break;
+			}
+		}
+
+		if (creatureEDID.find("cenutrion") != std::string::npos)
+		{
+			stringList.clear();
+			switch (modelType)
+			{
+			case 0:
+				stringList.push_back("Creatures\\SphereCenturion\\skeleton.nif");
+				break;
+
+			case 1:
+				stringList.push_back("body.nif");
+				break;
+			}
+		}
+
+
+		return stringList;
+	}
+
 	float ESM::ESMWriter::calcDistance(ESM::Position pointA, ESM::Position pointB)
 	{
 		float deltaX = pointB.pos[0] - pointA.pos[0];

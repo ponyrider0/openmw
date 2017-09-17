@@ -2012,7 +2012,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (bHasTempRefs)
 			{
 				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
-													  //****************EXPORT PATHGRID*****************/
+				//****************EXPORT PATHGRID*****************/
 				int pathgridIndex = mDocument.getData().getPathgrids().searchId(cellRecordPtr->get().mId);
 				if (pathgridIndex != -1 && cellRecordPtr->isModified())
 				{
