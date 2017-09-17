@@ -143,6 +143,7 @@ namespace ESM {
         mTransport.save(esm);
         mAiPackage.save(esm);
     }
+
 	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
@@ -320,6 +321,14 @@ namespace ESM {
 		std::string pkgEDID;
 		int pkgcount = 0;
 		uint32_t pkgFormID;
+		if (mFlags & ESM::Creature::Flags::Flies)
+		{
+			// Flying package
+		}
+		if (mFlags & ESM::Creature::Flags::Swims)
+		{
+			// Swimming package
+		}
 		for (auto it_aipackage = mAiPackage.mList.begin(); it_aipackage != mAiPackage.mList.end(); it_aipackage++)
 		{
 			// aiPkg is full definition and not just a stringID...
@@ -332,25 +341,60 @@ namespace ESM {
 			case ESM::AI_Wander:
 				duration = it_aipackage->mWander.mDuration;
 				distance = it_aipackage->mWander.mDistance;
+				if (distance == 0)
+					pkgEDID = "aaaDefaultStayAtEditorLocation";
+				else if (distance <= 128)
+					pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				else if (distance <= 512)
+					pkgEDID = "aaaDefaultExploreEditorLoc512";
+				else if (distance <= 1000)
+					pkgEDID = "aaaDefaultExploreEditorLoc1024";
+				else if (distance <= 2000)
+					pkgEDID = "aaaDefaultExploreEditorLoc3000";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
 				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
 				break;
 			case ESM::AI_Travel:
+				pkgEDID = "aaaDefaultExploreEditorLoc512";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
 				ai_debugstream << "Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
 				break;
 			case ESM::AI_Activate:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
 				ai_debugstream << "Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
 				break;
 			case ESM::AI_Follow:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
 				ai_debugstream << "Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 				break;
 			case ESM::AI_Escort:
+				pkgEDID = "aaaDefaultExploreCurrentLoc256";
+				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				esm.startSubRecordTES4("PKID");
+				esm.writeT<uint32_t>(pkgFormID);
+				esm.endSubRecordTES4("PKID");
 				ai_debugstream << "Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 				break;
 			}
 			ai_debugstream << std::endl;
 			std::cout << ai_debugstream.str();
-//			OutputDebugString(ai_debugstream.str().c_str());
+			OutputDebugString(ai_debugstream.str().c_str());
 		}
+/*
 		pkgEDID = "aaaCreatureExterior1500";
 		pkgFormID = esm.crossRefStringID(pkgEDID, false);
 		esm.startSubRecordTES4("PKID");
@@ -361,7 +405,7 @@ namespace ESM {
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
-
+*/
 		// KFFZ, animations
 
 		// DATA

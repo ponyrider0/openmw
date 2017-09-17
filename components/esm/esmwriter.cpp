@@ -1279,14 +1279,14 @@ namespace ESM
 
 		switch (conversion_mode)
 		{
-		case 0:
+		case 0: // default: leading zero (most records)
 			if (name.size() > 0 && name[0] != '0')
 				tempEDID = "0" + name;
 			break;
-		case 1:
+		case 1: // no leading zero (most filenames, some records)
 			tempEDID = name;
 			break;
-		case 2:
+		case 2: // remove extra non-letter/digit characters (some records)
 			tempEDID = name;
 			removeOther = true;
 			break;
@@ -1318,7 +1318,7 @@ namespace ESM
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'A';
 				break;
 			case '\\':
-//				finalEDID = finalEDID;
+				finalEDID = (removeOther) ? finalEDID : finalEDID + '\\';
 				break;
 			case ':':
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';

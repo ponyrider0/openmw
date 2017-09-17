@@ -102,7 +102,7 @@ namespace ESM
         }
     }
 
-	bool LevelledListBase::exportTESx(ESMWriter &esm, int export_format) const
+	bool ItemLevList::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
@@ -134,10 +134,18 @@ namespace ESM
 			esm.startSubRecordTES4("LVLO");
 			esm.writeT<short>(it_LVLO->mLevel); // level
 			esm.writeT<uint16_t>(0); // unknown?
-			uint32_t refID = esm.crossRefStringID(it_LVLO->mId);
-			if (refID == 0)
-				refID = 0x19116; // default item for null ref: Fork
-			esm.writeT<uint32_t>(refID); //formID
+			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
+			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts) sRecordId);
+			uint32_t refID = esm.crossRefStringID(itemEDID, false);
+			if (refID != 0)
+			{
+				esm.writeT<uint32_t>(refID); //formID
+			}
+			else
+			{
+				std::cout << "WARNING: LVLI[" << newEDID << "] Can't resolve formID for item[" << itemEDID << "]" << std::endl;
+				esm.writeT<uint32_t>(0x19116); //formID=Fork
+			}
 			esm.writeT<uint16_t>(1); //count
 			esm.writeT<uint16_t>(0); //unknown
 			esm.endSubRecordTES4("LVLO");
@@ -191,8 +199,18 @@ namespace ESM
 			esm.writeT<short>(it_LVLO->mLevel); // level
 			esm.writeT<uint16_t>(0); // unknown?
 			// creature reference ID
-			uint32_t refID = esm.crossRefStringID(it_LVLO->mId);
-			esm.writeT<uint32_t>(refID); //formID
+			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
+			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts)sRecordId);
+			uint32_t refID = esm.crossRefStringID(itemEDID, false);
+			if (refID != 0)
+			{
+				esm.writeT<uint32_t>(refID); //formID
+			}
+			else
+			{
+				std::cout << "WARNING: LVLC[" << newEDID << "] Can't resolve formID for creature[" << itemEDID << "]" << std::endl;
+				esm.writeT<uint32_t>(0x1D0B6); //formID=TestBear
+			}
 			esm.writeT<uint16_t>(1); //count
 			esm.writeT<uint16_t>(0); //unknown
 			esm.endSubRecordTES4("LVLO");

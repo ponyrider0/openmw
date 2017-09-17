@@ -249,7 +249,15 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
 	// lookup base record's FormID based on mRefID or mRefNum
-	uint32_t baseFormID;
+	uint32_t baseFormID=0;
+	ESM::Position substitutionOffset;
+	std::string baseEDID;
+
+	for (int i=0; i < 3; i++)
+	{
+		substitutionOffset.pos[i] = 0;
+		substitutionOffset.rot[i] = 0;
+	}
 
 	// Substitutions
 	if (mRefID == "DoorMarker")
@@ -262,22 +270,56 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 		baseFormID = 0x05;
 	else if (mRefID == "TempleMarker")
 		baseFormID = 0x06;
-	else
-		baseFormID = esm.crossRefStringID(mRefID);
+
+	if (baseFormID == 0)
+	{
+		baseEDID = esm.generateEDIDTES4(mRefID);
+		baseEDID = esm.substituteMorroblivionEDID(baseEDID, (ESM::RecNameInts)0);
+
+		if (baseEDID == "0chimneyUsmokeUsmall")
+			baseEDID = "FireSmokeMedium";
+		else if (baseEDID == "0floraUbushU01")
+			baseEDID = "Dbush15";
+		else if (baseEDID == "0miscUcomUbasketU01")
+			baseEDID = "LowerThatchbasket02New";
+		else if (baseEDID == "0miscUcomUwoodUfork")
+			baseEDID = "0miscUcomUwoodUforkUUNI1";
+		else if (baseEDID == "0miscUcomUsilverwareUfork")
+			baseEDID = "0miscUcomUsilverwareUforkUuni";
+		else if (baseEDID == "0potionUcyroUbrandyU01")
+			baseEDID = "PotionCyrodiilicBrandy";
+		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
+			baseEDID = "CheydinhalWell01";
+
+		baseFormID = esm.crossRefStringID(baseEDID, false);
+
+		// load substitutionOffsets
+		if (baseEDID == "FireSmokeMedium" ||
+			baseEDID.find("0LightUComUCandle") != std::string::npos ||
+			baseEDID.find("0lightUcomUtorch") != std::string::npos )
+		{
+			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + 4.7124; // 270 deg == 4.7124 radians
+			substitutionOffset.rot[1] = -1*mPos.rot[1];
+			substitutionOffset.rot[2] = -1*mPos.rot[2];
+		}
+		else if (baseEDID == "CheydinhalWell01" ||
+				baseEDID == "0TUImpUSetNordUXUWellU01" )
+		{
+			substitutionOffset.pos[3] = 100;
+		}
+		else if (baseEDID == "Dbush15")
+		{
+			substitutionOffset.pos[2] = -70;
+			substitutionOffset.rot[0] = -1*mPos.rot[0];
+			substitutionOffset.rot[1] = -1*mPos.rot[1];
+			substitutionOffset.rot[2] = -1*mPos.rot[2];
+		}
+	}
 
 	esm.startSubRecordTES4("NAME");
 	esm.writeT<uint32_t>(baseFormID);
 	esm.endSubRecordTES4("NAME");
 
-	// TODO: if (base type == door):
-	//   1. create searchable list of doorRefID+Cell+location to match
-	// If (mTeleport == true) 
-	//   1. add this reference to stack for second pass processing,
-	//   2. save writer context to go back to replace with correct RefID
-	// After all references created, make a second pass to:
-	//   1. iterate through stack of all door references with mTeleport==true
-	//   2. match mDestCell+mDoorDest with searchable list of doorRefID+Cell+location
-	//   3. replace XTEL subrecord with referenceID from #2
 	if (mTeleport == true)
 	{
 		// find teleport door (reference) near the doordest location...
@@ -285,14 +327,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 		{
 			esm.startSubRecordTES4("XTEL");
 			esm.writeT<uint32_t>(teleportRefID);
-/*
-			esm.writeT<float>(returnPosition->pos[0]);
-			esm.writeT<float>(returnPosition->pos[1]);
-			esm.writeT<float>(returnPosition->pos[2]);
-			esm.writeT<float>(returnPosition->rot[0]);
-			esm.writeT<float>(returnPosition->rot[1]);
-			esm.writeT<float>(returnPosition->rot[2]);
-*/
+
 			esm.writeT<float>(mDoorDest.pos[0]);
 			esm.writeT<float>(mDoorDest.pos[1]);
 			esm.writeT<float>(mDoorDest.pos[2]);
@@ -350,12 +385,16 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 
 	// DATA	
 	esm.startSubRecordTES4("DATA");
-	esm.writeT<float>(mPos.pos[0]);
-	esm.writeT<float>(mPos.pos[1]);
-	esm.writeT<float>(mPos.pos[2]);
-	esm.writeT<float>(mPos.rot[0]);
-	esm.writeT<float>(mPos.rot[1]);
-	esm.writeT<float>(mPos.rot[2]);
+	for (int i=0; i < 3; i++)
+	{
+		float floatVal = mPos.pos[i]+substitutionOffset.pos[i];
+		esm.writeT<float>(floatVal);
+	}
+	for (int i=0; i < 3; i++)
+	{
+		float floatVal = mPos.rot[i]+substitutionOffset.rot[i];
+		esm.writeT<float>(floatVal);
+	}
 	esm.endSubRecordTES4("DATA");
 
 }

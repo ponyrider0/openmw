@@ -343,10 +343,61 @@ namespace ESM
 			responsibility = 30;
 		esm.writeT<unsigned char>(responsibility); // responsibility
 		flags = 0;
+		bool isSpellmaker=false;
+		bool isPickProbeSeller=false;
+		if ((mAiData.mServices & ESM::NPC::Services::Weapon) != 0) // buys weapons
+			flags |= 0x1;
+		if ((mAiData.mServices & ESM::NPC::Services::Armor) != 0)
+			flags |= 0x2;
+		if ((mAiData.mServices & ESM::NPC::Services::Clothing) != 0)
+			flags |= 0x4;
+		if ((mAiData.mServices & ESM::NPC::Services::Books) != 0)
+			flags |= 0x8;
+		if ((mAiData.mServices & ESM::NPC::Services::Ingredients) != 0)
+			flags |= 0x10;
+		if ((mAiData.mServices & ESM::NPC::Services::Probes) != 0)
+			isPickProbeSeller=true;
+		if ((mAiData.mServices & ESM::NPC::Services::Picks) != 0)
+			isPickProbeSeller=true;
+		if ((mAiData.mServices & ESM::NPC::Services::Lights) != 0)
+			flags |= 0x80;
+		if ((mAiData.mServices & ESM::NPC::Services::Apparatus) != 0)
+			flags |= 0x100;
+		if ((mAiData.mServices & ESM::NPC::Services::RepairItem) != 0)
+			flags |= 0x400; // Misc
+		if ((mAiData.mServices & ESM::NPC::Services::Misc) != 0)
+			flags |= 0x400;
+		if ((mAiData.mServices & ESM::NPC::Services::Potions) != 0)
+			flags |= 0x2000;
+		if ((mAiData.mServices & ESM::NPC::Services::Spells) != 0)
+			flags |= 0x800;
+		if ((mAiData.mServices & ESM::NPC::Services::MagicItems) != 0)
+			flags |= 0x1000;
+		if ((mAiData.mServices & ESM::NPC::Services::Training) != 0)
+			flags |= 0x4000;
+		if ((mAiData.mServices & ESM::NPC::Services::Spellmaking) != 0)
+			isSpellmaker=true; // Spellmaking system?
+		if ((mAiData.mServices & ESM::NPC::Services::Enchanting) != 0)
+			flags |= 0x10000; // Recharge
+		if ((mAiData.mServices & ESM::NPC::Services::Repair) != 0)
+			flags |= 0x20000;
 		// NPC services...
 		esm.writeT<uint32_t>(flags); // flags (buy/sell/services)
-		esm.writeT<unsigned char>(0); // trainer Skill
-		esm.writeT<unsigned char>(0); // trainer level
+		// select trainer skill from highest skill level...
+		int skillAV=0, trainerLevel=0;
+		if (autocalc == false)
+		{
+			for (int skillOffset = 0; skillOffset < ESM::Skill::Length; skillOffset++)
+			{
+				if (mNpdt52.mSkills[skillOffset] > trainerLevel)
+				{
+					skillAV = esm.skillToActorValTES4(skillOffset)-12;
+					trainerLevel =  mNpdt52.mSkills[skillOffset];
+				}
+			}
+		}
+		esm.writeT<unsigned char>(skillAV); // trainer Skill
+		esm.writeT<unsigned char>(trainerLevel); // trainer level
 		esm.writeT<uint16_t>(0); // unused
 		esm.endSubRecordTES4("AIDT");
 
@@ -366,6 +417,14 @@ namespace ESM
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
 		tempStr = esm.generateEDIDTES4(mId);
+		if (flags != 0)
+		{
+			pkgEDID = "MOMerchantPackage";
+			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			esm.startSubRecordTES4("PKID");
+			esm.writeT<uint32_t>(pkgFormID);
+			esm.endSubRecordTES4("PKID");
+		}
 		for (auto it_aipackage = mAiPackage.mList.begin(); it_aipackage != mAiPackage.mList.end(); it_aipackage++)
 		{
 			int duration=0, distance=0;

@@ -668,8 +668,8 @@ namespace CSMDoc
 		void drawBottomLeftCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
 		void drawBottomRightCorner(int origX, int origY, int subCX, int subCY, int quadX, int quadY, int plugindex, const ESM::Land::LandData*& landData);
 
-		void doStuff4(ESM::ESMWriter& writer, int quadVal);
-		void doStuff5(ESM::ESMWriter& writer, int quadVal);
+		void exportLTEX_basetexture(ESM::ESMWriter& writer, int quadVal);
+		void exportLTEX_interpolatelayers(ESM::ESMWriter& writer, int quadVal);
 
 	public:
 

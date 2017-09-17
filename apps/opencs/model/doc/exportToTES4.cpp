@@ -523,7 +523,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 			activatorRec.get().exportTESx(writer, 4);
 			// MNAM
 			writer.startSubRecordTES4("MNAM");
-			writer.writeT<uint8_t>(0);
+			writer.writeT<uint32_t>(0);
 			writer.endSubRecordTES4("MNAM");
 			writer.endRecordTES4(sSIG);
 //			debugstream.str(""); debugstream.clear();
@@ -1079,13 +1079,17 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 //	mDocument.getData().getReferenceables().getDataSet().getClothing().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Clothing> clothingRecord = mDocument.getData().getReferenceables().getDataSet().getClothing().mContainer.at(stage);
+	std::string strEDID = writer.generateEDIDTES4(clothingRecord.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = clothingRecord.isModified() || clothingRecord.isDeleted();
+		exportOrSkip = clothingRecord.isModified() || clothingRecord.isDeleted() ||
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 	}
-	else {
+	else 
+	{
 		// no skipping, export all
 		exportOrSkip=true;
 	}
@@ -1208,11 +1212,14 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 //	mDocument.getData().getReferenceables().getDataSet().getArmors().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	bool exportOrSkip=false;
 	const CSMWorld::Record<ESM::Armor> armorRecord = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(stage);
+	std::string strEDID = writer.generateEDIDTES4(armorRecord.get().mId);
+	uint32_t formID = writer.crossRefStringID(strEDID, false);
 
 	if (mSkipMasterRecords == true)
 	{
 		// check for modified / deleted state, otherwise skip
-		exportOrSkip = armorRecord.isModified() || armorRecord.isDeleted();
+		exportOrSkip = armorRecord.isModified() || armorRecord.isDeleted() ||
+			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 	}
 	else {
 		// no skipping, export all
@@ -2516,6 +2523,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			}
 			// landscape record present
 			std::ostringstream landID;
+			landID.str(""); landID.clear();
 			landID << "#" << (baseX/2) << " " << (baseY/2);
 			if (mDocument.getData().getLand().searchId(landID.str()) != -1 )
 			{
@@ -2579,6 +2587,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 
 //				debugstream.str(""); debugstream.clear();
 //				debugstream << "retrieving landID=[" << landID.str() << "] ...";
+
 				//******************EXPORT LANDSCAPE*****************/
 				if (bLandscapePresent && cellRecordPtr->isModified())
 				{
@@ -2587,7 +2596,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					uint32_t landFormID = mState.crossRefLandXY(baseX+x, baseY+y);
 					writer.startRecordTES4("LAND", 0, landFormID, "");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
-	//					int plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
 
 					// VTEX, LTEX formIDs (each morroblivion subcell maps to 8x8 portion of the original 16x16 morrowind cell vtex grid)
 					// each Subcell is further divided into quadrants containing a 4x4 portion of the original 16x16 morrowind cell vtex grid
@@ -2600,83 +2608,17 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						{
 							for (u=0; u < 2; u++)
 							{
-
-								// After exporting landscape heightmaps...
-								// 1. Create BlendMap
 								createPreBlendMap(writer, (baseX/2), (baseY/2), x, y, u, v);
-								// 2. Create Layer List (from all textures in Blendmap)
 								gatherPreBlendTextureList();
 								if (mPreBlendTextureList.size() > 0)
 								{
-									// 3. Choose Base Texture
-									doStuff4(writer, quadVal);
-									// 4. Run interpolation algorithm to generate layers
-									doStuff5(writer, quadVal);
+									exportLTEX_basetexture(writer, quadVal);
+									exportLTEX_interpolatelayers(writer, quadVal);
 								}
-
-								//*******************************************************/
-	/*
-								// create texture list for subcell quadrant
-								gatherSubCellQuadrantLTEX(x, y, u, v, landData, plugindex);
-								if (mSubCellQuadTexList.size() == 0)
-									continue;
-
-								// export first texture as the base layer
-								int16_t layer = -1;
-								auto tex_iter = mSubCellQuadTexList.begin();
-								texformID = *tex_iter;
-								writer.startSubRecordTES4("BTXT");
-								writer.writeT<uint32_t>(texformID); // formID
-								writer.writeT<uint8_t>(quadVal); // quadrant
-								writer.writeT<uint8_t>(0); // unused
-								writer.writeT<int16_t>(layer); // 16bit layer
-								writer.endSubRecordTES4("BTXT");
-	//								debugstream << "writing ref-LTEX=[" << texformID << "]... ";
-
-								// iterate through the remaining textures, exporting each as a separate layer
-								for (tex_iter++; tex_iter !=  mSubCellQuadTexList.end(); tex_iter++)
-								{
-									layer++;
-									texformID = *tex_iter;
-									writer.startSubRecordTES4("ATXT");
-									writer.writeT<uint32_t>(texformID); // formID
-									writer.writeT<uint8_t>(quadVal); // quadrant
-									writer.writeT<uint8_t>(0); // unused
-									writer.writeT<int16_t>(layer); // 16bit layer
-									writer.endSubRecordTES4("ATXT");
-
-									// create an opacity map for this layer, then export it as VTXT record
-									uint16_t position=0;
-									float opacity=1.0f;
-									writer.startSubRecordTES4("VTXT");
-									calculateTexLayerOpacityMap(x, y, u, v, landData, plugindex, texformID);
-									for (auto map_pos = mTexLayerOpacityMap.begin(); map_pos != mTexLayerOpacityMap.end(); map_pos++)
-									{
-										position = map_pos->first;
-										opacity = map_pos->second;
-										writer.writeT<uint16_t>(position); // offset into 17x17 grid
-										writer.writeT<uint8_t>(0); // unused
-										writer.writeT<uint8_t>(0); // unused
-										writer.writeT<float>(opacity); // float opacity
-									}
-									writer.endSubRecordTES4("VTXT");
-								}
-	*/
-								// ************************************************************/
-								// update the quadrant number for next pass
 								quadVal++;
-
-	/*
-								writer.startSubRecordTES4("VTEX");
-								// multiple formIDs
-								writer.writeT<uint32_t>(texformID); // formID
-								writer.endSubRecordTES4("VTEX");
-	*/
-
 							}
 						}
 					}
-
 					writer.endRecordTES4("LAND");
 					debugstream << "done." << std::endl;
 				}
@@ -2688,7 +2630,21 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				//**********END EXPORT LANDSCAPE************************/
 				
 				// TODO: export PATHGRID
-				
+				// Find PathGrid XY -- look through list? compare XY?
+				// Export PathGrid
+//				int pathgridIndex = mDocument.getData().getPathgrids().searchId(landID.str());
+				int pathgridIndex = mDocument.getData().getPathgrids().searchId(cellRecordPtr->get().mId);
+				if (pathgridIndex != -1 && bLandscapePresent && cellRecordPtr->isModified() )
+				{
+					const CSMWorld::Record<CSMWorld::Pathgrid>& pathgrid
+						= mDocument.getData().getPathgrids().getRecord (pathgridIndex);
+					// check for over-riding and deleting and stuff
+					uint32_t pathgridFormID = 0;
+					writer.startRecordTES4("PGRD", 0, pathgridFormID, "");
+					pathgrid.get().exportSubCellTES4(writer, baseX+x, baseY+y);
+					writer.endSubRecordTES4("PGRD");
+				}
+
 				// export Refs (ACRE, REFR)
 				if (bTempRefsPresent)
 				{
@@ -2722,22 +2678,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							// reserve formID
 //							uint32_t refFormID = writer.getNextAvailableFormID();
 //							refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-	/*
-							if ((baseRefID != 0) && ( (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_CreatureLevelledList) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Creature) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc) ) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Static) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Door) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Activator) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Potion) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Apparatus) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Armor) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Book) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Clothing) ||
-								(baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Container) )
-	*/
+
+							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
 							if (baseRefID != 0)
 							{
 								std::string sSIG;
@@ -2805,7 +2748,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 	
 }
 
-void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& writer, int quadVal)
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::exportLTEX_interpolatelayers(ESM::ESMWriter& writer, int quadVal)
 {
 	std::ostringstream debugstream;
 	int layer = -1;
@@ -2895,7 +2838,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff5(ESM::ESMWriter& wri
 
 }
 
-void CSMDoc::ExportExteriorCellCollectionTES4Stage::doStuff4(ESM::ESMWriter& writer, int quadVal)
+void CSMDoc::ExportExteriorCellCollectionTES4Stage::exportLTEX_basetexture(ESM::ESMWriter& writer, int quadVal)
 {
 	int texformID;
 
