@@ -295,6 +295,11 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "0miscUcomUwoodUforkUUNI1";
 		else if (baseEDID == "0CollisionSWallSTSINVISO")
 			baseEDID = "CollisionBoxStatic";
+		else if ( (baseEDID.find("0lightUdeUlanternU07Uwarm") != std::string::npos ||
+			baseEDID.find("0LightUDeULanternU01") != std::string::npos ||
+			baseEDID.find("0lightUdeUlanternU07U128") != std::string::npos) &&
+			mPos.pos[2] > 350)
+			baseEDID = "0lightUdeUlanternU05U128";
 
 		baseFormID = esm.crossRefStringID(baseEDID, false);
 
@@ -307,7 +312,13 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID.find("0lightucomuredwareulamp") != std::string::npos) &&
 			baseEDID.find("ring") == std::string::npos &&
 			baseEDID.find("hook") == std::string::npos &&
-			baseEDID.find("paper") == std::string::npos )
+			baseEDID.find("paper") == std::string::npos &&
+//			baseEDID.find("0lightUdeulanternu") == std::string::npos &&
+			baseEDID.find("0lightudeulanternu07uwarm") == std::string::npos &&
+			baseEDID.find("0lightudeulanternu01") == std::string::npos &&
+			baseEDID.find("0lightudeulanternu07u128") == std::string::npos &&
+			baseEDID.find("0lightUdeulanternu05u128") == std::string::npos &&
+			baseEDID.find("0lightudeulanternu03usway") == std::string::npos )
 		{
 			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + 4.7124; // 270 deg == 4.7124 radians
 			substitutionOffset.rot[1] = -1*mPos.rot[1];
