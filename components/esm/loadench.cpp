@@ -77,17 +77,17 @@ namespace ESM
 		// FULL
 
 		// ENIT {type, amount, cost, flags, unused}
-		uint32_t tempVal=0;
+		uint32_t enchType=0;
 		esm.startSubRecordTES4("ENIT");
 		if (mData.mType == ESM::Enchantment::Type::CastOnce)
-			tempVal = 0;
+			enchType = 0;
 		if (mData.mType == ESM::Enchantment::Type::WhenStrikes)
-			tempVal = 2;
+			enchType = 0;
 		if (mData.mType == ESM::Enchantment::Type::WhenUsed)
-			tempVal = 1;
+			enchType = 0;
 		if (mData.mType == ESM::Enchantment::Type::ConstantEffect)
-			tempVal = 3;
-		esm.writeT<uint32_t>(tempVal);
+			enchType = 0;
+		esm.writeT<uint32_t>(enchType); // enchantment type: 0=scroll, 1=staff, 2=weap, 3=apparel
 		esm.writeT<uint32_t>(mData.mCharge);
 		esm.writeT<uint32_t>(mData.mCost);
 		esm.writeT<uint8_t>(mData.mAutocalc ? 0 : 1);

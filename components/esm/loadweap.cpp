@@ -1,4 +1,11 @@
 #include "loadweap.hpp"
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
 
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
@@ -77,12 +84,12 @@ namespace ESM
 	bool Weapon::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
-		std::string tempStr;
+		std::string strEDID, tempStr;
 		std::ostringstream tempPath;
 
-		tempStr = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
-		esm.writeHCString(tempStr);
+		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
 
 		esm.startSubRecordTES4("FULL");
@@ -120,25 +127,40 @@ namespace ESM
 
 		// SCRI (script formID) mScript
 		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		if (mEnchant != "" && mScript == "")
+		{
+			// TODO: use ItemScript or TargetItemScript based on enchantment
+			strScript = "mwCWUItemScript";
+		}
+		else if (mScript != "")
+		{
+			std::cout << "WARNING: enchanted item already has script: " << strEDID << std::endl;
+		}
+		if (strScript.size() > 2 && Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
 		{
 			strScript += "Script";
 		}
-		tempFormID = esm.crossRefStringID(strScript, false);
-		if (tempFormID != 0)
+		if (strScript != "")
 		{
-			esm.startSubRecordTES4("SCRI");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("SCRI");
+			tempFormID = esm.crossRefStringID(strScript, false);
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("SCRI");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.endSubRecordTES4("SCRI");
+			}
 		}
 
 		// ENAM (enchantment formID) mEnchant
-		tempFormID = esm.crossRefStringID(mEnchant);
-		if (tempFormID != 0)
+		if (mEnchant != "")
 		{
-			esm.startSubRecordTES4("ENAM");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("ENAM");
+			tempFormID = esm.crossRefStringID(mEnchant);
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("ENAM");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.endSubRecordTES4("ENAM");
+			}
 		}
 
 		// ANAM (enchantment points)
