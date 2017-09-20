@@ -295,35 +295,84 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "0miscUcomUwoodUforkUUNI1";
 		else if (baseEDID == "0CollisionSWallSTSINVISO")
 			baseEDID = "CollisionBoxStatic";
+/*
 		else if ( (baseEDID.find("0lightUdeUlanternU07Uwarm") != std::string::npos ||
 			baseEDID.find("0LightUDeULanternU01") != std::string::npos ||
-			baseEDID.find("0lightUdeUlanternU07U128") != std::string::npos) &&
+			baseEDID.find("0lightUdeUlanternU07U128") != std::string::npos ||
+			baseEDID.find("0lightUdeUlanternU0") != std::string::npos) &&
 			mPos.pos[2] > 350)
-			baseEDID = "0lightUdeUlanternU05U128";
+			baseEDID = "0lightUdeUpaperUlanternU04";
+*/
 
 		baseFormID = esm.crossRefStringID(baseEDID, false);
+
+//		std::map<std::string, bool> lanternSubstitutionsMap;
+//		lanternSubstitutionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUcomUredwareUlamp"), true));
+//		lanternSubstitutionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04Uswayoff"), true));
+		
+		std::map<std::string, bool> lanternExceptionsMap;
+		
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U200"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U200UR"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U64"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U700Usway"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03U77"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU03UsU256"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightudeulanternu03usway"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04U128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04U157"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04U177"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04U177US"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04U77"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU04Usway"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05U128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05U128US"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05U200US"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05US"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05Uship"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05Usway"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U128U01"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U177U01"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U77"), true));
+
+//		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05U200"), true));
+/*
+lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightudeulanternu01"), true));
+lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightudeulanternu07uwarm"),true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightudeulanternu07u128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeulanternu05u128"), true));
+*/
+//		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase(""), true));
 
 		baseEDID = Misc::StringUtils::lowerCase(baseEDID);
 		// load substitutionOffsets
 		if ( (baseEDID == "firesmokemedium" ||
 			baseEDID.find("candle") != std::string::npos ||
 			baseEDID.find("torch") != std::string::npos ||
-			baseEDID.find("lantern") != std::string::npos ||
-			baseEDID.find("0lightucomuredwareulamp") != std::string::npos) &&
+			baseEDID.find("lantern") != std::string::npos ) &&
 			baseEDID.find("ring") == std::string::npos &&
 			baseEDID.find("hook") == std::string::npos &&
 			baseEDID.find("paper") == std::string::npos &&
-//			baseEDID.find("0lightUdeulanternu") == std::string::npos &&
-			baseEDID.find("0lightudeulanternu07uwarm") == std::string::npos &&
-			baseEDID.find("0lightudeulanternu01") == std::string::npos &&
-			baseEDID.find("0lightudeulanternu07u128") == std::string::npos &&
-			baseEDID.find("0lightUdeulanternu05u128") == std::string::npos &&
-			baseEDID.find("0lightudeulanternu03usway") == std::string::npos )
+			lanternExceptionsMap.find(baseEDID) == lanternExceptionsMap.end() )
 		{
-			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + 4.7124; // 270 deg == 4.7124 radians
-			substitutionOffset.rot[1] = -1*mPos.rot[1];
-			substitutionOffset.rot[2] = -1*mPos.rot[2];
+			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + mPos.rot[1] + (3*1.5708); // 270 deg == 4.7124 radians
+			substitutionOffset.rot[1] = (-1*mPos.rot[1]) + mPos.rot[2] - (2*1.5708);
+			substitutionOffset.rot[2] = (-1*mPos.rot[2]) + mPos.rot[0];
 		}
+//		else if (baseEDID == Misc::StringUtils::lowerCase("0lightUdeUlanternU05U200") ||
+//			baseEDID == Misc::StringUtils::lowerCase("0lightUdeUlanternU05") ||
+//			baseEDID == Misc::StringUtils::lowerCase("0lightUdeUlanternU05UCarry") ||
+//			baseEDID == Misc::StringUtils::lowerCase("0lightUdeUlanternU05U128UCarry") )
+//		{
+//			substitutionOffset.rot[0] = (-1*mPos.rot[0]) + mPos.rot[1] + (3*1.5708); // 90 deg == 1.5708 radians
+//			substitutionOffset.rot[1] = (-1*mPos.rot[1]) + mPos.rot[2] + (2*1.5708);
+//			substitutionOffset.rot[2] = (-1*mPos.rot[2]) + mPos.rot[0];
+//		}
 		else if (baseEDID == "cheydinhalwell01" ||
 				baseEDID == "0tuimpusetnorduxuwellu01" )
 		{
