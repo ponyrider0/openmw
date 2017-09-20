@@ -305,7 +305,8 @@ namespace ESM
 
 		// SCRI
 		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
+			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
 		{
 			strScript += "Script";
 		}
@@ -457,7 +458,9 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
+				ai_debugstream << "Substituting Wander Package for: Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
+				ai_debugstream << std::endl;
+				std::cout << ai_debugstream.str();
 				break;
 			case ESM::AI_Activate:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
@@ -465,7 +468,9 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
+				ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
+				ai_debugstream << std::endl;
+				std::cout << ai_debugstream.str();
 				break;
 			case ESM::AI_Follow:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
@@ -473,7 +478,9 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+				ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+				ai_debugstream << std::endl;
+				std::cout << ai_debugstream.str();
 				break;
 			case ESM::AI_Escort:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
@@ -481,7 +488,9 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+				ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+				ai_debugstream << std::endl;
+				std::cout << ai_debugstream.str();
 				break;
 			}
 			ai_debugstream << std::endl;

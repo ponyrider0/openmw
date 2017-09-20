@@ -133,6 +133,30 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		// SCRI (script formID) mScript
+		std::string strScript = esm.generateEDIDTES4(mScript);
+		if (mEnchant != "" && mScript == "")
+		{
+			// TODO: use ItemScript or TargetItemScript based on enchantment
+			strScript = "mwCWUItemScript";
+		}
+		else if (mScript != "")
+		{
+			std::cout << "WARNING: enchanted item already has script: " << strEDID << std::endl;
+		}
+		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
+			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
+		{
+			strScript += "Script";
+		}
+		tempFormID = esm.crossRefStringID(strScript, false);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
 		// ENAM (enchantment formID) mEnchant
 		tempFormID = esm.crossRefStringID(mEnchant);
 		if (tempFormID != 0)
@@ -208,29 +232,6 @@ namespace ESM
 		esm.writeT<uint32_t>(mData.mHealth);
 		esm.writeT<float>(mData.mWeight);
 		esm.endSubRecordTES4("DATA");
-
-		// SCRI (script formID) mScript
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (mEnchant != "" && mScript == "")
-		{
-			// TODO: use ItemScript or TargetItemScript based on enchantment
-			strScript = "mwCWUItemScript";
-		}
-		else if (mScript != "")
-		{
-			std::cout << "WARNING: enchanted item already has script: " << strEDID << std::endl;
-		}
-		if (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
-		{
-			strScript += "Script";
-		}
-		tempFormID = esm.crossRefStringID(strScript, false);
-		if (tempFormID != 0)
-		{
-			esm.startSubRecordTES4("SCRI");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("SCRI");
-		}
 
 		return true;
 	}

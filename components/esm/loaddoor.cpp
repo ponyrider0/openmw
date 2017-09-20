@@ -98,8 +98,8 @@ namespace ESM
 
 		// SCRI (script formID) mScript
 		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() != 0 && 
-			Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size()-2) == strScript.npos)
+		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
+			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
 		{
 			strScript += "Script";
 		}

@@ -82,11 +82,11 @@ namespace ESM
 		if (mData.mType == ESM::Enchantment::Type::CastOnce)
 			enchType = 0;
 		if (mData.mType == ESM::Enchantment::Type::WhenStrikes)
-			enchType = 0;
+			enchType = 2;
 		if (mData.mType == ESM::Enchantment::Type::WhenUsed)
-			enchType = 0;
+			enchType = 3;
 		if (mData.mType == ESM::Enchantment::Type::ConstantEffect)
-			enchType = 0;
+			enchType = 3;
 		esm.writeT<uint32_t>(enchType); // enchantment type: 0=scroll, 1=staff, 2=weap, 3=apparel
 		esm.writeT<uint32_t>(mData.mCharge);
 		esm.writeT<uint32_t>(mData.mCost);
