@@ -1800,8 +1800,9 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 				formID = writer.getNextAvailableFormID();
 				writer.reserveFormID(formID, strEDID);
 			}
-			int block = formID % 100;
-			int subblock = block % 10;
+			uint32_t localFormID = (formID & 0x00FFFFFF);
+			int block = localFormID % 100;
+			int subblock = localFormID % 10;
 			block -= subblock;
 			block /= 10;
 			if (block < 0 || block >= 10 || subblock < 0 || subblock >= 10)
@@ -2012,7 +2013,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (bHasTempRefs)
 			{
 				writer.startGroupTES4(cellFormID, 9); // Cell Children Subgroup: 8 - persistent children, 9 - temporary children
-				//****************EXPORT PATHGRID*****************/
+				//****************EXPORT INTERIOR PATHGRID*****************/
 				int pathgridIndex = mDocument.getData().getPathgrids().searchId(cellRecordPtr->get().mId);
 				if (pathgridIndex != -1 && cellRecordPtr->isModified())
 				{
@@ -2020,7 +2021,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						= mDocument.getData().getPathgrids().getRecord (pathgridIndex);
 					// check for over-riding and deleting and stuff
 					uint32_t pathgridFormID = 0;
-					writer.startRecordTES4("PGRD", 0, pathgridFormID, "");
+					std::string pathgridEDID = cellRecordPtr->get().mId + "pathgrid";
+					pathgridFormID = writer.getNextAvailableFormID();
+					pathgridFormID = writer.reserveFormID(pathgridFormID, pathgridEDID);
+					writer.startRecordTES4("PGRD", 0, pathgridFormID, pathgridEDID);
 					pathgrid.get().exportSubCellTES4(writer, 0, 0, true);
 					writer.endSubRecordTES4("PGRD");
 				}
