@@ -241,7 +241,7 @@ namespace ESM
 		esm.endSubRecordTES4("ACBS");
 
 		// SNAM, faction struct { formid, rank(byte), flags(ubyte[3]) }
-		tempFormID = esm.crossRefStringID(mFaction);
+		tempFormID = esm.crossRefStringID(mFaction, "FACT");
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SNAM");
@@ -253,7 +253,7 @@ namespace ESM
 			esm.writeT<uint8_t>(0); // unused
 			esm.endSubRecordTES4("SNAM");
 		}
-		tempFormID = esm.crossRefStringID("0factMorrowind", false);
+		tempFormID = esm.crossRefStringID("0factMorrowind", "FACT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SNAM");
@@ -270,7 +270,7 @@ namespace ESM
 		// RNAM, race formID
 		tempFormID = esm.substituteRaceID(mRace);
 		if (tempFormID == 0)
-			tempFormID = esm.crossRefStringID(mRace);
+			tempFormID = esm.crossRefStringID(mRace, "RACE");
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("RNAM");
@@ -281,7 +281,7 @@ namespace ESM
 		// CNTO: {formID, uint32}
 		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
 		{
-			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INVENTORY");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("CNTO");
@@ -294,7 +294,7 @@ namespace ESM
 		// SPLO
 		for (auto spellItem = mSpells.mList.begin(); spellItem != mSpells.mList.end(); spellItem++)
 		{
-			tempFormID = esm.crossRefStringID(*spellItem);
+			tempFormID = esm.crossRefStringID(*spellItem, "SPEL");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("SPLO");
@@ -304,13 +304,8 @@ namespace ESM
 		}
 
 		// SCRI
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
-		{
-			strScript += "Script";
-		}
-		tempFormID = esm.crossRefStringID(strScript, false);
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
+		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -408,12 +403,12 @@ namespace ESM
 		std::string pkgEDID;
 		uint32_t pkgFormID=0;
 		pkgEDID = "aaaEatCurrent6x2";
-		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
 		pkgEDID = "aaaEatCurrent19x2";
-		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
@@ -421,7 +416,7 @@ namespace ESM
 		if (flags != 0)
 		{
 			pkgEDID = "MOMerchantPackage";
-			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 			esm.startSubRecordTES4("PKID");
 			esm.writeT<uint32_t>(pkgFormID);
 			esm.endSubRecordTES4("PKID");
@@ -446,7 +441,7 @@ namespace ESM
 					pkgEDID = "aaaDefaultExploreEditorLoc1024";
 				else if (distance <= 2000)
 					pkgEDID = "aaaDefaultExploreEditorLoc3000";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -454,7 +449,7 @@ namespace ESM
 				break;
 			case ESM::AI_Travel:
 				pkgEDID = "aaaDefaultExploreEditorLoc512";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -464,7 +459,7 @@ namespace ESM
 				break;
 			case ESM::AI_Activate:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -474,7 +469,7 @@ namespace ESM
 				break;
 			case ESM::AI_Follow:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -484,7 +479,7 @@ namespace ESM
 				break;
 			case ESM::AI_Escort:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -501,11 +496,11 @@ namespace ESM
 
 		// CNAM, class formID
 		std::string strClass = esm.generateEDIDTES4(mClass, 2);
-		uint32_t classFormID = esm.crossRefStringID(strClass, false);
+		uint32_t classFormID = esm.crossRefStringID(strClass, "CLAS", false, true);
 		if (classFormID == 0)
 		{
 			strClass = esm.generateEDIDTES4(mClass, 0);
-			classFormID = esm.crossRefStringID(strClass, false);
+			classFormID = esm.crossRefStringID(strClass, "CLAS", false, false);
 		}
 		if (classFormID != 0)
 		{

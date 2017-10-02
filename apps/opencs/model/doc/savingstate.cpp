@@ -153,7 +153,8 @@ int CSMDoc::SavingState::loadEDIDmap(std::string filename)
 
 		// make final double check, then add to FormID map
 		std::string searchStr = mWriter.crossRefFormID(formID);
-		uint32_t searchInt = mWriter.crossRefStringID(strEDID);
+		uint32_t searchInt = mWriter.crossRefStringID(strEDID, "", false, true);
+
 		if ( (formID != 0 && searchStr.size() == 0) && (strEDID != "" && searchInt == 0) )
 		{
 			// add to formID map
@@ -352,7 +353,7 @@ int CSMDoc::SavingState::loadEDIDmap2(std::string filename)
 
 		// make final double check, then add to FormID map
 		std::string searchStr = mWriter.crossRefFormID(formID);
-		uint32_t searchInt = mWriter.crossRefStringID(strEDID);
+		uint32_t searchInt = mWriter.crossRefStringID(strEDID, "", false, true);
 
 		if ((formID != 0 && searchStr.size() == 0) && (strEDID != "" && searchInt == 0))
 		{

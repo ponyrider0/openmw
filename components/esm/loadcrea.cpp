@@ -189,7 +189,7 @@ namespace ESM {
 		// SPLO
 		for (auto spellItem = mSpells.mList.begin(); spellItem != mSpells.mList.end(); spellItem++)
 		{
-			tempFormID = esm.crossRefStringID(*spellItem);
+			tempFormID = esm.crossRefStringID(*spellItem, "SPEL");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("SPLO");
@@ -265,7 +265,7 @@ namespace ESM {
 		// CNTO: {formID, uint32}
 		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
 		{
-			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString());
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INVENTORY");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("CNTO");
@@ -278,13 +278,8 @@ namespace ESM {
 		// INAM, death items (LVLI)
 
 		// SCRI
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
-		{
-			strScript += "Script";
-		}
-		tempFormID = esm.crossRefStringID(strScript, false);
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
+		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -333,12 +328,12 @@ namespace ESM {
 			// Swimming package
 			canSwim = true;
 			pkgEDID = "aaaCreatureInteriorSwims512";
-			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 			esm.startSubRecordTES4("PKID");
 			esm.writeT<uint32_t>(pkgFormID);
 			esm.endSubRecordTES4("PKID");
 			pkgEDID = "aaaCreatureExteriorSwims1500";
-			pkgFormID = esm.crossRefStringID(pkgEDID, false);
+			pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 			esm.startSubRecordTES4("PKID");
 			esm.writeT<uint32_t>(pkgFormID);
 			esm.endSubRecordTES4("PKID");
@@ -365,7 +360,7 @@ namespace ESM {
 					pkgEDID = "aaaDefaultExploreEditorLoc1024";
 				else if (distance <= 2000)
 					pkgEDID = "aaaDefaultExploreEditorLoc3000";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -375,7 +370,7 @@ namespace ESM {
 				break;
 			case ESM::AI_Travel:
 				pkgEDID = "aaaDefaultExploreEditorLoc512";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -385,7 +380,7 @@ namespace ESM {
 				break;
 			case ESM::AI_Activate:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -395,7 +390,7 @@ namespace ESM {
 				break;
 			case ESM::AI_Follow:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -405,7 +400,7 @@ namespace ESM {
 				break;
 			case ESM::AI_Escort:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
-				pkgFormID = esm.crossRefStringID(pkgEDID, false);
+				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
@@ -418,12 +413,12 @@ namespace ESM {
 		}
 /*
 		pkgEDID = "aaaCreatureExterior1500";
-		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
 		pkgEDID = "aaaCreatureInterior512";
-		pkgFormID = esm.crossRefStringID(pkgEDID, false);
+		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
@@ -496,7 +491,7 @@ namespace ESM {
 		// NAM1, blood decal (string)
 
 		// CSCR, inherit sound from: formID CREA
-		tempFormID = esm.crossRefStringID(mOriginal);
+		tempFormID = esm.crossRefStringID(mOriginal, "CREA");
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("CSCR");

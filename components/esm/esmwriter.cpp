@@ -655,7 +655,7 @@ namespace ESM
 		mCellnameMgr.clear();
 	}
 
-	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, bool convertToEDID)
+	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, const std::string &sSIG, bool convertToEDID, bool setup_phase)
 	{
 //		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
 		std::map<std::string, uint32_t>::iterator searchResult;
@@ -680,6 +680,24 @@ namespace ESM
 		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
 		if (searchResult == mStringIDMap.end())
 		{
+			if (!setup_phase)
+			{
+				if (unMatchedEDIDmap.find(tempString) != unMatchedEDIDmap.end())
+				{
+					if (unMatchedEDIDmap[tempString].first != sSIG)
+					{
+						std::string errorString("ERROR: unmatched EDID log: sSIG collison: string=" +
+							tempString + ", " + unMatchedEDIDmap[tempString].first + " vs " + sSIG);
+						std::cout << errorString << std::endl;
+					}
+					unMatchedEDIDmap[tempString].second++;
+				}
+				else
+				{
+					unMatchedEDIDmap[tempString].first = sSIG;
+					unMatchedEDIDmap[tempString].second = 0;
+				}
+			}
 			return 0;
 		}
 		else
@@ -1276,6 +1294,7 @@ namespace ESM
 	{
 		std::string tempEDID, finalEDID;
 		bool removeOther=false;
+		bool addScript=false;
 
 		switch (conversion_mode)
 		{
@@ -1289,6 +1308,13 @@ namespace ESM
 		case 2: // remove extra non-letter/digit characters (some records)
 			tempEDID = name;
 			removeOther = true;
+			break;
+		case 3:
+			if (name.size() > 0 && name[0] != '0')
+			{
+				tempEDID = name;
+				addScript = true;
+			}
 			break;
 		}
 
@@ -1346,6 +1372,15 @@ namespace ESM
 				break;
 			default:
 				finalEDID = finalEDID + tempEDID[index];
+			}
+		}
+
+		if (addScript)
+		{
+			if (finalEDID.size() > 2 && (Misc::StringUtils::lowerCase(finalEDID).find("sc", finalEDID.size() - 2) == finalEDID.npos) &&
+				(Misc::StringUtils::lowerCase(finalEDID).find("script", 0) == finalEDID.npos))
+			{
+				finalEDID += "Script";
 			}
 		}
 
@@ -2723,18 +2758,18 @@ namespace ESM
 				morroblivionEDID = "mwDeBarDoor";
 			if (genericEDID == "0potionUcyroUbrandyU01")
 				morroblivionEDID = "PotionCyrodiilicBrandy";
-			if (genericEDID == "0TUImpUDrinkUWineSurilieBrU01")
-				morroblivionEDID = "DrinkWine1SurilieGood";
-			if (genericEDID == "0TUImpUDrinkUWineFreeEstatU01")
-				morroblivionEDID = "DrinkWine0Cheap";
 			if (genericEDID == "0MiscUQuill")
 				morroblivionEDID = "Quill01";
 			if (genericEDID == "0ingredUfrostUsaltsU01")
 				morroblivionEDID = "FrostSalts";
-			if (genericEDID == "0TRUm1UFWCEUCTPosU05UUG")
-				morroblivionEDID = "0miscUlwUplatter";
 			if (genericEDID == "0CollisionSWallSTSINVISO")
 				morroblivionEDID = "CollisionBoxStatic";
+//			if (genericEDID == "0TUImpUDrinkUWineSurilieBrU01")
+//				morroblivionEDID = "DrinkWine1SurilieGood";
+//			if (genericEDID == "0TUImpUDrinkUWineFreeEstatU01")
+//				morroblivionEDID = "DrinkWine0Cheap";
+//			if (genericEDID == "0TRUm1UFWCEUCTPosU05UUG")
+//				morroblivionEDID = "0miscUlwUplatter";
 
 		}
 

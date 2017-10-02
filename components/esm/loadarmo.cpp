@@ -134,7 +134,7 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// SCRI (script formID) mScript
-		std::string strScript = esm.generateEDIDTES4(mScript);
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
 		if (mEnchant != "" && mScript == "")
 		{
 			// TODO: use ItemScript or TargetItemScript based on enchantment
@@ -142,14 +142,9 @@ namespace ESM
 		}
 		else if (mScript != "")
 		{
-			std::cout << "WARNING: enchanted item already has script: " << strEDID << std::endl;
+			std::cout << "WARNING: enchanted item already has script: " << strEDID << " - " << strScript << std::endl;
 		}
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
-		{
-			strScript += "Script";
-		}
-		tempFormID = esm.crossRefStringID(strScript, false);
+		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -158,7 +153,7 @@ namespace ESM
 		}
 
 		// ENAM (enchantment formID) mEnchant
-		tempFormID = esm.crossRefStringID(mEnchant);
+		tempFormID = esm.crossRefStringID(mEnchant, "ENCH");
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("ENAM");

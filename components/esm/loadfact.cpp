@@ -142,7 +142,7 @@ namespace ESM
 			tempStr = esm.generateEDIDTES4(reaction->first);
 			// TODO: substitute generic EDID for hardcoded Morroblivion EDID
 			tempStr = esm.substituteMorroblivionEDID(tempStr, ESM::REC_FACT);
-			tempFormID = esm.crossRefStringID(tempStr, false);
+			tempFormID = esm.crossRefStringID(tempStr, "FACT", false);
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("XNAM");

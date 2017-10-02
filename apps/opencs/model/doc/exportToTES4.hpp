@@ -122,18 +122,29 @@ namespace CSMDoc
 		{
 			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
 			std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
-			formID = writer.crossRefStringID(strEDID, false);
+
+			std::string sSIG;
+			for (int i = 0; i<4; ++i)
+				/// \todo make endianess agnostic
+				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+			sSIG[4] = '\0';
+
+			if (record.sRecordId == ESM::REC_SCPT)
+				strEDID = writer.generateEDIDTES4(record.mId, 3);
+			formID = writer.crossRefStringID(strEDID, sSIG, false, false);
 			if (formID == 0)
 			{
 				// first fall-back
 				strEDID = writer.generateEDIDTES4(record.mId, 2);
-				formID = writer.crossRefStringID(strEDID, false);
+				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			}
 			if (formID == 0)
 			{
 				// second fall-back
 				if (record.sRecordId == ESM::REC_REGN || record.sRecordId == ESM::REC_CLAS)
 					strEDID = writer.generateEDIDTES4(record.mId, 2);
+				else if (record.sRecordId == ESM::REC_SCPT)
+					strEDID = writer.generateEDIDTES4(record.mId, 3);
 				else
 					strEDID = writer.generateEDIDTES4(record.mId, 0);
 				formID = writer.getNextAvailableFormID();
@@ -152,12 +163,15 @@ namespace CSMDoc
 		CSMWorld::RecordBase::State state = mCollection.getRecord (stage).mState;
 		typename CollectionT::ESXRecord record = mCollection.getRecord (stage).get();
 
+		std::string sSIG;
+		for (int i = 0; i<4; ++i)
+			/// \todo make endianess agnostic
+			sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+		sSIG[4] = '\0';
+
 		// if stage == 0, then add the group record first
 		if (stage == 0)
 		{
-			std::string sSIG;
-			for (int i=0; i<4; ++i)
-				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
 			writer.startGroupTES4(sSIG, 0);
 		}
 
@@ -165,12 +179,14 @@ namespace CSMDoc
 			return;
 		
 		std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
+		if (record.sRecordId == ESM::REC_SCPT)
+			strEDID = writer.generateEDIDTES4(record.mId, 3);
+		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 		if (formID == 0)
 		{
 			// fall-back
 			strEDID = writer.generateEDIDTES4(record.mId, 2);
-			formID = writer.crossRefStringID(strEDID, false);
+			formID = writer.crossRefStringID(strEDID, sSIG, false, false);
 		}
 		if (formID == 0)
 		{
@@ -182,10 +198,17 @@ namespace CSMDoc
 		if (mSkipMasterRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
-			exportOrSkip = ( (state == CSMWorld::RecordBase::State_Modified) || 
-				(state == CSMWorld::RecordBase::State_ModifiedOnly) ||
-				(state == CSMWorld::RecordBase::State_Deleted) ||
+//			exportOrSkip = ( record.isModified() || record.isDeleted() );
+			exportOrSkip = ( state == CSMWorld::RecordBase::State_Modified ||
+				state == CSMWorld::RecordBase::State_ModifiedOnly ||
+				state == CSMWorld::RecordBase::State_Deleted );
+
+/*
+				state == CSMWorld::RecordBase::State_Modified || 
+				state == CSMWorld::RecordBase::State_ModifiedOnly ||
+				state == CSMWorld::RecordBase::State_Deleted ||
 				((formID & 0xFF000000) > 0x01000000) );
+*/
 		}
 		else {
 			// no skipping, export all

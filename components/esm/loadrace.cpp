@@ -103,7 +103,7 @@ namespace ESM
 		// SPLOs array
 		for (auto spellItem = mPowers.mList.begin(); spellItem != mPowers.mList.end(); spellItem++)
 		{
-			tempFormID = esm.crossRefStringID(*spellItem);
+			tempFormID = esm.crossRefStringID(*spellItem, "SPEL");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("SPLO");

@@ -112,13 +112,8 @@ namespace ESM
 		esm.endSubRecordTES4("ICON");
 
 		// SCRI --mScript (formID)
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos)) 
-		{
-			strScript += "Script";
-		}
-		uint32_t tempFormID = esm.crossRefStringID(strScript, false);
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
+		uint32_t tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");

@@ -136,7 +136,7 @@ namespace ESM
 			esm.writeT<uint16_t>(0); // unknown?
 			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
 			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts) sRecordId);
-			uint32_t refID = esm.crossRefStringID(itemEDID, false);
+			uint32_t refID = esm.crossRefStringID(itemEDID, "INVENTORY", false);
 			if (refID != 0)
 			{
 				esm.writeT<uint32_t>(refID); //formID
@@ -201,7 +201,7 @@ namespace ESM
 			// creature reference ID
 			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
 			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts)sRecordId);
-			uint32_t refID = esm.crossRefStringID(itemEDID, false);
+			uint32_t refID = esm.crossRefStringID(itemEDID, "CREA", false);
 			if (refID != 0)
 			{
 				esm.writeT<uint32_t>(refID); //formID
@@ -218,12 +218,7 @@ namespace ESM
 
 /*
 		// script formID, SCRI
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
-		{
-		strScript += "Script";
-		}
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
 		uint32_t tempFormID = esm.crossRefStringID(strScript, false);
 		esm.startSubRecordTES4("SCRI");
 		esm.writeT<uint32_t>(0);

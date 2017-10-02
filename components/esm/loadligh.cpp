@@ -103,13 +103,8 @@ namespace ESM
 		}
 
 		// SCRI (script formID) mScript
-		std::string strScript = esm.generateEDIDTES4(mScript);
-		if (strScript.size() > 2 && (Misc::StringUtils::lowerCase(strScript).find("sc", strScript.size() - 2) == strScript.npos) &&
-			(Misc::StringUtils::lowerCase(strScript).find("script", strScript.size() - 6) == strScript.npos))
-		{
-			strScript += "Script";
-		}
-		tempFormID = esm.crossRefStringID(strScript, false);
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
+		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SCRI");
@@ -155,7 +150,7 @@ namespace ESM
 		esm.endSubRecordTES4("FNAM");
 
 		// SNAM (sound formID)
-		tempFormID = esm.crossRefStringID(mSound);
+		tempFormID = esm.crossRefStringID(mSound, "SOUN");
 		if (tempFormID != 0)
 		{
 			esm.startSubRecordTES4("SNAM");

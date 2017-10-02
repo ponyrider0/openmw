@@ -224,16 +224,35 @@ namespace CSMWorld
 		std::string sSIG="";
 		Record<RecordT> record = mContainer.at(index);
 		RecordT esmRecord = record.get();
+
+		switch (esmRecord.sRecordId)
+		{
+		case ESM::REC_LEVI:
+			sSIG = "LVLI";
+			break;
+		case ESM::REC_LEVC:
+			sSIG = "LVLC";
+			break;
+		default:
+			sSIG = "";
+			for (int i = 0; i<4; ++i)
+				/// \todo make endianess agnostic
+				sSIG += reinterpret_cast<const char *> (&esmRecord.sRecordId)[i];
+			sSIG[4] = '\0';
+		}
 		std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
 		strEDID = writer.substituteMorroblivionEDID(strEDID, (ESM::RecNameInts)esmRecord.sRecordId);
-		uint32_t formID = writer.crossRefStringID(strEDID, false);
+		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false);
 
 		bool exportOrSkip=false;
 		if (skipBaseRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
+			exportOrSkip = record.isModified() || record.isDeleted();
+/*
 			exportOrSkip = record.isModified() || record.mState == RecordBase::State_Deleted || 
 				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
+*/
 		} else {
 			// no skipping, export all
 			exportOrSkip=true;
@@ -242,21 +261,6 @@ namespace CSMWorld
 		if (exportOrSkip)
 		{
 			// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
-			switch (esmRecord.sRecordId)
-			{
-			case ESM::REC_LEVI:
-				sSIG = "LVLI";
-				break;
-			case ESM::REC_LEVC:
-				sSIG = "LVLC";
-				break;
-			default:
-				sSIG = "";
-				for (int i=0; i<4; ++i)
-					/// \todo make endianess agnostic
-					sSIG += reinterpret_cast<const char *> (&esmRecord.sRecordId)[i];
-				sSIG[4]='\0';
-			}
 			if ( sSIG != "" )
 			{
 				uint32_t flags=0;

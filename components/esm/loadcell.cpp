@@ -367,12 +367,12 @@ namespace ESM
 		}
 
 		// crossRef Region stringID to formID to make XCLR subrecord
+		// TODO: SUBSTITUTION WITH MORROBLIVION VALUE
 		std::string strREGN = esm.generateEDIDTES4(mRegion, 2);
-		uint32_t regnID = esm.crossRefStringID(strREGN, false);
-		if (regnID == 0)
+		uint32_t regnID = esm.crossRefStringID(strREGN, "REGN", false);
+		if (regnID == 0 && strREGN != "")
 		{
-			strREGN = esm.generateEDIDTES4(mRegion, 0);
-			regnID = esm.crossRefStringID(strREGN, false);
+			throw std::runtime_error("ERROR: CELL[" + newEDID +"] referencing invalid RegionID: " + strREGN);
 		}
 		if (regnID != 0)
 		{
