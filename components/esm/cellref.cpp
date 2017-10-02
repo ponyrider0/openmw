@@ -304,7 +304,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "0lightUdeUpaperUlanternU04";
 */
 
-		baseFormID = esm.crossRefStringID(baseEDID, false);
+		baseFormID = esm.crossRefStringID(baseEDID, "REFR", false);
 
 //		std::map<std::string, bool> lanternSubstitutionsMap;
 //		lanternSubstitutionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUcomUredwareUlamp"), true));
@@ -339,6 +339,20 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U128U01"), true));
 		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U177U01"), true));
 		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU08U77"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtorchU01"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtorchU01U128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtorchU01U256"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtorchU01U320"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch00"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch002"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch003"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch00U256"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch00U320Uffd"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch00UNI"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch01"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch128"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorch256"), true));
+		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUtikitorchU177"), true));
 
 //		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUdeUlanternU05U200"), true));
 /*
@@ -418,10 +432,10 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 
 	// XRGD, ragdoll
 	// XESP, parent object
-	uint32_t factionID = esm.crossRefStringID(mFaction);
+	uint32_t factionID = esm.crossRefStringID(mFaction, "FACT");
 	uint32_t ownerID = 0;
 	if (factionID == 0)
-		ownerID = esm.crossRefStringID(mOwner);
+		ownerID = esm.crossRefStringID(mOwner, "NPC_");
 	else
 		ownerID = factionID;
 	if (ownerID != 0)
@@ -438,7 +452,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		esm.endSubRecordTES4("XRNK");
 	}
 	// XGLB
-	uint32_t globalVarID = esm.crossRefStringID(mGlobalVariable);
+	uint32_t globalVarID = esm.crossRefStringID(mGlobalVariable, "GLOB");
 	if (ownerID != 0 && globalVarID != 0)
 	{
 		esm.startSubRecordTES4("XGLB");
