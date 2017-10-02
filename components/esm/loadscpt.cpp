@@ -156,6 +156,63 @@ namespace ESM
         esm.writeHNOString("SCTX", mScriptText);
     }
 
+	void Script::exportTESx(ESMWriter & esm, int export_type) const
+	{
+		uint32_t tempFormID;
+		std::string strEDID, tempStr;
+		std::istringstream inputScriptText(mScriptText);
+		std::ostringstream convertedScriptText;
+
+		// EDID
+		strEDID = esm.generateEDIDTES4(mId, 3);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(strEDID);
+		esm.endSubRecordTES4("EDID");
+		
+		uint32_t refCount=0, varCount=0, scriptType=0;
+		if (Misc::StringUtils::lowerCase(strEDID).find("effect") != std::string::npos)
+		{
+			scriptType = 0x100;
+		}
+		if (Misc::StringUtils::lowerCase(strEDID).find("quest") != std::string::npos)
+		{
+			scriptType = 1;
+		}
+		// SCHD (unknown)
+		// SCHR data...
+		esm.startSubRecordTES4("SCHR");
+		// unused x4
+		esm.writeT<uint32_t>(0);
+		// refcount (uint32)
+		esm.writeT<uint32_t>(refCount);
+		// compiledsize
+		esm.writeT<uint32_t>(0);
+		// var count (uint32)
+		esm.writeT<uint32_t>(varCount);
+		// type (uint32) 0=object, 1=quest, $100 = magic effect
+		esm.writeT<uint32_t>(scriptType);
+		esm.endSubRecordTES4("SCHR");
+
+		// SCDA (compiled)
+		// SCTX (text)
+		convertedScriptText << "ScriptName " << strEDID << std::endl << std::endl;
+		std::string inputLine;
+		while (std::getline(inputScriptText, inputLine))
+		{
+			convertedScriptText << "; " << inputLine << std::endl;
+		}
+		esm.startSubRecordTES4("SCTX");
+		esm.writeHCString(convertedScriptText.str());
+		esm.endSubRecordTES4("SCTX");
+
+		// local variables
+		// SLSD struct [index, unused x12, flags, unused]
+		// SCVR string
+
+		// SCROs
+
+	}
+
     void Script::blank()
     {
         mData.mNumShorts = mData.mNumLongs = mData.mNumFloats = 0;
