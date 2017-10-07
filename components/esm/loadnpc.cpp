@@ -281,7 +281,7 @@ namespace ESM
 		// CNTO: {formID, uint32}
 		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
 		{
-			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INVENTORY");
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INV_NPC");
 			if (tempFormID != 0)
 			{
 				esm.startSubRecordTES4("CNTO");
@@ -502,7 +502,14 @@ namespace ESM
 			strClass = esm.generateEDIDTES4(mClass, 0);
 			classFormID = esm.crossRefStringID(strClass, "CLAS", false, false);
 		}
-		if (classFormID != 0)
+		if (classFormID == 0)
+		{
+			if (strClass != "")
+			{
+				std::cout << "ERROR: Couldn't resolve Class EDID = " << strClass << std::endl;
+			}
+		}
+		else
 		{
 			esm.startSubRecordTES4("CNAM");
 			esm.writeT<uint32_t>(classFormID);

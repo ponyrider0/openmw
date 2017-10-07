@@ -369,6 +369,10 @@ namespace ESM
 		// crossRef Region stringID to formID to make XCLR subrecord
 		// TODO: SUBSTITUTION WITH MORROBLIVION VALUE
 		std::string strREGN = esm.generateEDIDTES4(mRegion, 2);
+		if (strREGN != "" && Misc::StringUtils::lowerCase(strREGN).find("region") == std::string::npos)
+		{
+			strREGN += "Region";
+		}
 		uint32_t regnID = esm.crossRefStringID(strREGN, "REGN", false);
 		if (regnID == 0 && strREGN != "")
 		{

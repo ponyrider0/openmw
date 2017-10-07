@@ -164,7 +164,7 @@ namespace ESM
 			// CNTO: {formID, uint32}
 			for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
 			{
-				tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INVENTORY");
+				tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INV_CNT");
 				if (tempFormID != 0)
 				{
 					esm.startSubRecordTES4("CNTO");
@@ -192,7 +192,7 @@ namespace ESM
 			auto ingredient = mInventory.mList.begin();
 			if (ingredient != mInventory.mList.end())
 			{
-				tempFormID = esm.crossRefStringID(ingredient->mItem.toString(), "INGRED");
+				tempFormID = esm.crossRefStringID(ingredient->mItem.toString(), "INV_FLO");
 				esm.startSubRecordTES4("PFIG");
 				esm.writeT<uint32_t>(tempFormID);
 				esm.endSubRecordTES4("PFIG");

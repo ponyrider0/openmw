@@ -20,8 +20,10 @@ CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 
 void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingState& currentSave)
 {
+	std::string esmName = currentDoc.getSavePath().filename().stem().string();
+
 	currentSave.getWriter().clearReservedFormIDs();
-	currentSave.initializeSubstitutions();
+	currentSave.initializeSubstitutions(esmName);
 
 	// Export to ESM file
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
@@ -191,6 +193,13 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 		mState.getWriter().addMaster ("Morrowind_ob.esm", 0);
 		mState.getWriter().addMaster ("Morrowind_ob - UCWUS.esp", 0);
 		mState.getWriter().addMaster ("morroblivion-fixes.esp", 0);
+
+		std::string esmName = mDocument.getSavePath().filename().stem().string();
+		if ((esmName.find("TR_Mainland") != std::string::npos) ||
+			(esmName.find("TR_Preview") != std::string::npos))
+		{
+			mState.getWriter().addMaster("Tamriel_Data.esp", 0);
+		}
 
 	}
 
@@ -400,12 +409,26 @@ int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
 	for (int i=0; i < mActiveRefCount; i++)
 	{
 		const CSMWorld::Record<ESM::Weapon>& record = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, "WEAP", false, true);
-		if (formID == 0)
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
 		{
-			formID = writer.getNextAvailableFormID();
-			writer.reserveFormID(formID, strEDID);
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, "WEAP", false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 		}
 	}
 
@@ -703,16 +726,31 @@ int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 	for (int i=0; i < mActiveRefCount; i++)
 	{
 		const CSMWorld::Record<ESM::Miscellaneous>& record = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, "MISC", false, true);
-		if (formID == 0)
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
 		{
-			formID = writer.getNextAvailableFormID();
-			writer.reserveFormID(formID, strEDID);
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, "MISC", false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 		}
 	}
 	return mActiveRefCount;
 }
+
 void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "MISC";
@@ -829,12 +867,26 @@ int CSMDoc::ExportLightCollectionTES4Stage::setup()
 	for (int i=0; i < mActiveRefCount; i++)
 	{
 		const CSMWorld::Record<ESM::Light>& record =  mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, "LIGH", false, true);
-		if (formID == 0)
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
 		{
-			formID = writer.getNextAvailableFormID();
-			writer.reserveFormID(formID, strEDID);
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, "LIGH", false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 		}
 	}
 
@@ -872,14 +924,27 @@ int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
 
 	for (int i=0; i < mActiveRefCount; i++)
 	{
-//		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i).get().mId);
 		const CSMWorld::Record<ESM::ItemLevList>& record = mDocument.getData().getReferenceables().getDataSet().getItemLevelledList().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, "LVLI", false, true);
-		if (formID == 0)
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
 		{
-			formID = writer.getNextAvailableFormID();
-			writer.reserveFormID(formID, strEDID);
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, "LVLI", false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 		}
 	}
 
@@ -1448,15 +1513,28 @@ int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 
 	for (int i=0; i < mActiveRefCount; i++)
 	{
-//		formID = writer.reserveFormID(formID, mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId );
 //		std::cout << "export: LVLC[" << i << "] " << mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i).get().mId << " = " << formID << std::endl;
 		const CSMWorld::Record<ESM::CreatureLevList>& record = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, "LVLC", false, true);
-		if (formID == 0)
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
 		{
-			formID = writer.getNextAvailableFormID();
-			writer.reserveFormID(formID, strEDID);
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, "LVLC", false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID);
+			}
 		}
 	}
 
@@ -1691,6 +1769,12 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 //			(formID == 0) || ((formID & 0xFF000000) > 0x01000000) )
 		if ( record.isModified() || record.isDeleted() )
 		{
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				formID = writer.reserveFormID(formID, strEDID);
+			}
+
 			std::string cellId = ( record.get().mOriginalCell.empty() ? record.get().mCell : record.get().mOriginalCell );
 
 			// determine if cell is interior or exterior
@@ -1750,11 +1834,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 //				std::ostringstream refEDIDstr;
 //				uint32_t formID = mState.getWriter().getNextAvailableFormID();
 //				refEDIDstr << "*refindex" << i;
-				if (formID == 0)
-				{
-					formID = writer.getNextAvailableFormID();
-					formID = writer.reserveFormID(formID, strEDID);
-				}
+
 				persistentRefListOfCurrentCell.push_back(i);
 				continue;
 			}
@@ -2054,9 +2134,11 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						= mDocument.getData().getPathgrids().getRecord (pathgridIndex);
 					// check for over-riding and deleting and stuff
 					uint32_t pathgridFormID = 0;
+					// TODO: generate pathgridEDID based on converted Coords
 					std::string pathgridEDID = cellRecordPtr->get().mId + "pathgrid";
-					pathgridFormID = writer.getNextAvailableFormID();
-					pathgridFormID = writer.reserveFormID(pathgridFormID, pathgridEDID);
+//					pathgridFormID = writer.getNextAvailableFormID();
+//					pathgridFormID = writer.reserveFormID(pathgridFormID, pathgridEDID);
+					pathgridFormID = writer.crossRefStringID(pathgridEDID, "PGRD", false, false);
 					writer.startRecordTES4("PGRD", 0, pathgridFormID, pathgridEDID);
 					pathgrid.get().exportSubCellTES4(writer, 0, 0, true);
 					writer.endSubRecordTES4("PGRD");
@@ -2072,7 +2154,7 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 					CSMWorld::CellRef refRecord = ref.get();
 	//				std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
 					std::string strEDID = refRecord.mId;
-					uint32_t refFormID = writer.crossRefStringID(strEDID, "REFR", false, true);
+					uint32_t refFormID = writer.crossRefStringID(strEDID, "REFR", false, false);
 					if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
 					{
 	//                    uint32_t refFormID = writer.getNextAvailableFormID();
@@ -2354,9 +2436,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			{
 				throw std::runtime_error ("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup: " + strEDID);
 			}
-//			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID);
+			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID, "BASEREF");
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-			if (baseRefIndex.first != -1)
+			if (baseRefID != 0 && baseRefIndex.first != -1)
 			{
 				sSIG="";
 				switch (baseRefIndex.second)
@@ -2645,6 +2727,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					int landIndex = mDocument.getData().getLand().getIndex(landID.str());
 //					debugstream << "ID retrieved.  exporting land ... ";
 					uint32_t landFormID = mState.crossRefLandXY(baseX+x, baseY+y);
+					// TODO: assign unique EDID for landscape based on converted coords
 					writer.startRecordTES4("LAND", 0, landFormID, "");
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
 
@@ -2688,6 +2771,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						= mDocument.getData().getPathgrids().getRecord (pathgridIndex);
 					// check for over-riding and deleting and stuff
 					uint32_t pathgridFormID = 0;
+					// TODO: generate EDID based on converted coords
+					std::string pathgridEDID = cellRecordPtr->get().mId + "pathgrid";
+					pathgridFormID = writer.crossRefStringID(pathgridEDID, "PGRD", false, false);
 					writer.startRecordTES4("PGRD", 0, pathgridFormID, "");
 					pathgrid.get().exportSubCellTES4(writer, baseX+x, baseY+y);
 					writer.endSubRecordTES4("PGRD");
@@ -3643,10 +3729,10 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 //		bExportRecord = landTexture.isModified() || landTexture.isDeleted() ||
 //			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
 		bExportRecord = false;
-//		bExportRecord |= landTexture.isModified();
+		bExportRecord |= landTexture.isModified();
 		bExportRecord |= landTexture.isDeleted();
-		bExportRecord |= (formID == 0);
-		bExportRecord |= ( (formID & 0xFF000000) > 0x01000000 );
+//		bExportRecord |= (formID == 0);
+//		bExportRecord |= ( (formID & 0xFF000000) > 0x01000000 );
 //		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
 	}
 	else
@@ -3745,12 +3831,12 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	std::cout << std::endl << "Export Complete!" << std::endl;
 
-	// output unmatched EDIDs
-	// write out to CSV file
+	// write unmatched EDIDs
 	std::ofstream unmatchedCSVFile;
-	unmatchedCSVFile.open("unmatchedEDID.csv");
-//	unmatchedCSVFile << "Unmatched EDIDs:" << std::endl;
-	int count = 0;
+	unmatchedCSVFile.open("UnresolvedEDIDlist.csv");
+	// write header
+	unmatchedCSVFile << "Record Type" << "," << "Mod Filename" << "," << "EDID" << "," << "Number of References" << "," << "Put FormID Here" << "," << "Index"  << std::endl;
+	int index = 1;
 	ESM::ESMWriter& esm = mState.getWriter();
 	for (auto edidItem = esm.unMatchedEDIDmap.begin();
 		edidItem != esm.unMatchedEDIDmap.end();
@@ -3764,11 +3850,31 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		else
 		{
 			// list only items which were lost during conversion
-			unmatchedCSVFile << edidItem->second.first << "," << edidItem->first << "," << edidItem->second.second << std::endl;
+			unmatchedCSVFile << edidItem->second.first << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << edidItem->first << "\"," << edidItem->second.second << "," << "" << "," << index++ << std::endl;
 	//		std::cout << "[" << count++ << "] " << edidItem->first << " - " << edidItem->second << std::endl;
 		}
 	}
 	unmatchedCSVFile.close();
+
+	// Write EDIDmap for exported records
+	std::ofstream exportedEDIDCSVFile;
+	exportedEDIDCSVFile.open("exportedEDIDlist.csv");
+	// write header
+	exportedEDIDCSVFile << "Record Type" << "," << "Mod Filename" << "," << "EDID" << "," << "Number of References" << "," << "FormID" << std::endl;
+	for (auto exportItem = esm.mStringIDMap.begin();
+		exportItem != esm.mStringIDMap.end();
+		exportItem++)
+	{
+		// skip items which have a different ESM index
+		if ((exportItem->second & esm.mESMoffset) == esm.mESMoffset)
+		{
+			// get sSIG from record
+
+			exportedEDIDCSVFile << "UNKNOWN" << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << std::endl;
+		}
+	}
+	exportedEDIDCSVFile.close();
+
 }
 
 uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition)

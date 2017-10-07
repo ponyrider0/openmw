@@ -616,19 +616,38 @@ namespace ESM
 		// make sure formID is not already used
 		if ( mFormIDMap.find(formID) != mFormIDMap.end() || formID == 0)
 		{
+			// if requeted formID:stringID pair == stored formID:stringID,
+			// then just issue warning and return formID
+			auto matchedPair = mStringIDMap.find(Misc::StringUtils::lowerCase(stringID));
+			if (matchedPair != mStringIDMap.end() && formID == matchedPair->second)
+			{
+				std::cout << "WARNING: reserveID: [" << stringID << "] duplicate reserve request for " << std::hex << formID << ", ignoring duplicate." << std::endl;
+				return formID;
+			}
+
 			if (setup_phase == false)
 			{
-				// formID already used so get a new formID
+				if (formID != 0)
+				{
+					// formID already used so issue warning and get a new formID
+					std::cout << "WARNING: reserveID: [" << stringID << "] requested formID (" << std::hex << formID << ") already used, will reserve new ID. " << std::endl;
+				}
 				formID = getNextAvailableFormID();
 			}
 			else
 			{
-				return 0;
+				if (formID == 0)
+				{
+					std::cout << "ERROR: reserveID Setup: [" << stringID << "] requested formID is 0." << std::endl;
+					return 0;
+				}
 			}
 		}
+		// this step important mainly for keeping track of reserved formIDs,
+		// but also for formID to stringID crossreferencing
 		mFormIDMap.insert( std::make_pair(formID, stringID) );
 
-		// create entry for the stringID crossreference
+		// create entry for the stringID to formID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
 
 		if (setup_phase == false && formID != 0)
@@ -655,7 +674,7 @@ namespace ESM
 		mCellnameMgr.clear();
 	}
 
-	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, const std::string &sSIG, bool convertToEDID, bool setup_phase)
+	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, const std::string &sSIG, bool convertToEDID, bool creating_record)
 	{
 //		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
 		std::map<std::string, uint32_t>::iterator searchResult;
@@ -680,22 +699,31 @@ namespace ESM
 		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
 		if (searchResult == mStringIDMap.end())
 		{
-			if (!setup_phase)
+			if (!creating_record)
 			{
+				if (sSIG == "CLAS")
+				{
+					std::cout << sSIG << " not found: " << tempString << std::endl;
+				}
+
 				if (unMatchedEDIDmap.find(tempString) != unMatchedEDIDmap.end())
 				{
 					if (unMatchedEDIDmap[tempString].first != sSIG)
 					{
-						std::string errorString("ERROR: unmatched EDID log: sSIG collison: string=" +
-							tempString + ", " + unMatchedEDIDmap[tempString].first + " vs " + sSIG);
-						std::cout << errorString << std::endl;
+						if (unMatchedEDIDmap[tempString].first.find(sSIG, 0) == std::string::npos)
+						{
+//							std::string errorString("ERROR: unmatched EDID log: sSIG collison: string=" +
+//								tempString + ", " + unMatchedEDIDmap[tempString].first + " vs " + sSIG);
+//							std::cout << errorString << std::endl;
+							unMatchedEDIDmap[tempString].first += "+" + sSIG;
+						}
 					}
 					unMatchedEDIDmap[tempString].second++;
 				}
 				else
 				{
 					unMatchedEDIDmap[tempString].first = sSIG;
-					unMatchedEDIDmap[tempString].second = 0;
+					unMatchedEDIDmap[tempString].second = 1;
 				}
 			}
 			return 0;

@@ -136,7 +136,7 @@ namespace ESM
 			esm.writeT<uint16_t>(0); // unknown?
 			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
 			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts) sRecordId);
-			uint32_t refID = esm.crossRefStringID(itemEDID, "INVENTORY", false);
+			uint32_t refID = esm.crossRefStringID(itemEDID, "LVLI", false);
 			if (refID != 0)
 			{
 				esm.writeT<uint32_t>(refID); //formID
@@ -201,7 +201,7 @@ namespace ESM
 			// creature reference ID
 			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
 			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts)sRecordId);
-			uint32_t refID = esm.crossRefStringID(itemEDID, "CREA", false);
+			uint32_t refID = esm.crossRefStringID(itemEDID, "LVLC", false);
 			if (refID != 0)
 			{
 				esm.writeT<uint32_t>(refID); //formID
@@ -218,16 +218,7 @@ namespace ESM
 
 /*
 		// script formID, SCRI
-		std::string strScript = esm.generateEDIDTES4(mScript, 3);
-		uint32_t tempFormID = esm.crossRefStringID(strScript, false);
-		esm.startSubRecordTES4("SCRI");
-		esm.writeT<uint32_t>(0);
-		esm.endSubRecordTES4("SCRI");
-
 		// creature template formID, TNAM
-		esm.startSubRecordTES4("TNAM");
-		esm.writeT<uint32_t>(0);
-		esm.endSubRecordTES4("TNAM");
 */
 
 		return true;

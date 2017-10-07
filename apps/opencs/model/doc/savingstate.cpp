@@ -482,7 +482,93 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 	return errorcode;
 }
 
-int CSMDoc::SavingState::initializeSubstitutions()
+int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
+{
+	int errorcode = 0;
+	int lineNumber = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+	
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		lineNumber++;
+		std::istringstream parserStream(inputLine);
+		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
+		uint32_t formID=0;
+
+		for (int i = 0; i < 5; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strRecordType = Misc::StringUtils::lowerCase(token);
+				break;
+			case 1:
+				strModFileName = Misc::StringUtils::lowerCase(token);
+				break;
+			case 2:
+				// remove double-quotes if present
+				if (token[0] == '\"' && token[token.size()-1] == '\"')
+				{
+					token.erase(remove(token.begin(), token.end(), '\"'), token.end());
+				}
+				strEDID = Misc::StringUtils::lowerCase(token);
+				break;
+			case 3:
+				numReferences = atoi(Misc::StringUtils::lowerCase(token).c_str());
+				break;
+			case 4:
+				strHexFormID = Misc::StringUtils::lowerCase(token);
+				break;
+			}
+		}
+
+		std::istringstream hexToInt{ strHexFormID };
+		hexToInt >> std::hex >> formID;
+
+		if (formID == 0 || strEDID == "")
+			continue;
+
+		// make final double check, then add to FormID map
+		std::string searchStr = mWriter.crossRefFormID(formID);
+		uint32_t searchInt = mWriter.crossRefStringID(strEDID, "", false, true);
+
+		if (searchStr == strEDID && searchInt == formID)
+			continue;
+
+		if (searchStr == strEDID && searchInt != 0)
+		{
+			std::cout << "WARNING: EDID substitution conflict: " <<
+				strEDID << " already assigned to " << std::hex << searchInt <<
+				", new FormID: " << formID << std::endl;
+		}
+
+		// add to formID map
+		uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, true);
+		if (reserveResult != formID && reserveResult != 0)
+		{
+			// error: formID couldn't be reserved??
+			errorcode = -2;
+			std::cout << "FormID Import ERROR: Unable to import [" << strEDID <<
+				"] to " << formID << ", assigned to " << reserveResult <<
+				" instead." << std::endl;
+			continue;
+		}
+
+	}
+
+	return errorcode;
+}
+
+int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 {
 /*
 	loadEDIDmap("oblivionEDIDmap.csv");
@@ -492,10 +578,16 @@ int CSMDoc::SavingState::initializeSubstitutions()
 	loadEDIDmap("tr_mainlandEDIDmap.csv");
 	loadCellIDmap("morroblivionCellIDmap.tsv");
 */
-	loadEDIDmap2("OblivionFormIDlist.csv");
-	loadEDIDmap2("MorroblivionFormIDlist.csv");
-	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
-	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
+//	loadEDIDmap2("OblivionFormIDlist.csv");
+//	loadEDIDmap2("MorroblivionFormIDlist.csv");
+//	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
+//	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
+
+	loadEDIDmap3("OblivionFormIDlist4.csv");
+	loadEDIDmap3("MorroblivionFormIDlist4.csv");
+	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
+	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
+
 	loadCellIDmap2("MorroblivionCellIDmap.csv");
 //	loadEDIDmap2("TR_MainlandFormIDlist.csv");
 //	loadCellIDmap2("TR_MainlandCellIDmap.csv");
@@ -503,5 +595,19 @@ int CSMDoc::SavingState::initializeSubstitutions()
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
 
+	loadEDIDmap3("TamrielDataEDIDlist.csv");
+	loadEDIDmap3("TRMainlandEDIDlist.csv");
+	loadEDIDmap3("TRPreviewEDIDlist.csv");
+
+	loadEDIDmap3("UnresolvedEDIDlist_Resolved.csv");
+
+/*
+	// if TR_Mainland or TR_Preview, then look for Tamriel_Data
+	if ((esmName.find("TR_Mainland") != std::string::npos) ||
+		(esmName.find("TR_Preview") != std::string::npos) )
+	{
+		loadEDIDmap3("TamrielDataEDIDlist.csv");
+	}
+*/	
 	return 0;
 }

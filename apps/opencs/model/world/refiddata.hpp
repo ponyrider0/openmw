@@ -242,7 +242,7 @@ namespace CSMWorld
 		}
 		std::string strEDID = writer.generateEDIDTES4(esmRecord.mId);
 		strEDID = writer.substituteMorroblivionEDID(strEDID, (ESM::RecNameInts)esmRecord.sRecordId);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false);
+		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 		bool exportOrSkip=false;
 		if (skipBaseRecords == true)

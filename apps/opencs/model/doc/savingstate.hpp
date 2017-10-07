@@ -63,7 +63,7 @@ namespace CSMDoc
 			std::map<std::string, std::deque<int> > mBaseGameDoorList;
 
 			int loadEDIDmap(std::string filename);
-			int initializeSubstitutions();
+			int initializeSubstitutions(std::string esmName);
 
 			int loadCellIDmap(std::string filename);
 			std::map<int, std::map<int, uint32_t[2]> > mExteriorCellMap;
@@ -73,6 +73,8 @@ namespace CSMDoc
 			int loadEDIDmap2(std::string filename);
 			int loadCellIDmap2(std::string filename);
 			int loadmwEDIDSubstitutionMap(std::string filename);
+
+			int loadEDIDmap3(std::string filename);
 
 	};
 

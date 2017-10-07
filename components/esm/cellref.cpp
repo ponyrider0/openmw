@@ -251,6 +251,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 	// lookup base record's FormID based on mRefID or mRefNum
 	uint32_t baseFormID=0;
 	ESM::Position substitutionOffset;
+	float substitutionScale=0;
 	std::string baseEDID;
 
 	for (int i=0; i < 3; i++)
@@ -278,8 +279,8 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 
 		if (baseEDID == "0chimneyUsmokeUsmall")
 			baseEDID = "FireSmokeMedium";
-		else if (baseEDID == "0floraUbushU01")
-			baseEDID = "Dbush15";
+//		else if (baseEDID == "0floraUbushU01")
+//			baseEDID = "Dbush15";
 		else if (baseEDID == "0miscUcomUbasketU01")
 			baseEDID = "LowerThatchbasket02New";
 		else if (baseEDID == "0miscUcomUwoodUfork")
@@ -399,6 +400,85 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 			substitutionOffset.rot[1] = -1*mPos.rot[1];
 			substitutionOffset.rot[2] = -1*mPos.rot[2];
 		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_ai_04")
+		{
+			substitutionOffset.pos[2] = -710;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_ai_02")
+		{
+			substitutionOffset.pos[2] = -550;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_01")
+		{
+			substitutionScale = 0.6f;
+			substitutionOffset.pos[2] = -240;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_06")
+		{
+			substitutionScale = 0.5f;
+			substitutionOffset.pos[2] = -210;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_bush_01")
+		{
+			substitutionScale = 1.0f;
+			substitutionOffset.pos[2] = -80;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_snow_01")
+		{
+			substitutionScale = 0.6f;
+			substitutionOffset.pos[2] = -240;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_snow_06")
+		{
+			substitutionScale = 0.5f;
+			substitutionOffset.pos[2] = -220;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_05")
+		{
+			substitutionScale = 0.6f;
+			substitutionOffset.pos[2] = -400;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_snow_05")
+		{
+			substitutionScale = 0.6f;
+			substitutionOffset.pos[2] = -400;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_07")
+		{
+			substitutionScale = 0.45f;
+			substitutionOffset.pos[2] = -170;
+			substitutionOffset.rot[0] = -1 * mPos.rot[0];
+			substitutionOffset.rot[1] = -1 * mPos.rot[1];
+			substitutionOffset.rot[2] = -1 * mPos.rot[2];
+		}
+
 	}
 
 	esm.startSubRecordTES4("NAME");
@@ -461,10 +541,13 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 	}
 
 	// XSCL
-	if (mScale != 1.0) {
-//		esm.writeHNT("XSCL", mScale);
+	if (mScale != 1.0) 
+	{
 		esm.startSubRecordTES4("XSCL");
-		esm.writeT<float>(mScale);
+		if (substitutionScale != 0)
+			esm.writeT<float>(substitutionScale);
+		else
+			esm.writeT<float>(mScale);
 		esm.endSubRecordTES4("XSCL");
 	}
 

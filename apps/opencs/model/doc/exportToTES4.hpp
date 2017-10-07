@@ -120,35 +120,65 @@ namespace CSMDoc
 		// assign all formIDs prior to perform()
 		for (int i=0; i < mCollection.getSize(); i++)
 		{
+			CSMWorld::RecordBase::State state = mCollection.getRecord(i).mState;
 			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
-			std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
 
-			std::string sSIG;
-			for (int i = 0; i<4; ++i)
-				/// \todo make endianess agnostic
-				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
-			sSIG[4] = '\0';
-
-			if (record.sRecordId == ESM::REC_SCPT)
-				strEDID = writer.generateEDIDTES4(record.mId, 3);
-			formID = writer.crossRefStringID(strEDID, sSIG, false, false);
-			if (formID == 0)
+			bool exportOrSkip = false;
+			if (mSkipMasterRecords)
 			{
-				// first fall-back
-				strEDID = writer.generateEDIDTES4(record.mId, 2);
-				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+				exportOrSkip = (state == CSMWorld::RecordBase::State_Modified ||
+					state == CSMWorld::RecordBase::State_ModifiedOnly ||
+					state == CSMWorld::RecordBase::State_Deleted);
 			}
-			if (formID == 0)
+			else
 			{
-				// second fall-back
-				if (record.sRecordId == ESM::REC_REGN || record.sRecordId == ESM::REC_CLAS)
-					strEDID = writer.generateEDIDTES4(record.mId, 2);
-				else if (record.sRecordId == ESM::REC_SCPT)
+				exportOrSkip = true;
+			}
+
+			if (exportOrSkip)
+			{
+				std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
+				std::string sSIG;
+				for (int i = 0; i<4; ++i)
+					/// \todo make endianess agnostic
+					sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+				sSIG[4] = '\0';
+
+				if (record.sRecordId == ESM::REC_SCPT)
 					strEDID = writer.generateEDIDTES4(record.mId, 3);
-				else
-					strEDID = writer.generateEDIDTES4(record.mId, 0);
-				formID = writer.getNextAvailableFormID();
-				formID = writer.reserveFormID(formID, strEDID);
+				if (record.sRecordId == ESM::REC_REGN)
+				{
+					strEDID = writer.generateEDIDTES4(record.mId, 2);
+					if (Misc::StringUtils::lowerCase(strEDID).find("region") == std::string::npos)
+					{
+						strEDID += "Region";
+					}
+				}
+				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+				if (formID == 0)
+				{
+					// first fall-back
+					strEDID = writer.generateEDIDTES4(record.mId, 2);
+					formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+				}
+				if (formID == 0)
+				{
+					// second fall-back, create record
+					if (record.sRecordId == ESM::REC_REGN)
+					{
+						strEDID = writer.generateEDIDTES4(record.mId, 2);
+						if (Misc::StringUtils::lowerCase(strEDID).find("region") == std::string::npos)
+						{
+							strEDID += "Region";
+						}
+					}
+					else if (record.sRecordId == ESM::REC_SCPT)
+						strEDID = writer.generateEDIDTES4(record.mId, 3);
+					else
+						strEDID = writer.generateEDIDTES4(record.mId, 0);
+					formID = writer.getNextAvailableFormID();
+					formID = writer.reserveFormID(formID, strEDID);
+				}
 			}
 		}
 
@@ -178,23 +208,6 @@ namespace CSMDoc
 		if (CSMWorld::getScopeFromId (mCollection.getRecord (stage).get().mId)!=mScope)
 			return;
 		
-		std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
-		if (record.sRecordId == ESM::REC_SCPT)
-			strEDID = writer.generateEDIDTES4(record.mId, 3);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
-		if (formID == 0)
-		{
-			// fall-back
-			strEDID = writer.generateEDIDTES4(record.mId, 2);
-			formID = writer.crossRefStringID(strEDID, sSIG, false, false);
-		}
-		if (formID == 0)
-		{
-			// error
-//			std::cout << "ERROR: found collection item without pre-assigned FormID: " << strEDID << std::endl;
-			throw std::runtime_error("ERROR: found collection item without pre-assigned FormID: " + strEDID);
-		}
-
 		if (mSkipMasterRecords == true)
 		{
 			// check for modified / deleted state, otherwise skip
@@ -221,6 +234,23 @@ namespace CSMDoc
 
 		if (exportOrSkip)
 		{
+			std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
+			if (record.sRecordId == ESM::REC_SCPT)
+				strEDID = writer.generateEDIDTES4(record.mId, 3);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				// fall-back
+				strEDID = writer.generateEDIDTES4(record.mId, 2);
+				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			}
+			if (formID == 0)
+			{
+				// error
+				//			std::cout << "ERROR: found collection item without pre-assigned FormID: " << strEDID << std::endl;
+				throw std::runtime_error("ERROR: found collection item without pre-assigned FormID: " + strEDID);
+			}
+
 			uint32_t flags=0;
 			if (state == CSMWorld::RecordBase::State_Deleted)
 				flags |= 0x01;
