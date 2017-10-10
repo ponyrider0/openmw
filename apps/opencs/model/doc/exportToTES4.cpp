@@ -1793,7 +1793,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				int cellY = record.get().mPos.pos[1] / 4096;
 				if (record.get().mPos.pos[1] < 0) cellY--;
 
-				tempStream << "#" << cellX << "," << cellY;
+				tempStream << "#" << cellX << " " << cellY;
 				cellId = tempStream.str();
 			}
 
@@ -1865,7 +1865,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 					int cellY = record.get().mPos.pos[1] / 4096;
 					if (record.get().mPos.pos[1] < 0) cellY--;
 
-					tempStream << "#" << cellX << "," << cellY;
+					tempStream << "#" << cellX << " " << cellY;
 					cellId = tempStream.str();
 				}
 
