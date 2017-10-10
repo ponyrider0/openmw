@@ -69,13 +69,16 @@ namespace ESM
 		mESMoffset = 0;
     }
 
-    void ESMWriter::addMaster(const std::string& name, uint64_t size)
+    void ESMWriter::addMaster(const std::string& name, uint64_t size, bool updateOffset)
     {
         Header::MasterData d;
         d.name = name;
         d.size = size;
         mHeader.mMaster.push_back(d);
-		mESMoffset += 0x01000000;
+		if (updateOffset == true)
+		{
+			mESMoffset += 0x01000000;
+		}
     }
 
     void ESMWriter::save(std::ostream& file)
@@ -185,8 +188,9 @@ namespace ESM
 		if (mUniqueIDcheck.find(activeID) != mUniqueIDcheck.end())
 		{
 //			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
-			debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM." << std::endl;
+			debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: (" << stringID << ") " << std::hex << activeID << std::endl;
 			OutputDebugString(debugstream.str().c_str());
+			std::cout << debugstream.str();
 		}
 		writeT<uint32_t>(activeID);
 		mUniqueIDcheck.insert( std::make_pair(activeID, mUniqueIDcheck.size()) );
@@ -444,33 +448,31 @@ namespace ESM
 
 	uint32_t ESMWriter::getNextAvailableFormID()
 	{
-		uint32_t returnVal;
-//		if (mReservedFormIDs.size() == 0)
-		if (mFormIDMap.size() == 0 || mLastReservedFormID == 0)
+
+		if (mFormIDMap.size() == 0)
 		{
-			returnVal = 0x10001;
-			return returnVal | mESMoffset;
+			mLowestAvailableID = 0x10001 | mESMoffset;;
+			return mLowestAvailableID;
 		}
 
-//		returnVal = mReservedFormIDs.back().first;
-
-		returnVal = mLastReservedFormID + 1;
-		while ( mFormIDMap.find(returnVal) != mFormIDMap.end() )
+		// sanity check
+		if (mLowestAvailableID < mESMoffset)
 		{
-			returnVal++;
+			uint32_t tempID = (mLowestAvailableID & 0x00FFFFFF);
+			mLowestAvailableID = tempID | mESMoffset;
 		}
 
-		// strip existing plugin offset and assign current offset
-		returnVal = (returnVal & 0x00FFFFFF) | mESMoffset;
+		while ( mFormIDMap.find(mLowestAvailableID) != mFormIDMap.end() )
+		{
+			mLowestAvailableID++;
+		}
 
-		return returnVal;
+		return mLowestAvailableID;
 	}
 
 	uint32_t ESMWriter::getLastReservedFormID()
 	{
-		uint32_t returnVal;
-		returnVal = mLastReservedFormID;
-		return returnVal;
+		return mLastReservedFormID;
 	}
 
 	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, bool setup_phase)
@@ -480,143 +482,15 @@ namespace ESM
 //		if (addESMOffset == true)
 //			formID |= mESMoffset;
 
-		if (formID == 0x01380001 && stringID != "wrldmorrowind-dummycell")
+		if (formID == 0x01380001 && stringID != "wrldmorrowind-dummycell" && setup_phase == false)
 		{
 			formID = getNextAvailableFormID();
 		}
 
-/*
-		std::vector<std::pair<uint32_t, std::string>>::iterator insertionPoint;
-		std::pair<uint32_t, std::string> recordID(formID, std::string(stringID));
-		std::pair<std::string, uint32_t> stringMap(std::string(stringID), formID);
-
-		// check case for a pre-calc'ed formID
-		if (mReservedFormIDs.size() > 0)
-			if (mReservedFormIDs.back().first < formID)
-			{
-				mStringIDMap.insert(stringMap);
-				mReservedFormIDs.push_back(recordID);
-				mLastReservedFormID = formID;
-				return mLastReservedFormID;
-			}
-
-		// check special cases for size 0, 1 and 2
-		if (mReservedFormIDs.size() == 0)
-		{
-			uint32_t newID = 0x10001 | mESMoffset;
-			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-			mLastReservedFormID = newID;
-			return mLastReservedFormID;
-		}
-		else if (mReservedFormIDs.size() == 1)
-		{
-			insertionPoint = mReservedFormIDs.begin();
-			if (insertionPoint->first == formID)
-			{
-				uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
-				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-				mLastReservedFormID = newID;
-				return mLastReservedFormID;
-			}
-			else if (insertionPoint->first > formID)
-				mReservedFormIDs.insert(insertionPoint, recordID);
-			else
-				mReservedFormIDs.push_back(recordID);
-			mStringIDMap.insert(stringMap);
-			mLastReservedFormID = formID;
-			return mLastReservedFormID;
-		}
-		else if (mReservedFormIDs.size() == 2)
-		{
-			insertionPoint = mReservedFormIDs.begin();
-			if (insertionPoint->first == formID)
-			{
-				uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
-				mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-				mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-				mLastReservedFormID = newID;
-				return mLastReservedFormID;
-			}
-			else if (insertionPoint->first > formID)
-				mReservedFormIDs.insert(insertionPoint, recordID);
-			else if ( (++insertionPoint)->first > formID )
-				mReservedFormIDs.insert(insertionPoint, recordID);
-			else
-				mReservedFormIDs.push_back(recordID);
-			mStringIDMap.insert(stringMap);
-			mLastReservedFormID = formID;
-			return mLastReservedFormID;
-		}
-
-		int currentIndex, midPoint = mReservedFormIDs.size() / 2;
-		if (mReservedFormIDs[midPoint].first == formID)
-		{
-			uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
-			mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-			mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-			mLastReservedFormID = newID;
-			return mLastReservedFormID;
-		}
-
-		// worst case: N/2
-		if (mReservedFormIDs[midPoint].first > formID)
-		{
-			// start searching down from midPoint
-			for (currentIndex=midPoint-1; currentIndex >= 0; currentIndex--)
-			{
-				if (mReservedFormIDs[currentIndex].first == formID)
-				{
-					uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
-					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-					mLastReservedFormID = newID;
-					return mLastReservedFormID;
-				}
-				if (mReservedFormIDs[currentIndex].first < formID)
-				{
-					currentIndex++;
-					break;
-				}
-			}
-			// walk iterator to correct point
-			insertionPoint = mReservedFormIDs.begin();
-			for (int i=0; i < currentIndex; i++)
-				insertionPoint++;
-		}
-		else
-		{				
-			// start searching up from midPoint
-			for (currentIndex=midPoint+1; currentIndex < mReservedFormIDs.size(); currentIndex++) //this takes 19ms
-			{
-				if (mReservedFormIDs[currentIndex].first == formID)
-				{
-					uint32_t newID = (mReservedFormIDs.back().first+1) | mESMoffset;
-					mStringIDMap.insert(std::make_pair(std::string(stringID), newID));
-					mReservedFormIDs.push_back(std::make_pair(newID, std::string(stringID)));
-					mLastReservedFormID = newID;
-					return mLastReservedFormID;
-				}
-				if (mReservedFormIDs[currentIndex].first > formID)
-				{
-					break;
-				}
-			}
-			// walk iterator to correct point
-			insertionPoint = mReservedFormIDs.end();
-			for (int i=mReservedFormIDs.size(); i > currentIndex; i--)
-				insertionPoint--;
-		}
-*/
-//		mStringIDMap.insert(stringMap);
-//		mReservedFormIDs.insert(insertionPoint, recordID);
-
-
 		// make sure formID is not already used
 		if ( mFormIDMap.find(formID) != mFormIDMap.end() || formID == 0)
 		{
-			// if requeted formID:stringID pair == stored formID:stringID,
+			// if requested formID:stringID pair == stored formID:stringID,
 			// then just issue warning and return formID
 			auto matchedPair = mStringIDMap.find(Misc::StringUtils::lowerCase(stringID));
 			if (matchedPair != mStringIDMap.end() && formID == matchedPair->second)
@@ -650,15 +524,13 @@ namespace ESM
 		// create entry for the stringID to formID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
 
-		if (setup_phase == false && formID != 0)
+		if (setup_phase == false && formID > mESMoffset)
 		{
-			if ((formID & 0xFF000000) < 0x04000000)
-			{
-				debugstream.str(""); debugstream.clear();
-				debugstream << "ERROR: invalid formID requested: " << formID << std::endl;
-				throw std::runtime_error(debugstream.str().c_str());
-			}
 			mLastReservedFormID = formID;
+			if (formID == mLowestAvailableID)
+			{
+				mLowestAvailableID++;
+			}
 		}
 
 		return formID;
@@ -667,7 +539,7 @@ namespace ESM
 	void ESMWriter::clearReservedFormIDs()
 	{
 		mLastReservedFormID = 0;
-//		mReservedFormIDs.clear();
+		mLowestAvailableID = 0x10001;
 		mFormIDMap.clear();
 		mStringIDMap.clear();
 		mUniqueIDcheck.clear();
@@ -676,20 +548,11 @@ namespace ESM
 
 	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, const std::string &sSIG, bool convertToEDID, bool creating_record)
 	{
-//		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
 		std::map<std::string, uint32_t>::iterator searchResult;
 
 		if (stringID == "")
 			return 0;
 
-		// worst case: N
-/*
-		for (currentRecord=mReservedFormIDs.begin(); currentRecord != mReservedFormIDs.end(); currentRecord++) // this takes 130ms
-		{
-			if (stringID == currentRecord->second)
-				return currentRecord->first;
-		}
-*/
 		std::string tempString = stringID;
 		if (convertToEDID)
 		{
@@ -712,9 +575,6 @@ namespace ESM
 					{
 						if (unMatchedEDIDmap[tempString].first.find(sSIG, 0) == std::string::npos)
 						{
-//							std::string errorString("ERROR: unmatched EDID log: sSIG collison: string=" +
-//								tempString + ", " + unMatchedEDIDmap[tempString].first + " vs " + sSIG);
-//							std::cout << errorString << std::endl;
 							unMatchedEDIDmap[tempString].first += "+" + sSIG;
 						}
 					}
@@ -728,46 +588,13 @@ namespace ESM
 			}
 			return 0;
 		}
-		else
-		{
-			return searchResult->second;
-		}
 
-//		return 0;
+		return searchResult->second;
+
 	}
 
 	std::string ESMWriter::crossRefFormID(uint32_t formID)
 	{
-//		std::vector<std::pair<uint32_t, std::string>>::iterator currentRecord;
-/*
-		if (mReservedFormIDs.size() == 0)
-			return "";
-
-		int currentIndex = mReservedFormIDs.size() / 2;
-
-		if (mReservedFormIDs[currentIndex].first == formID)
-			return mReservedFormIDs[currentIndex].second;
-
-		// worst case: N/2 (re-implement as binary search, NlogN)
-		if (mReservedFormIDs[currentIndex].first > formID)
-		{
-			// start searching down
-			while (--currentIndex >= 0)
-			{
-				if (mReservedFormIDs[currentIndex].first == formID)
-					return mReservedFormIDs[currentIndex].second;
-			}
-		}
-		else
-		{
-			// start searching up
-			while (++currentIndex < mReservedFormIDs.size())
-			{
-				if (mReservedFormIDs[currentIndex].first == formID)
-					return mReservedFormIDs[currentIndex].second;
-			}
-		}
-*/
 		std::string retstring = "";
 
 		auto searchResult = mFormIDMap.find(formID);

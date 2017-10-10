@@ -51,7 +51,7 @@ class ESMWriter
 
         void clearMaster();
 
-        void addMaster(const std::string& name, uint64_t size);
+        void addMaster(const std::string& name, uint64_t size, bool updateOffset=true);
 
         void save(std::ostream& file);
         ///< Start saving a file by writing the TES3 header.
@@ -148,6 +148,7 @@ public:
 		std::map<std::string, uint32_t> mStringIDMap;
 		std::map<uint32_t, int> mUniqueIDcheck;
 
+		uint32_t mLowestAvailableID= 0x10001;
 		uint32_t mLastReservedFormID=0;
 		uint32_t getNextAvailableFormID();
 		uint32_t getLastReservedFormID();

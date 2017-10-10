@@ -66,15 +66,17 @@ namespace CSMDoc
 			int initializeSubstitutions(std::string esmName);
 
 			int loadCellIDmap(std::string filename);
-			std::map<int, std::map<int, uint32_t[2]> > mExteriorCellMap;
+			std::map<int, std::map<int, uint32_t[3]> > mExteriorCellMap;
 			uint32_t crossRefCellXY(int cellX, int cellY);
 			uint32_t crossRefLandXY(int cellX, int cellY);
+			uint32_t crossRefPathgridXY(int cellX, int cellY);
 
 			int loadEDIDmap2(std::string filename);
 			int loadCellIDmap2(std::string filename);
 			int loadmwEDIDSubstitutionMap(std::string filename);
 
 			int loadEDIDmap3(std::string filename);
+			int loadCellIDmap3(std::string filename);
 
 	};
 

@@ -291,32 +291,47 @@ int CSMDoc::SavingState::loadCellIDmap(std::string filename)
 
 uint32_t CSMDoc::SavingState::crossRefCellXY(int cellX, int cellY)
 {
-	uint32_t retVal=0;
+	uint32_t cellID=0;
 
 	if ( mExteriorCellMap.find(cellX) != mExteriorCellMap.end() )
 	{	
 		if ( mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end() )
 		{
-			retVal = mExteriorCellMap[cellX][cellY][0];
+			cellID = mExteriorCellMap[cellX][cellY][0];
 		}
 	}
 
-	return retVal;
+	return cellID;
 }
 
 uint32_t CSMDoc::SavingState::crossRefLandXY(int cellX, int cellY)
 {
-	uint32_t retVal=0;
+	uint32_t landscapeID=0;
 
 	if (mExteriorCellMap.find(cellX) != mExteriorCellMap.end())
 	{
 		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
 		{
-			retVal = mExteriorCellMap[cellX][cellY][1];
+			landscapeID = mExteriorCellMap[cellX][cellY][1];
 		}
 	}
 
-	return retVal;
+	return landscapeID;
+}
+
+uint32_t CSMDoc::SavingState::crossRefPathgridXY(int cellX, int cellY)
+{
+	uint32_t pathgridID=0;
+
+	if (mExteriorCellMap.find(cellX) != mExteriorCellMap.end())
+	{
+		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
+		{
+			pathgridID = mExteriorCellMap[cellX][cellY][2];
+		}
+	}
+
+	return pathgridID;
 }
 
 int CSMDoc::SavingState::loadEDIDmap2(std::string filename)
@@ -504,6 +519,21 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		{
 			std::string token;
 			std::getline(parserStream, token, ',');
+			// check for double-quote in token, if there is one, then parse by another double quote
+			if (token[0] == '\"')
+			{
+				// complete double-quoted token -- keep looping until double-quotes are closed
+				while (token[token.size()-1] != '\"')
+				{
+					// assume token parsing has interrupted by an in-line comma
+					// so, first add missing in-line comma
+					token = token + ',';
+					// then try to obtain second half of token
+					std::string token2;
+					std::getline(parserStream, token2, ',');
+					token = token + token2;
+				}
+			}
 
 			// assign token to string
 			switch (i)
@@ -568,6 +598,90 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	return errorcode;
 }
 
+int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
+{
+	int errorcode = 0;
+
+	// read and parse each line
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strX, strY, strHexFormID, strLandHexFormID, strPathgridHexFormID,strEDID;
+		uint32_t formID, landFormID, pathgridID;
+		int CellX, CellY;
+
+		for (int i = 0; i < 6; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strHexFormID = Misc::StringUtils::lowerCase(token);
+				break;
+			case 1:
+				strX = Misc::StringUtils::lowerCase(token);
+				break;
+			case 2:
+				strY = Misc::StringUtils::lowerCase(token);
+				break;
+			case 3:
+				strEDID = Misc::StringUtils::lowerCase(token);
+				break;
+			case 4:
+				strLandHexFormID = Misc::StringUtils::lowerCase(token);
+				break;
+			case 5:
+				strPathgridHexFormID = Misc::StringUtils::lowerCase(token);
+				break;
+			}
+		}
+
+		// convert hex to integer
+		std::istringstream hexToInt{ strHexFormID };
+		hexToInt >> std::hex >> formID;
+
+		hexToInt.clear(); hexToInt.str(strLandHexFormID);
+		hexToInt >> std::hex >> landFormID;
+
+		hexToInt.clear(); hexToInt.str(strPathgridHexFormID);
+		hexToInt >> std::hex >> pathgridID;
+
+		// convert CellX, CellY
+		CellX = atoi(strX.c_str());
+		CellY = atoi(strY.c_str());
+
+		//		mExteriorCellMap[CellX][CellY] = std::vector<uint32_t>();
+		mExteriorCellMap[CellX][CellY][0] = formID;
+		mExteriorCellMap[CellX][CellY][1] = landFormID;
+		mExteriorCellMap[CellX][CellY][2] = pathgridID;
+
+		// create stringIDMap entries
+		std::ostringstream generatedCellID;
+		generatedCellID << "#" << CellX << " " << CellY;
+		mWriter.reserveFormID(formID, generatedCellID.str(), true);
+		if (landFormID != 0)
+		{
+			mWriter.reserveFormID(formID, generatedCellID.str() + "-landscape", true);
+		}
+		if (pathgridID != 0)
+		{
+			mWriter.reserveFormID(formID, generatedCellID.str() + "-pathgrid", true);
+		}
+
+	} // while getline(inputFile, inputLine)
+
+	return errorcode;
+}
+
 int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 {
 /*
@@ -588,9 +702,10 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
 	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
 
-	loadCellIDmap2("MorroblivionCellIDmap.csv");
+//	loadCellIDmap2("MorroblivionCellIDmap.csv");
 //	loadEDIDmap2("TR_MainlandFormIDlist.csv");
 //	loadCellIDmap2("TR_MainlandCellIDmap.csv");
+	loadCellIDmap3("MorroblivionCellmap4.csv");
 
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
