@@ -710,19 +710,19 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
 
-	loadEDIDmap3("TamrielDataEDIDlist.csv");
-	loadEDIDmap3("TRMainlandEDIDlist.csv");
-	loadEDIDmap3("TRPreviewEDIDlist.csv");
-
-	loadEDIDmap3("UnresolvedEDIDlist_Resolved.csv");
-
-/*
 	// if TR_Mainland or TR_Preview, then look for Tamriel_Data
-	if ((esmName.find("TR_Mainland") != std::string::npos) ||
-		(esmName.find("TR_Preview") != std::string::npos) )
+	if (esmName.find("TR_Mainland") != std::string::npos) 
 	{
 		loadEDIDmap3("TamrielDataEDIDlist.csv");
+		loadEDIDmap3("TRMainlandEDIDlist.csv");
 	}
-*/	
+	if (esmName.find("TR_Preview") != std::string::npos)
+	{
+		loadEDIDmap3("TamrielDataEDIDlist.csv");
+		loadEDIDmap3("TRPreviewEDIDlist.csv");
+	}
+
+	loadEDIDmap3("UnresolvedEDIDlist_Resolved.csv");
+	
 	return 0;
 }

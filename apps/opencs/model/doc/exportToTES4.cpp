@@ -22,10 +22,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 {
 	std::string esmName = currentDoc.getSavePath().filename().stem().string();
 
-	currentSave.getWriter().clearMaster();
-	currentSave.getWriter().clearReservedFormIDs();
-	currentSave.initializeSubstitutions(esmName);
-
 	// Export to ESM file
 	appendStage (new OpenExportTES4Stage (currentDoc, currentSave, true));
 
@@ -199,8 +195,12 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 		if ((esmName.find("TR_Mainland") != std::string::npos) ||
 			(esmName.find("TR_Preview") != std::string::npos))
 		{
-			mState.getWriter().addMaster("Tamriel_Data.esp", 0, false);
+			mState.getWriter().addMaster("Tamriel_Data.esp", 0);
 		}
+
+		// load EDID substitution files only after all Masters are inserted
+		mState.getWriter().clearReservedFormIDs();
+		mState.initializeSubstitutions(esmName);
 
 	}
 
