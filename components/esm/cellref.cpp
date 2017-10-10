@@ -417,7 +417,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_01")
 		{
 			substitutionScale = 0.6f;
-			substitutionOffset.pos[2] = -240;
+			substitutionOffset.pos[2] = -210;
 			substitutionOffset.rot[0] = -1 * mPos.rot[0];
 			substitutionOffset.rot[1] = -1 * mPos.rot[1];
 			substitutionOffset.rot[2] = -1 * mPos.rot[2];
@@ -425,7 +425,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_06")
 		{
 			substitutionScale = 0.5f;
-			substitutionOffset.pos[2] = -210;
+			substitutionOffset.pos[2] = -260;
 			substitutionOffset.rot[0] = -1 * mPos.rot[0];
 			substitutionOffset.rot[1] = -1 * mPos.rot[1];
 			substitutionOffset.rot[2] = -1 * mPos.rot[2];
@@ -457,7 +457,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_05")
 		{
 			substitutionScale = 0.6f;
-			substitutionOffset.pos[2] = -400;
+			substitutionOffset.pos[2] = -500;
 			substitutionOffset.rot[0] = -1 * mPos.rot[0];
 			substitutionOffset.rot[1] = -1 * mPos.rot[1];
 			substitutionOffset.rot[2] = -1 * mPos.rot[2];
@@ -473,7 +473,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		else if (Misc::StringUtils::lowerCase(mRefID) == "flora_tree_bm_07")
 		{
 			substitutionScale = 0.45f;
-			substitutionOffset.pos[2] = -170;
+			substitutionOffset.pos[2] = -300;
 			substitutionOffset.rot[0] = -1 * mPos.rot[0];
 			substitutionOffset.rot[1] = -1 * mPos.rot[1];
 			substitutionOffset.rot[2] = -1 * mPos.rot[2];
