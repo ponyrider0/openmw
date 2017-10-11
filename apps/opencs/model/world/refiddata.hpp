@@ -225,6 +225,7 @@ namespace CSMWorld
 		Record<RecordT> record = mContainer.at(index);
 		RecordT esmRecord = record.get();
 
+		// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
 		switch (esmRecord.sRecordId)
 		{
 		case ESM::REC_LEVI:
@@ -260,16 +261,14 @@ namespace CSMWorld
 
 		if (exportOrSkip)
 		{
-			// convert ESM3 CHAR4 to ESM4-Compatible CHAR4 Signature
-			if ( sSIG != "" )
-			{
-				uint32_t flags=0;
-				if (record.mState == CSMWorld::RecordBase::State_Deleted)
-					flags |= 0x01;
-				writer.startRecordTES4(sSIG, flags, formID, strEDID);
-				retval = esmRecord.exportTESx(writer, export_format);
-				writer.endRecordTES4(sSIG);
-			}
+			uint32_t flags=0;
+			if (record.mState == CSMWorld::RecordBase::State_Deleted)
+				flags |= 0x01;
+			writer.startRecordTES4(sSIG, flags, formID, strEDID);
+			retval = esmRecord.exportTESx(writer, export_format);
+			writer.endRecordTES4(sSIG);
+
+			retval = true;
 		}
 
 		return retval;

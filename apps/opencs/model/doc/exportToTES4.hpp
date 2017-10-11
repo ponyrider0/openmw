@@ -90,6 +90,7 @@ namespace CSMDoc
 		SavingState& mState;
 		CSMWorld::Scope mScope;
 		bool mSkipMasterRecords;
+		int mNumRecords=0;
 
 	public:
 
@@ -118,10 +119,10 @@ namespace CSMDoc
 		ESM::ESMWriter& writer = mState.getWriter();
 
 		// assign all formIDs prior to perform()
-		for (int i=0; i < mCollection.getSize(); i++)
+		for (int recordIndex=0; recordIndex < mCollection.getSize(); recordIndex++)
 		{
-			CSMWorld::RecordBase::State state = mCollection.getRecord(i).mState;
-			typename CollectionT::ESXRecord record = mCollection.getRecord (i).get();
+			CSMWorld::RecordBase::State state = mCollection.getRecord(recordIndex).mState;
+			typename CollectionT::ESXRecord record = mCollection.getRecord (recordIndex).get();
 
 			bool exportOrSkip = false;
 			if (mSkipMasterRecords)
@@ -137,11 +138,12 @@ namespace CSMDoc
 
 			if (exportOrSkip)
 			{
+				mNumRecords++;
 				std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
 				std::string sSIG;
-				for (int i = 0; i<4; ++i)
+				for (int tempindex = 0; tempindex<4; ++tempindex)
 					/// \todo make endianess agnostic
-					sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
+					sSIG += reinterpret_cast<const char *> (&record.sRecordId)[tempindex];
 				sSIG[4] = '\0';
 
 				if (record.sRecordId == ESM::REC_SCPT)
@@ -200,7 +202,7 @@ namespace CSMDoc
 		sSIG[4] = '\0';
 
 		// if stage == 0, then add the group record first
-		if (stage == 0)
+		if (stage == 0 && mNumRecords > 0)
 		{
 			writer.startGroupTES4(sSIG, 0);
 		}
@@ -259,11 +261,8 @@ namespace CSMDoc
 			writer.endRecordTES4 (record.sRecordId);
 		}
 		
-		if (stage == (mCollection.getSize()-1))
+		if (stage == (mCollection.getSize()-1) && mNumRecords > 0)
 		{
-			std::string sSIG;
-			for (int i=0; i<4; ++i)
-				sSIG += reinterpret_cast<const char *> (&record.sRecordId)[i];
 			writer.endGroupTES4(sSIG);
 		}
 	}
@@ -322,7 +321,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportWeaponCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -364,7 +363,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportMiscCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -378,7 +377,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportLightCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -392,7 +391,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportLeveledItemCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -406,7 +405,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportIngredientCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -518,7 +517,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportApparatusCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -532,8 +531,8 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
 		bool mSkipMasterRecords;
+		std::vector<int> mActiveRecords;
 	public:
 		ExportPotionCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
 		virtual int setup();
@@ -632,7 +631,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 
 	public:
