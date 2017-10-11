@@ -3852,7 +3852,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::ofstream unmatchedCSVFile;
 	unmatchedCSVFile.open("UnresolvedEDIDlist.csv");
 	// write header
-	unmatchedCSVFile << "Record Type" << "," << "Mod Filename" << "," << "EDID" << "," << "Number of References" << "," << "Put FormID Here" << "," << "Options" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
+	unmatchedCSVFile << "Record Types" << "," << "Mod File" << "," << "EDID" << "," << "Ref Count" << "," << "Put FormID Here" << "," << "Put Comments Here" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 	int index = 1;
 	ESM::ESMWriter& esm = mState.getWriter();
 	for (auto edidItem = esm.unMatchedEDIDmap.begin();

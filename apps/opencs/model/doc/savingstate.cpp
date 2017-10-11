@@ -513,7 +513,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		lineNumber++;
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
-		std::string strOptions="", strPosOffset="", strRotOffset="", strScale="";
+		std::string strPosOffset="", strRotOffset="", strScale="";
 		uint32_t formID=0;
 
 		for (int i = 0; i < 9; i++)
@@ -565,8 +565,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				strHexFormID = token;
 				break;
 			case 5:
-				// flags/options
-				strOptions = token;
+				// comments
 				break;
 			case 6:
 				// position offset
@@ -770,7 +769,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 		loadEDIDmap3("TRPreviewEDIDlist.csv");
 	}
 
-	loadEDIDmap3("UnresolvedEDIDlist_Resolved.csv");
+	loadEDIDmap3("OverridesEDIDList.csv");
 	
 	return 0;
 }
