@@ -118,6 +118,16 @@ namespace ESM
 
 		mStream->seekp(std::ios_base::end);
 
+		// write total records
+		if (mStream->tellp() >= (30 + 4))
+		{
+			mStream->seekp(30, std::ios_base::beg);
+			mCounting = false;
+			writeT<uint32_t>(mRecordCount);
+			mCounting = true;
+		}
+
+		// write next available ID
 		if ( mStream->tellp() >= (34+4) )
 		{
 			mStream->seekp(34, std::ios_base::beg);
