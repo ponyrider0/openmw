@@ -3852,7 +3852,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::ofstream unmatchedCSVFile;
 	unmatchedCSVFile.open("UnresolvedEDIDlist.csv");
 	// write header
-	unmatchedCSVFile << "Record Type" << "," << "Mod Filename" << "," << "EDID" << "," << "Number of References" << "," << "Put FormID Here" << "," << "Index"  << std::endl;
+	unmatchedCSVFile << "Record Type" << "," << "Mod Filename" << "," << "EDID" << "," << "Number of References" << "," << "Put FormID Here" << "," << "Options" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 	int index = 1;
 	ESM::ESMWriter& esm = mState.getWriter();
 	for (auto edidItem = esm.unMatchedEDIDmap.begin();
@@ -3867,7 +3867,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		else
 		{
 			// list only items which were lost during conversion
-			unmatchedCSVFile << edidItem->second.first << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << edidItem->first << "\"," << edidItem->second.second << "," << "" << "," << index++ << std::endl;
+			unmatchedCSVFile << edidItem->second.first << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << edidItem->first << "\"," << edidItem->second.second << "," << "0x00" << "," << "" << "," << "" << "," << "" << "," << "" << std::endl;
 	//		std::cout << "[" << count++ << "] " << edidItem->first << " - " << edidItem->second << std::endl;
 		}
 	}

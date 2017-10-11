@@ -513,9 +513,10 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		lineNumber++;
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
+		std::string strOptions="", strPosOffset="", strRotOffset="", strScale="";
 		uint32_t formID=0;
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 9; i++)
 		{
 			std::string token;
 			std::getline(parserStream, token, ',');
@@ -533,30 +534,51 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 					std::getline(parserStream, token2, ',');
 					token = token + token2;
 				}
+				if (token[token.size()-1] == '\"')
+				{
+					token.erase(0, 1); token.erase(token.size()-1, 1);
+				}
+				else
+				{
+					// error parsing quoted token, skip to next line
+					continue;
+				}
 			}
 
+			Misc::StringUtils::lowerCaseInPlace(token);
 			// assign token to string
 			switch (i)
 			{
 			case 0:
-				strRecordType = Misc::StringUtils::lowerCase(token);
+				strRecordType = token;
 				break;
 			case 1:
-				strModFileName = Misc::StringUtils::lowerCase(token);
+				strModFileName = token;
 				break;
 			case 2:
-				// remove double-quotes if present
-				if (token[0] == '\"' && token[token.size()-1] == '\"')
-				{
-					token.erase(remove(token.begin(), token.end(), '\"'), token.end());
-				}
-				strEDID = Misc::StringUtils::lowerCase(token);
+				strEDID = token;
 				break;
 			case 3:
-				numReferences = atoi(Misc::StringUtils::lowerCase(token).c_str());
+				numReferences = atoi(token.c_str());
 				break;
 			case 4:
-				strHexFormID = Misc::StringUtils::lowerCase(token);
+				strHexFormID = token;
+				break;
+			case 5:
+				// flags/options
+				strOptions = token;
+				break;
+			case 6:
+				// position offset
+				strPosOffset = token;
+				break;
+			case 7:
+				// rotation offset
+				strRotOffset = token;
+				break;
+			case 8:
+				// scale
+				strScale = token;
 				break;
 			}
 		}
@@ -576,9 +598,8 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 
 		if (searchStr == strEDID && searchInt != 0)
 		{
-			std::cout << "WARNING: EDID substitution conflict: " <<
-				strEDID << " already assigned to " << std::hex << searchInt <<
-				", new FormID: " << formID << std::endl;
+			std::cout << "WARNING: EDID substitution conflict: " << strEDID << " already assigned to " 
+				<< std::hex << searchInt << ", new FormID: " << formID << std::endl;
 		}
 
 		// add to formID map
@@ -587,10 +608,37 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		{
 			// error: formID couldn't be reserved??
 			errorcode = -2;
-			std::cout << "FormID Import ERROR: Unable to import [" << strEDID <<
-				"] to " << formID << ", assigned to " << reserveResult <<
-				" instead." << std::endl;
+			std::cout << "FormID Import ERROR: Unable to import [" << strEDID << "] to "
+				<< formID << ", assigned to " << reserveResult << " instead." << std::endl;
 			continue;
+		}
+
+		if (strPosOffset != "" ||  strRotOffset != "" || strScale != "")
+		{
+			std::stringstream opstream;
+			std::string opstring="";
+
+			opstream.str(strPosOffset);
+			opstring=""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_x = opstring;
+			opstring = ""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_y = opstring;
+			opstring = ""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_z = opstring;
+
+			opstream.str(""); opstream.clear();
+			opstream.str(strRotOffset);
+			opstring = ""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_rx = opstring;
+			opstring = ""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_ry = opstring;
+			opstring = ""; std::getline(opstream, opstring, ',');
+			mWriter.mStringTransformMap[strEDID].op_rz = opstring;
+
+			float fscale;
+			fscale = atof(strScale.c_str());
+			mWriter.mStringTransformMap[strEDID].fscale = fscale;
+
 		}
 
 	}

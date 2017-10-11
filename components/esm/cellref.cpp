@@ -252,7 +252,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 	uint32_t baseFormID=0;
 	ESM::Position substitutionOffset;
 	float substitutionScale=0;
-	std::string baseEDID;
+	std::string baseEDID="";
 
 	for (int i=0; i < 3; i++)
 	{
@@ -364,7 +364,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 */
 //		lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase(""), true));
 
-		baseEDID = Misc::StringUtils::lowerCase(baseEDID);
+		 Misc::StringUtils::lowerCaseInPlace(baseEDID);
 		// load substitutionOffsets
 		if ( (baseEDID == "firesmokemedium" ||
 			baseEDID.find("candle") != std::string::npos ||
@@ -480,6 +480,77 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		}
 
 	}
+
+	// over-ride all of the above if RefTransformOp found
+
+	if (baseEDID != "" && esm.mStringTransformMap.find(baseEDID) != esm.mStringTransformMap.end())
+	{
+		float evalResult=0.0f;
+		std::string opstring="";
+		opstring = esm.mStringTransformMap[baseEDID].op_x;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.pos[0] = evalResult;
+		}
+		opstring = esm.mStringTransformMap[baseEDID].op_y;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.pos[1] = evalResult;
+		}
+		opstring = esm.mStringTransformMap[baseEDID].op_z;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.pos[2] = evalResult;
+		}
+		opstring = esm.mStringTransformMap[baseEDID].op_rx;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.rot[0] = evalResult / 57.2958;
+		}
+		opstring = esm.mStringTransformMap[baseEDID].op_ry;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.rot[1] = evalResult / 57.2958;
+		}
+		opstring = esm.mStringTransformMap[baseEDID].op_rz;
+		if (opstring != "")
+		{
+			if (esm.evaluateOpString(opstring, evalResult, mPos) == false)
+			{
+				// issue error/warning
+				evalResult = 0.0f;
+			}
+			substitutionOffset.rot[2] = evalResult / 57.2958;
+		}
+		substitutionScale = esm.mStringTransformMap[baseEDID].fscale;
+
+	}
+
 
 	esm.startSubRecordTES4("NAME");
 	esm.writeT<uint32_t>(baseFormID);

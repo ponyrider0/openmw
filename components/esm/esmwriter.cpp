@@ -446,6 +446,235 @@ namespace ESM
         mEncoder = encoder;
     }
 
+
+	bool ESMWriter::evaluateOpString(std::string opString, float& opValue, const ESM::Position& opData)
+	{
+		int char_index = 0;
+		int eval_state = 0; // start state
+		int operation_state = 0; // no operation
+		float left_operand = 0.0f;
+		bool binary_operation = false;
+		struct EvalOpContext
+		{
+			int eval_state;
+			int opration_state;
+			float left_operand;
+			bool binary_operation;
+		};
+		std::vector<struct EvalOpContext> operation_stack;
+
+		// return false if any parsing error...
+		// examples: empty paren, two paren with no operator, two operators no operand
+		//     right operator without right operand
+		while (char_index < opString.size())
+		{
+			if (eval_state == 0)
+			{
+				// peek at the next letter position until we can switch into another state
+				if (opString[char_index] == '-' || opString[char_index] == '+')
+				{
+					eval_state = 1; // operator state
+				}
+				else if (opString[char_index] >= '0' && opString[char_index] <= '9')
+				{
+					eval_state = 2; // operand - number literal state
+				}
+				else if (opString[char_index] >= 'a' && opString[char_index] <= 'z')
+				{
+					eval_state = 3; // operand - variable state
+				}
+				else if (opString[char_index] == '(')
+				{
+					eval_state = 4; // open parentheses state
+				}
+				else if (opString[char_index] == ')')
+				{
+					eval_state = 5; // close parentheses state
+				}
+				else
+				{
+					//advance to next character and continue in state 0
+					char_index++;
+				}
+				continue;
+			}
+			else if (eval_state == 1)
+			{
+				// prepare for operation with next operand
+				// binary or unary operation?
+				// save operation state then continue with next token
+				// return to state 0
+				if (opString[char_index] == '+')
+					operation_state = 1;
+				else if (opString[char_index] == '-')
+					operation_state = 2;
+				else if (opString[char_index] == '*')
+					operation_state = 3;
+				eval_state = 0;
+				char_index++;
+				continue;
+			}
+			else if (eval_state == 2)
+			{
+				std::string sLiteral = "";
+				float right_operand=0;
+				// operand - literal: keep reading until full literal is read
+				while (char_index < opString.size() && ((opString[char_index] >= '0' && opString[char_index] <= '9') || opString[char_index] == '.'))
+				{
+					sLiteral += opString[char_index];
+					char_index++;
+				}
+				right_operand = atof(sLiteral.c_str());
+				// perform currently active operation state with literal
+				switch (operation_state)
+				{
+				case 1:
+					// addition
+					left_operand += right_operand;
+					break;
+				case 2:
+					// subtraction
+					left_operand -= right_operand;
+					break;
+				case 3:
+					// multiplication
+					if (binary_operation == false)
+						left_operand = right_operand;
+					else
+						left_operand *= right_operand;
+					break;
+				case 0:
+					// no operator, assume no operand and just skip
+					left_operand = right_operand;
+					break;
+				}
+				binary_operation = true;
+				// reset eval and operation state
+				eval_state = 0; operation_state = 0;
+			}
+			else if (eval_state == 3)
+			{
+				// operand - variable (max two letters)
+				std::string sVariable="";
+				float right_operand;
+				while (char_index < opString.size() && opString[char_index] >= 'a' && opString[char_index] <= 'z')
+				{
+					sVariable += opString[char_index];
+					char_index++;
+				}
+				// replace variable with a literal
+				if (sVariable == "x")
+				{
+					right_operand = opData.pos[0];
+				}
+				else if (sVariable == "y")
+				{
+					right_operand = opData.pos[1];
+				}
+				else if (sVariable == "z")
+				{
+					right_operand = opData.pos[2];
+				}
+				else if (sVariable == "rx")
+				{
+					right_operand = opData.rot[0] * 57.2958;
+				}
+				else if (sVariable == "ry")
+				{
+					right_operand = opData.rot[1] * 57.2958;
+				}
+				else if (sVariable == "rz")
+				{
+					right_operand = opData.rot[2] * 57.2958;
+				}
+				else
+				{
+					// throw error
+					return false;
+				}
+				// then perform currently active operation with literal
+				switch (operation_state)
+				{
+				case 1:
+					// addition
+					left_operand += right_operand;
+					break;
+				case 2:
+					// subtraction
+					left_operand -= right_operand;
+					break;
+				case 3:
+					// multiplication
+					if (binary_operation == false)
+						left_operand = right_operand;
+					else
+						left_operand *= right_operand;
+					break;
+				case 0:
+					// no operator, assume no operand and just skip
+					left_operand = right_operand;
+					break;
+				}
+				binary_operation = true;
+				// reset eval and operation state
+				eval_state = 0; operation_state = 0;
+			}
+			else if (eval_state == 4)
+			{
+				// push outside operation and left operand onto stack...
+				struct EvalOpContext *newContext = new struct EvalOpContext;
+				newContext->eval_state = eval_state;
+				newContext->opration_state = operation_state;
+				newContext->left_operand = left_operand;
+				newContext->binary_operation = binary_operation;
+				operation_stack.push_back(*newContext);
+				left_operand = 0; operation_state = 0; eval_state = 0; binary_operation = false;
+				// advance character
+				char_index++;
+			}
+			else if (eval_state = 5)
+			{
+				// pop stack and eval outside expression
+				float right_operand = left_operand;
+				eval_state = operation_stack.back().eval_state;
+				operation_state = operation_stack.back().opration_state;
+				left_operand = operation_stack.back().left_operand;
+				binary_operation = operation_stack.back().binary_operation;
+				operation_stack.pop_back();
+				// eval left and right
+				switch (operation_state)
+				{
+				case 1:
+					// addition
+					left_operand += right_operand;
+					break;
+				case 2:
+					// subtraction
+					left_operand -= right_operand;
+					break;
+				case 3:
+					// multiplication
+					if (binary_operation == false)
+						left_operand = right_operand;
+					else
+						left_operand *= right_operand;
+					break;
+				case 0:
+					// no operator, assume no operand and just skip
+					left_operand = right_operand;
+					break;
+				}
+				binary_operation = true;
+				// advance character
+				char_index++;
+			}
+		}
+
+		opValue = left_operand;
+
+		return true;
+	}
+
 	uint32_t ESMWriter::getNextAvailableFormID()
 	{
 

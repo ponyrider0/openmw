@@ -18,6 +18,13 @@ namespace ToUTF8
 
 namespace ESM {
 
+struct RefTransformOp
+{
+	std::string op_x, op_y, op_z;
+	std::string op_rx, op_ry, op_rz;
+	float fscale;
+};
+
 class ESMWriter
 {
         struct RecordData
@@ -147,6 +154,9 @@ public:
 		std::map<uint32_t, std::string> mFormIDMap;
 		std::map<std::string, uint32_t> mStringIDMap;
 		std::map<uint32_t, int> mUniqueIDcheck;
+		std::map<std::string, struct RefTransformOp> mStringTransformMap;
+
+		bool evaluateOpString(std::string opString, float& opValue, const ESM::Position& opData);
 
 		uint32_t mLowestAvailableID= 0x10001;
 		uint32_t mLastReservedFormID=0;
