@@ -393,6 +393,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		{
 			substitutionOffset.pos[2] = 150;
 		}
+/*
 		else if (baseEDID == "dbush15")
 		{
 			substitutionOffset.pos[2] = -70;
@@ -478,6 +479,7 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 			substitutionOffset.rot[1] = -1 * mPos.rot[1];
 			substitutionOffset.rot[2] = -1 * mPos.rot[2];
 		}
+*/
 
 	}
 
