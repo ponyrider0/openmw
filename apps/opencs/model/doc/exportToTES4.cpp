@@ -28,7 +28,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
 
 /*
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >(mDocument.getData().getGlobals(), currentSave));
+	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >
+		(mDocument.getData().getGlobals(), currentSave));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 		(mDocument.getData().getGmsts(), currentSave));
@@ -49,8 +50,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		(mDocument.getData().getStartScripts(), currentSave));
 */
 	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
-
-//	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, false));
 
 //	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
 
@@ -118,6 +117,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
+
+	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, false, skipMasterRecords));
 
 	// close file and clean up
 	appendStage (new CloseExportTES4Stage (currentSave));
@@ -214,29 +215,72 @@ void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
 
 
 CSMDoc::ExportDialogueCollectionTES4Stage::ExportDialogueCollectionTES4Stage (Document& document,
-	SavingState& state, bool journal)
+	SavingState& state, bool journal, bool skipMasters)
 	: mState (state),
 	mTopics (journal ? document.getData().getJournals() : document.getData().getTopics()),
-	mInfos (journal ? document.getData().getJournalInfos() : document.getData().getTopicInfos())
+	mInfos (journal ? document.getData().getJournalInfos() : document.getData().getTopicInfos()),
+	mSkipMasterRecords (skipMasters),
+	mQuestMode (journal)
 {}
 
 int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 {
-	return mTopics.getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	int collectionSize = mTopics.getSize();
+	for (int i=0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Dialogue>& topic = mTopics.getRecord(i);
+		ESM::Dialogue dial = topic.get();
+
+		bool exportMe =false;
+		if (mSkipMasterRecords == true)
+		{
+			if (topic.isModified() || topic.isDeleted())
+			{
+				exportMe = true;
+			}
+		}
+		else
+		{
+			exportMe = true;
+		}
+
+		if (dial.mType == ESM::Dialogue::Topic &&
+			exportMe == true)
+		{
+			mActiveRecords.push_back(i);
+		}
+
+	}
+	
+	return mActiveRecords.size();
 }
 
 void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	ESM::ESMWriter& writer = mState.getWriter();
-	const CSMWorld::Record<ESM::Dialogue>& topic = mTopics.getRecord (stage);
 
-	if (topic.mState == CSMWorld::RecordBase::State_Deleted)
+	if (stage == 0 && mActiveRecords.size() > 0)
+	{
+		writer.startGroupTES4("DIAL", 0);
+	}
+
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Dialogue>& topic = mTopics.getRecord(recordIndex);
+
+	if (topic.isDeleted())
 	{
 		// if the topic is deleted, we do not need to bother with INFO records.
 		ESM::Dialogue dialogue = topic.get();
-		writer.startRecord(dialogue.sRecordId);
-		dialogue.save(writer, true);
-		writer.endRecord(dialogue.sRecordId);
+		std::string strEDID = writer.generateEDIDTES4(dialogue.mId, 4);
+		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
+		uint32_t flags = 0;
+		flags |= 0x20;
+		writer.startRecordTES4("DIAL", flags, formID, strEDID);
+		dialogue.exportTESx(writer, 4);
+		writer.endRecordTES4("DIAL");
+
 		return;
 	}
 
@@ -253,21 +297,28 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		}
 	}
 
-	if (topic.isModified() || infoModified)
+	if (infoModified)
 	{
+		ESM::Dialogue dialog;
 		if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified
 			&& topic.mState != CSMWorld::RecordBase::State_ModifiedOnly)
 		{
-			mState.getWriter().startRecord (topic.mBase.sRecordId);
-			topic.mBase.save (mState.getWriter(), topic.mState == CSMWorld::RecordBase::State_Deleted);
-			mState.getWriter().endRecord (topic.mBase.sRecordId);
+			 dialog = topic.mBase;
 		}
 		else
 		{
-			mState.getWriter().startRecord (topic.mModified.sRecordId);
-			topic.mModified.save (mState.getWriter(), topic.mState == CSMWorld::RecordBase::State_Deleted);
-			mState.getWriter().endRecord (topic.mModified.sRecordId);
+			dialog = topic.mModified;
 		}
+		std::string strEDID = writer.generateEDIDTES4(dialog.mId, 4);
+		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
+		uint32_t flags = 0;
+		if (topic.isDeleted()) flags |= 0x20;
+		writer.startRecordTES4("DIAL", flags, formID, strEDID);
+		dialog.exportTESx(writer, 4);
+		writer.endRecordTES4("DIAL");
+
+		// create child group
+//		writer.startGroupTES4(formID, 7);
 
 		// write modified selected info records
 		for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
@@ -295,12 +346,21 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
 				}
 
-				writer.startRecord (info.sRecordId);
-				info.save (writer, iter->mState == CSMWorld::RecordBase::State_Deleted);
-				writer.endRecord (info.sRecordId);
+//				writer.startRecord (info.sRecordId);
+//				info.save (writer, iter->mState == CSMWorld::RecordBase::State_Deleted);
+//				writer.endRecord (info.sRecordId);
 			}
 		}
+
+		// close child group
+//		writer.endGroupTES4(formID);
 	}
+
+	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
+	{
+		writer.endGroupTES4("DIAL");
+	}
+
 }
 
 

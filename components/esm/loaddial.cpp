@@ -69,6 +69,62 @@ namespace ESM
         }
     }
 
+	void Dialogue::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		uint32_t tempFormID;
+		std::string strEDID, tempStr;
+		std::ostringstream tempStream, debugstream;
+
+		strEDID = esm.generateEDIDTES4(mId, 4);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(strEDID);
+		esm.endSubRecordTES4("EDID");
+
+		uint32_t questFormID = esm.crossRefStringID("MorroDefaultQuest", "QUST", false);
+		esm.startSubRecordTES4("QSTI");
+		esm.writeT<uint32_t>(questFormID); // can have multiple
+		esm.endSubRecordTES4("QSTI");
+
+		if (false)
+		{
+			esm.startSubRecordTES4("QSTR");
+			esm.writeT<uint32_t>(0);
+			esm.endSubRecordTES4("QSTR");
+		}
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mId);
+		esm.endSubRecordTES4("FULL");
+
+		uint8_t newType=0;
+		switch (mType)
+		{
+		case ESM::Dialogue::Topic:
+			newType=0;
+			break;
+		case ESM::Dialogue::Voice:
+			newType = 1;
+			break;
+		case ESM::Dialogue::Greeting:
+			newType = 0;
+			break;
+		case ESM::Dialogue::Persuasion:
+			newType = 3;
+			break;
+		case ESM::Dialogue::Journal:
+			newType = 0;
+			break;
+		case ESM::Dialogue::Unknown:
+			newType = 0;
+			break;
+
+		}
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint8_t>(newType);
+		esm.endSubRecordTES4("DATA");
+
+	}
+
     void Dialogue::blank()
     {
         mInfo.clear();

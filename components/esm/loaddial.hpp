@@ -55,6 +55,7 @@ struct Dialogue
     ///< Loads all sub-records of Dialogue record, except NAME sub-record
 
     void save(ESMWriter &esm, bool isDeleted = false) const;
+	void exportTESx(ESMWriter &esm, int export_format) const;
 
     /// Remove all INFOs that are deleted
     void clearDeletedInfos();

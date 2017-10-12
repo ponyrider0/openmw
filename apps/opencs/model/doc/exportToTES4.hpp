@@ -273,10 +273,13 @@ namespace CSMDoc
 		SavingState& mState;
 		const CSMWorld::IdCollection<ESM::Dialogue>& mTopics;
 		CSMWorld::InfoCollection& mInfos;
+		std::vector<int> mActiveRecords;
+		bool mSkipMasterRecords;
+		bool mQuestMode;
 
 	public:
 
-		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool journal);
+		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool journal, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps

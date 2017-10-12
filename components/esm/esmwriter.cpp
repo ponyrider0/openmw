@@ -1426,6 +1426,10 @@ namespace ESM
 				addScript = true;
 			}
 			break;
+		case 4:
+			if (name.size() > 0 && name[0] != '0')
+				tempEDID = "1" + name;
+			break;
 		}
 
 		int len = tempEDID.length();
