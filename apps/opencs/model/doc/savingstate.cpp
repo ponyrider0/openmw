@@ -158,7 +158,7 @@ int CSMDoc::SavingState::loadEDIDmap(std::string filename)
 		if ( (formID != 0 && searchStr.size() == 0) && (strEDID != "" && searchInt == 0) )
 		{
 			// add to formID map
-			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, true);
+			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, "", true);
 			if (reserveResult != formID)
 			{
 				// error: formID couldn't be reserved??
@@ -373,7 +373,7 @@ int CSMDoc::SavingState::loadEDIDmap2(std::string filename)
 		if ((formID != 0 && searchStr.size() == 0) && (strEDID != "" && searchInt == 0))
 		{
 			// add to formID map
-			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, true);
+			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, "", true);
 			if (reserveResult != formID)
 			{
 				// error: formID couldn't be reserved??
@@ -499,6 +499,9 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 
 int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 {
+	// display a period for progress feedback
+	std::cout << ".";
+
 	int errorcode = 0;
 	int lineNumber = 0;
 
@@ -601,8 +604,11 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				<< std::hex << searchInt << ", new FormID: " << formID << std::endl;
 		}
 
+		if (strRecordType.size() != 4)
+			strRecordType = "UNKN";
+
 		// add to formID map
-		uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, true);
+		uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, strRecordType, true);
 		if (reserveResult != formID && reserveResult != 0)
 		{
 			// error: formID couldn't be reserved??
@@ -647,6 +653,9 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 
 int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 {
+	// display a period for progress feedback
+	std::cout << ".";
+
 	int errorcode = 0;
 
 	// read and parse each line
@@ -714,14 +723,14 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 		// create stringIDMap entries
 		std::ostringstream generatedCellID;
 		generatedCellID << "#" << CellX << " " << CellY;
-		mWriter.reserveFormID(formID, generatedCellID.str(), true);
+		mWriter.reserveFormID(formID, generatedCellID.str(), "CELL", true);
 		if (landFormID != 0)
 		{
-			mWriter.reserveFormID(formID, generatedCellID.str() + "-landscape", true);
+			mWriter.reserveFormID(formID, generatedCellID.str() + "-landscape", "LAND", true);
 		}
 		if (pathgridID != 0)
 		{
-			mWriter.reserveFormID(formID, generatedCellID.str() + "-pathgrid", true);
+			mWriter.reserveFormID(formID, generatedCellID.str() + "-pathgrid", "PGRD", true);
 		}
 
 	} // while getline(inputFile, inputLine)
@@ -744,6 +753,11 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 //	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
 //	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
 
+	std::cout << "Importing CSV files";
+
+	// display a period for progress feedback
+	std::cout << ".";
+
 	loadEDIDmap3("OblivionFormIDlist4.csv");
 	loadEDIDmap3("MorroblivionFormIDlist4.csv");
 	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
@@ -757,7 +771,10 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
 
-	// if TR_Mainland or TR_Preview, then look for Tamriel_Data
+	if (esmName.find("Tamriel_Data") != std::string::npos)
+	{
+		loadEDIDmap3("TamrielDataEDIDlist.csv");
+	}
 	if (esmName.find("TR_Mainland") != std::string::npos) 
 	{
 		loadEDIDmap3("TamrielDataEDIDlist.csv");
@@ -770,6 +787,8 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	}
 
 	loadEDIDmap3("OverridesEDIDList.csv");
-	
+
+	std::cout << "import complete." << std::endl;
+
 	return 0;
 }

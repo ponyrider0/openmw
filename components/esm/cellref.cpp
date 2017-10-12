@@ -305,7 +305,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "0lightUdeUpaperUlanternU04";
 */
 
-		baseFormID = esm.crossRefStringID(baseEDID, "REFR", false);
+		baseFormID = esm.crossRefStringID(baseEDID, "BASEREF", false);
 
 //		std::map<std::string, bool> lanternSubstitutionsMap;
 //		lanternSubstitutionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightUcomUredwareUlamp"), true));
@@ -552,7 +552,6 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 		substitutionScale = esm.mStringTransformMap[baseEDID].fscale;
 
 	}
-
 
 	esm.startSubRecordTES4("NAME");
 	esm.writeT<uint32_t>(baseFormID);

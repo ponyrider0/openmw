@@ -155,6 +155,7 @@ public:
 		std::map<std::string, uint32_t> mStringIDMap;
 		std::map<uint32_t, int> mUniqueIDcheck;
 		std::map<std::string, struct RefTransformOp> mStringTransformMap;
+		std::map<std::string, std::string> mStringTypeMap;
 
 		bool evaluateOpString(std::string opString, float& opValue, const ESM::Position& opData);
 
@@ -162,7 +163,7 @@ public:
 		uint32_t mLastReservedFormID=0;
 		uint32_t getNextAvailableFormID();
 		uint32_t getLastReservedFormID();
-		uint32_t reserveFormID(uint32_t formID, const std::string& stringID, bool setup_phase=false);
+		uint32_t reserveFormID(uint32_t formID, const std::string& stringID, std::string sSIG="", bool setup_phase=false);
 		void clearReservedFormIDs();
 		uint32_t crossRefStringID(const std::string& mId, const std::string &sSIG, bool convertToEDID=true, bool creating_record=false);
 		std::string crossRefFormID(uint32_t formID);

@@ -193,7 +193,7 @@ namespace ESM
 		{
 			// auto-assign formID
 			activeID = getNextAvailableFormID();
-			activeID = reserveFormID(activeID, stringID);
+			activeID = reserveFormID(activeID, stringID, name);
 		}
 		if (mUniqueIDcheck.find(activeID) != mUniqueIDcheck.end())
 		{
@@ -714,7 +714,7 @@ namespace ESM
 		return mLastReservedFormID;
 	}
 
-	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, bool setup_phase)
+	uint32_t ESMWriter::reserveFormID(uint32_t paramformID, const std::string& stringID, std::string sSIG, bool setup_phase)
 	{
 		std::stringstream debugstream;
 		uint32_t formID = paramformID;
@@ -762,6 +762,7 @@ namespace ESM
 
 		// create entry for the stringID to formID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
+		mStringTypeMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), Misc::StringUtils::lowerCase(sSIG)) );
 
 		if (setup_phase == false && formID > mESMoffset)
 		{
@@ -781,14 +782,14 @@ namespace ESM
 		mLowestAvailableID = 0x10001;
 		mFormIDMap.clear();
 		mStringIDMap.clear();
+		mStringTransformMap.clear();
+		mStringTypeMap.clear();
 		mUniqueIDcheck.clear();
 		mCellnameMgr.clear();
 	}
 
 	uint32_t ESMWriter::crossRefStringID(const std::string& stringID, const std::string &sSIG, bool convertToEDID, bool creating_record)
 	{
-		std::map<std::string, uint32_t>::iterator searchResult;
-
 		if (stringID == "")
 			return 0;
 
@@ -798,7 +799,22 @@ namespace ESM
 			tempString = generateEDIDTES4(stringID);
 		}
 
-		searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
+		auto searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
+		auto typeResult = mStringTypeMap.find(Misc::StringUtils::lowerCase(tempString));
+
+		std::string tempSIG = Misc::StringUtils::lowerCase(sSIG);
+		if ( sSIG != "LVLI" && sSIG != "LVLC" && sSIG != "INV_CNT" && sSIG != "INV_NPC" && sSIG != "INV_CRE" &&
+			sSIG != "BASEREF" && 
+			typeResult != mStringTypeMap.end() &&
+			typeResult->second != "" && typeResult->second != "unkn" &&
+			tempSIG != "" && 
+			tempSIG != typeResult->second)
+		{
+				// throw warning, but allow to continue
+				std::cout << "WARNING: crossRefStringID: Stored type does not match request: "
+					<< tempString << ":" << sSIG << " vs " << typeResult->second << std::endl;
+		}
+
 		if (searchResult == mStringIDMap.end())
 		{
 			if (!creating_record)

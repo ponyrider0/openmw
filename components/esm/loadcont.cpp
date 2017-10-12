@@ -115,15 +115,11 @@ namespace ESM
 		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempStream, debugstream;
-		bool isFlora = false;
-		if ((mFlags & Flags::Organic) == 0 ||
-			Misc::StringUtils::lowerCase(mId).find("chest") != std::string::npos)
+
+		bool isTakeOnly = false;
+		if (mFlags & Flags::Organic)
 		{
-			isFlora = false;
-		}
-		else
-		{
-			isFlora = true;
+			isTakeOnly = true;
 		}
 
 		tempStr = esm.generateEDIDTES4(mId);
@@ -148,6 +144,79 @@ namespace ESM
 		esm.endSubRecordTES4("MODB");
 		// MODT
 
+		// **** TODO: if isTakeOnly, modify script */
+		// SCRI
+		std::string strScript = esm.generateEDIDTES4(mScript, 3);
+		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
+		if (tempFormID != 0)
+		{
+			esm.startSubRecordTES4("SCRI");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("SCRI");
+		}
+
+		// CNTO: {formID, uint32}
+		for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
+		{
+			tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INV_CNT");
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CNTO");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.writeT<int32_t>(inventoryItem->mCount);
+				esm.endSubRecordTES4("CNTO");
+			}
+		}
+
+		// DATA, float (item weight)
+		uint8_t flags=0;
+		if (mFlags == Container::Respawn)
+			flags = 0x02;
+		esm.startSubRecordTES4("DATA");
+		esm.writeT<uint8_t>(flags); // flags
+		esm.writeT<float>(mWeight); // weight
+		esm.endSubRecordTES4("DATA");
+
+		// SNAM, open sound formID
+		// QNAM, close sound formID
+
+		return true;
+	}
+
+	bool Container::exportAsFlora(ESMWriter& esm, std::string ingredientEDID) const
+	{
+		uint32_t tempFormID;
+		std::string strEDID, tempStr;
+		std::ostringstream tempStream, debugstream;
+
+		bool isTakeOnly = false;
+		if (mFlags & Flags::Organic)
+		{
+			isTakeOnly = true;
+		}
+
+		strEDID = esm.generateEDIDTES4(mId);
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(strEDID);
+		esm.endSubRecordTES4("EDID");
+
+		esm.startSubRecordTES4("FULL");
+		esm.writeHCString(mName);
+		esm.endSubRecordTES4("FULL");
+
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, 1);
+		tempStr.replace(tempStr.size() - 4, 4, ".nif");
+		tempStream << "morro\\" << tempStr;
+		esm.startSubRecordTES4("MODL");
+		esm.writeHCString(tempStream.str());
+		esm.endSubRecordTES4("MODL");
+		// MODB == Bound Radius
+		esm.startSubRecordTES4("MODB");
+		esm.writeT<float>(50.0);
+		esm.endSubRecordTES4("MODB");
+		// MODT
+
 		// SCRI
 		std::string strScript = esm.generateEDIDTES4(mScript, 3);
 		tempFormID = esm.crossRefStringID(strScript, "SCPT", false);
@@ -159,55 +228,28 @@ namespace ESM
 		}
 
 		// Process non-organic containers
-		if (isFlora == false)
+		// PFIG
+		if (ingredientEDID == "")
 		{
-			// CNTO: {formID, uint32}
-			for (auto inventoryItem = mInventory.mList.begin(); inventoryItem != mInventory.mList.end(); inventoryItem++)
-			{
-				tempFormID = esm.crossRefStringID(inventoryItem->mItem.toString(), "INV_CNT");
-				if (tempFormID != 0)
-				{
-					esm.startSubRecordTES4("CNTO");
-					esm.writeT<uint32_t>(tempFormID);
-					esm.writeT<int32_t>(inventoryItem->mCount);
-					esm.endSubRecordTES4("CNTO");
-				}
-			}
-
-			// DATA, float (item weight)
-			uint8_t flags=0;
-			if (mFlags == Container::Respawn)
-				flags = 0x02;
-			esm.startSubRecordTES4("DATA");
-			esm.writeT<uint8_t>(flags); // flags
-			esm.writeT<float>(mWeight); // weight
-			esm.endSubRecordTES4("DATA");
-
-			// SNAM, open sound formID
-			// QNAM, close sound formID
+			// throw error, then give default ingredient... ?
+			std::string errStr = "WARNING: Flora export: could not resolve ingredientID: " + strEDID + " - " + ingredientEDID;
+			OutputDebugString(errStr.c_str());
 		}
-		else // Organic containers
+		tempFormID = esm.crossRefStringID(ingredientEDID, "INGR", false);
+		if (tempFormID != 0)
 		{
-			// PFIG
-			auto ingredient = mInventory.mList.begin();
-			if (ingredient != mInventory.mList.end())
-			{
-				tempFormID = esm.crossRefStringID(ingredient->mItem.toString(), "INV_FLO");
-				esm.startSubRecordTES4("PFIG");
-				esm.writeT<uint32_t>(tempFormID);
-				esm.endSubRecordTES4("PFIG");
-				debugstream << "Flora (" << mId << "): ingredient='" << ingredient->mItem.toString() << "' [" << tempFormID << "]" << std::endl;
-//				OutputDebugString(debugstream.str().c_str());
-			}
-
-			// PFPC
-			esm.startSubRecordTES4("PFPC");
-			esm.writeT<uint8_t>(50); // spring
-			esm.writeT<uint8_t>(50); // summer
-			esm.writeT<uint8_t>(50); // fall
-			esm.writeT<uint8_t>(50); // winter
-			esm.endSubRecordTES4("PFPC");
+			esm.startSubRecordTES4("PFIG");
+			esm.writeT<uint32_t>(tempFormID);
+			esm.endSubRecordTES4("PFIG");
 		}
+
+		// PFPC
+		esm.startSubRecordTES4("PFPC");
+		esm.writeT<uint8_t>(50); // spring
+		esm.writeT<uint8_t>(50); // summer
+		esm.writeT<uint8_t>(50); // fall
+		esm.writeT<uint8_t>(50); // winter
+		esm.endSubRecordTES4("PFPC");
 
 		return true;
 	}

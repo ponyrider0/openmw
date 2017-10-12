@@ -61,6 +61,7 @@ namespace CSMDoc
 			std::vector<int> mAmmoFromWeaponList;
 			std::map<uint32_t, uint32_t> mReferenceToReferenceMap;
 			std::map<std::string, std::deque<int> > mBaseGameDoorList;
+			std::vector<int> mFloraFromContList;
 
 			int loadEDIDmap(std::string filename);
 			int initializeSubstitutions(std::string esmName);

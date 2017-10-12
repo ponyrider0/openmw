@@ -179,7 +179,7 @@ namespace CSMDoc
 					else
 						strEDID = writer.generateEDIDTES4(record.mId, 0);
 					formID = writer.getNextAvailableFormID();
-					formID = writer.reserveFormID(formID, strEDID);
+					formID = writer.reserveFormID(formID, strEDID, sSIG);
 				}
 			}
 		}
@@ -447,7 +447,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 	public:
 		ExportContainerCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
