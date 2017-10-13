@@ -116,6 +116,7 @@ namespace ESM
 			break;
 		case ESM::Dialogue::Unknown:
 			newType = 0;
+			
 			break;
 
 		}

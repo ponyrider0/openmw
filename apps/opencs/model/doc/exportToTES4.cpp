@@ -259,6 +259,7 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 
 void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	bool bHasInfoGroup=false;
 	ESM::ESMWriter& writer = mState.getWriter();
 
 	if (stage == 0 && mActiveRecords.size() > 0)
@@ -317,9 +318,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		dialog.exportTESx(writer, 4);
 		writer.endRecordTES4("DIAL");
 
-		// create child group
-//		writer.startGroupTES4(formID, 7);
-
+		int numInfoRecs=0;
 		// write modified selected info records
 		for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
 		{
@@ -346,14 +345,58 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
 				}
 
-//				writer.startRecord (info.sRecordId);
-//				info.save (writer, iter->mState == CSMWorld::RecordBase::State_Deleted);
-//				writer.endRecord (info.sRecordId);
+				if (stage < 100 && numInfoRecs < 1000)
+				{
+					numInfoRecs++;
+
+					if (bHasInfoGroup == false)
+					{
+						bHasInfoGroup = true;
+						// create child group
+						writer.startGroupTES4(formID, 7);
+					}
+
+					std::string infoEDID = "info#" + info.mId;
+					uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+					int newType = 0;
+					switch (topic.get().mType)
+					{
+					case ESM::Dialogue::Topic:
+						newType = 0;
+						break;
+					case ESM::Dialogue::Voice:
+						newType = 1;
+						break;
+					case ESM::Dialogue::Greeting:
+						newType = 0;
+						break;
+					case ESM::Dialogue::Persuasion:
+						newType = 3;
+						break;
+					case ESM::Dialogue::Journal:
+						newType = 0;
+						break;
+					case ESM::Dialogue::Unknown:
+						newType = 0;
+						break;
+					default:
+						newType = 0;
+					}
+					uint32_t infoFlags = 0;
+					if (topic.isDeleted()) infoFlags |= 0x20;
+					writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+					info.exportTESx(writer, 4, newType);
+					writer.endRecordTES4("INFO");
+				}
 			}
 		}
 
 		// close child group
-//		writer.endGroupTES4(formID);
+		if (bHasInfoGroup == true)
+		{
+			bHasInfoGroup = false;
+			writer.endGroupTES4(formID);
+		}
 	}
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
