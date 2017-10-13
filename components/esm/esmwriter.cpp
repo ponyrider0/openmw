@@ -797,7 +797,27 @@ namespace ESM
 		std::string tempString = stringID;
 		if (convertToEDID)
 		{
-			tempString = generateEDIDTES4(stringID);
+			if (Misc::StringUtils::lowerCase(sSIG) == "race")
+			{
+				uint32_t raceID = substituteRaceID(stringID);
+				if (raceID != 0)
+					return raceID;
+				else
+					tempString = generateEDIDTES4(stringID);
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "clas")
+			{
+				tempString = generateEDIDTES4(stringID, 2);
+				uint32_t classID = crossRefStringID(stringID, sSIG, false, creating_record);
+				if (classID != 0)
+					return classID;
+				else
+					tempString = generateEDIDTES4(stringID, 0);
+			}
+			else
+			{
+				tempString = generateEDIDTES4(stringID);
+			}
 		}
 
 		auto searchResult = mStringIDMap.find(Misc::StringUtils::lowerCase(tempString));
@@ -2889,6 +2909,33 @@ namespace ESM
 		}
 
 		return morroblivionEDID;
+	}
+
+	// compareOperator: "=, !=, <, <=, >, >="
+	void ESMWriter::exportConditionalExpression(uint32_t compareFunction, uint32_t compareArg1, const std::string& compareOperator, float compareValue, uint8_t condFlags)
+	{
+		uint32_t compareArg2 = 0;
+
+		int conditionType = 0;
+		if (compareOperator == "=") conditionType = 0x00;
+		if (compareOperator == "!=") conditionType = 0x20;
+		if (compareOperator == "<") conditionType = 0x40;
+		if (compareOperator == "<=") conditionType = 0x60;
+		if (compareOperator == ">") conditionType = 0x80;
+		if (compareOperator == ">=") conditionType = 0xA0;
+		conditionType |= condFlags;
+
+		startSubRecordTES4("CTDA");
+		writeT<uint8_t>(conditionType); // type
+		writeT<uint8_t>(0); // unused x3
+		writeT<uint8_t>(0); // unused x3
+		writeT<uint8_t>(0); // unused x3
+		writeT<float>(compareValue); // comparison value
+		writeT<uint32_t>(compareFunction); // comparison function
+		writeT<uint32_t>(compareArg1); // comparison argument
+		writeT<uint32_t>(compareArg2); // comparison argument
+		writeT<uint32_t>(0); // unused
+		endSubRecordTES4("CTDA");
 	}
 
 

@@ -201,6 +201,10 @@ public:
 		std::map<std::string, std::string> mMorroblivionEDIDmap;
 		std::map<std::string, std::pair<std::string, int>> unMatchedEDIDmap;
 
+		void exportConditionalExpression(std::string condExpression);
+		void exportConditionalExpression(uint32_t compareFunction, uint32_t compareArg,
+			const std::string& compareOperator, float compareValue, uint8_t condFlags=0);
+
     private:
         std::list<RecordData> mRecords;
         std::ostream* mStream;

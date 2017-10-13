@@ -257,6 +257,51 @@ namespace ESM
 		}
 
 		// Conditions CTDAs...
+		// hard-coded conditions based on ESM datastructs
+		// first condition == IsActor
+		uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
+		if (actorFormID != 0)
+		{
+			uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
+			esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
+		}
+
+		uint32_t raceFormID = esm.crossRefStringID(mRace, "RACE");
+		if (raceFormID != 0)
+		{
+			uint32_t compareFunction = 0x0045; // GetIsRace (decimal 69)
+			esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
+		}
+
+		uint32_t classFormID = esm.crossRefStringID(mClass, "CLAS");
+		if (classFormID != 0)
+		{
+			uint32_t compareFunction = 0x0044; // GetIsRace (decimal 68)
+			esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
+		}
+
+		uint32_t factionFormID = esm.crossRefStringID(mFaction, "FACT");
+		if (factionFormID != 0)
+		{
+			uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
+			esm.exportConditionalExpression(compareFunction, factionFormID, ">=", 0.0);
+		}
+
+		uint32_t pcFactFormID = esm.crossRefStringID(mPcFaction, "FACT");
+		if (pcFactFormID != 0)
+		{
+			uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
+			esm.exportConditionalExpression(compareFunction, pcFactFormID, "=", 1.0);
+		}
+
+		uint32_t cellFormID = esm.crossRefStringID(mCell, "CELL");
+		if (cellFormID != 0)
+		{
+			uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
+			esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
+		}
+
+
 		int numConditions=0;
 		for (int i=0; i < numConditions; i++)
 		{
