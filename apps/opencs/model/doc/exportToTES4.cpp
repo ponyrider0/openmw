@@ -312,6 +312,10 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		}
 		std::string strEDID = writer.generateEDIDTES4(dialog.mId, 4);
 		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
+		if (formID == 0)
+		{
+			formID = writer.reserveFormID(formID, strEDID, "DIAL");
+		}
 		uint32_t flags = 0;
 		if (topic.isDeleted()) flags |= 0x20;
 		writer.startRecordTES4("DIAL", flags, formID, strEDID);
@@ -345,7 +349,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
 				}
 
-				if (stage < 100 && numInfoRecs < 1000)
+//				if (stage < 268 && numInfoRecs < 1000)
+				if (true)
 				{
 					numInfoRecs++;
 
