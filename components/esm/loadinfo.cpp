@@ -4,6 +4,8 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <apps/opencs/model/world/infoselectwrapper.hpp>
+
 namespace ESM
 {
     unsigned int DialInfo::sRecordId = REC_INFO;
@@ -259,52 +261,137 @@ namespace ESM
 		// Conditions CTDAs...
 		// hard-coded conditions based on ESM datastructs
 		// first condition == IsActor
-		uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
-		if (actorFormID != 0)
+		if (mActor != "")
 		{
+			uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
 			uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
 			esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
 		}
-
-		uint32_t raceFormID = esm.crossRefStringID(mRace, "RACE");
-		if (raceFormID != 0)
+		if (mRace != "")
 		{
+			uint32_t raceFormID = esm.crossRefStringID(mRace, "RACE");
 			uint32_t compareFunction = 0x0045; // GetIsRace (decimal 69)
 			esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
 		}
-
-		uint32_t classFormID = esm.crossRefStringID(mClass, "CLAS");
-		if (classFormID != 0)
+		if (mClass != "")
 		{
+			uint32_t classFormID = esm.crossRefStringID(mClass, "CLAS");
 			uint32_t compareFunction = 0x0044; // GetIsRace (decimal 68)
 			esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
 		}
-
-		uint32_t factionFormID = esm.crossRefStringID(mFaction, "FACT");
-		if (factionFormID != 0)
+		if (mFaction != "")
 		{
+			uint32_t factionFormID = esm.crossRefStringID(mFaction, "FACT");
 			uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
-			esm.exportConditionalExpression(compareFunction, factionFormID, ">=", 0.0);
+			float factionRankVal = mData.mRank;
+			esm.exportConditionalExpression(compareFunction, factionFormID, ">", factionRankVal);
 		}
-
-		uint32_t pcFactFormID = esm.crossRefStringID(mPcFaction, "FACT");
-		if (pcFactFormID != 0)
+		if (mPcFaction != "")
 		{
+			uint32_t pcFactFormID = esm.crossRefStringID(mPcFaction, "FACT");
 			uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
-			esm.exportConditionalExpression(compareFunction, pcFactFormID, "=", 1.0);
+			uint8_t flags = 0x02; // run on target (aka PC)
+			float factionRankVal = mData.mPCrank;
+			esm.exportConditionalExpression(compareFunction, pcFactFormID, ">", factionRankVal, flags);
 		}
-
-		uint32_t cellFormID = esm.crossRefStringID(mCell, "CELL");
-		if (cellFormID != 0)
+		if (mCell != "")
 		{
+			uint32_t cellFormID = esm.crossRefStringID(mCell, "CELL");
 			uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
 			esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
 		}
 
-
-		int numConditions=0;
-		for (int i=0; i < numConditions; i++)
+		for (auto selectItem = mSelects.begin(); selectItem != mSelects.end(); selectItem++)
 		{
+			CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectItem);
+			uint32_t compareFunction;
+			uint32_t compareArg1=0;
+			uint32_t compareArg2=0;
+			std::string compareOperator;
+			float compareVal=0.0f;
+			uint8_t flags=0;
+
+			switch (selectWrapper.getRelationType())
+			{
+			case CSMWorld::ConstInfoSelectWrapper::Relation_Equal:
+				compareOperator = "=";
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Relation_Greater:
+				compareOperator = ">";
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Relation_GreaterOrEqual:
+				compareOperator = ">=";
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Relation_Less:
+				compareOperator = "<";
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Relation_LessOrEqual:
+				compareOperator = "<=";
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Relation_NotEqual:
+				compareOperator = "!=";
+				break;
+			}
+
+			switch (selectWrapper.getFunctionName())
+			{
+			case CSMWorld::ConstInfoSelectWrapper::Function_Choice:
+				// just skip since this is already rolled into ChoiceTopic
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Function_Journal:
+				// evaluate as quest stage level
+				//...
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
+				// 1:1 mapping
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Function_Global:
+				// global var check... ?
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Function_SameFaction:
+				// SameFaction (int 42)
+				break;
+			case CSMWorld::ConstInfoSelectWrapper::Function_RankRequirement:
+				// must change into PC Rank? or Rank eligibility??
+				// GetFactionRank on target (PC)??
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_Item:
+				// change to PC HasItem?
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_NotId:
+				// is not ID?
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_PcGender:
+				// GetIsSex (int 70)
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_Local:
+				// local var?? change to quest var??
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_Dead:
+				// Getdead? (int 46) or GetDeadCount (int 84)
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_PcReputation:
+				// change to fame?
+				break;
+
+			case CSMWorld::ConstInfoSelectWrapper::Function_PcCrimeLevel:
+				// ?
+				break;
+
+			default:
+				// record stats on missing function and occurences
+				break;
+			}
+
+			esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
+
+/*
 			esm.startSubRecordTES4("CTDA");
 			esm.writeT<uint8_t>(0); // type
 			esm.writeT<uint8_t>(0); // unused x3
@@ -314,6 +401,7 @@ namespace ESM
 			esm.writeT<uint32_t>(0); // comparison function
 			esm.writeT<uint32_t>(0); // comparison argument
 			esm.endSubRecordTES4("CTDA");
+*/
 		}
 		// ...
 

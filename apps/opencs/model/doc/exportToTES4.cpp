@@ -215,12 +215,12 @@ void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
 
 
 CSMDoc::ExportDialogueCollectionTES4Stage::ExportDialogueCollectionTES4Stage (Document& document,
-	SavingState& state, bool journal, bool skipMasters)
+	SavingState& state, bool processQuests, bool skipMasters)
 	: mState (state),
-	mTopics (journal ? document.getData().getJournals() : document.getData().getTopics()),
-	mInfos (journal ? document.getData().getJournalInfos() : document.getData().getTopicInfos()),
+	mTopics (processQuests ? document.getData().getJournals() : document.getData().getTopics()),
+	mInfos (processQuests ? document.getData().getJournalInfos() : document.getData().getTopicInfos()),
 	mSkipMasterRecords (skipMasters),
-	mQuestMode (journal)
+	mQuestMode (processQuests)
 {}
 
 int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
@@ -298,6 +298,9 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		}
 	}
 
+	std::map<int, std::vector<ESM::DialInfo> > infoChoiceList;
+	std::map<int, std::string> infoChoiceTopicNames;
+
 	if (infoModified)
 	{
 		ESM::Dialogue dialog;
@@ -310,19 +313,18 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		{
 			dialog = topic.mModified;
 		}
-		std::string strEDID = writer.generateEDIDTES4(dialog.mId, 4);
-		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
+		std::string topicEDID = writer.generateEDIDTES4(dialog.mId, 4);
+		uint32_t formID = writer.crossRefStringID(topicEDID, "DIAL", false, true);
 		if (formID == 0)
 		{
-			formID = writer.reserveFormID(formID, strEDID, "DIAL");
+			formID = writer.reserveFormID(formID, topicEDID, "DIAL");
 		}
 		uint32_t flags = 0;
 		if (topic.isDeleted()) flags |= 0x20;
-		writer.startRecordTES4("DIAL", flags, formID, strEDID);
+		writer.startRecordTES4("DIAL", flags, formID, topicEDID);
 		dialog.exportTESx(writer, 4);
 		writer.endRecordTES4("DIAL");
 
-		int numInfoRecs=0;
 		// write modified selected info records
 		for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
 		{
@@ -349,50 +351,264 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					info.mNext = next->get().mId.substr (next->get().mId.find_last_of ('#')+1);
 				}
 
-//				if (stage < 268 && numInfoRecs < 1000)
-				if (true)
+				// check Result script for names of future ChoiceTopics
+				std::istringstream scriptBuffer(info.mResultScript);
+				std::string preLineBufferA;
+				while (std::getline(scriptBuffer, preLineBufferA, '\n'))
 				{
-					numInfoRecs++;
-
-					if (bHasInfoGroup == false)
+					std::istringstream preLineBufferB(preLineBufferA);
+					std::string lineBuffer;
+					while (std::getline(preLineBufferB, lineBuffer, '\r'))
 					{
-						bHasInfoGroup = true;
-						// create child group
-						writer.startGroupTES4(formID, 7);
+						int currentPosition = 0;
+						int readMode = 0;
+						std::vector< std::pair<int, std::string> > tokenList;
+						std::pair<int, std::string> tokenPair; // 0=command/variable, 1=string literal, 2=number literal
+						// read tokens
+						while (currentPosition < lineBuffer.size())
+						{
+							// ready state
+							if (readMode == 0)
+							{
+								// skip the rest of the line if commented out
+								if (lineBuffer[currentPosition] == ';')
+								{
+									break;
+								}
+								// switch to quoted string literal mode
+								if (lineBuffer[currentPosition] == '\"')
+								{
+									readMode = 2;
+									continue;
+								}
+								// switch to token mode
+								if ( (lineBuffer[currentPosition] >= '0' && lineBuffer[currentPosition] <= '9') ||
+									(lineBuffer[currentPosition] >= 'a' && lineBuffer[currentPosition] <= 'z') ||
+									(lineBuffer[currentPosition] >= 'A' && lineBuffer[currentPosition] <= 'Z') )
+								{
+									readMode = 1;
+									continue;
+								}
+								// skip everything else
+								currentPosition++;
+							}
+							if (readMode == 1)
+							{
+								bool done = false;
+								int tokenType = 2; // 2= number literal
+								std::string token;
+								while (currentPosition < lineBuffer.size())
+								{
+									if (lineBuffer[currentPosition] >= '0' && lineBuffer[currentPosition] <= '9')
+									{
+										token += lineBuffer[currentPosition++];
+									}
+									else if ( (lineBuffer[currentPosition] >= 'a' && lineBuffer[currentPosition] <= 'z') ||
+										(lineBuffer[currentPosition] >= 'A' && lineBuffer[currentPosition] <= 'Z') ||
+										(lineBuffer[currentPosition] == '_' ) )
+									{
+										tokenType = 0; // command/variable
+										token += lineBuffer[currentPosition++];
+									}
+									else
+									{
+										done = true;
+										break;
+									}
+								}
+								if (token != "")
+								{
+									tokenList.push_back(std::make_pair(tokenType, token));
+								}
+								readMode = 0;
+								continue;
+							}
+							if (readMode == 2) // string literals
+							{
+								bool done=false;
+								bool checkQuote=false;
+								std::string stringLiteral;
+								currentPosition++; // skip first quote
+								while (currentPosition < lineBuffer.size())
+								{
+									if (checkQuote == false)
+									{
+										if (lineBuffer[currentPosition] != '\"')
+										{
+											stringLiteral += lineBuffer[currentPosition++];
+											continue;
+										}
+										else
+										{
+											checkQuote = true;
+											currentPosition++;
+											continue;
+										}
+									}
+									else if (checkQuote == true)
+									{
+										if (lineBuffer[currentPosition] == '\"')
+										{
+											stringLiteral += lineBuffer[currentPosition++];
+											checkQuote = false;
+											continue;
+										}
+										else
+										{
+											// ignore probably bad double-quote
+											if ( (stringLiteral == "") &&
+												(lineBuffer[currentPosition] >= '0' && lineBuffer[currentPosition] <= '9') ||
+												(lineBuffer[currentPosition] >= 'a' && lineBuffer[currentPosition] <= 'z') ||
+												(lineBuffer[currentPosition] >= 'A' && lineBuffer[currentPosition] <= 'Z') )
+											{
+												// issue warning
+												std::cout << "WARNING: Script Reader: bad double-quote in string literal:[" << currentPosition << "] " << lineBuffer << std::endl;
+												currentPosition++;
+												checkQuote = false;
+												continue;
+											}
+											// stringLiteral complete
+											done = true;
+											break;
+										}
+									}
+								}
+								if (done == true || (checkQuote == true && currentPosition == lineBuffer.size()))
+								{
+									// add stringLiteral to tokenList and return to ready state
+									tokenList.push_back(std::make_pair(1, stringLiteral));
+									readMode = 0;
+									continue;
+								}
+								else
+								{
+									// error reading string literal
+									std::stringstream errorMesg; 
+									errorMesg << "Script Reader: error reading string literal:[" << currentPosition << "] " << lineBuffer;
+									throw std::runtime_error(errorMesg.str());
+									abort();
+								}
+							}
+						}
+						// parse tokens
+						int parseMode = 0;
+						for (auto tokenItem = tokenList.begin(); tokenItem != tokenList.end(); tokenItem++)
+						{
+							if (parseMode == 0)
+							{
+								if (tokenItem->first == 0 && tokenItem->second == "choice")
+								{
+									// switch to parsing Choice statement (1)
+									parseMode = 1;
+									continue;
+								}
+								else
+								{
+									// unhandled command, abort
+									break;
+								}
+							}
+							if (parseMode == 1)
+							{
+								std::string choiceText;
+								int choiceNum;
+								// process string literal + number literal pairs
+								if (tokenItem->first == 1)
+									choiceText = tokenItem->second;
+								else
+								{
+									// error parsing choice statement
+									throw std::runtime_error("Script Reader: ERROR: parsing choice statement");
+									abort();
+								}
+								tokenItem++; // advance to next token
+								if (tokenItem->first == 2)
+									choiceNum = atoi(tokenItem->second.c_str());
+								else
+								{
+									throw std::runtime_error("Script Reader: ERROR: parsing choice statement");
+									abort();
+								}
+								// add Choice Text:Number pair to choicetopicnames list
+								infoChoiceTopicNames.insert(std::make_pair (choiceNum, choiceText) );
+								continue;
+							}						
+						}
 					}
-
-					std::string infoEDID = "info#" + info.mId;
-					uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-					int newType = 0;
-					switch (topic.get().mType)
-					{
-					case ESM::Dialogue::Topic:
-						newType = 0;
-						break;
-					case ESM::Dialogue::Voice:
-						newType = 1;
-						break;
-					case ESM::Dialogue::Greeting:
-						newType = 0;
-						break;
-					case ESM::Dialogue::Persuasion:
-						newType = 3;
-						break;
-					case ESM::Dialogue::Journal:
-						newType = 0;
-						break;
-					case ESM::Dialogue::Unknown:
-						newType = 0;
-						break;
-					default:
-						newType = 0;
-					}
-					uint32_t infoFlags = 0;
-					if (topic.isDeleted()) infoFlags |= 0x20;
-					writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-					info.exportTESx(writer, 4, newType);
-					writer.endRecordTES4("INFO");
 				}
+
+				bool skipInfo = false;
+				// iterate through INFO conditional statements to see if there is a Choice function used
+				for (auto selectRule = info.mSelects.begin(); selectRule != info.mSelects.end(); selectRule++)
+				{
+					int choiceNum = 0;
+					CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectRule);
+/*
+					std::cout << topicEDID << "-'" << selectRule->mSelectRule << "'-[" << selectRule->mValue << "]: ";
+					std::cout << selectWrapper.convertToString(selectWrapper.getFunctionName()) << " " << 
+						selectWrapper.convertToString(selectWrapper.getComparisonType()) << " " <<
+						selectWrapper.convertToString(selectWrapper.getRelationType()) << " " <<
+						selectWrapper.getVariableName() << " " <<
+						"variant: " << selectWrapper.getVariant().getType();
+					if (selectWrapper.getVariant().getType() == ESM::VarType::VT_Int)
+						std::cout << selectWrapper.getVariant().getInteger() << std::endl;
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						std::cout << selectWrapper.getVariant().getFloat() << std::endl;
+					if (selectWrapper.getVariant().getType() == ESM::VT_String)
+						std::cout << selectWrapper.getVariant().getString() << std::endl;
+*/
+					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Choice)
+					{
+						choiceNum = selectWrapper.getVariant().getInteger();
+						infoChoiceList[choiceNum].push_back(info);
+						skipInfo = true;
+						break;
+					}
+				}
+
+				if (skipInfo == true)
+				{
+					continue;
+				}
+
+				if (bHasInfoGroup == false)
+				{
+					bHasInfoGroup = true;
+					// create child group
+					writer.startGroupTES4(formID, 7);
+				}
+
+				std::string infoEDID = "info#" + info.mId;
+				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				int newType = 0;
+				switch (topic.get().mType)
+				{
+				case ESM::Dialogue::Topic:
+					newType = 0;
+					break;
+				case ESM::Dialogue::Voice:
+					newType = 1;
+					break;
+				case ESM::Dialogue::Greeting:
+					newType = 0;
+					break;
+				case ESM::Dialogue::Persuasion:
+					newType = 3;
+					break;
+				case ESM::Dialogue::Journal:
+					newType = 0;
+					break;
+				case ESM::Dialogue::Unknown:
+					newType = 0;
+					break;
+				default:
+					newType = 0;
+				}
+				uint32_t infoFlags = 0;
+				if (topic.isDeleted()) infoFlags |= 0x20;
+				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				info.exportTESx(writer, 4, newType);
+				writer.endRecordTES4("INFO");
 			}
 		}
 
@@ -402,6 +618,49 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			bHasInfoGroup = false;
 			writer.endGroupTES4(formID);
 		}
+
+		// Process "Choice" Dialog Topics... each choice becomes new Topic + N, where N is choice number
+		for (auto choiceNumPair = infoChoiceList.begin(); choiceNumPair != infoChoiceList.end(); choiceNumPair++)
+		{
+			int choiceNum = choiceNumPair->first;
+			std::stringstream choiceTopicStr;
+			choiceTopicStr << writer.generateEDIDTES4(dialog.mId, 4) << choiceNum;
+			std::string fullString = infoChoiceTopicNames[choiceNum];
+
+			uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
+			if (formID == 0)
+			{
+				formID = writer.reserveFormID(formID, choiceTopicStr.str(), "DIAL");
+			}
+			uint32_t flags = 0;
+			writer.startRecordTES4("DIAL", flags, formID, choiceTopicStr.str());
+			writer.startSubRecordTES4("EDID");
+			writer.writeHCString(choiceTopicStr.str());
+			writer.endSubRecordTES4("EDID");
+			writer.startSubRecordTES4("FULL");
+			writer.writeHCString(fullString);
+			writer.endSubRecordTES4("FULL");
+			writer.startSubRecordTES4("DATA");
+			writer.writeT<uint8_t>(0);
+			writer.endSubRecordTES4("DATA");
+			writer.endRecordTES4("DIAL");
+
+			writer.startGroupTES4(formID, 7);
+
+			for (auto infoChoiceItem = choiceNumPair->second.begin(); infoChoiceItem != choiceNumPair->second.end(); infoChoiceItem++)
+			{
+				std::string infoEDID = "info#" + infoChoiceItem->mId;
+				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				uint32_t infoFlags = 0;
+				if (topic.isDeleted()) infoFlags |= 0x20;
+				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				infoChoiceItem->exportTESx(writer, 4, 0);
+				writer.endRecordTES4("INFO");
+			}
+
+			writer.endGroupTES4(formID);
+		}
+
 	}
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
@@ -2924,6 +3183,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 							throw std::runtime_error("ERROR: cellFormID was not found for: " + generatedSubCellID.str());
 						}
 					}
+				}
+				// add EDID:formID association in StringMap for named exterior city cells
+				if (cellRecordPtr->get().mName != "")
+				{
+					std::string namedCellEDID = writer.generateEDIDTES4(cellRecordPtr->get().mName, 1);
+					writer.mStringIDMap.insert(std::make_pair(namedCellEDID, cellFormID));
+					writer.mStringTypeMap.insert(std::make_pair(namedCellEDID, "CELL"));
 				}
 				// ********************EXPORT SUBCELL HERE **********************
 				flags = 0;

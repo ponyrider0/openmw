@@ -802,17 +802,28 @@ namespace ESM
 				uint32_t raceID = substituteRaceID(stringID);
 				if (raceID != 0)
 					return raceID;
-				else
-					tempString = generateEDIDTES4(stringID);
+				tempString = generateEDIDTES4(stringID);
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "clas")
 			{
 				tempString = generateEDIDTES4(stringID, 2);
-				uint32_t classID = crossRefStringID(stringID, sSIG, false, creating_record);
+				uint32_t classID = crossRefStringID(tempString, sSIG, false, true);
 				if (classID != 0)
 					return classID;
+				tempString = generateEDIDTES4(stringID, 0);
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "cell")
+			{
+				tempString = generateEDIDTES4(stringID, 1);
+				uint32_t cellID = crossRefStringID(tempString, sSIG, false, creating_record);
+				if (cellID != 0)
+					return cellID;
 				else
-					tempString = generateEDIDTES4(stringID, 0);
+					return crossRefStringID(tempString + "00", sSIG, false, true);
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "dial")
+			{
+				tempString = generateEDIDTES4(stringID, 4);
 			}
 			else
 			{
@@ -840,11 +851,6 @@ namespace ESM
 		{
 			if (!creating_record)
 			{
-				if (sSIG == "CLAS")
-				{
-					std::cout << sSIG << " not found: " << tempString << std::endl;
-				}
-
 				if (unMatchedEDIDmap.find(tempString) != unMatchedEDIDmap.end())
 				{
 					if (unMatchedEDIDmap[tempString].first != sSIG)
@@ -2912,17 +2918,17 @@ namespace ESM
 	}
 
 	// compareOperator: "=, !=, <, <=, >, >="
-	void ESMWriter::exportConditionalExpression(uint32_t compareFunction, uint32_t compareArg1, const std::string& compareOperator, float compareValue, uint8_t condFlags)
+	void ESMWriter::exportConditionalExpression(uint32_t compareFunction, uint32_t compareArg1,
+		const std::string& compareOperator, float compareValue, uint8_t condFlags, uint32_t compareArg2)
 	{
-		uint32_t compareArg2 = 0;
 
 		int conditionType = 0;
 		if (compareOperator == "=") conditionType = 0x00;
 		if (compareOperator == "!=") conditionType = 0x20;
-		if (compareOperator == "<") conditionType = 0x40;
-		if (compareOperator == "<=") conditionType = 0x60;
-		if (compareOperator == ">") conditionType = 0x80;
-		if (compareOperator == ">=") conditionType = 0xA0;
+		if (compareOperator == ">") conditionType = 0x40;
+		if (compareOperator == ">=") conditionType = 0x60;
+		if (compareOperator == "<") conditionType = 0x80;
+		if (compareOperator == "<=") conditionType = 0xA0;
 		conditionType |= condFlags;
 
 		startSubRecordTES4("CTDA");

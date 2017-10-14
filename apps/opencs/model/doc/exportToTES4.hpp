@@ -4,6 +4,8 @@
 #include "../world/record.hpp"
 #include "../world/idcollection.hpp"
 #include "../world/scope.hpp"
+#include "../world/infoselectwrapper.hpp"
+
 #include <components/esm/defs.hpp>
 #include <components/esm/loadland.hpp>
 
@@ -276,10 +278,10 @@ namespace CSMDoc
 		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 		bool mQuestMode;
-
+		
 	public:
 
-		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool journal, bool skipMasters=true);
+		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool processQuests, bool skipMasters=true);
 
 		virtual int setup();
 		///< \return number of steps
