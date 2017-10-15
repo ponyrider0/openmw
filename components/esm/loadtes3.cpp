@@ -91,9 +91,10 @@ void ESM::Header::exportTES4 (ESMWriter &esm)
 
 	esm.startSubRecordTES4("HEDR");
 // Version, float
-	esm.writeT<uint32_t>(0x3f4ccccd);
+//	esm.writeT<uint32_t>(0x3f4ccccd);
+	esm.writeT<float>(1.0f);
 // Number records, uint32
-	esm.writeT(mData.records);
+	esm.writeT<uint32_t>(mData.records);
 // Next available ID, uint32
 	esm.writeT<uint32_t>(0);
 	esm.endSubRecordTES4("HEDR");

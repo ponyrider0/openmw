@@ -261,23 +261,29 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 {
 	bool bHasInfoGroup=false;
 	ESM::ESMWriter& writer = mState.getWriter();
+	std::string sSIG;
+
+	if (mQuestMode)
+		sSIG = "QUST";
+	else
+		sSIG = "DIAL";
 
 	if (stage == 0 && mActiveRecords.size() > 0)
 	{
-		writer.startGroupTES4("DIAL", 0);
+		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Dialogue>& topic = mTopics.getRecord(recordIndex);
 
-	if (topic.isDeleted())
+	if (topic.isDeleted() && mQuestMode==false)
 	{
 		// if the topic is deleted, we do not need to bother with INFO records.
 		ESM::Dialogue dialogue = topic.get();
 		std::string strEDID = writer.generateEDIDTES4(dialogue.mId, 4);
 		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
 		uint32_t flags = 0;
-		flags |= 0x20;
+		flags |= 0x20; 
 		writer.startRecordTES4("DIAL", flags, formID, strEDID);
 		dialogue.exportTESx(writer, 4);
 		writer.endRecordTES4("DIAL");
@@ -301,7 +307,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 	std::map<int, std::vector<ESM::DialInfo> > infoChoiceList;
 	std::map<int, std::string> infoChoiceTopicNames;
 
-	if (infoModified)
+	if (infoModified && mQuestMode==false)
 	{
 		ESM::Dialogue dialog;
 		if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified
@@ -462,7 +468,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 												(lineBuffer[currentPosition] >= 'A' && lineBuffer[currentPosition] <= 'Z') )
 											{
 												// issue warning
-												std::cout << "WARNING: Script Reader: bad double-quote in string literal:[" << currentPosition << "] " << lineBuffer << std::endl;
+												std::cout << "WARNING: Script Reader: unexpected double-quote in string literal:[" << currentPosition << "] " << lineBuffer << std::endl;
 												currentPosition++;
 												checkQuote = false;
 												continue;
@@ -484,9 +490,10 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 								{
 									// error reading string literal
 									std::stringstream errorMesg; 
-									errorMesg << "Script Reader: error reading string literal:[" << currentPosition << "] " << lineBuffer;
-									throw std::runtime_error(errorMesg.str());
-									abort();
+									errorMesg << "ERROR: Script Reader: unexpected end of line while reading string literal:[" << currentPosition << "] " << lineBuffer;
+									std::cout << errorMesg.str() << std::endl;
+//									throw std::runtime_error(errorMesg.str());
+									break;
 								}
 							}
 						}
@@ -518,16 +525,20 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 								else
 								{
 									// error parsing choice statement
-									throw std::runtime_error("Script Reader: ERROR: parsing choice statement");
-									abort();
+									std::stringstream errorMesg;
+									std::cout << errorMesg.str() << std::endl;
+//									throw std::runtime_error(errorMesg.str());
+									break;
 								}
 								tokenItem++; // advance to next token
 								if (tokenItem->first == 2)
 									choiceNum = atoi(tokenItem->second.c_str());
 								else
 								{
-									throw std::runtime_error("Script Reader: ERROR: parsing choice statement");
-									abort();
+									std::stringstream errorMesg;
+									std::cout << errorMesg.str() << std::endl;
+//									throw std::runtime_error(errorMesg.str());
+									break;
 								}
 								// add Choice Text:Number pair to choicetopicnames list
 								infoChoiceTopicNames.insert(std::make_pair (choiceNum, choiceText) );
@@ -665,7 +676,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
-		writer.endGroupTES4("DIAL");
+		writer.endGroupTES4(sSIG);
 	}
 
 }
@@ -4296,6 +4307,7 @@ int CSMDoc::CloseExportTES4Stage::setup()
 
 void CSMDoc::CloseExportTES4Stage::perform (int stage, Messages& messages)
 {
+	mState.getWriter().updateTES4();
 	mState.getStream().close();
 
 	if (!mState.getStream())

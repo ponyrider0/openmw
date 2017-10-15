@@ -116,22 +116,15 @@ namespace ESM
 	{
 		std::streampos currentPos = mStream->tellp();
 
-		mStream->seekp(std::ios_base::end);
+		mStream->seekp(0, std::ios_base::end);
 
-		// write total records
-		if (mStream->tellp() >= (30 + 4))
+		if (mStream->tellp() >= (34 + 4))
 		{
 			mStream->seekp(30, std::ios_base::beg);
 			mCounting = false;
+			// write total records
 			writeT<uint32_t>(mRecordCount);
-			mCounting = true;
-		}
-
-		// write next available ID
-		if ( mStream->tellp() >= (34+4) )
-		{
-			mStream->seekp(34, std::ios_base::beg);
-			mCounting = false;
+			// write next available ID
 			writeT<uint32_t>(getNextAvailableFormID());
 			mCounting = true;
 		}
