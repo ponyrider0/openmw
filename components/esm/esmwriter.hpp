@@ -170,7 +170,7 @@ public:
 
 		uint32_t mESMoffset=0;
 
-		static std::string generateEDIDTES4(const std::string& name, int conversion_mode=0);
+		static std::string generateEDIDTES4(const std::string& name, int conversion_mode=0, const std::string& sSIG = "");
 		static int skillToActorValTES4(int skillval);
 		static int attributeToActorValTES4(int attributeval);
 		static std::string intToMagEffIDTES4(int magEffVal);

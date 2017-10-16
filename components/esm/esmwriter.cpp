@@ -114,6 +114,9 @@ namespace ESM
 
 	void ESMWriter::updateTES4()
 	{
+		if (mStream == NULL)
+			return;
+
 		std::streampos currentPos = mStream->tellp();
 
 		mStream->seekp(0, std::ios_base::end);
@@ -820,7 +823,7 @@ namespace ESM
 			}
 			else
 			{
-				tempString = generateEDIDTES4(stringID);
+				tempString = generateEDIDTES4(stringID, 0, sSIG);
 			}
 		}
 
@@ -1420,11 +1423,39 @@ namespace ESM
 		return tempval;
 	}
 
-	std::string ESMWriter::generateEDIDTES4(const std::string& name, int conversion_mode)
+	std::string ESMWriter::generateEDIDTES4(const std::string& name, int conversion_mode, const std::string& sSIG)
 	{
 		std::string tempEDID, finalEDID;
 		bool removeOther=false;
 		bool addScript=false;
+
+		if (sSIG != "")
+		{
+			if (Misc::StringUtils::lowerCase(sSIG) == "qust")
+			{
+				conversion_mode = 5;
+			}
+			if (Misc::StringUtils::lowerCase(sSIG) == "glob")
+			{
+				conversion_mode = 2;
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "scpt")
+			{
+				conversion_mode = 3;
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "regn")
+			{
+				conversion_mode = 2;
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "cell")
+			{
+				conversion_mode = 1;
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "dial")
+			{
+				conversion_mode = 4;
+			}
+		}
 
 		switch (conversion_mode)
 		{
@@ -1435,20 +1466,24 @@ namespace ESM
 		case 1: // no leading zero (most filenames, some records)
 			tempEDID = name;
 			break;
-		case 2: // remove extra non-letter/digit characters (some records)
+		case 2: // no leading zero and remove extra non-letter/digit characters (some records)
 			tempEDID = name;
 			removeOther = true;
 			break;
-		case 3:
+		case 3: // only for scripts: no leading zero, +append "script"
 			if (name.size() > 0 && name[0] != '0')
 			{
 				tempEDID = name;
 				addScript = true;
 			}
 			break;
-		case 4:
+		case 4: // for dialog: leading "1"
 			if (name.size() > 0 && name[0] != '0')
 				tempEDID = "1" + name;
+			break;
+		case 5: // for quests: leading "mw" and no extra-char types
+			tempEDID = "mw" + name;
+			removeOther = true;
 			break;
 		}
 

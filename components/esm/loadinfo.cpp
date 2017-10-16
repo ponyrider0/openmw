@@ -298,8 +298,33 @@ namespace ESM
 		if (mCell != "")
 		{
 			uint32_t cellFormID = esm.crossRefStringID(mCell, "CELL");
-			uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
-			esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
+			if (cellFormID != 0)
+			{
+				uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
+				esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
+			}
+			else
+			{
+				// use mwDialogHelper quest
+				uint32_t compareFunction = 0x4F; // GetQuestVariable
+				std::string questVarName = "GetIn_" + esm.generateEDIDTES4(mCell, 0, "CELL");
+				uint32_t compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+				uint32_t compareArg2 = 0; // todo: lookup questVarName;
+				esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0, 0, compareArg2);
+			}
+		}
+		if (mData.mGender != ESM::DialInfo::Gender::NA)
+		{
+			uint32_t compareFunction = 0x46; // GetIsSex
+			uint32_t compareArg1 = mData.mGender;
+			esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0);
+		}
+		if (mData.mDisposition > 0) // include dispo check if greater than 0
+		{
+			uint32_t compareFunction = 0x4C; // GetDisposition
+			uint32_t compareArg1 = 0; // Target of conversation (player)
+			float compareVal = mData.mDisposition;
+			esm.exportConditionalExpression(compareFunction, compareArg1, ">=", compareVal);
 		}
 
 		for (auto selectItem = mSelects.begin(); selectItem != mSelects.end(); selectItem++)
@@ -362,8 +387,17 @@ namespace ESM
 				break;
 
 			case CSMWorld::ConstInfoSelectWrapper::Function_Global:
-				compareFunction = 0x4A; // GetGlobalValue (int 74)
 				varName = selectWrapper.getVariableName();
+				if (Misc::StringUtils::lowerCase(varName) == "random100")
+				{
+					compareFunction = 0x4D; // GetRandomPercent
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
+					break;
+				}
+				compareFunction = 0x4A; // GetGlobalValue (int 74)
 				compareArg1 = esm.crossRefStringID(varName, "GLOB");
 				if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 					compareVal = selectWrapper.getVariant().getFloat();
@@ -387,13 +421,13 @@ namespace ESM
 				// rank == 1 (duty/loyalty) not enough faction reputation
 				// rank == 2 (skills)
 				// rank == 3 Eligible, add in resultscript: PCRaiseRank to levelup rank
-				compareFunction = 0x0; // ?
-				varName = selectWrapper.getVariableName();
+				compareFunction = 0x4F; // GetQuestVariable (int 79)
+				compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+				compareArg2 = 0; // TODO: create std::map to look up variable index
 				if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 					compareVal = selectWrapper.getVariant().getFloat();
 				if (selectWrapper.getVariant().getType() == ESM::VT_Int )
 					compareVal = selectWrapper.getVariant().getInteger();
-				std::cout << selectWrapper.toString() << std::endl;
 				break;
 
 			case CSMWorld::ConstInfoSelectWrapper::Function_Item:
@@ -435,50 +469,15 @@ namespace ESM
 					compareVal = 1.0f;
 					break;
 				}
-				else if (Misc::StringUtils::lowerCase(varName) == "tr_map")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "state")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "spelltaught")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "control")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "controlq")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "wantsdeath")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "demoted")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "slavestatus")
-				{
-
-				}
-				else if (Misc::StringUtils::lowerCase(varName) == "cattlekilled")
-				{
-
-				} // codaflower, firepetal, goldkanet, goldensedge, heather, noblesedge, stoneflower, timsacomeby, blackrose, redfireflower, blackanther, hozgub, bandits, pcdiseased, dayspassed, localdayspassed, drinks, warned, placeonce, gocommonersrewardcount, ptmessagedelivered, ptslavesrewardcount, ptcommonersrewardcount, answered
-				compareFunction = 0x35; // GetScriptVariable
-				compareArg1 = 0x0;
-				compareArg2 = 1;
+				// use quest variable instead of directly accessing script-variable, so that
+				//   variable indexes don't need to be hardcoded across multiple NPC scripts
+				compareFunction = 0x4F; // GetQuestVariable (int 79)
+				compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+				compareArg2 = 0; // TODO: std::map to lookup variable index
 				if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 					compareVal = selectWrapper.getVariant().getFloat();
 				if (selectWrapper.getVariant().getType() == ESM::VT_Int)
 					compareVal = selectWrapper.getVariant().getInteger();
-				std::cout << "Local: " << varName << " " << compareOperator << " " << compareVal << std::endl;
 				break;
 
 			case CSMWorld::ConstInfoSelectWrapper::Function_Dead:
@@ -520,13 +519,12 @@ namespace ESM
 				}
 				compareFunction = 0x4F; // GetQuestVariable (int 79)
 				std::cout << "Not Local: " << varName << std::endl;
-				compareArg1 = esm.crossRefStringID("MorroDefaultQuest", "QUST", false, false);
+				compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 				compareArg2 = 1;
 				if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 					compareVal = selectWrapper.getVariant().getFloat();
 				if (selectWrapper.getVariant().getType() == ESM::VT_Int)
 					compareVal = selectWrapper.getVariant().getInteger();
-				std::cout << selectWrapper.toString() << std::endl;
 				break;
 
 			case CSMWorld::ConstInfoSelectWrapper::Function_SameSex:
@@ -549,6 +547,14 @@ namespace ESM
 				compareFunction = 0x43; // GetInCell (decimal 67)
 				varName = selectWrapper.getVariableName();
 				compareArg1 = esm.crossRefStringID(varName, "CELL");
+				if (compareArg1 == 0)
+				{
+					// use mwDialogHelper quest
+					compareFunction = 0x4F; // GetQuestVariable
+					varName = "GetIn_" + varName;
+					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+					compareArg2 = 0; // todo: lookup varName;
+				}
 				compareOperator = "=";
 				compareVal = 0.0f;
 				break;

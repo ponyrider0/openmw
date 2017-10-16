@@ -51,8 +51,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 */
 	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
 
-//	mExportOperation->appendStage (new ExportDialogueCollectionTES4Stage (mDocument, currentSave, true));
-
 //	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
 
 	bool skipMasterRecords = true;
@@ -118,6 +116,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
+	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, true, skipMasterRecords));
 	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, false, skipMasterRecords));
 
 	// close file and clean up
@@ -246,8 +245,7 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 			exportMe = true;
 		}
 
-		if (dial.mType == ESM::Dialogue::Topic &&
-			exportMe == true)
+		if (exportMe == true)
 		{
 			mActiveRecords.push_back(i);
 		}
@@ -283,7 +281,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		std::string strEDID = writer.generateEDIDTES4(dialogue.mId, 4);
 		uint32_t formID = writer.crossRefStringID(strEDID, "DIAL", false, true);
 		uint32_t flags = 0;
-		flags |= 0x20; 
+		flags |= 0x800; // DISABLED
 		writer.startRecordTES4("DIAL", flags, formID, strEDID);
 		dialogue.exportTESx(writer, 4);
 		writer.endRecordTES4("DIAL");
@@ -307,6 +305,32 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 	std::map<int, std::vector<ESM::DialInfo> > infoChoiceList;
 	std::map<int, std::string> infoChoiceTopicNames;
 
+	if (infoModified && mQuestMode==true)
+	{
+		ESM::Dialogue dialog;
+		if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified
+			&& topic.mState != CSMWorld::RecordBase::State_ModifiedOnly)
+		{
+			dialog = topic.mBase;
+		}
+		else
+		{
+			dialog = topic.mModified;
+		}
+		std::string topicEDID = writer.generateEDIDTES4(dialog.mId, 0, "QUST");
+		uint32_t formID = writer.crossRefStringID(topicEDID, "QUST", false, true);
+		if (formID == 0)
+		{
+			formID = writer.reserveFormID(formID, topicEDID, "QUST");
+		}
+		uint32_t flags = 0;
+		if (topic.isDeleted()) flags |= 0x800; // DISABLED
+		writer.startRecordTES4("QUST", flags, formID, topicEDID);
+		dialog.exportTESx(writer, 4);
+		writer.endRecordTES4("QUST");
+
+	}
+
 	if (infoModified && mQuestMode==false)
 	{
 		ESM::Dialogue dialog;
@@ -326,7 +350,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			formID = writer.reserveFormID(formID, topicEDID, "DIAL");
 		}
 		uint32_t flags = 0;
-		if (topic.isDeleted()) flags |= 0x20;
+		if (topic.isDeleted()) flags |= 0x800; // DISABLED
 		writer.startRecordTES4("DIAL", flags, formID, topicEDID);
 		dialog.exportTESx(writer, 4);
 		writer.endRecordTES4("DIAL");
@@ -616,7 +640,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					newType = 0;
 				}
 				uint32_t infoFlags = 0;
-				if (topic.isDeleted()) infoFlags |= 0x20;
+				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				info.exportTESx(writer, 4, newType);
 				writer.endRecordTES4("INFO");
@@ -663,7 +687,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				std::string infoEDID = "info#" + infoChoiceItem->mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
-				if (topic.isDeleted()) infoFlags |= 0x20;
+				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				infoChoiceItem->exportTESx(writer, 4, 0);
 				writer.endRecordTES4("INFO");

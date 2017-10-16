@@ -71,58 +71,114 @@ namespace ESM
 
 	void Dialogue::exportTESx(ESMWriter & esm, int export_format) const
 	{
+
+		bool bIsQuest=false;
+		bool bIsTopic=false;
+		bool bIsGreeting=false;
+		bool bIsVoice=false;
+
 		uint32_t tempFormID;
-		std::string strEDID, tempStr;
+		std::string strEDID, thisSIG, tempStr;
 		std::ostringstream tempStream, debugstream;
 
-		strEDID = esm.generateEDIDTES4(mId, 4);
+		uint8_t newType = 0;
+		switch (mType)
+		{
+		case ESM::Dialogue::Journal:
+			bIsQuest = true;
+			thisSIG = "QUST";
+			break;
+		case ESM::Dialogue::Topic:
+			bIsTopic=true;
+			thisSIG = "DIAL";
+			break;
+		case ESM::Dialogue::Greeting:
+			bIsGreeting = true;
+			thisSIG = "DIAL";
+			std::cout << "WARNING: Dialog export: unhandled condition, dialog type is Greeting." << std::endl;
+			break;
+		case ESM::Dialogue::Voice: // contains newTypes: Combat, Detection
+			newType = 1;
+			bIsVoice = true;
+			thisSIG = "DIAL";
+			std::cout << "WARNING: Dialog export: unhandled condition, dialog type is Voice." << std::endl;
+			break;
+		case ESM::Dialogue::Persuasion:
+			newType = 3;
+			bIsVoice = true;
+			thisSIG = "DIAL";
+			std::cout << "WARNING: Dialog export: unhandled condition, dialog type is Voice." << std::endl;
+			break;
+		default:
+			newType = 6;
+			thisSIG = "DIAL";
+			std::cout << "WARNING: Dialog export: unhandled condition, dialog type is unknown." << std::endl;
+			break;
+		}
+
+		strEDID = esm.generateEDIDTES4(mId, 4, thisSIG);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
 
-		uint32_t questFormID = esm.crossRefStringID("MorroDefaultQuest", "QUST", false);
-		esm.startSubRecordTES4("QSTI");
-		esm.writeT<uint32_t>(questFormID); // can have multiple
-		esm.endSubRecordTES4("QSTI");
-
-		if (false)
+		if (!bIsQuest)
 		{
-			esm.startSubRecordTES4("QSTR");
-			esm.writeT<uint32_t>(0);
-			esm.endSubRecordTES4("QSTR");
+			uint32_t questFormID = esm.crossRefStringID("MorroDefaultQuest", "QUST", false);
+			esm.startSubRecordTES4("QSTI");
+			esm.writeT<uint32_t>(questFormID); // can have multiple
+			esm.endSubRecordTES4("QSTI");
+
+			if (false)
+			{
+				esm.startSubRecordTES4("QSTR");
+				esm.writeT<uint32_t>(0);
+				esm.endSubRecordTES4("QSTR");
+			}
 		}
 
 		esm.startSubRecordTES4("FULL");
 		esm.writeHCString(mId);
 		esm.endSubRecordTES4("FULL");
 
-		uint8_t newType=0;
-		switch (mType)
+		if (bIsQuest)
 		{
-		case ESM::Dialogue::Topic:
-			newType=0;
-			break;
-		case ESM::Dialogue::Voice:
-			newType = 1;
-			break;
-		case ESM::Dialogue::Greeting:
-			newType = 0;
-			break;
-		case ESM::Dialogue::Persuasion:
-			newType = 3;
-			break;
-		case ESM::Dialogue::Journal:
-			newType = 0;
-			break;
-		case ESM::Dialogue::Unknown:
-			newType = 0;
-			
-			break;
-
+			// ICON
 		}
-		esm.startSubRecordTES4("DATA");
-		esm.writeT<uint8_t>(newType);
-		esm.endSubRecordTES4("DATA");
+
+		if (!bIsQuest)
+		{
+			esm.startSubRecordTES4("DATA");
+			esm.writeT<uint8_t>(newType);
+			esm.endSubRecordTES4("DATA");
+		}
+
+		if (bIsQuest)
+		{
+			uint8_t questFlags = 0; // start game enabled = 0x01; allow repeat topics=0x04; allow repeat stages=0x08;
+			uint8_t questPriority = 0;
+			esm.startSubRecordTES4("DATA");
+			esm.writeT<uint8_t>(questFlags);
+			esm.writeT<uint8_t>(questPriority);
+			esm.endSubRecordTES4("DATA");
+
+			// SCRI ... script FormID
+
+			// quest conditions to activate quest
+			// CTDA...
+
+			// quest stages
+			// INDX, stage index
+			// QSDT, stage flags
+			// CNAM, stage log entry
+			// SCHR, stage result script data
+			// SCDA, compiled result script
+			// SCTX, result script source
+			// SCRO, formID for each global reference
+			
+			// quest targets
+			// QSTA, formID
+			// CTDA, target conditions
+		}
 
 	}
 
