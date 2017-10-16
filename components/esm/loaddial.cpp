@@ -71,7 +71,6 @@ namespace ESM
 
 	void Dialogue::exportTESx(ESMWriter & esm, int export_format) const
 	{
-
 		bool bIsQuest=false;
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
@@ -116,6 +115,12 @@ namespace ESM
 			break;
 		}
 
+		if (bIsQuest)
+		{
+			throw std::runtime_error("PROGRAMMER ERROR: Dialog::exportTESx is broken for Quest records. Export subrecords manually.");
+			abort();
+		}
+
 		strEDID = esm.generateEDIDTES4(mId, 4, thisSIG);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
@@ -136,8 +141,19 @@ namespace ESM
 			}
 		}
 
+		std::string fullName="";
+		if (!bIsQuest)
+		{
+			fullName = mId;
+		}
+		else
+		{
+			// must retrieve from first info record
+			if (mInfo.empty() != true)
+				fullName = mInfo.begin()->mResponse;
+		}
 		esm.startSubRecordTES4("FULL");
-		esm.writeHCString(mId);
+		esm.writeHCString(fullName);
 		esm.endSubRecordTES4("FULL");
 
 		if (bIsQuest)
@@ -164,7 +180,7 @@ namespace ESM
 			// SCRI ... script FormID
 
 			// quest conditions to activate quest
-			// CTDA...
+			// CTDAs...
 
 			// quest stages
 			// INDX, stage index

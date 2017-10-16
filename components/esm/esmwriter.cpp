@@ -193,10 +193,21 @@ namespace ESM
 		}
 		if (mUniqueIDcheck.find(activeID) != mUniqueIDcheck.end())
 		{
-//			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
-			debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: (" << stringID << ") " << std::hex << activeID << std::endl;
-			OutputDebugString(debugstream.str().c_str());
-			std::cout << debugstream.str();
+			// check to see if this is a duplication of record
+			std::string overRideStringID = crossRefFormID(activeID);
+			uint32_t overRideFormID = crossRefStringID(overRideStringID, name, false);
+			if (overRideStringID == stringID && overRideFormID == formID)
+			{
+				std::cout << "ESMWRITER WARNING: duplicate record written for: [" << name << "](" << stringID << ") " << std::hex << activeID << std::endl;
+			}
+			else
+			{
+	//			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
+				debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: [" << name << "](" << overRideStringID << ") " << std::hex << formID <<
+					", overwritten by: (" << stringID << ") " << std::hex << activeID << std::endl;
+				OutputDebugString(debugstream.str().c_str());
+				std::cout << debugstream.str();
+			}
 		}
 		writeT<uint32_t>(activeID);
 		mUniqueIDcheck.insert( std::make_pair(activeID, mUniqueIDcheck.size()) );

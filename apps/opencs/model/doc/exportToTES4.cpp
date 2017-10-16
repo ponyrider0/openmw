@@ -326,7 +326,85 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		uint32_t flags = 0;
 		if (topic.isDeleted()) flags |= 0x800; // DISABLED
 		writer.startRecordTES4("QUST", flags, formID, topicEDID);
-		dialog.exportTESx(writer, 4);
+//		dialog.exportTESx(writer, 4); --broken design, can't use for quests
+		writer.startSubRecordTES4("EDID");
+		writer.writeHCString(topicEDID);
+		writer.endSubRecordTES4("EDID");
+
+		bool hasQuestData=false;
+		ESM::DialInfo questDataRecord = range.first->get();
+		std::string questFullName;
+		if (questDataRecord.mData.mJournalIndex == 0)
+		{
+			hasQuestData=true;
+		}
+		// sanity check:
+		if (hasQuestData)
+		{
+			questFullName = range.first->get().mResponse;
+			writer.startSubRecordTES4("FULL");
+			writer.writeHCString(questFullName);
+			writer.endSubRecordTES4("FULL");
+		}
+
+		uint8_t questFlags = 0; // start game enabled = 0x01; allow repeat topics=0x04; allow repeat stages=0x08;
+		uint8_t questPriority = 0;
+		writer.startSubRecordTES4("DATA");
+		writer.writeT<uint8_t>(questFlags);
+		writer.writeT<uint8_t>(questPriority);
+		writer.endSubRecordTES4("DATA");
+
+		if (hasQuestData)
+		{
+			// use CTDAs as global conditions for quest
+		}
+
+		// write modified quest stages (info records)
+		for (CSMWorld::InfoCollection::RecordConstIterator iter(range.first); iter != range.second; ++iter)
+		{
+			if (iter->isModified() || iter->mState == CSMWorld::RecordBase::State_Deleted)
+			{
+				ESM::DialInfo info = iter->get();
+				info.mId = info.mId.substr(info.mId.find_last_of('#') + 1);
+
+				info.mPrev = "";
+				if (iter != range.first)
+				{
+					CSMWorld::InfoCollection::RecordConstIterator prev = iter;
+					--prev;
+
+					info.mPrev = prev->get().mId.substr(prev->get().mId.find_last_of('#') + 1);
+				}
+
+				CSMWorld::InfoCollection::RecordConstIterator next = iter;
+				++next;
+
+				info.mNext = "";
+				if (next != range.second)
+				{
+					info.mNext = next->get().mId.substr(next->get().mId.find_last_of('#') + 1);
+				}
+
+				// quest stage structure [INDX, ... SCRO]
+				// INDX, stage index
+				// QSDT, stage flags
+				// CNAM, stage log entry
+				// SCHR, stage result script data
+				// SCDA, compiled result script
+				// SCTX, result script source
+				// SCRO, formID for each global reference
+				if (info.mData.mJournalIndex == 0)
+					continue;
+
+				info.exportTESx(writer, 4, 10);
+			}
+
+		}
+
+		// quest target list:
+		// QSTA, formID
+		// CTDA, target conditions
+
 		writer.endRecordTES4("QUST");
 
 	}
@@ -625,13 +703,15 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					newType = 1;
 					break;
 				case ESM::Dialogue::Greeting:
-					newType = 0;
+					newType = 7;
 					break;
 				case ESM::Dialogue::Persuasion:
 					newType = 3;
 					break;
 				case ESM::Dialogue::Journal:
-					newType = 0;
+					// issue error
+					throw std::runtime_error("ERROR: unexpected journal/quest data while processing dialog");
+					abort();
 					break;
 				case ESM::Dialogue::Unknown:
 					newType = 0;
