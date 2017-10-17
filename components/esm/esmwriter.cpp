@@ -2990,6 +2990,22 @@ namespace ESM
 		parser();
 	}
 
+	std::string ScriptReader::GetConvertedScript()
+	{
+		std::string oldCode, scriptline;
+		std::stringstream scriptBuf(mScriptText);
+		std::stringstream exportStr;
+
+		while (std::getline(scriptBuf, scriptline))
+		{
+			oldCode += "; " + scriptline;
+		}
+
+		exportStr << oldCode;
+
+		return std::string(exportStr.str());
+	}
+
 	void ScriptReader::read_line(const std::string& lineBuffer)
 	{
 		while (mLinePosition < lineBuffer.size())
@@ -3208,7 +3224,7 @@ namespace ESM
 		{
 			if (mParseMode == 0)
 			{
-				if (tokenItem->type == TokenType::identifierT && tokenItem->str == "choice")
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
 				{
 					// switch to parsing Choice statement (1)
 					mParseMode = 1;

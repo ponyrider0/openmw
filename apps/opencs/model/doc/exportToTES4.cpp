@@ -396,7 +396,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				if (info.mData.mJournalIndex == 0)
 					continue;
 
-				info.exportTESx(writer, 4, 10);
+				info.exportTESx(writer, 4, 10, topicEDID);
 			}
 
 		}
@@ -491,6 +491,14 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 						choiceNum = selectWrapper.getVariant().getInteger();
 						infoChoiceList[choiceNum].push_back(info);
 						skipInfo = true;
+
+						std::stringstream choiceTopicStr;
+						choiceTopicStr << topicEDID << "Choice" << choiceNum;
+						uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
+						if (formID == 0)
+						{
+							formID = writer.reserveFormID(formID, choiceTopicStr.str(), "DIAL");
+						}
 						break;
 					}
 				}
@@ -538,7 +546,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				info.exportTESx(writer, 4, newType);
+				info.exportTESx(writer, 4, newType, topicEDID);
 				writer.endRecordTES4("INFO");
 			}
 		}
@@ -555,7 +563,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		{
 			int choiceNum = choiceNumPair->first;
 			std::stringstream choiceTopicStr;
-			choiceTopicStr << writer.generateEDIDTES4(dialog.mId, 4) << choiceNum;
+			choiceTopicStr << topicEDID << "Choice" << choiceNum;
 			std::string fullString = infoChoiceTopicNames[choiceNum];
 
 			uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
@@ -585,7 +593,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				infoChoiceItem->exportTESx(writer, 4, 0);
+				infoChoiceItem->exportTESx(writer, 4, 0, topicEDID);
 				writer.endRecordTES4("INFO");
 			}
 

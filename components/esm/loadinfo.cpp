@@ -134,7 +134,7 @@ namespace ESM
         }
     }
 
-	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType) const
+	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID) const
 	{
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
@@ -232,7 +232,7 @@ namespace ESM
 				esm.endSubRecordTES4("NAME");
 			}
 
-			// responses
+			// TRDT, NAM1, NAM2... responses
 			int responseCounter=1;
 			int currentOffset=0;
 			bool bHyphenateStart=false, bHyphenateEnd=false;
@@ -311,7 +311,7 @@ namespace ESM
 				esm.endSubRecordTES4("NAM2");
 			}
 
-			// Conditions CTDAs...
+			// CTDAs... response conditions
 			// hard-coded conditions based on ESM datastructs
 			// first condition == IsActor
 			if (mActor != "")
@@ -871,17 +871,18 @@ namespace ESM
 
 		} // (bIsTopic)
 
-		//TODO: Process Result script early to obtain Choice statements
-		// ....
+		// process script early for use by other subrecords
+		ESM::ScriptReader scriptReader(mResultScript);
 
 		if (bIsTopic)
 		{
-			// Choices TCLT
-			std::vector<std::string> choiceList;
-			for (auto choice = choiceList.begin(); choice != choiceList.end(); choice++)
+			// Choice... TCLT (DIAL records)
+			for (auto choice = scriptReader.mChoicesList.begin(); choice != scriptReader.mChoicesList.end(); choice++)
 			{
 				// resolve choice
-				uint32_t choiceFormID = esm.crossRefStringID(*choice, "DIAL", false);
+				std::stringstream choiceTopicStr;
+				choiceTopicStr << topicEDID << "Choice" << choice->first;
+				uint32_t choiceFormID = esm.crossRefStringID(choiceTopicStr.str(), "DIAL", false);
 				if (choiceFormID != 0)
 				{
 					esm.startSubRecordTES4("TCLT");
@@ -889,16 +890,40 @@ namespace ESM
 					esm.endSubRecordTES4("TCLT");
 				}
 			}
-
-			// Link From TCLF
+			// Link From... TCLF (DIAL records)
+			// ....
 
 		} // (bIsTopic)
 
+		// Result Script block
+		// SCHR... (basic script data)
+		// [unused x4, refcount, compiled size, varcount, script type]
+		uint32_t refCount = 0;
+		uint32_t compiledSize = 0;
+		uint32_t varCount = 0;
+		uint32_t scriptType; // Object=0x0, Quest=0x01, MagicEffect=0x100
+		if (bIsQuestStage)
+			scriptType = 0x01;
+		else
+			scriptType = 0x0;
 
-		// Result Script... 
-		// SCHR...
-		// SCDA
-		// SCTX
+		esm.startSubRecordTES4("SCHR");
+		esm.writeT<uint8_t>(0); // unused * 4
+		esm.writeT<uint8_t>(0); // unused * 4
+		esm.writeT<uint8_t>(0); // unused * 4
+		esm.writeT<uint8_t>(0); // unused * 4
+		esm.writeT<uint32_t>(refCount);
+		esm.writeT<uint32_t>(compiledSize);
+		esm.writeT<uint32_t>(varCount);
+		esm.writeT<uint32_t>(scriptType);
+		esm.endSubRecordTES4("SCHR");
+
+		// SCDA... (compiled script)
+		// SCTX... (script source text)
+		esm.startSubRecordTES4("SCTX");
+		esm.writeHCString(scriptReader.GetConvertedScript()); // dialog formID
+		esm.endSubRecordTES4("SCTX");
+
 		// SCRO, global references
 
 

@@ -59,6 +59,7 @@ public:
 	std::vector< std::pair <int, std::string > > mChoicesList;
 
 	ScriptReader(const std::string& scriptText);
+	std::string GetConvertedScript();
 
 };
 

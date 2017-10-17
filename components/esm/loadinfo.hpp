@@ -109,7 +109,7 @@ struct DialInfo
     ///< Loads Info record
 
     void save(ESMWriter &esm, bool isDeleted = false) const;
-	void exportTESx(ESMWriter &esm, int export_format, int newType) const;
+	void exportTESx(ESMWriter &esm, int export_format, int newType, const std::string& topicEDID) const;
 
     void blank();
     ///< Set record to default state (does not touch the ID).
