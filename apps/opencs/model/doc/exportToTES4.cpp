@@ -12,6 +12,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 
 #include "exportToTES4.hpp"
 #include "document.hpp"
+#include "scriptconverter.hpp"
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -460,7 +461,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				}
 
 				// check Result script for names of future ChoiceTopics
-				ESM::ScriptReader scriptReader(info.mResultScript);
+				ESM::ScriptConverter scriptReader(info.mResultScript);
 				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
 				{
 					infoChoiceTopicNames.insert(std::make_pair(choicePair->first, choicePair->second));

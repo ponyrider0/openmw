@@ -6,6 +6,7 @@
 
 #include <apps/opencs/model/world/infoselectwrapper.hpp>
 #include <iostream>
+#include <apps/opencs/model/doc/scriptconverter.hpp>
 
 namespace ESM
 {
@@ -169,7 +170,7 @@ namespace ESM
 		}
 
 		// process script early for use by other subrecords
-		ESM::ScriptReader scriptReader(mResultScript);
+		ESM::ScriptConverter scriptConverter(mResultScript);
 
 		if (bIsQuestStage)
 		{
@@ -197,7 +198,7 @@ namespace ESM
 		if (bIsTopic)
 		{
 			uint8_t flags = 0;
-			if (scriptReader.PerformGoodbye())
+			if (scriptConverter.PerformGoodbye())
 				flags |= 1;
 			esm.startSubRecordTES4("DATA");
 			esm.writeT<uint8_t>(newType); // Type
@@ -880,7 +881,7 @@ namespace ESM
 		if (bIsTopic)
 		{
 			// Choice... TCLT (DIAL records)
-			for (auto choice = scriptReader.mChoicesList.begin(); choice != scriptReader.mChoicesList.end(); choice++)
+			for (auto choice = scriptConverter.mChoicesList.begin(); choice != scriptConverter.mChoicesList.end(); choice++)
 			{
 				// resolve choice
 				std::stringstream choiceTopicStr;
@@ -924,7 +925,7 @@ namespace ESM
 		// SCDA... (compiled script)
 		// SCTX... (script source text)
 		esm.startSubRecordTES4("SCTX");
-		esm.writeHCString(scriptReader.GetConvertedScript()); // dialog formID
+		esm.writeHCString(scriptConverter.GetConvertedScript()); // dialog formID
 		esm.endSubRecordTES4("SCTX");
 
 		// SCRO, global references
