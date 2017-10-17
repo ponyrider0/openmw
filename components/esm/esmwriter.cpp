@@ -2983,6 +2983,254 @@ namespace ESM
 		endSubRecordTES4("CTDA");
 	}
 
+	ScriptReader::ScriptReader(const std::string & scriptText)
+	{
+		mScriptText = scriptText;
+		lexer();
+		parser();
+	}
 
+	void ScriptReader::read_line(const std::string& lineBuffer)
+	{
+		while (mLinePosition < lineBuffer.size())
+		{
+			// ready state
+			if (mReadMode == 0)
+			{
+				// skip the rest of the line if commented out
+				if (lineBuffer[mLinePosition] == ';')
+				{
+					break;
+				}
+				// switch to quoted string literal mode
+				if (lineBuffer[mLinePosition] == '\"')
+				{
+					mReadMode = 2;
+					continue;
+				}
+				// switch to token mode
+				if ((lineBuffer[mLinePosition] >= '0' && lineBuffer[mLinePosition] <= '9') ||
+					(lineBuffer[mLinePosition] >= 'a' && lineBuffer[mLinePosition] <= 'z') ||
+					(lineBuffer[mLinePosition] >= 'A' && lineBuffer[mLinePosition] <= 'Z'))
+				{
+					mReadMode = 1;
+					continue;
+				}
+				// skip everything else
+				mLinePosition++;
+			}
+			if (mReadMode == 1)
+				read_identifier(lineBuffer);
+			if (mReadMode == 2)
+				read_quotedliteral(lineBuffer);
+		}
+		mTokenList.push_back( Token(TokenType::endlineT, "") );
+
+	}
+
+	void ScriptReader::read_quotedliteral(const std::string & lineBuffer)
+	{
+		bool done = false;
+		bool checkQuote = false;
+		int tokenType = TokenType::string_literalT;
+		std::string stringLiteral;
+		mLinePosition++; // skip first quote
+		while (mLinePosition < lineBuffer.size())
+		{
+			if (checkQuote == false)
+			{
+				if (lineBuffer[mLinePosition] != '\"')
+				{
+					stringLiteral += lineBuffer[mLinePosition++];
+					continue;
+				}
+				else
+				{
+					checkQuote = true;
+					mLinePosition++;
+					continue;
+				}
+			}
+			else if (checkQuote == true)
+			{
+				if (lineBuffer[mLinePosition] == '\"')
+				{
+					stringLiteral += lineBuffer[mLinePosition++];
+					checkQuote = false;
+					continue;
+				}
+				else
+				{
+					// ignore probably bad double-quote
+					if ((stringLiteral == "") &&
+						(lineBuffer[mLinePosition] >= '0' && lineBuffer[mLinePosition] <= '9') ||
+						(lineBuffer[mLinePosition] >= 'a' && lineBuffer[mLinePosition] <= 'z') ||
+						(lineBuffer[mLinePosition] >= 'A' && lineBuffer[mLinePosition] <= 'Z'))
+					{
+						// issue warning
+						std::cout << "WARNING: Script Reader: unexpected double-quote in string literal:[" << mLinePosition << "] " << lineBuffer << std::endl;
+						mLinePosition++;
+						checkQuote = false;
+						continue;
+					}
+					// stringLiteral complete
+					done = true;
+					break;
+				}
+			}
+		}
+		if (done == true || (checkQuote == true && mLinePosition == lineBuffer.size()))
+		{
+			// add stringLiteral to tokenList and return to ready state
+			mTokenList.push_back( Token(tokenType, stringLiteral));
+			mReadMode = 0;
+		}
+		else
+		{
+			// error reading string literal
+			std::stringstream errorMesg;
+			errorMesg << "ERROR: Script Reader: unexpected end of line while reading string literal:[" << mLinePosition << "] " << lineBuffer;
+			std::cout << errorMesg.str() << std::endl;
+//			throw std::runtime_error(errorMesg.str());
+			mReadMode=0;
+			// skip to next line by advancing mLinePosition
+			mLinePosition = lineBuffer.size();
+		}
+
+	}
+
+	void ScriptReader::read_identifier(const std::string & lineBuffer)
+	{
+		bool done = false;
+		int tokenType = TokenType::number_literalT;
+		std::string tokenStr;
+		while (mLinePosition < lineBuffer.size())
+		{
+			if (lineBuffer[mLinePosition] >= '0' && lineBuffer[mLinePosition] <= '9')
+			{
+				tokenStr += lineBuffer[mLinePosition++];
+			}
+			else if ((lineBuffer[mLinePosition] >= 'a' && lineBuffer[mLinePosition] <= 'z') ||
+				(lineBuffer[mLinePosition] >= 'A' && lineBuffer[mLinePosition] <= 'Z') ||
+				(lineBuffer[mLinePosition] == '_'))
+			{
+				tokenType = TokenType::identifierT; // command/variable
+				tokenStr += lineBuffer[mLinePosition++];
+			}
+			else
+			{
+				break;
+			}
+		}
+		if (tokenStr != "")
+		{
+			mTokenList.push_back( Token(tokenType, tokenStr) );
+		}
+		mReadMode = 0;
+
+	}
+
+	void ScriptReader::parse_choice(std::vector<struct Token>::iterator tokenItem)
+	{
+		std::string choiceText;
+		int choiceNum;
+
+		// skip tokenItem "choice"
+		tokenItem++;
+
+		// stop processing if detecting endofline
+		while (tokenItem->type != TokenType::endlineT)
+		{
+
+			// process string literal + number literal pairs
+			if (tokenItem->type == TokenType::string_literalT)
+				choiceText = tokenItem->str;
+			else
+			{
+				// error parsing choice statement
+				std::stringstream errorMesg;
+				errorMesg << "ERROR: ScriptReader: Parser - unexpected token type, expected string_literal: " << tokenItem->type;
+				std::cout << errorMesg.str() << std::endl;
+	//			throw std::runtime_error(errorMesg.str());
+				mParseMode = 0;
+				// advance to endofline in stream
+				while (tokenItem->type != TokenType::endlineT)
+					tokenItem++;
+				return;
+			}
+			tokenItem++; // advance to next token
+
+			if (tokenItem->type == TokenType::number_literalT)
+				choiceNum = atoi(tokenItem->str.c_str());
+			else
+			{
+				std::stringstream errorMesg;
+				errorMesg << "ERROR: ScriptReader: Parser - unexpected token type, expected number_literal: " << tokenItem->type;
+				std::cout << errorMesg.str() << std::endl;
+	//			throw std::runtime_error(errorMesg.str());
+				mParseMode = 0;
+				// advance to endofline in stream
+				while (tokenItem->type != TokenType::endlineT)
+					tokenItem++;
+				return;
+			}
+			tokenItem++; // advance to next token
+		 
+			// add Choice Text:Number pair to choicetopicnames list
+			mChoicesList.push_back(std::make_pair(choiceNum, choiceText));
+		}
+		mParseMode = 0;
+
+	}
+
+	void ScriptReader::lexer()
+	{
+		std::istringstream scriptBuffer(mScriptText);
+		std::string preLineBufferA;
+		while (std::getline(scriptBuffer, preLineBufferA, '\n'))
+		{
+			std::istringstream preLineBufferB(preLineBufferA);
+			std::string lineBuffer;
+			while (std::getline(preLineBufferB, lineBuffer, '\r'))
+			{
+				mLinePosition = 0;
+				mReadMode = 0;				
+				read_line(lineBuffer);
+			}
+		}
+	}
+
+	void ScriptReader::parser()
+	{
+		mParseMode = 0;
+
+		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
+		{
+			if (mParseMode == 0)
+			{
+				if (tokenItem->type == TokenType::identifierT && tokenItem->str == "choice")
+				{
+					// switch to parsing Choice statement (1)
+					mParseMode = 1;
+					// put back token
+					tokenItem--;
+					continue;
+				}
+				else
+				{
+					// unhandled command, skip to next tokenStatement
+					while (tokenItem->type != TokenType::endlineT)
+						tokenItem++;
+					continue;
+				}
+			}
+			if (mParseMode == 1)
+			{
+				parse_choice(tokenItem);
+			}
+
+		}
+
+	}
 
 }

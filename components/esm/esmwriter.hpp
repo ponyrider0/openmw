@@ -18,6 +18,50 @@ namespace ToUTF8
 
 namespace ESM {
 
+class ScriptReader
+{
+	enum TokenType
+	{
+		identifierT=0,
+		keywordT,
+		operatorT,
+		string_literalT,
+		number_literalT,
+		endlineT
+	};
+
+	struct Token
+	{
+		int type;
+		std::string str;
+
+		Token(int arg1, std::string arg2) {type=arg1; str=arg2;}
+	};
+
+	int mLinePosition;
+	int mReadMode; // 0=ready, 1=identifier, 2=quoted_literal
+	int mParseMode; // 0=ready, 1=choice
+
+	void lexer();
+	void parser();
+	void read_line(const std::string& lineBuffer);
+	void read_quotedliteral(const std::string& lineBuffer);
+	void read_identifier(const std::string& lineBuffer);
+	void parse_keyword(std::vector<struct Token>::iterator tokenItem);
+	void parse_choice(std::vector<struct Token>::iterator tokenItem);
+	void parse_journal(std::vector<struct Token>::iterator tokenItem);
+	void parse_operation(std::vector<struct Token>::iterator tokenItem);
+
+public:
+	std::string mScriptText;
+
+	std::vector<struct Token> mTokenList;
+	std::vector< std::pair <int, std::string > > mChoicesList;
+
+	ScriptReader(const std::string& scriptText);
+
+};
+
 struct RefTransformOp
 {
 	std::string op_x, op_y, op_z;
