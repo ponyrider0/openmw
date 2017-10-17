@@ -168,6 +168,9 @@ namespace ESM
 			break;
 		}
 
+		// process script early for use by other subrecords
+		ESM::ScriptReader scriptReader(mResultScript);
+
 		if (bIsQuestStage)
 		{
 			// Stage Index
@@ -193,10 +196,13 @@ namespace ESM
 
 		if (bIsTopic)
 		{
+			uint8_t flags = 0;
+			if (scriptReader.PerformGoodbye())
+				flags |= 1;
 			esm.startSubRecordTES4("DATA");
 			esm.writeT<uint8_t>(newType); // Type
 			esm.writeT<uint8_t>(0); // next speaker (target=0, self=1, either=2)
-			esm.writeT<uint8_t>(0); // flags (goodbye=1, random=2, say once=4, run immed.=8, info refusal=10, rand end=20, rumors=40)
+			esm.writeT<uint8_t>(flags); // flags (goodbye=1, random=2, say once=4, run immed.=8, info refusal=10, rand end=20, rumors=40)
 			esm.endSubRecordTES4("DATA");
 
 			uint32_t questFormID = esm.crossRefStringID("MorroDefaultQuest", "QUST", false);
@@ -870,9 +876,6 @@ namespace ESM
 			} // for each mSelects
 
 		} // (bIsTopic)
-
-		// process script early for use by other subrecords
-		ESM::ScriptReader scriptReader(mResultScript);
 
 		if (bIsTopic)
 		{

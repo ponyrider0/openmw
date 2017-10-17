@@ -38,9 +38,10 @@ class ScriptReader
 		Token(int arg1, std::string arg2) {type=arg1; str=arg2;}
 	};
 
-	int mLinePosition;
-	int mReadMode; // 0=ready, 1=identifier, 2=quoted_literal
-	int mParseMode; // 0=ready, 1=choice
+	int mLinePosition=0;
+	int mReadMode=0; // 0=ready, 1=identifier, 2=quoted_literal
+	int mParseMode=0; // 0=ready, 1=choice
+	bool bGoodbye=false;
 
 	void lexer();
 	void parser();
@@ -57,9 +58,11 @@ public:
 
 	std::vector<struct Token> mTokenList;
 	std::vector< std::pair <int, std::string > > mChoicesList;
+	std::vector< std::string > mConvertedStatementList;
 
 	ScriptReader(const std::string& scriptText);
 	std::string GetConvertedScript();
+	bool PerformGoodbye();
 
 };
 

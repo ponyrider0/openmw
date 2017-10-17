@@ -3001,9 +3001,18 @@ namespace ESM
 			oldCode += "; " + scriptline;
 		}
 
-		exportStr << oldCode;
+		for (auto statement = mConvertedStatementList.begin(); statement != mConvertedStatementList.end(); statement++)
+		{
+			exportStr << *statement << std::endl;
+		}
+		exportStr << std::endl << oldCode;
 
 		return std::string(exportStr.str());
+	}
+
+	bool ScriptReader::PerformGoodbye()
+	{
+		return bGoodbye;
 	}
 
 	void ScriptReader::read_line(const std::string& lineBuffer)
@@ -3199,6 +3208,66 @@ namespace ESM
 
 	}
 
+	void ScriptReader::parse_journal(std::vector<struct Token>::iterator tokenItem)
+	{
+		std::string questEDID, questStage;
+		// skip journal command
+		tokenItem++;
+
+		// quest EDID
+		if (tokenItem->type == TokenType::string_literalT ||
+			tokenItem->type == TokenType::identifierT)
+		{
+			questEDID = ESM::ESMWriter::generateEDIDTES4( tokenItem->str, 0, "QUST");
+		}
+		else
+		{
+			// error parsing journal
+			std::stringstream errorMesg;
+			errorMesg << "ERROR: ScriptReader:parse_journal() - unexpected token type, expected string_literal: " << tokenItem->type;
+			std::cout << errorMesg.str() << std::endl;
+			// throw std::runtime_error(errorMesg.str());
+			mParseMode = 0;
+			// advance to endofline in stream
+			while (tokenItem->type != TokenType::endlineT)
+				tokenItem++;
+			return;
+		}
+		tokenItem++;
+
+		// quest stage
+		if (tokenItem->type == TokenType::number_literalT)
+		{
+			questStage = tokenItem->str;
+		}
+		else
+		{
+			// error parsing journal
+			std::stringstream errorMesg;
+			errorMesg << "ERROR: ScriptReader:parse_journal() - unexpected token type, expected number_literalT: " << tokenItem->type;
+			std::cout << errorMesg.str() << std::endl;
+			// throw std::runtime_error(errorMesg.str());
+			mParseMode = 0;
+			// advance to endofline in stream
+			while (tokenItem->type != TokenType::endlineT)
+				tokenItem++;
+			return;
+		}
+		tokenItem++;
+
+		// record SetStage expression
+		std::stringstream convertedStatement;
+		convertedStatement << "SetStage " << questEDID << " " << questStage;
+		mConvertedStatementList.push_back(convertedStatement.str());
+
+		mParseMode = 0;
+		// advance to endofline in stream
+		while (tokenItem->type != TokenType::endlineT)
+			tokenItem++;
+		return;
+
+	}
+
 	void ScriptReader::lexer()
 	{
 		std::istringstream scriptBuffer(mScriptText);
@@ -3222,28 +3291,79 @@ namespace ESM
 
 		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
 		{
+			// TODO: keywords = moddisposition, goodbye, setfight, additem, showmap, "set control to 1", getJournalIndex, getdisposition, addtopic, 
+			//			modpcfacrep, journal, pcraiserank, pcclearexpelled, messagebox, addspell
 			if (mParseMode == 0)
 			{
-				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "player")
 				{
-					// switch to parsing Choice statement (1)
 					mParseMode = 1;
 					// put back token
 					tokenItem--;
 					continue;
 				}
-				else
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
 				{
-					// unhandled command, skip to next tokenStatement
-					while (tokenItem->type != TokenType::endlineT)
-						tokenItem++;
+					mParseMode = 2;
+					// put back token
+					tokenItem--;
 					continue;
 				}
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "journal")
+				{
+					mParseMode = 3;
+					// put back token
+					tokenItem--;
+					continue;
+				}
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "goodbye")
+				{
+					mParseMode = 4;
+					// put back token
+					tokenItem--;
+					continue;
+				}
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "additem")
+				{
+					mParseMode = 5;
+					// put back token
+					tokenItem--;
+					continue;
+				}
+				if (tokenItem->type == TokenType::identifierT && Misc::StringUtils::lowerCase(tokenItem->str) == "removeitem")
+				{
+					mParseMode = 6;
+					// put back token
+					tokenItem--;
+					continue;
+				}
+				// Default: unhandled command, skip to next tokenStatement
+				while (tokenItem->type != TokenType::endlineT)
+					tokenItem++;
+				continue;
 			}
-			if (mParseMode == 1)
+			if (mParseMode == 2)
 			{
 				parse_choice(tokenItem);
+				continue;
 			}
+			if (mParseMode == 3)
+			{
+				parse_journal(tokenItem);
+				continue;
+			}
+			if (mParseMode == 4)
+			{
+				bGoodbye = true;
+				mParseMode = 0;
+				continue;
+			}
+			// Default: unhandled mode, reset mode and skip to new line
+			mParseMode = 0;
+			while (tokenItem->type != TokenType::endlineT)
+				tokenItem++;
+			continue;
+			
 
 		}
 
