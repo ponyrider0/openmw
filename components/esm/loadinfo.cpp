@@ -170,7 +170,7 @@ namespace ESM
 		}
 
 		// process script early for use by other subrecords
-		ESM::ScriptConverter scriptConverter(mResultScript);
+		ESM::ScriptConverter scriptConverter(mResultScript, esm);
 
 		if (bIsQuestStage)
 		{
@@ -902,9 +902,9 @@ namespace ESM
 		// Result Script block
 		// SCHR... (basic script data)
 		// [unused x4, refcount, compiled size, varcount, script type]
-		uint32_t refCount = 0;
-		uint32_t compiledSize = 0;
-		uint32_t varCount = 0;
+		uint32_t refCount = scriptConverter.mReferenceList.size();
+		uint32_t compiledSize = scriptConverter.mCompiledByteBuffer.size();
+		uint32_t varCount = scriptConverter.mLocalVarList.size();
 		uint32_t scriptType; // Object=0x0, Quest=0x01, MagicEffect=0x100
 		if (bIsQuestStage)
 			scriptType = 0x01;
@@ -923,13 +923,22 @@ namespace ESM
 		esm.endSubRecordTES4("SCHR");
 
 		// SCDA... (compiled script)
+		esm.startSubRecordTES4("SCDA");
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.mCompiledByteBuffer.size());
+		esm.endSubRecordTES4("SCDA");
+
 		// SCTX... (script source text)
 		esm.startSubRecordTES4("SCTX");
-		esm.writeHCString(scriptConverter.GetConvertedScript()); // dialog formID
+		esm.writeHCString(scriptConverter.GetConvertedScript());
 		esm.endSubRecordTES4("SCTX");
 
 		// SCRO, global references
-
+		for (auto refItem = scriptConverter.mReferenceList.begin(); refItem != scriptConverter.mReferenceList.end(); refItem++)
+		{
+			esm.startSubRecordTES4("SCRO");
+			esm.writeT<uint32_t>(*refItem); 
+			esm.endSubRecordTES4("SCRO");
+		}
 
 	}
 

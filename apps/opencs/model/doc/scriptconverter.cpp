@@ -18,9 +18,8 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 namespace ESM
 {
 
-	ScriptConverter::ScriptConverter(const std::string & scriptText)
+	ScriptConverter::ScriptConverter(const std::string & scriptText, ESM::ESMWriter& esm) : mESM(esm), mScriptText(scriptText)
 	{
-		mScriptText = scriptText;
 		lexer();
 		parser();
 	}
@@ -48,6 +47,11 @@ namespace ESM
 	bool ScriptConverter::PerformGoodbye()
 	{
 		return bGoodbye;
+	}
+
+	const char* ScriptConverter::GetCompiledByteBuffer()
+	{
+		return mCompiledByteBuffer.data();
 	}
 
 	void ScriptConverter::read_line(const std::string& lineBuffer)
@@ -179,7 +183,8 @@ namespace ESM
 			}
 			else if (lineBuffer[mLinePosition] == '-')
 			{
-				if ( (mLinePosition+1 < lineBuffer.size()) && (
+				if ( (mLinePosition+1 < lineBuffer.size()) && 
+					( (lineBuffer[mLinePosition+1] >= '0' && lineBuffer[mLinePosition+1] <= '9') ||
 					(lineBuffer[mLinePosition+1] >= 'a' && lineBuffer[mLinePosition+1] <= 'z') ||
 					(lineBuffer[mLinePosition+1] >= 'A' && lineBuffer[mLinePosition+1] <= 'Z') ||
 					(lineBuffer[mLinePosition+1] == '_') ) )
@@ -209,6 +214,7 @@ namespace ESM
 	void ScriptConverter::parse_keyword(std::vector<struct Token>::iterator& tokenItem)
 	{
 		std::string itemEDID, itemCount;
+		bool bEvalArg2=false;
 
 		// check keyword
 		tokenItem++;
@@ -233,7 +239,7 @@ namespace ESM
 		{
 			// error parsing journal
 			std::stringstream errorMesg;
-			errorMesg << "ERROR: ScriptConverter:parse_keyword - unexpected token type, expected string_literal: " << tokenItem->type;
+			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected string_literal:  [" << tokenItem->type << "] token=" << tokenItem->str;
 			std::cout << errorMesg.str() << std::endl;
 			// throw std::runtime_error(errorMesg.str());
 			mParseMode = 0;
@@ -249,12 +255,23 @@ namespace ESM
 		{
 			itemCount = tokenItem->str;
 		}
+		else if (tokenItem->type == TokenType::identifierT)
+		{
+			itemCount = tokenItem->str;
+			bEvalArg2 = true;
+		}
+		else if (tokenItem->type == TokenType::endlineT)
+		{
+			itemCount = "1";
+			tokenItem--; // put EOL back
+		}
 		else
 		{
 			// error parsing journal
 			std::stringstream errorMesg;
-			errorMesg << "ERROR: ScriptConverter:parse_keyword - unexpected token type, expected number_literalT: " << tokenItem->type;
+			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str;
 			std::cout << errorMesg.str() << std::endl;
+			std::cout << std::endl << "DEBUG OUTPUT: " << std::endl << mScriptText << std::endl << std::endl;
 			// throw std::runtime_error(errorMesg.str());
 			mParseMode = 0;
 			// advance to endofline in stream
@@ -276,6 +293,24 @@ namespace ESM
 		}
 		convertedStatement << command << " " << itemEDID << " " << itemCount;
 		mConvertedStatementList.push_back(convertedStatement.str());
+
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 0x1002; // Additem
+		if (mParseMode == 6)
+			OpCode = 0x1052;
+		uint16_t sizeParams = 10;
+		uint16_t countParams = 2;
+		uint32_t arg2;
+		if (bEvalArg2)
+		{
+			compile_command(OpCode, sizeParams, countParams, itemEDID, itemCount);
+		}
+		else
+		{
+			arg2 = atoi(itemCount.c_str());;
+			compile_command(OpCode, sizeParams, countParams, itemEDID, arg2);
+		}
 
 		mParseMode = 0;
 		// advance to endofline in stream
@@ -304,7 +339,7 @@ namespace ESM
 			{
 				// error parsing choice statement
 				std::stringstream errorMesg;
-				errorMesg << "ERROR: ScriptConverter: Parser - unexpected token type, expected string_literal: " << tokenItem->type;
+				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected string_literal: " << tokenItem->type;
 				std::cout << errorMesg.str() << std::endl;
 				//			throw std::runtime_error(errorMesg.str());
 				mParseMode = 0;
@@ -320,7 +355,7 @@ namespace ESM
 			else
 			{
 				std::stringstream errorMesg;
-				errorMesg << "ERROR: ScriptConverter: Parser - unexpected token type, expected number_literal: " << tokenItem->type;
+				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected number_literal: " << tokenItem->type;
 				std::cout << errorMesg.str() << std::endl;
 				//			throw std::runtime_error(errorMesg.str());
 				mParseMode = 0;
@@ -390,11 +425,114 @@ namespace ESM
 		convertedStatement << "SetStage " << questEDID << " " << questStage;
 		mConvertedStatementList.push_back(convertedStatement.str());
 
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 1039; // Additem
+		uint16_t sizeParams = 10;
+		uint16_t countParams = 2;
+		uint32_t arg2 = atoi(questStage.c_str());;
+		compile_command(OpCode, sizeParams, countParams, questEDID, arg2);
+
+
 		mParseMode = 0;
 		// advance to endofline in stream
 		while (tokenItem->type != TokenType::endlineT)
 			tokenItem++;
 		return;
+
+	}
+
+	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, uint32_t arg1, uint32_t arg2)
+	{
+		if (bParserUsePlayerRef)
+		{
+			int refListIndex = -1;
+			uint32_t playerRef = 0x14;
+			for (int i = 0; i < mReferenceList.size(); i++)
+			{
+				if (mReferenceList[i] == playerRef)
+				{
+					refListIndex = i + 1;
+					break;
+				}
+			}
+			if (refListIndex == -1)
+			{
+				mReferenceList.push_back(playerRef);
+				refListIndex = mReferenceList.size();
+			}
+			uint16_t OpRef = 0x1C | (refListIndex << 16);
+			for (int i = 0; i<2; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&OpRef)[i]);
+		}
+
+		for (int i = 0; i<2; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&OpCode)[i]);
+		for (int i = 0; i<2; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&sizeParams)[i]);
+		for (int i = 0; i<2; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&countParams)[i]);
+		for (int i = 0; i<4; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&arg1)[i]);
+		for (int i = 0; i<4; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&arg2)[i]);
+	}
+
+	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, const std::string & edid, uint32_t arg2)
+	{
+		uint32_t formID = mESM.crossRefStringID(edid, "", false);
+		int refListIndex = -1;
+		for (int i = 0; i < mReferenceList.size(); i++)
+		{
+			if (mReferenceList[i] == formID)
+			{
+				refListIndex = i + 1;
+				break;
+			}
+		}
+		if (refListIndex == -1)
+		{
+			mReferenceList.push_back(formID);
+			refListIndex = mReferenceList.size();
+		}
+
+		uint8_t refTag = 0x72;
+		uint8_t unknownChar = 0x6E;
+
+		uint32_t arg1FormID = refTag | (refListIndex << 8) | (unknownChar << 24);
+
+		compile_command(OpCode, sizeParams, countParams, arg1FormID, arg2);
+
+	}
+
+	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, const std::string & edid, const std::string & expression)
+	{
+		uint32_t formID = mESM.crossRefStringID(edid, "", false);
+		if (formID != 0)
+		{
+			int refListIndex = -1;
+			for (int i = 0; i < mReferenceList.size(); i++)
+			{
+				if (mReferenceList[i] == formID)
+				{
+					refListIndex = i + 1;
+					break;
+				}
+			}
+			if (refListIndex == -1)
+			{
+				mReferenceList.push_back(formID);
+				refListIndex = mReferenceList.size();
+			}
+			uint8_t refTag = 0x72;
+			uint8_t unknownChar = 0x6E;
+			uint32_t arg2formID = refTag | (refListIndex << 8) | (unknownChar << 24);
+
+			compile_command(OpCode, sizeParams, countParams, edid, arg2formID);
+			return;
+		}
+		else
+		{
+			// TODO: lookup local var
+			// TODO: implement function
+			std::cout << "ERROR: Byte compiler inline expression evaluation not yet implemented." << std::endl;
+			std::cout << std::endl << "DEBUG OUTPUT:" << std::endl << mScriptText << std::endl << std::endl;
+			return;
+		}
 
 	}
 

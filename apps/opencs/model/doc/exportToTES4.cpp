@@ -461,7 +461,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				}
 
 				// check Result script for names of future ChoiceTopics
-				ESM::ScriptConverter scriptReader(info.mResultScript);
+				ESM::ScriptConverter scriptReader(info.mResultScript, writer);
 				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
 				{
 					infoChoiceTopicNames.insert(std::make_pair(choicePair->first, choicePair->second));
@@ -1309,14 +1309,18 @@ void CSMDoc::ExportIngredientCollectionTES4Stage::perform (int stage, Messages& 
 	if (stage == 0 && mActiveRecords.size() > 0)
 	{
 		writer.startGroupTES4(sSIG, 0);
+		std::cout << "Ingredients:";
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
 	mDocument.getData().getReferenceables().getDataSet().getIngredients().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	std::cout << "..." << stage;
+
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
 		writer.endGroupTES4(sSIG);
+		std::cout << "...ingredients complete." << std::endl;
 	}
 }
 
@@ -2149,6 +2153,8 @@ int CSMDoc::ExportReferenceCollectionTES4Stage::setup()
 
 	if (size%100) ++numstages;
 
+	mNumStages = numstages;
+
 	return numstages;
 }
 
@@ -2161,7 +2167,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 	if (stage == 0)
 	{
 		debugstream << "Creating Reference Lists: (total refs to process=" << size << ")... " << std::endl;
-//		OutputDebugString(debugstream.str().c_str());
+		std::cout << debugstream.str();
+		OutputDebugString(debugstream.str().c_str());
 	}
 
 	// process a batch of 100 references in each stage
@@ -2293,10 +2300,11 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		} // if record modified or deleted
 	}
 
-	if (stage == size-1)
+	if (stage == mNumStages-1)
 	{
 		debugstream << "Reference Lists creation complete." << std::endl;
-//		OutputDebugString(debugstream.str().c_str());
+		std::cout << debugstream.str();
+		OutputDebugString(debugstream.str().c_str());
 	}
 }
 

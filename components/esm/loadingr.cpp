@@ -124,12 +124,15 @@ namespace ESM
 
 		// ICON, mIcon
 		tempStr = esm.generateEDIDTES4(mIcon, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
-		tempPath.str(""); tempPath.clear();
-		tempPath << "clutter\\morro\\" << tempStr;
-		esm.startSubRecordTES4("ICON");
-		esm.writeHCString(tempPath.str());
-		esm.endSubRecordTES4("ICON");
+		if (tempStr.size() > 4) 
+		{
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempPath.str(""); tempPath.clear();
+			tempPath << "clutter\\morro\\" << tempStr;
+			esm.startSubRecordTES4("ICON");
+			esm.writeHCString(tempPath.str());
+			esm.endSubRecordTES4("ICON");
+		}
 
 		// SCRI (script formID) mScript
 		std::string strScript = esm.generateEDIDTES4(mScript, 3);

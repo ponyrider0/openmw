@@ -250,9 +250,8 @@ namespace CSMDoc
 			}
 			if (formID == 0)
 			{
-				// error
-				//			std::cout << "ERROR: found collection item without pre-assigned FormID: " << strEDID << std::endl;
-				throw std::runtime_error("ERROR: found collection item without pre-assigned FormID: " + strEDID);
+				std::cout << "WARNING: exporting record without pre-defined FormID (New FormID will be assigned): [" << sSIG << "] " << strEDID << std::endl;
+//				throw std::runtime_error("WARNING: found collection item without pre-assigned FormID: " + strEDID);
 			}
 
 			uint32_t flags=0;
@@ -654,6 +653,7 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
+		int mNumStages;
 
 	public:
 
