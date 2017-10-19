@@ -79,6 +79,10 @@ namespace CSMDoc
 			int loadEDIDmap3(std::string filename);
 			int loadCellIDmap3(std::string filename);
 
+			int loadLocalVarIndexmap(std::string filename);
+
+			std::vector<std::string> mDummyCellNames;
+
 	};
 
 

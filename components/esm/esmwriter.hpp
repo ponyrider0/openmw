@@ -201,6 +201,9 @@ public:
 		std::map<std::string, std::string> mMorroblivionEDIDmap;
 		std::map<std::string, std::pair<std::string, int>> unMatchedEDIDmap;
 
+		std::map<std::string, int> mLocalVarIndexmap; // local var, mwDialogHelper var index
+		std::map<std::string, int> mUnresolvedLocalVars; // local var, occurences
+
 		void exportConditionalExpression(std::string condExpression);
 		void exportConditionalExpression(uint32_t compareFunction, uint32_t compareArg1,
 			const std::string& compareOperator, float compareValue, uint8_t condFlags=0,

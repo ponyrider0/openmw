@@ -277,7 +277,9 @@ namespace CSMDoc
 		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 		bool mQuestMode;
-		
+		std::vector<std::pair<ESM::DialInfo, std::string> > mGreetingInfoList;
+		std::vector<std::pair<ESM::DialInfo, std::string> > mHelloInfoList;
+
 	public:
 
 		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool processQuests, bool skipMasters=true);

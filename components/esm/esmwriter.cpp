@@ -770,7 +770,7 @@ namespace ESM
 
 		// create entry for the stringID to formID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );
-		mStringTypeMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), Misc::StringUtils::lowerCase(sSIG)) );
+		mStringTypeMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), sSIG) );
 
 		if (setup_phase == false && formID > mESMoffset)
 		{
@@ -825,8 +825,6 @@ namespace ESM
 				uint32_t cellID = crossRefStringID(tempString, sSIG, false, creating_record);
 				if (cellID != 0)
 					return cellID;
-				else
-					return crossRefStringID(tempString + "00", sSIG, false, true);
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "dial")
 			{
@@ -847,7 +845,7 @@ namespace ESM
 			typeResult != mStringTypeMap.end() &&
 			typeResult->second != "" && typeResult->second != "unkn" &&
 			tempSIG != "" && 
-			tempSIG != typeResult->second)
+			tempSIG != Misc::StringUtils::lowerCase(typeResult->second) )
 		{
 				// throw warning, but allow to continue
 				std::cout << "WARNING: crossRefStringID: Stored type does not match request: "
@@ -1439,6 +1437,7 @@ namespace ESM
 		std::string tempEDID, finalEDID;
 		bool removeOther=false;
 		bool addScript=false;
+		bool addRegion=false;
 
 		if (sSIG != "")
 		{
@@ -1457,6 +1456,7 @@ namespace ESM
 			else if (Misc::StringUtils::lowerCase(sSIG) == "regn")
 			{
 				conversion_mode = 2;
+				addRegion = true;
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "cell")
 			{
@@ -1561,6 +1561,14 @@ namespace ESM
 				(Misc::StringUtils::lowerCase(finalEDID).find("script", 0) == finalEDID.npos))
 			{
 				finalEDID += "Script";
+			}
+		}
+
+		if (addRegion)
+		{
+			if (Misc::StringUtils::lowerCase(finalEDID).find("region", 0) == finalEDID.npos)
+			{
+				finalEDID += "Region";
 			}
 		}
 

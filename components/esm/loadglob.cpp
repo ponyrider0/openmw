@@ -39,12 +39,11 @@ namespace ESM
         }
     }
 
-	void Global::exportTES4 (ESMWriter &esm) const
+	void Global::exportTESx (ESMWriter &esm) const
 	{
 
 		// must convert mID into a TES4 compatible EditorID
-		std::string sEditorID = mId;
-//		esm.writeHNCString ("NAME", mId);
+		std::string sEditorID = esm.generateEDIDTES4(mId, 0, "GLOB");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHString(sEditorID);
 		esm.endSubRecordTES4("EDID");

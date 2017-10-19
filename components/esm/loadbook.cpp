@@ -140,9 +140,25 @@ namespace ESM
 		esm.writeT<uint16_t>(mData.mEnchant);
 		esm.endSubRecordTES4("ANAM");
 
-		// DESC, mText
+		// DESC, mText		
+		// replace all Morrowind variable strings with static words
+		std::string newText = mText;
+		// There are two passes for each variable: 
+		//	the first pass is the ideal match which will replace the leading space,
+		//	the second pass is a fuzzy match which will add an extra leading space.
+		newText = Misc::StringUtils::replaceAll(newText, " %PCName", " outlander");
+		newText = Misc::StringUtils::replaceAll(newText, "%PCName", "Outlander");
+		// first pass catches uncapitalized instances of words
+		// second pass should catch remaining instances needing capitalization
+		newText = Misc::StringUtils::replaceAll(newText, " %PCRace", " outlander");
+		newText = Misc::StringUtils::replaceAll(newText, "%PCRace", "Outlander");
+		newText = Misc::StringUtils::replaceAll(newText, " %PCClass", " outlander");
+		newText = Misc::StringUtils::replaceAll(newText, "%PCClass", "Outlander");
+		newText = Misc::StringUtils::replaceAll(newText, " %PCRank", " outlander");
+		newText = Misc::StringUtils::replaceAll(newText, "%PCRank", "Outlander");
+
 		esm.startSubRecordTES4("DESC");
-		esm.writeHCString(mText);
+		esm.writeHCString(newText);
 		esm.endSubRecordTES4("DESC");
 
 		// DATA, float (item weight)

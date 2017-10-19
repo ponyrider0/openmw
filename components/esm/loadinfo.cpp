@@ -171,6 +171,23 @@ namespace ESM
 
 		// process script early for use by other subrecords
 		ESM::ScriptConverter scriptConverter(mResultScript, esm);
+		// create new response string with substituted names early
+		std::string newResponse = mResponse;
+		// There are two passes for each variable: 
+		//	the first pass is the ideal match which will replace the leading space,
+		//	the second pass is a fuzzy match which will add an extra leading space.
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCName", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCName", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %Name", "&sUActnQuick2;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%Name", "&sUActnQuick2;");
+		// first pass catches uncapitalized instances of words
+		// second pass should catch remaining instances needing capitalization
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRace", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRace", "Outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCClass", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCClass", "Outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRank", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRank", "Outlander");
 
 		if (bIsQuestStage)
 		{
@@ -190,7 +207,7 @@ namespace ESM
 
 			// CNAM, log entry
 			esm.startSubRecordTES4("CNAM");
-			esm.writeHCString(mResponse);
+			esm.writeHCString(newResponse);
 			esm.endSubRecordTES4("CNAM");
 
 		}
@@ -244,20 +261,20 @@ namespace ESM
 			int currentOffset=0;
 			bool bHyphenateStart=false, bHyphenateEnd=false;
 			int lineMax = 150;
-			while (currentOffset < mResponse.size() )
+			while (currentOffset < newResponse.size() )
 			{
 				int bytesToRead=0;
 				// check against lineMax+10 to avoid a final line which is shorter than 10 characters.
-				if ( (mResponse.size() - currentOffset) < lineMax+10)
+				if ( (newResponse.size() - currentOffset) < lineMax+10)
 				{
-					bytesToRead = mResponse.size() - currentOffset;
+					bytesToRead = newResponse.size() - currentOffset;
 				}
 				else
 				{
 					while (bytesToRead < lineMax)
 					{
-						int lookAhead1 = mResponse.find(". ", currentOffset+bytesToRead) - currentOffset;
-						int lookAhead2 = mResponse.find(", ", currentOffset+bytesToRead) - currentOffset;
+						int lookAhead1 = newResponse.find(". ", currentOffset+bytesToRead) - currentOffset;
+						int lookAhead2 = newResponse.find(", ", currentOffset+bytesToRead) - currentOffset;
 						if (lookAhead1 > lineMax) lookAhead1 = -1;
 						if (lookAhead2 > lineMax) lookAhead2 = -1;
 						if (lookAhead1 < bytesToRead && lookAhead2 < bytesToRead)
@@ -272,7 +289,7 @@ namespace ESM
 					{
 						// set to lineMax, then slowly backtrack until we see whitepace
 						bytesToRead = (currentOffset + lineMax);
-						while (mResponse[bytesToRead] != ' ')
+						while (newResponse[bytesToRead] != ' ')
 						{
 							bytesToRead--;
 							// sanity check in case there is no whitespace.
@@ -285,7 +302,7 @@ namespace ESM
 						}
 					}
 				}
-				std::string partialString = mResponse.substr(currentOffset, bytesToRead);
+				std::string partialString = newResponse.substr(currentOffset, bytesToRead);
 				currentOffset += bytesToRead;
 				if (bHyphenateStart == true)
 				{
@@ -456,6 +473,52 @@ namespace ESM
 							compareVal = selectWrapper.getVariant().getInteger();
 						break;
 					}
+					if (Misc::StringUtils::lowerCase(varName) == "pcrace")
+					{
+						compareFunction = 0x82; // GetPCIsRace
+						int tempRaceVal;
+						if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+							tempRaceVal = selectWrapper.getVariant().getFloat();
+						if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+							tempRaceVal = selectWrapper.getVariant().getInteger();
+						uint32_t raceFormID;
+						switch (tempRaceVal)
+						{
+						case 1: // argonian
+							raceFormID = esm.crossRefStringID("argonian", "race");
+							break;
+						case 2: // breton
+							raceFormID = esm.crossRefStringID("breton", "race");
+							break;
+						case 3: // dark elf
+							raceFormID = esm.crossRefStringID("dark elf", "race");
+							break;
+						case 4: // high elf
+							raceFormID = esm.crossRefStringID("high elf", "race");
+							break;
+						case 5: // imperial
+							raceFormID = esm.crossRefStringID("imperial", "race");
+							break;
+						case 6: // khajiit
+							raceFormID = esm.crossRefStringID("khajiit", "race");
+							break;
+						case 7: // nord
+							raceFormID = esm.crossRefStringID("nord", "race");
+							break;
+						case 8: // orc
+							raceFormID = esm.crossRefStringID("orc", "race");
+							break;
+						case 9: // redguard
+							raceFormID = esm.crossRefStringID("redguard", "race");
+							break;
+						case 10: // wood elf
+							raceFormID = esm.crossRefStringID("wood elf", "race");
+							break;
+						}
+						compareArg1 = raceFormID;
+						compareVal = 1;
+						break;
+					}
 					compareFunction = 0x4A; // GetGlobalValue (int 74)
 					compareArg1 = esm.crossRefStringID(varName, "GLOB");
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
@@ -482,7 +545,13 @@ namespace ESM
 					// rank == 3 Eligible, add in resultscript: PCRaiseRank to levelup rank
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					compareArg2 = 0; // TODO: create std::map to look up variable index
+					varName = ""; // todo: make var for rankrequirement
+					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
+					{
+						std::cout << "Unresolved Conditioin:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+					}
+					else
+						compareArg2 = esm.mLocalVarIndexmap[varName];
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
@@ -506,8 +575,11 @@ namespace ESM
 					compareFunction = 0x48; // GetIsID (int 72)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
-					compareOperator = "=";
-					compareVal = 0.0f;
+					compareOperator = flipCompareOperator(compareOperator);
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcGender:
@@ -519,7 +591,7 @@ namespace ESM
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Local:
-					varName = selectWrapper.getVariableName();
+					varName = Misc::StringUtils::lowerCase( selectWrapper.getVariableName() );
 					if (Misc::StringUtils::lowerCase(varName) == "nolore")
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
@@ -532,7 +604,16 @@ namespace ESM
 					//   variable indexes don't need to be hardcoded across multiple NPC scripts
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					compareArg2 = 0; // TODO: std::map to lookup variable index
+					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
+					{
+						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
+							esm.mUnresolvedLocalVars[varName] = 1;
+						else
+							esm.mUnresolvedLocalVars[varName] += 1;
+					}
+					else
+						compareArg2 = esm.mLocalVarIndexmap[varName];
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -572,14 +653,26 @@ namespace ESM
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
 						compareArg1 = esm.crossRefStringID("noLore", "FACT", false);
-						compareOperator = "=";
-						compareVal = 0.0f;
+						compareOperator = flipCompareOperator(compareOperator);
+						if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+							compareVal = selectWrapper.getVariant().getFloat();
+						if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+							compareVal = selectWrapper.getVariant().getInteger();
 						break;
 					}
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
-					std::cout << "Not Local: " << varName << std::endl;
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					compareArg2 = 1;
+					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
+					{
+						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
+							esm.mUnresolvedLocalVars[varName] = 1;
+						else
+							esm.mUnresolvedLocalVars[varName] += 1;
+					}
+					else
+						compareArg2 = esm.mLocalVarIndexmap[varName];
+					compareOperator = flipCompareOperator(compareOperator);
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -598,14 +691,19 @@ namespace ESM
 					compareFunction = 0x44; // GetIsClass (decimal 68)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CLAS");
-					compareOperator = "=";
-					compareVal = 0.0f;
+					compareOperator = flipCompareOperator(compareOperator);
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotCell:
 					compareFunction = 0x43; // GetInCell (decimal 67)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CELL");
+					if (compareArg1 == 0)
+						compareArg1 = esm.crossRefStringID(varName, "REGN");
 					if (compareArg1 == 0)
 					{
 						// use mwDialogHelper quest
@@ -622,8 +720,11 @@ namespace ESM
 					compareFunction = 0x47; // GetInFaction (decimal 71)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "FACT");
-					compareOperator = "=";
-					compareVal = 0.0f;
+					compareOperator = flipCompareOperator(compareOperator);
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_CreatureTarget:
@@ -653,15 +754,18 @@ namespace ESM
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
 						compareVal = selectWrapper.getVariant().getInteger();
-					std::cout << selectWrapper.toString() << std::endl;
+					std::cout << "Unresolved Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotRace:
 					compareFunction = 0x45; // GetIsRace
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "RACE");
-					compareOperator = "=";
-					compareVal = 0.0f;
+					compareOperator = flipCompareOperator(compareOperator);
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Reputation:
@@ -723,6 +827,16 @@ namespace ESM
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcIntelligence:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Intelligence);
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAgility:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Agility);
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -868,7 +982,7 @@ namespace ESM
 
 				default:
 					// record stats on missing function and occurences
-					std::cout << "ERROR: Conditional Export: no export for CompareFunction: " << selectWrapper.toString() << std::endl;
+					std::cout << "Unhandled Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
 					break;
 				}
 
@@ -940,6 +1054,24 @@ namespace ESM
 			esm.endSubRecordTES4("SCRO");
 		}
 
+	}
+
+	std::string DialInfo::flipCompareOperator(const std::string & compareOp) const
+	{
+		std::string flippedOperator;
+
+		if (compareOp == "=")
+			flippedOperator = "!=";
+		else if (compareOp == ">")
+			flippedOperator = "<=";
+		else if (compareOp == ">=")
+			flippedOperator = "<";
+		else if (compareOp == "<")
+			flippedOperator = ">=";
+		else if (compareOp == "<=")
+			flippedOperator = ">";
+
+		return flippedOperator;
 	}
 
     void DialInfo::blank()

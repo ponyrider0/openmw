@@ -395,6 +395,8 @@ int CSMDoc::SavingState::loadEDIDmap2(std::string filename)
 
 	}
 
+	inputFile.close();
+
 	return 0;
 }
 
@@ -455,6 +457,8 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 
 	} // while getline(inputFile, inputLine)
 
+	inputFile.close();
+
 	return errorcode;
 }
 
@@ -493,6 +497,7 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 		mWriter.mMorroblivionEDIDmap[strGenEDID] = strMwEDID;
 
 	}
+	inputFile.close();
 
 	return errorcode;
 }
@@ -648,6 +653,8 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 
 	}
 
+	inputFile.close();
+
 	return errorcode;
 }
 
@@ -690,7 +697,7 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 				strY = Misc::StringUtils::lowerCase(token);
 				break;
 			case 3:
-				strEDID = Misc::StringUtils::lowerCase(token);
+				strEDID = token;
 				break;
 			case 4:
 				strLandHexFormID = Misc::StringUtils::lowerCase(token);
@@ -734,6 +741,54 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 		}
 
 	} // while getline(inputFile, inputLine)
+
+	inputFile.close();
+
+	return errorcode;
+}
+
+int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
+{
+	int errorcode = 0;
+	int lineNumber = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strVarName, strVarIndex;
+		int varIndex;
+
+		for (int i = 0; i < 6; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strVarName = token;
+				break;
+			case 1:
+				strVarIndex = token;
+				break;
+			}
+		}
+
+		if (strVarName == "" || strVarIndex == "")
+			continue;
+
+		varIndex = atoi( strVarIndex.c_str() );
+
+		mWriter.mLocalVarIndexmap[Misc::StringUtils::lowerCase(strVarName)] = varIndex;
+	}
+
 
 	return errorcode;
 }
@@ -787,6 +842,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	}
 
 	loadEDIDmap3("OverridesEDIDList.csv");
+	loadLocalVarIndexmap("LocalVarMap.csv");
 
 	std::cout << "import complete." << std::endl;
 
