@@ -475,7 +475,7 @@ namespace ESM
 		struct EvalOpContext
 		{
 			int eval_state;
-			int opration_state;
+			int operation_state;
 			float left_operand;
 			bool binary_operation;
 		};
@@ -642,7 +642,7 @@ namespace ESM
 				// push outside operation and left operand onto stack...
 				struct EvalOpContext *newContext = new struct EvalOpContext;
 				newContext->eval_state = eval_state;
-				newContext->opration_state = operation_state;
+				newContext->operation_state = operation_state;
 				newContext->left_operand = left_operand;
 				newContext->binary_operation = binary_operation;
 				operation_stack.push_back(*newContext);
@@ -655,7 +655,7 @@ namespace ESM
 				// pop stack and eval outside expression
 				float right_operand = left_operand;
 				eval_state = operation_stack.back().eval_state;
-				operation_state = operation_stack.back().opration_state;
+				operation_state = operation_stack.back().operation_state;
 				left_operand = operation_stack.back().left_operand;
 				binary_operation = operation_stack.back().binary_operation;
 				operation_stack.pop_back();
@@ -1439,6 +1439,14 @@ namespace ESM
 		bool addScript=false;
 		bool addRegion=false;
 
+
+		// Do EDID substitutions
+		if ( (Misc::StringUtils::lowerCase(name) == "player") ||
+			(Misc::StringUtils::lowerCase(name) == "playerref") )
+			return name;
+		if (Misc::StringUtils::lowerCase(finalEDID) == "gold_001")
+			return "Gold001";
+
 		if (sSIG != "")
 		{
 			if (Misc::StringUtils::lowerCase(sSIG) == "qust")
@@ -1571,10 +1579,6 @@ namespace ESM
 				finalEDID += "Region";
 			}
 		}
-
-		// EDID substitutions
-		if (Misc::StringUtils::lowerCase(finalEDID) == "0goldu001")
-			finalEDID = "Gold001";
 
 		return finalEDID;
 	}
@@ -2898,6 +2902,11 @@ namespace ESM
 
 
 		return stringList;
+	}
+
+	std::string ESMWriter::substituteHairID(const std::string & hairName)
+	{
+		return std::string();
 	}
 
 	float ESM::ESMWriter::calcDistance(ESM::Position pointA, ESM::Position pointB)

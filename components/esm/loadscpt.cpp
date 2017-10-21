@@ -5,6 +5,8 @@
 #include "defs.hpp"
 
 #include <iostream>
+#include <apps/opencs/model/doc/scriptconverter.hpp>
+
 
 namespace ESM
 {
@@ -160,41 +162,55 @@ namespace ESM
 	{
 		uint32_t tempFormID;
 		std::string strEDID, tempStr;
-		std::istringstream inputScriptText(mScriptText);
-		std::ostringstream convertedScriptText;
+//		std::istringstream inputScriptText(mScriptText);
+//		std::ostringstream convertedScriptText;
 
 		// EDID
-		strEDID = esm.generateEDIDTES4(mId, 3);
+		strEDID = esm.generateEDIDTES4(mId, 3, "SCPT");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
-		
-		uint32_t refCount=0, varCount=0, scriptType=0;
-		if (Misc::StringUtils::lowerCase(strEDID).find("effect") != std::string::npos)
-		{
-			scriptType = 0x100;
-		}
+
+		ESM::ScriptConverter scriptConverter(mScriptText, esm);
+
+		// SCHR... (basic script data)
+		// [unused x4, refcount, compiled size, varcount, script type]
+		uint32_t refCount = scriptConverter.mReferenceList.size();
+		uint32_t compiledSize = scriptConverter.mCompiledByteBuffer.size();
+		uint32_t varCount = scriptConverter.mLocalVarList.size();
+		uint32_t scriptType = 0x0; // default = object script
 		if (Misc::StringUtils::lowerCase(strEDID).find("quest") != std::string::npos)
-		{
-			scriptType = 1;
-		}
-		// SCHD (unknown)
+			scriptType = 1; // quest script
+		if (Misc::StringUtils::lowerCase(strEDID).find("effect") != std::string::npos)
+			scriptType = 0x100; // effect script
+
+		// SCHD (unknown script header)
+
 		// SCHR data...
+/*/
 		esm.startSubRecordTES4("SCHR");
-		// unused x4
-		esm.writeT<uint32_t>(0);
-		// refcount (uint32)
+		esm.writeT<uint32_t>(0); // unused x4
+		esm.writeT<uint32_t>(refCount); // refcount (uint32)
+		esm.writeT<uint32_t>(0); // compiledsize
+		esm.writeT<uint32_t>(varCount); // var count (uint32)
+		esm.writeT<uint32_t>(scriptType); // type (uint32) 0=object, 1=quest, $100 = magic effect
+		esm.endSubRecordTES4("SCHR");
+*/
+		esm.startSubRecordTES4("SCHR");
+		esm.writeT<uint32_t>(0); // unused byte * 4
 		esm.writeT<uint32_t>(refCount);
-		// compiledsize
-		esm.writeT<uint32_t>(0);
-		// var count (uint32)
+		esm.writeT<uint32_t>(compiledSize);
 		esm.writeT<uint32_t>(varCount);
-		// type (uint32) 0=object, 1=quest, $100 = magic effect
 		esm.writeT<uint32_t>(scriptType);
 		esm.endSubRecordTES4("SCHR");
 
 		// SCDA (compiled)
+		esm.startSubRecordTES4("SCDA");
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.mCompiledByteBuffer.size());
+		esm.endSubRecordTES4("SCDA");
+
 		// SCTX (text)
+/*
 		convertedScriptText << "ScriptName " << strEDID << std::endl << std::endl;
 		std::string inputLine;
 		while (std::getline(inputScriptText, inputLine))
@@ -204,12 +220,42 @@ namespace ESM
 		esm.startSubRecordTES4("SCTX");
 		esm.writeHCString(convertedScriptText.str());
 		esm.endSubRecordTES4("SCTX");
+*/
+		esm.startSubRecordTES4("SCTX");
+		esm.writeHCString(scriptConverter.GetConvertedScript());
+		esm.endSubRecordTES4("SCTX");
 
 		// local variables
-		// SLSD struct [index, unused x12, flags, unused]
-		// SCVR string
+		uint32_t localVarIndex=1;
+		for (auto localVar = scriptConverter.mLocalVarList.begin(); localVar != scriptConverter.mLocalVarList.end(); localVar++)
+		{
+			uint32_t flagVarType = 0x0;
+			if (Misc::StringUtils::lowerCase( localVar->first ) == "short" ||
+				Misc::StringUtils::lowerCase( localVar->first ) == "long" )
+				flagVarType = 0x1;
+
+			// SLSD struct [index, unused x12, flags, unused]
+			esm.startSubRecordTES4("SLSD");
+			esm.writeT<uint32_t>(localVarIndex++);
+			esm.writeT<uint32_t>(0); // unused byte * 12 
+			esm.writeT<uint32_t>(0); // ...
+			esm.writeT<uint32_t>(0); // ...
+			esm.writeT<uint8_t>(flagVarType); // var type
+			esm.writeT<uint32_t>(0); // unused byte * 4
+			esm.endSubRecordTES4("SLSD");
+			// SCVR string
+			esm.startSubRecordTES4("SCVR");
+			esm.writeHCString(localVar->second);
+			esm.endSubRecordTES4("SCVR");
+		}
 
 		// SCROs
+		for (auto refItem = scriptConverter.mReferenceList.begin(); refItem != scriptConverter.mReferenceList.end(); refItem++)
+		{
+			esm.startSubRecordTES4("SCRO");
+			esm.writeT<uint32_t>(*refItem);
+			esm.endSubRecordTES4("SCRO");
+		}
 
 	}
 
