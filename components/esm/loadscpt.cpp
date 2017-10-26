@@ -176,7 +176,7 @@ namespace ESM
 		// SCHR... (basic script data)
 		// [unused x4, refcount, compiled size, varcount, script type]
 		uint32_t refCount = scriptConverter.mReferenceList.size();
-		uint32_t compiledSize = scriptConverter.mCompiledByteBuffer.size();
+		uint32_t compiledSize = scriptConverter.GetByteBufferSize();
 		uint32_t varCount = scriptConverter.mLocalVarList.size();
 		uint32_t scriptType = 0x0; // default = object script
 		if (Misc::StringUtils::lowerCase(strEDID).find("quest") != std::string::npos)
@@ -206,7 +206,7 @@ namespace ESM
 
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.mCompiledByteBuffer.size());
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)

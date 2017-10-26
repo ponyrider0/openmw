@@ -1017,7 +1017,7 @@ namespace ESM
 		// SCHR... (basic script data)
 		// [unused x4, refcount, compiled size, varcount, script type]
 		uint32_t refCount = scriptConverter.mReferenceList.size();
-		uint32_t compiledSize = scriptConverter.mCompiledByteBuffer.size();
+		uint32_t compiledSize = scriptConverter.GetByteBufferSize();
 		uint32_t varCount = scriptConverter.mLocalVarList.size();
 		uint32_t scriptType; // Object=0x0, Quest=0x01, MagicEffect=0x100
 		if (bIsQuestStage)
@@ -1038,7 +1038,7 @@ namespace ESM
 
 		// SCDA... (compiled script)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.mCompiledByteBuffer.size());
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX... (script source text)
