@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <components/esm/esmwriter.hpp>
 
 namespace ESM {
@@ -33,6 +34,7 @@ namespace ESM {
 			std::string blockName="";
 			int codeBlockDepth=0;
 			bool bIsCallBack=false;
+			int JumpOps = 0;
 			std::vector< std::string > convertedStatements;
 			std::vector< uint8_t > compiledCode;
 		};
@@ -46,6 +48,8 @@ namespace ESM {
 		std::vector< char > mCompiledByteHeader;
 		std::vector< std::string > mConvertedHeader;
 
+		std::stringstream Debug_CurrentScriptLine;
+		bool mNewStatement=true;
 		int mFailureCode=0;
 		int mLinePosition = 0;
 		int mReadMode = 0; // 0=ready, 1=identifier, 2=quoted_literal

@@ -323,13 +323,15 @@ namespace ESM
 
 	void ScriptConverter::parse_statement(std::vector<struct Token>::iterator & tokenItem)
 	{
+		Debug_CurrentScriptLine << tokenItem->str << " ";
 		if (tokenItem->type == TokenType::endlineT)
 		{
 			bUseCommandReference = false;
 			mCommandReference = "";
+			mNewStatement = true;
+			Debug_CurrentScriptLine.str(""); Debug_CurrentScriptLine.clear();
 		}
-
-		if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+		else if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
 		{
 			std::string possibleRef = tokenItem->str;
 			tokenItem++;
@@ -342,27 +344,38 @@ namespace ESM
 			// putback
 			tokenItem--;
 
-			std::stringstream errMesg;
-			errMesg << "Unhandled Identifier Statement: [" << possibleRef << "] " << tokenItem->str << std::endl;
-			abort(errMesg.str());
+			if (mNewStatement == true)
+			{
+				std::stringstream errMesg;
+				errMesg << "Unhandled Identifier Command: <" << tokenItem->type << "> " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+				abort(errMesg.str());
+			}
+			mNewStatement = false;
 			return;
 		}
-
-		if (tokenItem->type == TokenType::keywordT)
+		else if (tokenItem->type == TokenType::keywordT)
 		{
 			parse_keyword(tokenItem);
+			mNewStatement = false;
 			return;
 		} // keyword
-
-		std::stringstream errMesg;
-		errMesg << "Parser: Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl;
-		abort(errMesg.str());
+		else
+		{
+			if (mNewStatement == true)
+			{
+				std::stringstream errMesg;
+				errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+				abort(errMesg.str());
+			}
+			mNewStatement = false;
+		}
 		return;
 
 	}
 
 	void ScriptConverter::parse_expression(std::vector<struct Token>::iterator & tokenItem)
 	{
+		Debug_CurrentScriptLine << tokenItem->str << " ";
 		if (tokenItem->type == TokenType::endlineT)
 		{
 			// unload expression stack to compiled buffer
@@ -392,7 +405,16 @@ namespace ESM
 			}
 			else
 			{
-				// TODO: if command
+				// Assume all offsets are from 0 (start of new context block)
+				// 16 00 [CompLen(2)]
+				int offset = 2;
+				uint16_t statementLength = mCurrentContext.compiledCode.size() - offset - 2; // -2: do not count offset length in length
+				for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&statementLength)[i];
+
+				// 16 00 [CompLen(2)] [JumpOps(2)] [ExpressionLength(2)]
+				offset += (2 + 2);
+				uint16_t expressionLength = statementLength - 2 - 2; // -2: do not count offset length in length
+				for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&expressionLength)[i];
 			}
 			mParseMode = 0;
 			return;
@@ -411,6 +433,7 @@ namespace ESM
 			// check if it's part of a reference command
 			if (tokenItem->type == TokenType::operatorT && tokenItem->str == "->")
 			{
+				Debug_CurrentScriptLine << tokenItem->str;
 				bUseCommandReference = true;
 				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
 				return;
@@ -449,7 +472,7 @@ namespace ESM
 		}
 
 		std::stringstream errMesg;
-		errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl;
+		errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 		abort(errMesg.str());
 		return;
 
@@ -495,7 +518,8 @@ namespace ESM
 			(tokenItem->str == ">=") ||
 			(tokenItem->str == "<") ||
 			(tokenItem->str == "<=") ||
-			(tokenItem->str == "!="))
+			(tokenItem->str == "!=") ||
+			(tokenItem->str == "="))
 		{
 			while (mOperatorExpressionStack.empty() != true &&
 				mOperatorExpressionStack.back().IsHigherPrecedence(tokenItem))
@@ -512,7 +536,7 @@ namespace ESM
 
 		// ERROR message
 		std::stringstream ErrMsg;
-		ErrMsg << "unhandled operator token: " << tokenItem->str << std::endl;
+		ErrMsg << "unhandled operator token: " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 		abort(ErrMsg.str());
 		return;
 
@@ -641,11 +665,8 @@ namespace ESM
 
 		tokenItem++;
 		// check for bIsCallBack mode
-		if (tokenItem->type == TokenType::operatorT && tokenItem->str == "(")
-		{
-			mOperatorExpressionStack.push_back(*tokenItem);
+		if (tokenItem->str == "(")
 			tokenItem++;
-		}
 		if (tokenItem->type == TokenType::keywordT)
 		{
 			if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "onactivate") ||
@@ -666,44 +687,77 @@ namespace ESM
 				// push context to stack
 				mContextStack.push_back(mCurrentContext);
 				// re-initialize current context
-				mCallBackName = tokenItem->str;
 				mCurrentContext.bIsCallBack = true;
 				mCurrentContext.codeBlockDepth++;
+				mCurrentContext.JumpOps = 0;
 				std::stringstream blockName;
 				blockName << "if" << mCurrentContext.codeBlockDepth;
 				mCurrentContext.blockName = blockName.str();
 				mCurrentContext.compiledCode.clear();
 				mCurrentContext.convertedStatements.clear();
+
+				// output callback begin
+				mCallBackName = tokenItem->str;
+				std::stringstream callBackHeader;
+				callBackHeader << "Begin" << " " << mCallBackName;
+				mCurrentContext.convertedStatements.push_back(callBackHeader.str());
+
+				// byte code: (OnActivate) 10 00 08 00 02 00 [BlockLen(4)] 00 00
+				uint16_t BeginModeCode = 0x10;
+				uint16_t ModeData = 0x00;
+				if (Misc::StringUtils::lowerCase(mCallBackName) == "onactivate")
+					ModeData = 0x08;
+				uint16_t OtherData = 0x02;
+				uint32_t BlockLen = 0;
+				compile_command(BeginModeCode, ModeData);
+				for (int i=0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *>(&OtherData)[i]);
+				for (int i=0; i<4; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *>(&BlockLen)[i]);
+				for (int i=0; i<2; ++i) mCurrentContext.compiledCode.push_back(0);
+
 				mParseMode = 0;
 				return;
 			}
 		}
-		// put back for further processing
+		// put back 1-2 tokens for further processing
 		tokenItem--;
-
-		// TODO: begin if statement??
-
-		// TODO: Compile IF statement header, then record byte position to update with JumpOffsets and ExpressionLength
-		// compiled code
-		// if [Expression]...
-		// uint16_t OpCode = 0x16;
-		// complen (2 bytes)
-		// jump operations (2 bytes) --number of operations to next conditional: elseif/else/endif
-		// exp len ( 2 bytes)
-		// exp byte buffer (n)
+		if (tokenItem->str == "(")
+			tokenItem--;
 
 		// push context to stack
 		mContextStack.push_back(mCurrentContext);
 		// re-initialize current context
 		mCurrentContext.bIsCallBack = false;
 		mCurrentContext.codeBlockDepth++;
+		mCurrentContext.JumpOps = 0;
 		std::stringstream blockName;
 		blockName << "if" << mCurrentContext.codeBlockDepth;
 		mCurrentContext.blockName = blockName.str();
 		mCurrentContext.compiledCode.clear();
 		mCurrentContext.convertedStatements.clear();
 
+		// Output translation
+		std::stringstream cmdString;
+		cmdString << "If" << " ";
+		mCurrentContext.convertedStatements.push_back(cmdString.str());
+
+		// Compile IF statement header, then record byte position to update with JumpOffsets and ExpressionLength
+
+
+		// 16 00 [CompLen(2)] [JumpOps(2)] [ExpressionLen(2)] [ExpressionBuffer(N)]
+		uint16_t OpCode = 0x16;
+		uint16_t CompLen = 0x00; // complen (2 bytes)
+		uint16_t JumpOps = 0x00; // jump operations (2 bytes) --number of operations to next conditional: elseif/else/endif
+		uint16_t ExpressionLen = 0x00; // exp len ( 2 bytes)
+
+		mSetCmd_StartPosition = mCurrentContext.compiledCode.size(); // bookmark start of command
+		compile_command(OpCode, CompLen);
+		for (int i=0; i<2; i++) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&JumpOps)[i]);
+		for (int i=0; i<2; i++) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&ExpressionLen)[i]);
+
+		// change parsemode to expression build mode
 		mParseMode = 1;
+		bSetCmd = false;
+
 		return;
 	}
 
@@ -730,20 +784,21 @@ namespace ESM
 		fromStack.compiledCode = mContextStack.back().compiledCode;
 		mContextStack.pop_back();
 
-		if (mCurrentContext.bIsCallBack)
+		auto statementItem = mCurrentContext.convertedStatements.begin();
+		if (statementItem != mCurrentContext.convertedStatements.end())
 		{
-			// output callback begin
-			std::stringstream callBackHeader;
-			callBackHeader << "Begin" << " " << mCallBackName;
-			mConvertedStatementList.push_back(callBackHeader.str());
-			mCallBackName = "";
+			if (mCurrentContext.bIsCallBack)
+			{
+				mConvertedStatementList.push_back(*statementItem);
+				mCallBackName = "";
+			}
+			else
+			{
+				fromStack.convertedStatements.push_back(*statementItem);
+			}
+			statementItem++;
 		}
-		else
-		{
-			// add directly to fromStack to avoid extra tab from next block
-			// ....?
-		}
-		for (auto statementItem = mCurrentContext.convertedStatements.begin(); statementItem != mCurrentContext.convertedStatements.end(); statementItem++)
+		while (statementItem != mCurrentContext.convertedStatements.end())
 		{
 			std::stringstream statementStream;		
 			statementStream << '\t' << *statementItem;
@@ -751,10 +806,8 @@ namespace ESM
 				mConvertedStatementList.push_back(statementStream.str());
 			else
 				fromStack.convertedStatements.push_back(statementStream.str());
+			statementItem++;
 		}
-		mCurrentContext.convertedStatements.clear();
-		mCurrentContext.convertedStatements = fromStack.convertedStatements;
-		//if CallBack, insert "end" callback command
 		std::stringstream endStatement;
 		if (mCurrentContext.bIsCallBack)
 		{
@@ -765,78 +818,42 @@ namespace ESM
 		}
 		else
 		{
-			endStatement << "endif";
-			mCurrentContext.convertedStatements.push_back(endStatement.str());
+			endStatement << "Endif";
+			fromStack.convertedStatements.push_back(endStatement.str());
 		}
+		mCurrentContext.convertedStatements.clear();
+		mCurrentContext.convertedStatements = fromStack.convertedStatements;
 
-		// merge with current environment
-//		mCurrentContext.blockName = fromStack.blockName;
-//		mCurrentContext.codeBlockDepth = fromStack.codeBlockDepth;
-//		mCurrentContext.bIsCallBack = fromStack.bIsCallBack;
-
-		// byte compile
-		// write end byte-statement to current context
-		// write current context to stack or global buffer
-/*
-		for (auto codeItem = mCurrentContext.compiledCode.begin(); codeItem != mCurrentContext.compiledCode.end(); codeItem++)
-		{
-			// if bIsCallBack, then write directly to global buffer, otherwise append to previous context buffer
-			if (mCurrentContext.bIsCallBack)
-				mCompiledByteBuffer.push_back(*codeItem);
-			else
-				fromStack.compiledCode.push_back(*codeItem);
-		}
-*/
-
+		// update BlockLength / JumpOffsets
 		if (mCurrentContext.bIsCallBack)
 		{
-			// begin activate modelen  8
-			// begin gamemode modelen 6
-
-			// begin callback block
-			uint16_t BeginIfCode = 0x10;
-			uint16_t ModeLen = 0x6;
-			if (Misc::StringUtils::lowerCase(mCallBackName) == "onactivate")
-				ModeLen = 0x8;
-			uint32_t BlockLen = 0;
-			// insert prior to inserting if-block
-			for (int i = 0; i<2; ++i) fromStack.compiledCode.push_back(reinterpret_cast<const char *> (&BeginIfCode)[i]);
-			for (int i = 0; i<2; ++i) fromStack.compiledCode.push_back(reinterpret_cast<const char *> (&ModeLen)[i]);
-			for (int i = 0; i<4; ++i) fromStack.compiledCode.push_back(reinterpret_cast<const char *> (&BlockLen)[i]);
-			for (int i = 0; i<2; ++i) fromStack.compiledCode.push_back(0);
+			int offset = 6;
+			uint32_t blockLength = mCurrentContext.compiledCode.size() - offset - 2;
+			for (int i=0; i<4; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&blockLength)[i];
 		}
 		else
 		{
-			// compile if expression and insert proper lengths
-			uint16_t BeginIfCode = 0x16;
-			uint16_t comparisonLen = 0;
-			uint16_t jumpOperationOffset = 0;
-			uint16_t expressionLen = 0;
-			// insert prior to inserting if-block
-			for (int i = 0; i<2; ++i) fromStack.compiledCode.push_back(reinterpret_cast<const char *> (&BeginIfCode)[i]);
+			int jumpoffset = 4;
+			uint16_t JumpOps = mCurrentContext.JumpOps-1;
+			for (int i=0; i<2; i++) mCurrentContext.compiledCode[jumpoffset + i] = reinterpret_cast<uint8_t *>(&JumpOps)[i];
 		}
 
-		// inserting if-block
+		uint32_t EndCode = 0x19; // end-if
+		if (mCurrentContext.bIsCallBack)
+		{
+			EndCode = 0x11; // end begin-block
+		}
+		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&EndCode)[i]);
+
+		// byte compile: insert compiled context block to global or current buffer
 		if (mCurrentContext.bIsCallBack)
 			mCompiledByteBuffer.insert(mCompiledByteBuffer.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end() );
 		else
 			fromStack.compiledCode.insert(fromStack.compiledCode.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end() );
 
-		if (mCurrentContext.bIsCallBack)
-		{
-			uint32_t EndCode = 0x11;
-			for (int i = 0; i<4; ++i) mCompiledByteBuffer.push_back(reinterpret_cast<const char *> (&EndCode)[i]);
-		}
-		else
-		{
-			uint32_t EndCode = 0x11;
-			for (int i = 0; i<4; ++i) fromStack.compiledCode.push_back(reinterpret_cast<const char *> (&EndCode)[i]);
-		}
-
 		mCurrentContext.compiledCode.clear();
 		mCurrentContext.compiledCode = fromStack.compiledCode;
-
-
+		
 		// reset context
 		mCurrentContext.blockName = fromStack.blockName;
 		mCurrentContext.codeBlockDepth = fromStack.codeBlockDepth;
@@ -951,6 +968,8 @@ namespace ESM
 		}
 		mCurrentContext.blockName = mScriptName;
 		mCurrentContext.codeBlockDepth = 0;
+		mCurrentContext.bIsCallBack = false;
+		mCurrentContext.JumpOps = 0;
 
 		// translate script statement: Header=>"ScriptName...", CurrentContext=>"Begin GameMode"
 		std::stringstream headerStream;
@@ -984,7 +1003,6 @@ namespace ESM
 		if (Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
 		{
 			parse_choice(tokenItem);
-
 		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "journal")
 		{
@@ -1037,8 +1055,9 @@ namespace ESM
 		{
 			// Default: unhandled keyword, skip to next tokenStatement
 			std::stringstream errMesg;
-			errMesg << "Parser: Unhandled Keyword: [" << tokenItem->str << "]" << std::endl;
-			error_mesg(errMesg.str());
+			errMesg << "Unhandled Keyword: <" << tokenItem->type << "> " << tokenItem->str << std::endl;
+//			error_mesg(errMesg.str());
+			OutputDebugString(errMesg.str().c_str());
 			return;
 		}
 		// common instructions
@@ -1064,7 +1083,7 @@ namespace ESM
 		{
 			// error parsing journal
 			std::stringstream errorMesg;
-			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected string_literal:  [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
+			errorMesg << "parse_keyword(): unexpected token type, expected string_literal:  <" << tokenItem->type << "> " << tokenItem->str << std::endl;
 			abort(errorMesg.str());
 			return;
 		}
@@ -1233,6 +1252,8 @@ namespace ESM
 
 	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams)
 	{
+		mCurrentContext.JumpOps++;
+
 		if (mParseMode == 1)
 		{
 			uint8_t OpCode_Push = 0x20;
@@ -1526,6 +1547,34 @@ namespace ESM
 		mKeywords.push_back("rotate");
 		mKeywords.push_back("startscript");
 		mKeywords.push_back("equip");
+		mKeywords.push_back("showmap");
+		mKeywords.push_back("startcombat");
+		mKeywords.push_back("setstrength");
+		mKeywords.push_back("modreputation");
+		mKeywords.push_back("clearinfoactor");
+		mKeywords.push_back("aifollow");
+		mKeywords.push_back("aiwander");
+		mKeywords.push_back("setdisposition");
+		mKeywords.push_back("pclowerrank");
+		mKeywords.push_back("lock");
+		mKeywords.push_back("drop");
+		mKeywords.push_back("setangle");
+		mKeywords.push_back("modfight");
+		mKeywords.push_back("modpccrimelevel");
+		mKeywords.push_back("setmercantile");
+		mKeywords.push_back("sethello");
+		mKeywords.push_back("setmagicka");
+		mKeywords.push_back("say");
+		mKeywords.push_back("clearforcesneak");
+		mKeywords.push_back("pcexpell");
+		mKeywords.push_back("modaxe");
+		mKeywords.push_back("setpos");
+		mKeywords.push_back("playsound3d");
+		mKeywords.push_back("placeatpc");
+		mKeywords.push_back("modrestoration");
+		mKeywords.push_back("unlock");
+		mKeywords.push_back("setspeed");
+		mKeywords.push_back("removespell");
 
 	}
 

@@ -769,11 +769,15 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 			std::string token;
 			std::getline(parserStream, token, ',');
 
+			std::string dump;
+			std::istringstream tokenStr;
 			// assign token to string
 			switch (i)
 			{
 			case 0:
-				strVarName = token;
+//				strVarName = token;
+				tokenStr.str(token);
+				tokenStr >> dump >> strVarName;
 				break;
 			case 1:
 				strVarIndex = token;
@@ -785,6 +789,7 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 			continue;
 
 		varIndex = atoi( strVarIndex.c_str() );
+		
 
 		mWriter.mLocalVarIndexmap[Misc::StringUtils::lowerCase(strVarName)] = varIndex;
 	}

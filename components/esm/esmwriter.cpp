@@ -840,6 +840,7 @@ namespace ESM
 		auto typeResult = mStringTypeMap.find(Misc::StringUtils::lowerCase(tempString));
 
 		std::string tempSIG = Misc::StringUtils::lowerCase(sSIG);
+/*
 		if ( sSIG != "LVLI" && sSIG != "LVLC" && sSIG != "INV_CNT" && sSIG != "INV_NPC" && sSIG != "INV_CRE" &&
 			sSIG != "BASEREF" && 
 			typeResult != mStringTypeMap.end() &&
@@ -848,10 +849,9 @@ namespace ESM
 			tempSIG != Misc::StringUtils::lowerCase(typeResult->second) )
 		{
 				// throw warning, but allow to continue
-				std::cout << "WARNING: crossRefStringID: Stored type does not match request: "
-					<< tempString << ":" << sSIG << " vs " << typeResult->second << std::endl;
+				std::cout << "WARNING: crossRefStringID: Stored type does not match request: " << tempString << ":" << sSIG << " vs " << typeResult->second << std::endl;
 		}
-
+*/
 		if (searchResult == mStringIDMap.end())
 		{
 			if (!creating_record)
