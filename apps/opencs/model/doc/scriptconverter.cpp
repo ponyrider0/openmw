@@ -70,6 +70,9 @@ namespace ESM
 
 	uint32_t ScriptConverter::GetByteBufferSize()
 	{
+		if (HasFailed())
+			return 0;
+
 		return mCompiledByteBuffer.size();
 	}
 
@@ -108,7 +111,8 @@ namespace ESM
 					lineBuffer[mLinePosition] == '-' ||
 					lineBuffer[mLinePosition] == '>' ||
 					lineBuffer[mLinePosition] == '<' ||
-					lineBuffer[mLinePosition] == '*' )
+					lineBuffer[mLinePosition] == '*' ||
+					lineBuffer[mLinePosition] == '.' )
 				{
 					mReadMode = 3;
 					continue;
@@ -200,11 +204,17 @@ namespace ESM
 
 	void ScriptConverter::read_identifier(const std::string & lineBuffer)
 	{
-		bool done = false;
+//		bool done = false;
+		bool bMemberOperator=false;
 		int tokenType = TokenType::number_literalT;
 		std::string tokenStr;
 		while (mLinePosition < lineBuffer.size())
 		{
+			if ( (tokenType == TokenType::identifierT) && (lineBuffer[mLinePosition] == '.') )
+			{
+				bMemberOperator=true;
+				break;
+			}
 			if ( (lineBuffer[mLinePosition] >= '0' && lineBuffer[mLinePosition] <= '9') ||
 				(lineBuffer[mLinePosition] == '.') )
 			{
@@ -251,6 +261,14 @@ namespace ESM
 			}
 
 			mTokenList.push_back(Token(tokenType, tokenStr));
+
+			// add member operator if present
+			if (bMemberOperator)
+			{
+				mTokenList.push_back(Token(TokenType::operatorT, "."));
+				mLinePosition++;
+			}
+
 		}
 		mReadMode = 0;
 
@@ -335,7 +353,7 @@ namespace ESM
 		{
 			std::string possibleRef = tokenItem->str;
 			tokenItem++;
-			if (tokenItem->type == TokenType::operatorT && tokenItem->str == "->")
+			if (tokenItem->str == "->" || tokenItem->str == ".")
 			{
 				bUseCommandReference = true;
 				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
@@ -431,19 +449,46 @@ namespace ESM
 			std::string possibleRef = tokenItem->str;
 			tokenItem++;
 			// check if it's part of a reference command
-			if (tokenItem->type == TokenType::operatorT && tokenItem->str == "->")
+			if (tokenItem->str == "->" || tokenItem->str == ".")
 			{
-				Debug_CurrentScriptLine << tokenItem->str;
+				std::string expressionLine = mCurrentContext.convertedStatements.back();
+				expressionLine += possibleRef + ".";
+				mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+
+				Debug_CurrentScriptLine << possibleRef << tokenItem->str;
 				bUseCommandReference = true;
 				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
 				return;
 			}
 			// putback
 			tokenItem--;
+
 			// if not, treat as local/global variable
+			// check if localvar, if not then check if reference
+			std::string varString = tokenItem->str;
+			// get rid of whitespace
+			while (varString.find(' ') != std::string::npos)
+			{
+				int whitespace = varString.find(' ');
+				varString.erase(whitespace, 1);
+			}
+			if (prepare_localvar(varString) == 0)
+			{
+				if (prepare_reference(tokenItem->str) == 0)
+				{
+					std::stringstream errMesg;
+					errMesg << "identifier not found: " << varString << " or " << mESM.generateEDIDTES4(tokenItem->str) << std::endl;
+					abort(errMesg.str());
+				}
+				varString = mESM.generateEDIDTES4(tokenItem->str);
+			}
 			std::string expressionLine = mCurrentContext.convertedStatements.back();
-			expressionLine += " " + tokenItem->str;
+			if (bUseCommandReference)
+				expressionLine += varString;
+			else
+				expressionLine += " " + varString;
 			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size()-1] = expressionLine;
+
 			// compile
 			auto varData = compile_param_varname(tokenItem->str);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
@@ -481,6 +526,9 @@ namespace ESM
 	void ScriptConverter::parse_operator(std::vector<struct Token>::iterator& tokenItem)
 	{
 		uint8_t OpCode_Push = 0x20;
+
+		// TODO: detect "negation" operator and treat different from "minus" operator
+		// ...
 
 		// translate
 		std::string expressionLine = mCurrentContext.convertedStatements.back();
@@ -560,6 +608,31 @@ namespace ESM
 			// Read variable
 			varName = tokenItem->str;
 
+			// check for member operator to see if we should treat as active variable or just parent reference of active variable
+			tokenItem++;
+			if (tokenItem->str == "->" || tokenItem->str == ".")
+			{
+				bUseCommandReference = true;
+				mCommandReference = varName;
+				
+				tokenItem++;
+				if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+				{
+					varName = tokenItem->str;
+				}
+				else
+				{
+					std::stringstream errStr;
+					errStr << "unexpected token type in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+					abort(errStr.str());
+				}
+			}
+			else
+			{
+				// putback
+				tokenItem--;
+			}
+
 			// compile to varData
 			varData = compile_param_varname(varName);
 			mSetCmd_VarSize = varData.size();
@@ -569,7 +642,6 @@ namespace ESM
 			std::stringstream errStr;
 			errStr << "unexpected token type in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
 			abort(errStr.str());
-			return;
 		}
 
 		tokenItem++;
@@ -579,12 +651,18 @@ namespace ESM
 			std::stringstream errStr;
 			errStr << "unexpected token type in set statement (expected \"to\" operator): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
 			abort(errStr.str());
-			return;
 		}
 
 		// Output translation
 		std::stringstream cmdString;
-		cmdString << "Set" << " " << varName << " " << "To" << " ";
+		if (bUseCommandReference)
+		{
+			cmdString << "Set" << " " << mCommandReference << "." << varName << " " << "To" << " ";
+		}
+		else
+		{
+			cmdString << "Set" << " " << varName << " " << "To" << " ";
+		}
 		mCurrentContext.convertedStatements.push_back(cmdString.str());
 
 		// Output byte-compiled code: 15 00 [Length(2)] [Var(N)] [ExpressionLength(2)] [Expression(N)]
@@ -955,7 +1033,6 @@ namespace ESM
 			std::stringstream errMesg;
 			errMesg << "error parsing script name" << std::endl;
 			abort(errMesg.str());
-			return;
 		}
 
 		// Re-Initialize Script Context
@@ -1058,6 +1135,8 @@ namespace ESM
 			errMesg << "Unhandled Keyword: <" << tokenItem->type << "> " << tokenItem->str << std::endl;
 //			error_mesg(errMesg.str());
 			OutputDebugString(errMesg.str().c_str());
+			if (mParseMode == 1)
+				mFailureCode = 1;
 			return;
 		}
 		// common instructions
@@ -1085,7 +1164,6 @@ namespace ESM
 			std::stringstream errorMesg;
 			errorMesg << "parse_keyword(): unexpected token type, expected string_literal:  <" << tokenItem->type << "> " << tokenItem->str << std::endl;
 			abort(errorMesg.str());
-			return;
 		}
 
 		tokenItem++;
@@ -1110,7 +1188,6 @@ namespace ESM
 			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
 			abort(errorMesg.str());
 //			std::cout << std::endl << "DEBUG OUTPUT: " << std::endl << mScriptText << std::endl << std::endl;
-			return;
 		}
 
 		// translate statement
@@ -1169,7 +1246,6 @@ namespace ESM
 				std::stringstream errorMesg;
 				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected string_literal: " << tokenItem->type << std::endl;
 				abort(errorMesg.str());
-				return;
 			}
 			tokenItem++; // advance to next token
 
@@ -1180,7 +1256,6 @@ namespace ESM
 				std::stringstream errorMesg;
 				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected number_literal: " << tokenItem->type << std::endl;
 				abort(errorMesg.str());
-				return;
 			}
 			tokenItem++; // advance to next token
 
@@ -1463,7 +1538,7 @@ namespace ESM
 		// advance to endofline in stream
 		while (tokenItem->type != TokenType::endlineT && tokenItem != mTokenList.end())
 			tokenItem++;
-		// leave endline token on queue for parser
+		tokenItem--; // put back one to account for tokenItem++ in for() statement
 		return;
 	}
 
@@ -1575,6 +1650,47 @@ namespace ESM
 		mKeywords.push_back("unlock");
 		mKeywords.push_back("setspeed");
 		mKeywords.push_back("removespell");
+		mKeywords.push_back("playgroup");
+		mKeywords.push_back("setdelete");
+		mKeywords.push_back("placeatme");
+		mKeywords.push_back("playsoundvp");
+		mKeywords.push_back("loopgroup");
+		mKeywords.push_back("setintelligence");
+		mKeywords.push_back("removeeffects");
+		mKeywords.push_back("setatstart");
+		mKeywords.push_back("playsound3dvp");
+		mKeywords.push_back("setaxe");
+		mKeywords.push_back("dontsaveobject");
+		mKeywords.push_back("setwillpower");
+		mKeywords.push_back("setshortblade");
+		mKeywords.push_back("setscale");
+		mKeywords.push_back("stopsound");
+		mKeywords.push_back("playloopsound3dvp");
+
+		mKeywords.push_back("getspell");
+		mKeywords.push_back("getitemcount");
+		mKeywords.push_back("getluck");
+		mKeywords.push_back("random");
+		mKeywords.push_back("gethealth");
+		mKeywords.push_back("getpccell");
+		mKeywords.push_back("getcurrentaipackage");
+		mKeywords.push_back("getjournalindex");
+		mKeywords.push_back("getsecondspassed");
+		mKeywords.push_back("getlocked");
+		mKeywords.push_back("gamehour");
+		mKeywords.push_back("getdisabled");
+		mKeywords.push_back("getpcrank");
+		mKeywords.push_back("getbuttonpressed");
+		mKeywords.push_back("getscale");
+		mKeywords.push_back("getpcjumping");
+		mKeywords.push_back("getcurrentweather");
+		mKeywords.push_back("cellchanged");
+		mKeywords.push_back("setagility");
+		mKeywords.push_back("setendurance");
+		mKeywords.push_back("getdistance");
+		mKeywords.push_back("setpersonality");
+		mKeywords.push_back("setluck");
+
 
 	}
 
@@ -1584,12 +1700,10 @@ namespace ESM
 		std::string preLineBufferA;
 		while (std::getline(scriptBuffer, preLineBufferA, '\n'))
 		{
-			if (HasFailed()) return;
 			std::istringstream preLineBufferB(preLineBufferA);
 			std::string lineBuffer;
 			while (std::getline(preLineBufferB, lineBuffer, '\r'))
 			{
-				if (HasFailed()) return;
 				mLinePosition = 0;
 				mReadMode = 0;
 				read_line(lineBuffer);
@@ -1599,13 +1713,10 @@ namespace ESM
 
 	void ScriptConverter::parser()
 	{
-		if (HasFailed()) return;
 		mParseMode = 0;
 
 		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
 		{
-			if (HasFailed()) return;
-
 			// TODO: keywords = moddisposition, goodbye, setfight, additem, showmap, "set control to 1", getJournalIndex, getdisposition, addtopic, 
 			//			modpcfacrep, journal, pcraiserank, pcclearexpelled, messagebox, addspell
 			// mParseMode: 0 -- start new expression at endofine

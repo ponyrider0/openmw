@@ -715,12 +715,12 @@ void CSVDoc::View::save()
 
 void CSVDoc::View::exportESM()
 {
-    QString filter("ESM4 (*.ESM4)");
+    QString filter("ESM4 (*.ESP *.ESM)");
     boost::filesystem::path exportPath = mDocument->getSavePath();
-    exportPath = "/" + exportPath.stem().string() + ".ESM4";
+    exportPath = "/" + exportPath.stem().string() + ".esp";
     QString filename = QFileDialog::getSaveFileName(this, tr("Export Module"),
         QDir::homePath() + QString::fromStdWString(exportPath.wstring()),
-        tr("ESM4 (*.ESM4);;ESM3 (*.ESM3)"), &filter);
+        tr("ESM4 (*.ESP *.ESM);;ESM3 (*.ESP3 *.ESM3)"), &filter);
     if (filename == 0)
         return;
     else

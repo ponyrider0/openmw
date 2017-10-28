@@ -139,8 +139,8 @@ public:
         void writeName(const std::string& data);
         void write(const char* data, size_t size);
 
-		void startRecordTES4(const std::string& name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
-		void startRecordTES4(uint32_t name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
+		bool startRecordTES4(const std::string& name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
+		bool startRecordTES4(uint32_t name, uint32_t flags = 0, uint32_t formID = 0, const std::string& stringID="");
 		void startGroupTES4(const std::string& name, uint32_t groupType);
 		void startGroupTES4(const uint32_t name, uint32_t groupType);
 		void startSubRecordTES4(const std::string& name);

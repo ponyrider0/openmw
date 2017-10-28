@@ -44,7 +44,8 @@ void CSMDoc::Exporter::startExportOperation(boost::filesystem::path filename)
 
     mExportPath = filename;
     std::cout << "Extension = " << filename.extension().string() << std::endl;
-    if (filename.extension().string() == ".ESM3")
+    if (Misc::StringUtils::lowerCase( filename.extension().string() ) == ".esm3" ||
+		Misc::StringUtils::lowerCase(filename.extension().string()) == ".esp3" )
     {
 		mExportOperation = new ExportToTES3();
 		std::cout << "TES3 Export Path = " << mExportPath << std::endl;

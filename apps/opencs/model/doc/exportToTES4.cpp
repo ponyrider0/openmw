@@ -597,9 +597,17 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				}
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				info.exportTESx(writer, 4, newType, topicEDID);
-				writer.endRecordTES4("INFO");
+				bool bSuccess;
+				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				if (bSuccess)
+				{
+					info.exportTESx(writer, 4, newType, topicEDID);
+					writer.endRecordTES4("INFO");
+				}
+				else
+				{
+					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+				}
 			}
 		}
 
@@ -643,9 +651,17 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				infoChoiceItem->exportTESx(writer, 4, 0, topicEDID);
-				writer.endRecordTES4("INFO");
+				bool bSuccess;
+				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				if (bSuccess)
+				{
+					infoChoiceItem->exportTESx(writer, 4, 0, topicEDID);
+					writer.endRecordTES4("INFO");
+				}
+				else
+				{
+					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+				}
 			}
 			writer.endGroupTES4(formID);
 		}
@@ -676,9 +692,17 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
-				writer.endRecordTES4("INFO");
+				bool bSuccess;
+				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				if (bSuccess)
+				{
+					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
+					writer.endRecordTES4("INFO");
+				}
+				else
+				{
+					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+				}
 			}
 			writer.endGroupTES4(greetingID);
 
@@ -2523,9 +2547,9 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 	// check if this is the first record, to write first GRUP record
 	if (stage == 0)
 	{
-		std::string sSIG;
-		for (int i=0; i<4; ++i)
-			sSIG += reinterpret_cast<const char *>(&cellRecordPtr->get().sRecordId)[i];
+		std::string sSIG = "CELL";
+//		for (int i=0; i<4; ++i)
+//			sSIG += reinterpret_cast<const char *>(&cellRecordPtr->get().sRecordId)[i];
 		writer.startGroupTES4(sSIG, 0); // Top GROUP
 		// initialize first block
 		writer.startGroupTES4(block, 2);

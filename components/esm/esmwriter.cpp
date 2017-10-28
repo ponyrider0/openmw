@@ -168,20 +168,11 @@ namespace ESM
         startRecord (type, flags);
     }
 
-	void ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID, const std::string& stringID)
+	bool ESMWriter::startRecordTES4(const std::string& name, uint32_t flags, uint32_t formID, const std::string& stringID)
 	{
 		std::stringstream debugstream;
 		uint32_t activeID = formID;
-		mRecordCount++;
-
-		writeName(name);
-		RecordData rec;
-		rec.name = name;
-		rec.position = mStream->tellp();
-		rec.size = 0;
-
-		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
-		writeT<uint32_t>(flags);
+		bool bSuccess = true;
 
 		if (name == "TES4")
 			activeID = 0;
@@ -202,13 +193,26 @@ namespace ESM
 			}
 			else
 			{
-	//			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
+				//			throw std::runtime_error("ESMWRITER ERROR: non-unique FormID was written to ESM.");
 				debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: [" << name << "](" << overRideStringID << ") " << std::hex << formID <<
 					", overwritten by: (" << stringID << ") " << std::hex << activeID << std::endl;
 				OutputDebugString(debugstream.str().c_str());
 				std::cout << debugstream.str();
 			}
+//			bSuccess = false;
+//			return bSuccess;
 		}
+		
+		mRecordCount++;
+		writeName(name);
+
+		RecordData rec;
+		rec.name = name;
+		rec.position = mStream->tellp();
+		rec.size = 0;
+
+		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
+		writeT<uint32_t>(flags);
 		writeT<uint32_t>(activeID);
 		mUniqueIDcheck.insert( std::make_pair(activeID, mUniqueIDcheck.size()) );
 
@@ -216,16 +220,19 @@ namespace ESM
 
 		mRecords.push_back(rec);
 		assert(mRecords.back().size == 0);
+
+		return bSuccess;
 	}
 
-	void ESMWriter::startRecordTES4 (uint32_t name, uint32_t flags, uint32_t formID, const std::string& stringID)
+	bool ESMWriter::startRecordTES4 (uint32_t name, uint32_t flags, uint32_t formID, const std::string& stringID)
 	{
 		std::string type;
 		for (int i=0; i<4; ++i)
 			/// \todo make endianess agnostic
 			type += reinterpret_cast<const char *> (&name)[i];
 		type[4]='\0';
-		startRecordTES4 (type, flags, formID, stringID);
+
+		return startRecordTES4 (type, flags, formID, stringID);
 	}
 
 	void ESMWriter::startGroupTES4(const std::string& label, uint32_t groupType)
