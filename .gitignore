@@ -90,3 +90,5 @@ apps/opencs/qrc_resources.cpp
 CPackConfig.cmake
 CPackSourceConfig.cmake
 apps/wizard/qrc_wizard.cpp
+*.DS_Store
+
