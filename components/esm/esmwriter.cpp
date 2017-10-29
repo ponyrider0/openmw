@@ -1556,7 +1556,7 @@ namespace ESM
 			case ']':
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
-			case '’':
+			case '~':
 				finalEDID = (removeOther) ? finalEDID : finalEDID + 'X';
 				break;
 			case '(':
