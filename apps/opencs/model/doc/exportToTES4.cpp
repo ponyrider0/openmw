@@ -12,7 +12,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 
 #include "exportToTES4.hpp"
 #include "document.hpp"
-#include "scriptconverter.hpp"
+#include <components/esm/scriptconverter.hpp>
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
