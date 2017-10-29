@@ -6,7 +6,7 @@
 
 #include <apps/opencs/model/world/infoselectwrapper.hpp>
 #include <iostream>
-#include <apps/opencs/model/doc/scriptconverter.hpp>
+#include "scriptconverter.hpp"
 
 namespace ESM
 {

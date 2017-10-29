@@ -5,7 +5,7 @@
 #include "defs.hpp"
 
 #include <iostream>
-#include <apps/opencs/model/doc/scriptconverter.hpp>
+#include "scriptconverter.hpp"
 
 
 namespace ESM
