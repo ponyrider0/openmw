@@ -8,6 +8,7 @@
 #include <cctype>
 #include <stdexcept>
 #include <functional>
+#include <stdlib.h>
 
 #include <QVariant>
 

@@ -281,7 +281,7 @@ int CSMDoc::SavingState::loadCellIDmap(std::string filename)
 		{
 			formID |= 0x01000000;
 			// create 2D mapping...
-			mExteriorCellMap[CellX][CellY][0] = formID;
+//			mExteriorCellMap[CellX][CellY][0] = formID;
 		}
 
 	} // while getline(inputFile, inputLine)
@@ -297,7 +297,7 @@ uint32_t CSMDoc::SavingState::crossRefCellXY(int cellX, int cellY)
 	{	
 		if ( mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end() )
 		{
-			cellID = mExteriorCellMap[cellX][cellY][0];
+//			cellID = mExteriorCellMap[cellX][cellY][0];
 		}
 	}
 
@@ -312,7 +312,7 @@ uint32_t CSMDoc::SavingState::crossRefLandXY(int cellX, int cellY)
 	{
 		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
 		{
-			landscapeID = mExteriorCellMap[cellX][cellY][1];
+//			landscapeID = mExteriorCellMap[cellX][cellY][1];
 		}
 	}
 
@@ -327,7 +327,7 @@ uint32_t CSMDoc::SavingState::crossRefPathgridXY(int cellX, int cellY)
 	{
 		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
 		{
-			pathgridID = mExteriorCellMap[cellX][cellY][2];
+//			pathgridID = mExteriorCellMap[cellX][cellY][2];
 		}
 	}
 
@@ -452,8 +452,9 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 		CellY = atoi(strY.c_str());
 
 //		mExteriorCellMap[CellX][CellY] = std::vector<uint32_t>();
-		mExteriorCellMap[CellX][CellY][0] = formID;
-		mExteriorCellMap[CellX][CellY][1] = landFormID;
+
+//		mExteriorCellMap[CellX][CellY][0] = formID;
+//		mExteriorCellMap[CellX][CellY][1] = landFormID;
 
 	} // while getline(inputFile, inputLine)
 
@@ -723,9 +724,10 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 		CellY = atoi(strY.c_str());
 
 		//		mExteriorCellMap[CellX][CellY] = std::vector<uint32_t>();
-		mExteriorCellMap[CellX][CellY][0] = formID;
-		mExteriorCellMap[CellX][CellY][1] = landFormID;
-		mExteriorCellMap[CellX][CellY][2] = pathgridID;
+
+//		mExteriorCellMap[CellX][CellY][0] = formID;
+//		mExteriorCellMap[CellX][CellY][1] = landFormID;
+//		mExteriorCellMap[CellX][CellY][2] = pathgridID;
 
 		// create stringIDMap entries
 		std::ostringstream generatedCellID;

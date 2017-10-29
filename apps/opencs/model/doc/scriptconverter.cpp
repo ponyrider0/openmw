@@ -11,7 +11,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <sstream>
 #include <stdexcept>
 
-#include <components\esm\esmwriter.hpp>
+#include <components/esm/esmwriter.hpp>
 #include <components/misc/stringops.hpp>
 #include <components/to_utf8/to_utf8.hpp>
 
