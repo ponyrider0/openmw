@@ -178,7 +178,7 @@ namespace ESM {
 		// MODB?
 		// MODT?
 */
-		std::vector<std::string>& skeletonString = esm.substituteCreatureModel(strEDID, 0);
+		std::vector<std::string> skeletonString = esm.substituteCreatureModel(strEDID, 0);
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(skeletonString[0]);
 		esm.endSubRecordTES4("MODL");
@@ -207,7 +207,7 @@ namespace ESM {
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
 */
-		std::vector<std::string>& modelList = esm.substituteCreatureModel(strEDID, 1);
+		std::vector<std::string> modelList = esm.substituteCreatureModel(strEDID, 1);
 		esm.startSubRecordTES4("NIFZ");
 		for (auto stringIter = modelList.begin(); stringIter != modelList.end(); stringIter++)
 		{

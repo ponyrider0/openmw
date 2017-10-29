@@ -5,6 +5,7 @@
 #include <Windows.h>
 #else
 void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #endif
 
 #include <string>
@@ -378,8 +379,8 @@ namespace ESM
 		{
 //			throw std::runtime_error("ERROR: CELL[" + newEDID +"] referencing invalid RegionID: " + strREGN);
 			std::string errorString = "WARNING: CELL[" + newEDID + "] referencing invalid RegionID: " + strREGN + "\n";
-			std::cout << std::endl << errorString << std::endl;
-//			OutputDebugString(errorString.c_str());
+//			std::cout << std::endl << errorString << std::endl;
+			OutputDebugString(errorString.c_str());
 		}
 		if (regnID != 0)
 		{

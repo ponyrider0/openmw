@@ -1,5 +1,5 @@
 #include "loadclas.hpp"
-#include <components\esm\loadskil.hpp>
+#include <components/esm/loadskil.hpp>
 
 #include <stdexcept>
 
