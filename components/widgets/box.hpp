@@ -39,8 +39,11 @@ namespace Gui
         MYGUI_RTTI_DERIVED( AutoSizedEditBox )
 
     public:
+
         virtual MyGUI::IntSize getRequestedSize();
         virtual void setCaption(const MyGUI::UString& _value);
+
+        virtual void initialiseOverride();
 
     protected:
         virtual void setPropertyOverride(const std::string& _key, const std::string& _value);
@@ -81,6 +84,15 @@ namespace Gui
         bool mAutoResize; // auto resize the box so that it exactly fits all elements
     };
 
+    class Spacer : public AutoSizedWidget, public MyGUI::Widget
+    {
+        MYGUI_RTTI_DERIVED( Spacer )
+    public:
+        Spacer();
+
+        virtual MyGUI::IntSize getRequestedSize() { return MyGUI::IntSize(0,0); }
+    };
+
     class HBox : public Box, public MyGUI::Widget
     {
         MYGUI_RTTI_DERIVED( HBox )
@@ -90,6 +102,8 @@ namespace Gui
         virtual void setCoord (const MyGUI::IntCoord &_value);
 
     protected:
+        virtual void initialiseOverride();
+
         virtual void align();
         virtual MyGUI::IntSize getRequestedSize();
 
@@ -107,6 +121,8 @@ namespace Gui
         virtual void setCoord (const MyGUI::IntCoord &_value);
 
     protected:
+        virtual void initialiseOverride();
+
         virtual void align();
         virtual MyGUI::IntSize getRequestedSize();
 

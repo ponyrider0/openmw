@@ -84,7 +84,6 @@ void OMW::Engine::frame(float frametime)
     try
     {
         mStartTick = mViewer->getStartTick();
-        mEnvironment.setFrameDuration (frametime);
 
         // update input
         mEnvironment.getInputManager()->update(frametime, false);
@@ -162,11 +161,6 @@ void OMW::Engine::frame(float frametime)
 
         // update GUI
         mEnvironment.getWindowManager()->onFrame(frametime);
-        if (mEnvironment.getStateManager()->getState()!=
-            MWBase::StateManager::State_NoGame)
-        {
-            mEnvironment.getWindowManager()->update();
-        }
 
         unsigned int frameNumber = mViewer->getFrameStamp()->getFrameNumber();
         osg::Stats* stats = mViewer->getViewerStats();
@@ -278,8 +272,7 @@ void OMW::Engine::setResourceDir (const boost::filesystem::path& parResDir)
     mResDir = parResDir;
 }
 
-// Set start cell name (only interiors for now)
-
+// Set start cell name
 void OMW::Engine::setCell (const std::string& cellName)
 {
     mCellName = cellName;
@@ -652,6 +645,8 @@ void OMW::Engine::go()
         Settings::Manager::getString("screenshot format", "General")));
     mViewer->addEventHandler(mScreenCaptureHandler);
 
+    mEnvironment.setFrameRateLimit(Settings::Manager::getFloat("framerate limit", "Video"));
+
     // Create encoder
     ToUTF8::Utf8Encoder encoder (mEncoding);
     mEncoder = &encoder;
@@ -685,7 +680,6 @@ void OMW::Engine::go()
     // Start the main rendering loop
     osg::Timer frameTimer;
     double simulationTime = 0.0;
-    float framerateLimit = Settings::Manager::getFloat("framerate limit", "Video");
     while (!mViewer->done() && !mEnvironment.getStateManager()->hasQuitRequest())
     {
         double dt = frameTimer.time_s();
@@ -698,6 +692,8 @@ void OMW::Engine::go()
 
         mViewer->advance(simulationTime);
 
+        mEnvironment.setFrameDuration(dt);
+
         frame(dt);
 
         if (!mEnvironment.getInputManager()->isWindowVisible())
@@ -709,18 +705,13 @@ void OMW::Engine::go()
         {
             mViewer->eventTraversal();
             mViewer->updateTraversal();
+
+            mEnvironment.getWorld()->updateWindowManager();
+
             mViewer->renderingTraversals();
         }
 
-        if (framerateLimit > 0.f)
-        {
-            double thisFrameTime = frameTimer.time_s();
-            double minFrameTime = 1.0 / framerateLimit;
-            if (thisFrameTime < minFrameTime)
-            {
-                OpenThreads::Thread::microSleep(1000*1000*(minFrameTime-thisFrameTime));
-            }
-        }
+        mEnvironment.limitFrameRate(frameTimer.time_s());
     }
 
     // Save user settings

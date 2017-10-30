@@ -227,6 +227,10 @@ namespace CSVDoc
 
             void addRunLogSubView();
 
+            void addLandsSubView();
+
+            void addLandTexturesSubView();
+
             void addPathgridSubView();
 
             void addStartScriptsSubView();

@@ -157,7 +157,7 @@ namespace ESM
 
     void LandTexture::blank()
     {
+        mId.clear();
         mTexture.clear();
-        mIndex = -1;
     }
 }

@@ -1,6 +1,7 @@
 #ifndef MWMECHANICS_SPELLSUCCESS_H
 #define MWMECHANICS_SPELLSUCCESS_H
 
+#include <components/esm/effectlist.hpp>
 #include <components/esm/loadskil.hpp>
 
 #include "../mwworld/ptr.hpp"
@@ -20,6 +21,8 @@ namespace MWMechanics
     class CreatureStats;
 
     ESM::Skill::SkillEnum spellSchoolToSkill(int school);
+
+    float calcEffectCost(const ESM::ENAMstruct& effect);
 
     bool isSummoningEffect(int effectId);
 
@@ -62,6 +65,7 @@ namespace MWMechanics
     bool checkEffectTarget (int effectId, const MWWorld::Ptr& target, const MWWorld::Ptr& caster, bool castByPlayer);
 
     int getEffectiveEnchantmentCastCost (float castCost, const MWWorld::Ptr& actor);
+    float calcSpellBaseSuccessChance (const ESM::Spell* spell, const MWWorld::Ptr& actor, int* effectiveSchool);
 
     /// Apply a magic effect that is applied in tick intervals until its remaining time ends or it is removed
     /// @return Was the effect a tickable effect with a magnitude?
@@ -102,7 +106,7 @@ namespace MWMechanics
         void playSpellCastingEffects(const std::string &spellid);
 
         /// Launch a bolt with the given effects.
-        void launchMagicBolt (const ESM::EffectList& effects);
+        void launchMagicBolt ();
 
         /// @note \a target can be any type of object, not just actors.
         /// @note \a caster can be any type of object, or even an empty object.

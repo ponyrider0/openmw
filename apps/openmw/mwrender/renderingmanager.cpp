@@ -222,6 +222,7 @@ namespace MWRender
             mTerrain.reset(new Terrain::QuadTreeWorld(sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, Mask_PreCompile));
         else
             mTerrain.reset(new Terrain::TerrainGrid(sceneRoot, mRootNode, mResourceSystem, mTerrainStorage, Mask_Terrain, Mask_PreCompile));
+        mTerrain->setDefaultViewer(mViewer->getCamera());
 
         mCamera.reset(new Camera(mViewer->getCamera()));
 
@@ -252,6 +253,9 @@ namespace MWRender
 
         mSky.reset(new SkyManager(sceneRoot, resourceSystem->getSceneManager()));
 
+        mSky->setCamera(mViewer->getCamera());
+        mSky->setRainIntensityUniform(mWater->getRainIntensityUniform());
+
         source->setStateSetModes(*mRootNode->getOrCreateStateSet(), osg::StateAttribute::ON);
 
         mStateUpdater = new StateUpdater;
@@ -278,11 +282,14 @@ namespace MWRender
         mViewDistance = Settings::Manager::getFloat("viewing distance", "Camera");
         mFieldOfView = Settings::Manager::getFloat("field of view", "Camera");
         mFirstPersonFieldOfView = Settings::Manager::getFloat("first person field of view", "Camera");
-        updateProjectionMatrix();
         mStateUpdater->setFogEnd(mViewDistance);
 
         mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("near", mNearClip));
         mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("far", mViewDistance));
+
+        mUniformNear = mRootNode->getOrCreateStateSet()->getUniform("near");
+        mUniformFar = mRootNode->getOrCreateStateSet()->getUniform("far");
+        updateProjectionMatrix();
     }
 
     RenderingManager::~RenderingManager()
@@ -529,8 +536,10 @@ namespace MWRender
     void RenderingManager::updatePlayerPtr(const MWWorld::Ptr &ptr)
     {
         if(mPlayerAnimation.get())
+        {
+            setupPlayer(ptr);
             mPlayerAnimation->updatePtr(ptr);
-
+        }
         mCamera->attachTo(ptr);
     }
 
@@ -792,7 +801,6 @@ namespace MWRender
     void RenderingManager::notifyWorldSpaceChanged()
     {
         mEffectManager->clear();
-        mWater->clearRipples();
     }
 
     void RenderingManager::clear()
@@ -833,6 +841,7 @@ namespace MWRender
 
         player.getRefData().setBaseNode(mPlayerNode);
 
+        mWater->removeEmitter(player);
         mWater->addEmitter(player);
     }
 
@@ -885,6 +894,9 @@ namespace MWRender
         if (mFieldOfViewOverridden)
             fov = mFieldOfViewOverride;
         mViewer->getCamera()->setProjectionMatrixAsPerspective(fov, aspect, mNearClip, mViewDistance);
+
+        mUniformNear->set(mNearClip);
+        mUniformFar->set(mViewDistance);
     }
 
     void RenderingManager::updateTextureFiltering()
