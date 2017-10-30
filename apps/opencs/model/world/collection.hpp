@@ -342,7 +342,8 @@ namespace CSMWorld
             record2.mState = Record<ESXRecordT>::State_ModifiedOnly;
             record2.mModified = record;
 
-            insertRecord (record2, getAppendIndex (id));
+			appendRecord(record2);
+//            insertRecord (record2, getAppendIndex (id));
         }
         else
         {
@@ -473,7 +474,8 @@ namespace CSMWorld
         record2.mState = Record<ESXRecordT>::State_ModifiedOnly;
         record2.mModified = record;
 
-        insertRecord (record2, getAppendIndex (id, type), type);
+		appendRecord(record2);
+//        insertRecord (record2, getAppendIndex (id, type), type);
     }
 
     template<typename ESXRecordT, typename IdAccessorT>
@@ -499,15 +501,42 @@ namespace CSMWorld
     void Collection<ESXRecordT, IdAccessorT>::appendRecord (const RecordBase& record,
         UniversalId::Type type)
     {
-        insertRecord (record,
-            getAppendIndex (IdAccessorT().getId (
-            dynamic_cast<const Record<ESXRecordT>&> (record).get()), type), type);
-    }
+		int vectorCapacity;
+		int index = getAppendIndex(IdAccessorT().getId(dynamic_cast<const Record<ESXRecordT>&> (record).get()), type);
+
+		// if insertion point is not at end of vector, use insertRecord
+		if (index < static_cast<int>(mRecords.size())-1 )
+		{
+			insertRecord(record, index);
+			return;
+		}
+
+		// Performance optimized vector resizing when using vector::insert or push_back
+		vectorCapacity = (int) mRecords.capacity();
+		if (index == vectorCapacity)
+		{
+			if (vectorCapacity == 0)
+				vectorCapacity = 512;
+			else if (vectorCapacity <= 10 * 1024 * 1024)
+				vectorCapacity *= 4;
+			else
+				vectorCapacity *= 2;
+			mRecords.reserve(vectorCapacity);
+		}
+
+		const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
+
+		mRecords.push_back(dynamic_cast<const Record<ESXRecordT>&> (record2));
+
+		mIndex.insert(std::make_pair(Misc::StringUtils::lowerCase(IdAccessorT().getId(
+			record2.get())), index));
+	}
 
     template<typename ESXRecordT, typename IdAccessorT>
     int Collection<ESXRecordT, IdAccessorT>::getAppendIndex (const std::string& id,
         UniversalId::Type type) const
     {
+		// std::string id is currently not used.  I'm assuming intention was to find insertion index following the last record with matching id
         return static_cast<int> (mRecords.size());
     }
 
@@ -543,27 +572,12 @@ namespace CSMWorld
     void Collection<ESXRecordT, IdAccessorT>::insertRecord (const RecordBase& record, int index,
         UniversalId::Type type)
     {
-		int vectorCapacity;
 		if (index<0 || index>static_cast<int> (mRecords.size()))
             throw std::runtime_error ("index out of range");
 
-		// Performance optimized vector resizing when using vector::insert or push_back
-		vectorCapacity = (int) mRecords.capacity();
-		if (index == vectorCapacity)
-		{
-			if (vectorCapacity == 0)
-				vectorCapacity = 512;
-			else if (vectorCapacity <= 10*1024*1024)
-				vectorCapacity *= 4;
-			else
-				vectorCapacity *= 2;
-			mRecords.reserve(vectorCapacity);
-		}
-
         const Record<ESXRecordT>& record2 = dynamic_cast<const Record<ESXRecordT>&> (record);
 
-//        mRecords.insert (mRecords.begin()+index, record2);
-		mRecords.push_back(dynamic_cast<const Record<ESXRecordT>&> (record2));
+        mRecords.insert (mRecords.begin()+index, record2);
 
         if (index<static_cast<int> (mRecords.size())-1)
         {
