@@ -91,4 +91,7 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 apps/wizard/qrc_wizard.cpp
 *.DS_Store
+<<<<<<< HEAD
 
+=======
+>>>>>>> Export-ESM-ESP
