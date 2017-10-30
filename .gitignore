@@ -84,3 +84,4 @@ moc_*.cxx
 gamecontrollerdb.txt
 openmw.appdata.xml
 venv/
+*.DS_Store
