@@ -1,5 +1,6 @@
 #include "view.hpp"
 
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 
@@ -715,12 +716,14 @@ void CSVDoc::View::save()
 
 void CSVDoc::View::exportESM()
 {
-    QString filter("ESM4 (*.ESP *.ESM)");
+    QString filter("ESP4 (*.esp)");
     boost::filesystem::path exportPath = mDocument->getSavePath();
     exportPath = "/" + exportPath.stem().string() + ".esp";
+    std::string defaultExportName = QDir::homePath().toStdString() + exportPath.string();
+    std::cout << "UI DEBUG: default Export filename = [" << defaultExportName << "]" << std::endl;
     QString filename = QFileDialog::getSaveFileName(this, tr("Export Module"),
-        QDir::homePath() + QString::fromStdWString(exportPath.wstring()),
-        tr("ESM4 (*.ESP *.ESM);;ESM3 (*.ESP3 *.ESM3)"), &filter);
+        QString::fromStdString(defaultExportName),
+        tr("ESP4 (*.esp);;ESP3 (*.esp3)"), &filter);
     if (filename == 0)
         return;
     else

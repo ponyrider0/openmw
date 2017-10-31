@@ -538,9 +538,10 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		for (int i = 0; i < 9; i++)
 		{
 			std::string token;
+            parserStream.clear();
 			std::getline(parserStream, token, ',');
-            if (token.size() != 0)
-                std::cout << "TOKEN[" << i << "]: [" << token << "] (size=" << token.size() << ")" << std::endl;
+//            if (token.size() != 0)
+//                std::cout << "TOKEN[" << i << "]: [" << token << "] (size=" << token.size() << ")" << std::endl;
 			// check for double-quote in token, if there is one, then parse by another double quote
 			if (token.size() != 0 && token[0] == '\"')
 			{
@@ -549,17 +550,23 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
                 {
                     if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
                         ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                    {
+                        parserStream.clear();
                         break;
+                    }
                     // assume token parsing has interrupted by an in-line comma
                     // so, first add missing in-line comma
                     token = token + ',';
                     // then try to obtain second half of token
                     std::string token2;
                     std::getline(parserStream, token2, ',');
+                    token = token + token2;
                     if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
                         ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                    {
+                        parserStream.clear();
                         break;
-                    token = token + token2;
+                    }
                 }
                 if (token[token.size()-1] == '\"')
                 {
@@ -568,7 +575,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
                 else
                 {
                     // error parsing quoted token, skip to next line
-                    std::cout << "Import Error: could not parse quoted token: " << token << std::endl;
+                    std::cout << "Import Error (line " << lineNumber << "): could not parse quoted token: " << token << std::endl;
                     continue;
                 }
 			}
@@ -674,7 +681,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	}
 
 	inputFile.close();
-    std::cout << "importing '" << filename << "' complete." << std::endl;
+    std::cout << "...complete." << std::endl;
 
 	return errorcode;
 }
@@ -682,7 +689,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 {
 	// display a period for progress feedback
-	std::cout << ".";
+//	std::cout << ".";
 
 	int errorcode = 0;
 
@@ -833,10 +840,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 //	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
 //	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
 
-	std::cout << "Importing CSV files..." << std::flush;
-
-	// display a period for progress feedback
-	std::cout << "." << std::flush;
+	std::cout << "Loading CSV files..." << std::endl;
 
 	loadEDIDmap3("OblivionFormIDlist4.csv");
 	loadEDIDmap3("MorroblivionFormIDlist4.csv");
@@ -869,7 +873,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadEDIDmap3("OverridesEDIDList.csv");
 	loadLocalVarIndexmap("LocalVarMap.csv");
 
-	std::cout << "import complete." << std::endl;
+	std::cout << "Loading CSV files complete." << std::endl;
 
 	return 0;
 }
