@@ -522,6 +522,14 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	{
 //        std::cout << "." << std::flush;
 		lineNumber++;
+
+        // work-around: remove all line-feeds '\r'
+        int linefeedPos;
+        while ( (linefeedPos = inputLine.find('\r')) != std::string::npos)
+        {
+            inputLine.erase(linefeedPos, 1);
+        }
+
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
 		std::string strPosOffset="", strRotOffset="", strScale="";
@@ -531,53 +539,37 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		{
 			std::string token;
 			std::getline(parserStream, token, ',');
-//            std::cout << "\n" << "TOKEN[" << i << "]: [" << std::flush;
-//            std::cout << token << "] (size=" << token.size() << ")" << std::endl;
+            if (token.size() != 0)
+                std::cout << "TOKEN[" << i << "]: [" << token << "] (size=" << token.size() << ")" << std::endl;
 			// check for double-quote in token, if there is one, then parse by another double quote
-			if (token[0] == '\"')
+			if (token.size() != 0 && token[0] == '\"')
 			{
-//                std::cout << "quote mode started:" << std::flush;
-                // check for EOL error condition
-                if ( (token[token.size()-1] != '\r') ||
-                    ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
-                    ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                // complete double-quoted token -- keep looping until double-quotes are closed
+                while (token[token.size()-1] != '\"')
                 {
-                    if ( (token.size() > 2) && (token[token.size()-1] == '\"') )
-                    {
-                        token.erase(0, 1); token.erase(token.size()-2, 2);
-                    }
+                    if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
+                        ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                        break;
+                    // assume token parsing has interrupted by an in-line comma
+                    // so, first add missing in-line comma
+                    token = token + ',';
+                    // then try to obtain second half of token
+                    std::string token2;
+                    std::getline(parserStream, token2, ',');
+                    if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
+                        ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                        break;
+                    token = token + token2;
+                }
+                if (token[token.size()-1] == '\"')
+                {
+                    token.erase(0, 1); token.erase(token.size()-1, 1);
                 }
                 else
                 {
-                    // complete double-quoted token -- keep looping until double-quotes are closed
-                    while (token[token.size()-1] != '\"')
-                    {
-//                        std::cout << "." << std::flush;
-                        if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
-                            ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
-                            break;
-//                        std::cout << "o" << std::flush;
-                        // assume token parsing has interrupted by an in-line comma
-                        // so, first add missing in-line comma
-                        token = token + ',';
-                        // then try to obtain second half of token
-                        std::string token2;
-                        std::getline(parserStream, token2, ',');
-                        if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
-                            ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
-                            break;
-                        token = token + token2;
-                    }
-//                    std::cout << "quote mode done." << std::endl;
-                    if (token[token.size()-1] == '\"')
-                    {
-                        token.erase(0, 1); token.erase(token.size()-1, 1);
-                    }
-                    else
-                    {
-                        // error parsing quoted token, skip to next line
-                        continue;
-                    }
+                    // error parsing quoted token, skip to next line
+                    std::cout << "Import Error: could not parse quoted token: " << token << std::endl;
+                    continue;
                 }
 			}
 
@@ -682,7 +674,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	}
 
 	inputFile.close();
-    std::cout << "importing '" << filename << "' complete." << std::flush;
+    std::cout << "importing '" << filename << "' complete." << std::endl;
 
 	return errorcode;
 }
