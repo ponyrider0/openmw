@@ -281,7 +281,7 @@ int CSMDoc::SavingState::loadCellIDmap(std::string filename)
 		{
 			formID |= 0x01000000;
 			// create 2D mapping...
-//			mExteriorCellMap[CellX][CellY][0] = formID;
+            mExteriorCellMap[CellX][CellY].cellID = formID;
 		}
 
 	} // while getline(inputFile, inputLine)
@@ -294,10 +294,11 @@ uint32_t CSMDoc::SavingState::crossRefCellXY(int cellX, int cellY)
 	uint32_t cellID=0;
 
 	if ( mExteriorCellMap.find(cellX) != mExteriorCellMap.end() )
-	{	
-		if ( mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end() )
+	{
+        auto mapping = mExteriorCellMap[cellX].find(cellY);
+		if ( mapping != mExteriorCellMap[cellX].end() )
 		{
-//			cellID = mExteriorCellMap[cellX][cellY][0];
+			cellID = mExteriorCellMap[cellX][cellY].cellID;
 		}
 	}
 
@@ -310,9 +311,10 @@ uint32_t CSMDoc::SavingState::crossRefLandXY(int cellX, int cellY)
 
 	if (mExteriorCellMap.find(cellX) != mExteriorCellMap.end())
 	{
-		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
+        auto mapping = mExteriorCellMap[cellX].find(cellY);
+		if (mapping != mExteriorCellMap[cellX].end())
 		{
-//			landscapeID = mExteriorCellMap[cellX][cellY][1];
+            landscapeID = mExteriorCellMap[cellX][cellY].landID;
 		}
 	}
 
@@ -325,9 +327,10 @@ uint32_t CSMDoc::SavingState::crossRefPathgridXY(int cellX, int cellY)
 
 	if (mExteriorCellMap.find(cellX) != mExteriorCellMap.end())
 	{
-		if (mExteriorCellMap[cellX].find(cellY) != mExteriorCellMap[cellX].end())
+        auto mapping = mExteriorCellMap[cellX].find(cellY);
+		if (mapping != mExteriorCellMap[cellX].end())
 		{
-//			pathgridID = mExteriorCellMap[cellX][cellY][2];
+            pathgridID = mExteriorCellMap[cellX][cellY].pathID;
 		}
 	}
 
@@ -451,10 +454,8 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 		CellX = atoi(strX.c_str());
 		CellY = atoi(strY.c_str());
 
-//		mExteriorCellMap[CellX][CellY] = std::vector<uint32_t>();
-
-//		mExteriorCellMap[CellX][CellY][0] = formID;
-//		mExteriorCellMap[CellX][CellY][1] = landFormID;
+		mExteriorCellMap[CellX][CellY].cellID = formID;
+		mExteriorCellMap[CellX][CellY].landID = landFormID;
 
 	} // while getline(inputFile, inputLine)
 
@@ -506,7 +507,7 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 {
 	// display a period for progress feedback
-	std::cout << ".";
+	std::cout << "Importing '" << filename << "':" << std::flush;
 
 	int errorcode = 0;
 	int lineNumber = 0;
@@ -517,8 +518,9 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	// skip header line
 	std::getline(inputFile, inputLine);
 
-	while (std::getline(inputFile, inputLine))
+	while (std::getline(inputFile, inputLine, '\n'))
 	{
+//        std::cout << "." << std::flush;
 		lineNumber++;
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
@@ -529,29 +531,54 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		{
 			std::string token;
 			std::getline(parserStream, token, ',');
+//            std::cout << "\n" << "TOKEN[" << i << "]: [" << std::flush;
+//            std::cout << token << "] (size=" << token.size() << ")" << std::endl;
 			// check for double-quote in token, if there is one, then parse by another double quote
 			if (token[0] == '\"')
 			{
-				// complete double-quoted token -- keep looping until double-quotes are closed
-				while (token[token.size()-1] != '\"')
-				{
-					// assume token parsing has interrupted by an in-line comma
-					// so, first add missing in-line comma
-					token = token + ',';
-					// then try to obtain second half of token
-					std::string token2;
-					std::getline(parserStream, token2, ',');
-					token = token + token2;
-				}
-				if (token[token.size()-1] == '\"')
-				{
-					token.erase(0, 1); token.erase(token.size()-1, 1);
-				}
-				else
-				{
-					// error parsing quoted token, skip to next line
-					continue;
-				}
+//                std::cout << "quote mode started:" << std::flush;
+                // check for EOL error condition
+                if ( (token[token.size()-1] != '\r') ||
+                    ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
+                    ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                {
+                    if ( (token.size() > 2) && (token[token.size()-1] == '\"') )
+                    {
+                        token.erase(0, 1); token.erase(token.size()-2, 2);
+                    }
+                }
+                else
+                {
+                    // complete double-quoted token -- keep looping until double-quotes are closed
+                    while (token[token.size()-1] != '\"')
+                    {
+//                        std::cout << "." << std::flush;
+                        if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
+                            ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                            break;
+//                        std::cout << "o" << std::flush;
+                        // assume token parsing has interrupted by an in-line comma
+                        // so, first add missing in-line comma
+                        token = token + ',';
+                        // then try to obtain second half of token
+                        std::string token2;
+                        std::getline(parserStream, token2, ',');
+                        if ( ((parserStream.rdstate() & std::iostream::failbit) != 0) ||
+                            ((parserStream.rdstate() & std::iostream::eofbit) != 0) )
+                            break;
+                        token = token + token2;
+                    }
+//                    std::cout << "quote mode done." << std::endl;
+                    if (token[token.size()-1] == '\"')
+                    {
+                        token.erase(0, 1); token.erase(token.size()-1, 1);
+                    }
+                    else
+                    {
+                        // error parsing quoted token, skip to next line
+                        continue;
+                    }
+                }
 			}
 
 			Misc::StringUtils::lowerCaseInPlace(token);
@@ -655,6 +682,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 	}
 
 	inputFile.close();
+    std::cout << "importing '" << filename << "' complete." << std::flush;
 
 	return errorcode;
 }
@@ -723,11 +751,9 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 		CellX = atoi(strX.c_str());
 		CellY = atoi(strY.c_str());
 
-		//		mExteriorCellMap[CellX][CellY] = std::vector<uint32_t>();
-
-//		mExteriorCellMap[CellX][CellY][0] = formID;
-//		mExteriorCellMap[CellX][CellY][1] = landFormID;
-//		mExteriorCellMap[CellX][CellY][2] = pathgridID;
+		mExteriorCellMap[CellX][CellY].cellID = formID;
+		mExteriorCellMap[CellX][CellY].landID = landFormID;
+		mExteriorCellMap[CellX][CellY].pathID = pathgridID;
 
 		// create stringIDMap entries
 		std::ostringstream generatedCellID;
@@ -815,10 +841,10 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 //	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
 //	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
 
-	std::cout << "Importing CSV files";
+	std::cout << "Importing CSV files..." << std::flush;
 
 	// display a period for progress feedback
-	std::cout << ".";
+	std::cout << "." << std::flush;
 
 	loadEDIDmap3("OblivionFormIDlist4.csv");
 	loadEDIDmap3("MorroblivionFormIDlist4.csv");
