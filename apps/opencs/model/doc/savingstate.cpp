@@ -507,12 +507,18 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 {
 	// display a period for progress feedback
-	std::cout << "Importing '" << filename << "':" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::flush;
 
 	int errorcode = 0;
 	int lineNumber = 0;
 
-	std::ifstream inputFile(filename);
+	std::ifstream inputFile(filename, std::ios_base::in);
+    if ( (inputFile.rdstate() & std::iostream::failbit) != 0 )
+    {
+        std::cout << "...ERROR: can not open file." << std::endl;
+        return -1;
+    }
+
 	std::string inputLine;
 	
 	// skip header line
@@ -840,7 +846,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 //	loadEDIDmap2("Morroblivion-UCWUSFormIDlist.csv");
 //	loadEDIDmap2("Morroblivion-FixesFormIDlist.csv");
 
-	std::cout << "Loading CSV files..." << std::endl;
+	std::cout << "Loading CSV files...." << std::endl;
 
 	loadEDIDmap3("OblivionFormIDlist4.csv");
 	loadEDIDmap3("MorroblivionFormIDlist4.csv");
