@@ -4483,18 +4483,20 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::ofstream batchFileNIFConv_helper1;
 //	std::ofstream batchFileNIFConv_helper2;
 	batchFileNIFConv.open(batchFileStem + ".bat");
-	batchFileNIFConv_helper1.open(batchFileStem + "helper.dat");
-//	batchFileNIFConv_helper2.open(batchFileStem + "helper2.dat");
-
-	batchFileNIFConv << "@echo off\n";
-	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
+	batchFileNIFConv_helper1.open(batchFileStem + "_helper.dat");
+//	batchFileNIFConv_helper2.open(batchFileStem + "_helper2.dat");
 
 	// set up header code for spawning
-	batchFileNIFConv << "rename " << batchFileStem << "helper.dat " << batchFileStem << "helper.bat\n";
-//	batchFileNIFConv << "rename " << batchFileStem << "helper2.dat " << batchFileStem << "helper2.bat\n";
-	batchFileNIFConv << "start " << batchFileStem << "helper.bat\n";
-//	batchFileNIFConv << "start " << batchFileStem << "herlper2.bat\n";
-	
+	batchFileNIFConv << "@echo off\n";
+	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
+	batchFileNIFConv << "rename " << batchFileStem << "_helper.dat " << batchFileStem << "_helper.bat\n";
+//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.dat " << batchFileStem << "_helper2.bat\n";
+	batchFileNIFConv << "start cmd /c " << batchFileStem << "_helper.bat\n";
+//	batchFileNIFConv << "start cmd /c " << batchFileStem << "_herlper2.bat\n";
+
+	batchFileNIFConv_helper1 << "@echo off\n";
+//	batchFileNIFConv_helper2 << "@echo off\n";
+
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin();
 		nifConvItem != esm.mModelsToExportList.end();
@@ -4518,10 +4520,17 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		}
 */
 	}
-	batchFileNIFConv << "rename " << batchFileStem << "helper.bat " << batchFileStem << "helper.dat\n";
-//	batchFileNIFConv << "rename " << batchFileStem << "helper2.bat " << batchFileStem << "helper2.dat\n";
-	batchFileNIFConv << "REM \n\nConversion of " << modStem << " is complete.  You may close this window.\n";
+	batchFileNIFConv << "rename " << batchFileStem << "_helper.bat " << batchFileStem << "_helper.dat\n";
+//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
+	batchFileNIFConv << "echo ----------------------\n";
+	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
 	batchFileNIFConv << "pause\n";
+	batchFileNIFConv_helper1 << "echo ----------------------\n";
+	batchFileNIFConv_helper1 << "\n\necho Helper thread: Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
+	batchFileNIFConv_helper1 << "pause\n";
+//	batchFileNIFConv_helper2 << "echo ----------------------\n";
+//	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
+//	batchFileNIFConv_helper2 << "pause\n";
 	batchFileNIFConv.close();
 	batchFileNIFConv_helper1.close();
 //	batchFileNIFConv_helper2.close();
