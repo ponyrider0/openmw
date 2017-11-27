@@ -139,11 +139,11 @@ int CSMDoc::SavingState::loadEDIDmap(std::string filename)
 			formIDOffset = 0x01000000;
 		else if (strModFilename == "morrowind_ob - ucwus.esp")
 			formIDOffset = 0x02000000;
-		else if (strModFilename == "morroblivion-fixes.esp")
+		else if (strModFilename == "morroblivion_unofficial_patch.esp")
 			formIDOffset = 0x03000000;
-		else if (strModFilename == "tr_mainland00.esp")
+		else if (strModFilename == "tr_mainland")
 			formIDOffset = 0x04000000;
-		else if (strModFilename == "tr_preview00.esp")
+		else if (strModFilename == "tr_preview")
 			formIDOffset = 0x04000000;
 
 		if (broken_mapping)
@@ -850,8 +850,9 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadEDIDmap3("OblivionFormIDlist4.csv");
 	loadEDIDmap3("MorroblivionFormIDlist4.csv");
-	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
-	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
+//	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
+//	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
+	loadEDIDmap3("Morrowind_Compatibility_LayerEDIDlist.csv");
 
 //	loadCellIDmap2("MorroblivionCellIDmap.csv");
 //	loadEDIDmap2("TR_MainlandFormIDlist.csv");

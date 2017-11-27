@@ -208,8 +208,9 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 */
 		mState.getWriter().addMaster ("Oblivion.esm", 0);
 		mState.getWriter().addMaster ("Morrowind_ob.esm", 0);
-		mState.getWriter().addMaster ("Morrowind_ob - UCWUS.esp", 0);
-		mState.getWriter().addMaster ("morroblivion-fixes.esp", 0);
+//		mState.getWriter().addMaster ("Morrowind_ob - UCWUS.esp", 0);
+//		mState.getWriter().addMaster ("morroblivion-fixes.esp", 0);
+		mState.getWriter().addMaster ("Morrowind_Compatibility_Layer.esp", 0);
 
 		std::string esmName = mDocument.getSavePath().filename().stem().string();
 		if ((esmName.find("TR_Mainland") != std::string::npos) ||
