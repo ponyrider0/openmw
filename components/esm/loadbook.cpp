@@ -94,10 +94,11 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-//		tempStr = esm.generateEDIDTES4(mModel, 1);
-//		tempStr.replace(tempStr.size()-4, 4, ".nif");
-//		tempPath << "clutter\\books\\morro\\" << tempStr;
-		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 0);
+		tempStr = esm.generateEDIDTES4(mModel, 1);
+		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempPath << "clutter\\books\\morro\\" << tempStr;
+		esm.QueueModelForExport(mModel, tempPath.str());
+//		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 0);
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("MODL");

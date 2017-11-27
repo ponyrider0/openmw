@@ -3011,4 +3011,9 @@ namespace ESM
 		endSubRecordTES4("CTDA");
 	}
 
+	void ESMWriter::QueueModelForExport(std::string origString, std::string convertedString)
+	{
+		mModelsToExportList[origString] = convertedString;
+	}
+
 }

@@ -4473,6 +4473,59 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 //		mDocument.getUndoStack().setClean();
 	}
 
+	ESM::ESMWriter& esm = mState.getWriter();
+
+	std::cout << std::endl << "Creating batch file for NIF conversions...";
+
+	std::string modStem = mDocument.getSavePath().filename().stem().string();
+	std::string batchFileStem = "ModExporter_NIFConv_" + modStem;
+	std::ofstream batchFileNIFConv;
+	std::ofstream batchFileNIFConv_helper1;
+//	std::ofstream batchFileNIFConv_helper2;
+	batchFileNIFConv.open(batchFileStem + ".bat");
+	batchFileNIFConv_helper1.open(batchFileStem + "helper.dat");
+//	batchFileNIFConv_helper2.open(batchFileStem + "helper2.dat");
+
+	batchFileNIFConv << "@echo off\n";
+	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
+
+	// set up header code for spawning
+	batchFileNIFConv << "rename " << batchFileStem << "helper.dat " << batchFileStem << "helper.bat\n";
+//	batchFileNIFConv << "rename " << batchFileStem << "helper2.dat " << batchFileStem << "helper2.bat\n";
+	batchFileNIFConv << "start " << batchFileStem << "helper.bat\n";
+//	batchFileNIFConv << "start " << batchFileStem << "herlper2.bat\n";
+	
+	int nSpawnCount = 0;
+	for (auto nifConvItem = esm.mModelsToExportList.begin();
+		nifConvItem != esm.mModelsToExportList.end();
+		nifConvItem++)
+	{
+//		int nSpawnNow = (nSpawnCount++ % 3);
+		int nSpawnNow = (nSpawnCount++ % 2);
+		if (nSpawnNow == 0)
+		{
+			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+		}
+//		else if (nSpawnNow == 1)
+		else
+		{
+			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+		}
+/*
+		else
+		{
+			batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+		}
+*/
+	}
+	batchFileNIFConv << "rename " << batchFileStem << "helper.bat " << batchFileStem << "helper.dat\n";
+//	batchFileNIFConv << "rename " << batchFileStem << "helper2.bat " << batchFileStem << "helper2.dat\n";
+	batchFileNIFConv << "REM \n\nConversion of " << modStem << " is complete.  You may close this window.\n";
+	batchFileNIFConv << "pause\n";
+	batchFileNIFConv.close();
+	batchFileNIFConv_helper1.close();
+//	batchFileNIFConv_helper2.close();
+
 	std::cout << std::endl << "Export Complete. Now writing out CSV log files..";
 
 	// write unmatched EDIDs
@@ -4481,7 +4534,6 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	// write header
 	unmatchedCSVFile << "Record Types" << "," << "Mod File" << "," << "EDID" << "," << "Ref Count" << "," << "Put FormID Here" << "," << "Put Comments Here" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 
-	ESM::ESMWriter& esm = mState.getWriter();
 	for (auto edidItem = esm.unMatchedEDIDmap.begin();
 		edidItem != esm.unMatchedEDIDmap.end();
 		edidItem++)

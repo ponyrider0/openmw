@@ -209,6 +209,9 @@ public:
 			const std::string& compareOperator, float compareValue, uint8_t condFlags=0,
 			uint32_t compareArg2=0);
 
+		std::map<std::string, std::string> mModelsToExportList; // mModel string, occurences
+		void QueueModelForExport(std::string origString, std::string convertedString);
+
     private:
         std::list<RecordData> mRecords;
         std::ostream* mStream;

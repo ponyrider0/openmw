@@ -136,6 +136,7 @@ namespace ESM
 		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		tempStream << "morro\\" << tempStr;
+		esm.QueueModelForExport(mModel, tempStream.str());
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(tempStream.str());
 		esm.endSubRecordTES4("MODL");
