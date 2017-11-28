@@ -4503,13 +4503,17 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		nifConvItem++)
 	{
 		std::string cmdFlags;
-		if ( nifConvItem->second.second == 1)
+		if ( nifConvItem->second.second == 1) // door
 		{
-			cmdFlags = " -l 2";
+			cmdFlags = " -l 2 -s 6 -q 2";
 		}
-		else if ( nifConvItem->second.second == 2)
+		else if ( nifConvItem->second.second == 2) // weapon
 		{
 			cmdFlags = " -m 5 -l 5 -s 4 -q 3";
+		}
+		else if (nifConvItem->second.second == 3) // clutter
+		{
+			cmdFlags = " -l 4 -s 4 -q 3";
 		}
 		else
 		{
