@@ -102,7 +102,7 @@ namespace ESM
 			tempStr = esm.generateEDIDTES4(mModel, 1);
 			tempStr.replace(tempStr.size()-4, 4, ".nif");
 			tempPath << "weapons\\morro\\" << tempStr;
-			esm.QueueModelForExport(mModel, tempPath.str());
+			esm.QueueModelForExport(mModel, tempPath.str(), 2);
 //			tempPath << esm.substituteWeaponModel(mName, 0);
 			esm.startSubRecordTES4("MODL");
 			esm.writeHCString(tempPath.str());

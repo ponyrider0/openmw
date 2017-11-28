@@ -4502,16 +4502,29 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		nifConvItem != esm.mModelsToExportList.end();
 		nifConvItem++)
 	{
+		std::string cmdFlags;
+		if ( nifConvItem->second.second == 1)
+		{
+			cmdFlags = " -l 2";
+		}
+		else if ( nifConvItem->second.second == 2)
+		{
+			cmdFlags = " -m 5 -l 5 -s 4 -q 3";
+		}
+		else
+		{
+			cmdFlags = "";
+		}
 //		int nSpawnNow = (nSpawnCount++ % 3);
 		int nSpawnNow = (nSpawnCount++ % 2);
 		if (nSpawnNow == 0)
 		{
-			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
 		}
 //		else if (nSpawnNow == 1)
 		else
 		{
-			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
 		}
 /*
 		else
