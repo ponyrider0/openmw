@@ -4482,9 +4482,12 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::ofstream batchFileNIFConv;
 	std::ofstream batchFileNIFConv_helper1;
 //	std::ofstream batchFileNIFConv_helper2;
+	std::ofstream batchFileLODNIFConv;
+
 	batchFileNIFConv.open(batchFileStem + ".bat");
 	batchFileNIFConv_helper1.open(batchFileStem + "_helper.dat");
 //	batchFileNIFConv_helper2.open(batchFileStem + "_helper2.dat");
+	batchFileLODNIFConv.open(batchFileStem + "_LOD.bat");
 
 	// set up header code for spawning
 	batchFileNIFConv << "@echo off\n";
@@ -4496,6 +4499,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	batchFileNIFConv_helper1 << "@echo off\n";
 //	batchFileNIFConv_helper2 << "@echo off\n";
+	batchFileLODNIFConv << "@echo off\n";
 
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin();
@@ -4536,6 +4540,13 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 			batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
 		}
 */
+		// create LOD batch file
+		if (nifConvItem->second.second == 4)
+		{
+			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length()-4) + "_far.nif";
+			batchFileLODNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -l 15 -s 0 -q 0 -c " << " -d " << lodFileName << "\n";
+		}
+
 	}
 	batchFileNIFConv << "rename " << batchFileStem << "_helper.bat " << batchFileStem << "_helper.dat\n";
 //	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
@@ -4548,9 +4559,14 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 //	batchFileNIFConv_helper2 << "echo ----------------------\n";
 //	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
 //	batchFileNIFConv_helper2 << "pause\n";
+	batchFileLODNIFConv << "echo ----------------------\n";
+	batchFileLODNIFConv << "echo LOD mesh generation complete.\n";
+	batchFileLODNIFConv << "pause\n";
+
 	batchFileNIFConv.close();
 	batchFileNIFConv_helper1.close();
 //	batchFileNIFConv_helper2.close();
+	batchFileLODNIFConv.close();
 
 	std::cout << std::endl << "Export Complete. Now writing out CSV log files..";
 

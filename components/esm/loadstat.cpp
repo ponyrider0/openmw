@@ -66,7 +66,12 @@ namespace ESM
 		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
-		esm.QueueModelForExport(mModel, modelPath.str());
+		int recordType = 0;
+		if (modelPath.str().find("\\x\\") != std::string::npos)
+		{
+			recordType = 4;
+		}
+		esm.QueueModelForExport(mModel, modelPath.str(), recordType);
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
