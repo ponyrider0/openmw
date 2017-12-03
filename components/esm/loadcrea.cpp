@@ -491,12 +491,16 @@ namespace ESM {
 		// NAM1, blood decal (string)
 
 		// CSCR, inherit sound from: formID CREA
-		tempFormID = esm.crossRefStringID(mOriginal, "CREA");
-		if (tempFormID != 0)
+		// Put exceptions for NPC values (aka skip if type == dremora or other NPC record
+		if (Misc::StringUtils::lowerCase(mOriginal).find("dremora") == std::string::npos)
 		{
-			esm.startSubRecordTES4("CSCR");
-			esm.writeT<uint32_t>(tempFormID);
-			esm.endSubRecordTES4("CSCR");
+			tempFormID = esm.crossRefStringID(mOriginal, "CREA");
+			if (tempFormID != 0)
+			{
+				esm.startSubRecordTES4("CSCR");
+				esm.writeT<uint32_t>(tempFormID);
+				esm.endSubRecordTES4("CSCR");
+			}
 		}
 
 		// CSDTs...
