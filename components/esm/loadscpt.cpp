@@ -206,7 +206,8 @@ namespace ESM
 
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+		esm.write(0, 0);
+//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)
@@ -241,6 +242,9 @@ namespace ESM
 			esm.writeT<uint32_t>(0); // ...
 			esm.writeT<uint32_t>(0); // ...
 			esm.writeT<uint8_t>(flagVarType); // var type
+			esm.writeT<uint8_t>(0); // unused byte padding * 3
+			esm.writeT<uint8_t>(0); // ...
+			esm.writeT<uint8_t>(0); // ...
 			esm.writeT<uint32_t>(0); // unused byte * 4
 			esm.endSubRecordTES4("SLSD");
 			// SCVR string
