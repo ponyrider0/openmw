@@ -361,9 +361,12 @@ namespace ESM {
 				else if (distance <= 2000)
 					pkgEDID = "aaaDefaultExploreEditorLoc3000";
 				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
-				esm.startSubRecordTES4("PKID");
-				esm.writeT<uint32_t>(pkgFormID);
-				esm.endSubRecordTES4("PKID");
+				if (pkgFormID != 0)
+				{
+					esm.startSubRecordTES4("PKID");
+					esm.writeT<uint32_t>(pkgFormID);
+					esm.endSubRecordTES4("PKID");
+				}
 //				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
 //				ai_debugstream << std::endl;
 //				std::cout << ai_debugstream.str();
@@ -371,42 +374,54 @@ namespace ESM {
 			case ESM::AI_Travel:
 				pkgEDID = "aaaDefaultExploreEditorLoc512";
 				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
-				esm.startSubRecordTES4("PKID");
-				esm.writeT<uint32_t>(pkgFormID);
-				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Substituting Wander Package for: Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
-				ai_debugstream << std::endl;
-				std::cout << ai_debugstream.str();
+				if (pkgFormID != 0)
+				{
+					esm.startSubRecordTES4("PKID");
+					esm.writeT<uint32_t>(pkgFormID);
+					esm.endSubRecordTES4("PKID");
+					ai_debugstream << "Substituting Wander Package for: Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
+					ai_debugstream << std::endl;
+					std::cout << ai_debugstream.str();
+				}
 				break;
 			case ESM::AI_Activate:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
 				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
-				esm.startSubRecordTES4("PKID");
-				esm.writeT<uint32_t>(pkgFormID);
-				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
-				ai_debugstream << std::endl;
-				std::cout << ai_debugstream.str();
+				if (pkgFormID != 0)
+				{
+					esm.startSubRecordTES4("PKID");
+					esm.writeT<uint32_t>(pkgFormID);
+					esm.endSubRecordTES4("PKID");
+					ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
+					ai_debugstream << std::endl;
+					std::cout << ai_debugstream.str();
+				}
 				break;
 			case ESM::AI_Follow:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
 				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
-				esm.startSubRecordTES4("PKID");
-				esm.writeT<uint32_t>(pkgFormID);
-				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
-				ai_debugstream << std::endl;
-				std::cout << ai_debugstream.str();
+				if (pkgFormID != 0)
+				{
+					esm.startSubRecordTES4("PKID");
+					esm.writeT<uint32_t>(pkgFormID);
+					esm.endSubRecordTES4("PKID");
+					ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+					ai_debugstream << std::endl;
+					std::cout << ai_debugstream.str();
+				}
 				break;
 			case ESM::AI_Escort:
 				pkgEDID = "aaaDefaultExploreCurrentLoc256";
 				pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
-				esm.startSubRecordTES4("PKID");
-				esm.writeT<uint32_t>(pkgFormID);
-				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
-				ai_debugstream << std::endl;
-				std::cout << ai_debugstream.str();
+				if (pkgFormID != 0)
+				{
+					esm.startSubRecordTES4("PKID");
+					esm.writeT<uint32_t>(pkgFormID);
+					esm.endSubRecordTES4("PKID");
+					ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+					ai_debugstream << std::endl;
+					std::cout << ai_debugstream.str();
+				}
 				break;
 			}
 //			OutputDebugString(ai_debugstream.str().c_str());

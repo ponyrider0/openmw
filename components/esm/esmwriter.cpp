@@ -237,7 +237,7 @@ namespace ESM
 
 	void ESMWriter::startGroupTES4(const std::string& label, uint32_t groupType)
 	{
-//		mRecordCount++;
+		mRecordCount++;
 
 		writeFixedSizeString("GRUP", 4);
 		RecordData rec;
@@ -256,7 +256,7 @@ namespace ESM
 
 	void ESMWriter::startGroupTES4(const uint32_t label, uint32_t groupType)
 	{
-		//		mRecordCount++;
+		mRecordCount++;
 
 		writeFixedSizeString("GRUP", 4);
 		RecordData rec;
