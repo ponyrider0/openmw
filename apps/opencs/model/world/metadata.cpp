@@ -24,3 +24,10 @@ void CSMWorld::MetaData::save (ESM::ESMWriter& esm) const
     esm.setAuthor (mAuthor);
     esm.setDescription (mDescription);
 }
+
+void CSMWorld::MetaData::exportTES4 (ESM::ESMWriter& esm) const
+{
+	esm.setFormat(mFormat);
+	esm.setAuthor(mAuthor);
+	esm.setDescription(mDescription + "\n\n{{BASH:Actors.ACBS,Actors.AIData,Actors.AIPackages,Actors.Spells,Actors.Stats}}");
+}

@@ -186,7 +186,7 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 	}
 	else
 	{
-		mDocument.getData().getMetaData().save (mState.getWriter());
+		mDocument.getData().getMetaData().exportTES4 (mState.getWriter());
 		mState.getWriter().setRecordCount (
 			mDocument.getData().countTES3 (CSMWorld::RecordBase::State_Modified) +
 			mDocument.getData().countTES3 (CSMWorld::RecordBase::State_ModifiedOnly) +
@@ -670,35 +670,49 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
+// REPLACE FOLLOWING CODE WITH SEPARATE ESP FILE?...
+// TODO for separate ESP FILE: 
 		if (mQuestMode == false)
 		{
 			// write out GREETINGS info
-			uint32_t greetingID = writer.crossRefStringID("GREETING", "DIAL", false, true);
+			std::string infoTopic = "GREETING";
+//			std::string infoTopic = mGreetingInfoList.begin()->second;
+			uint32_t greetingID = writer.crossRefStringID(infoTopic, "DIAL", false, true);
+			if (greetingID == 0)
+			{
+				greetingID = writer.reserveFormID(greetingID, infoTopic, "DIAL");
+			}
 			uint32_t flags = 0;
-			writer.startRecordTES4("DIAL", flags, greetingID, "GREETING");
+			writer.startRecordTES4("DIAL", flags, greetingID, infoTopic);
 			writer.startSubRecordTES4("EDID");
-			writer.writeHCString("GREETING");
+			writer.writeHCString(infoTopic.c_str());
 			writer.endSubRecordTES4("EDID");
 			writer.startSubRecordTES4("FULL");
-			writer.writeHCString("GREETING");
+			writer.writeHCString(infoTopic.c_str());
 			writer.endSubRecordTES4("FULL");
 			writer.startSubRecordTES4("DATA");
 			writer.writeT<uint8_t>(0);
 			writer.endSubRecordTES4("DATA");
 			writer.endRecordTES4("DIAL");
 			writer.startGroupTES4(greetingID, 7);
+			uint32_t prevRecordID=0;
 			for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
 			{
 				std::string infoEDID = "info#" + greetingItem->first.mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				if (infoFormID == 0)
+				{
+					infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
+				}
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				bool bSuccess;
 				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				if (bSuccess)
 				{
-					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
+					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, prevRecordID);
 					writer.endRecordTES4("INFO");
+					prevRecordID = infoFormID;
 				}
 				else
 				{
@@ -1014,7 +1028,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 			staticRec.get().exportTESx(writer, 4);
 			// MNAM
 			writer.startSubRecordTES4("MNAM");
-			writer.writeT<uint8_t>(0);
+			writer.writeT<uint32_t>(0);
 			writer.endSubRecordTES4("MNAM");
 			writer.endRecordTES4(sSIG);
 			debugstream.str(""); debugstream.clear();

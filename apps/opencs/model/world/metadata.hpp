@@ -23,7 +23,8 @@ namespace CSMWorld
 
         void load (ESM::ESMReader& esm);
         void save (ESM::ESMWriter& esm) const;
-    };
+		void exportTES4 (ESM::ESMWriter& esm) const;
+	};
 }
 
 #endif
