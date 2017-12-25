@@ -135,7 +135,7 @@ namespace ESM
         }
     }
 
-	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID) const
+	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, uint32_t prevRecordID) const
 	{
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
@@ -231,15 +231,23 @@ namespace ESM
 			// TPIC, formID [DIAL], dialog topic - unused??
 
 			// PNAM, prev topic record
+			// IF prevRecordID is present, it overrides stringID-based recordID resolution
 			uint32_t infoFormID = 0;
-			if (mPrev != "")
+			if (prevRecordID != 0)
 			{
-				std::string prevEDID = "info#" + mPrev;
-				infoFormID = esm.crossRefStringID(prevEDID, "INFO", false);
-				if (infoFormID == 0)
+				infoFormID = prevRecordID;
+			}
+			else
+			{
+				if (mPrev != "")
 				{
-					// can not use --> breaks unresolved.csv export function
-	//				infoFormID = esm.reserveFormID(0, prevEDID, "INFO");
+					std::string prevEDID = "info#" + mPrev;
+					infoFormID = esm.crossRefStringID(prevEDID, "INFO", false);
+					if (infoFormID == 0)
+					{
+						// can not use --> breaks unresolved.csv export function
+						//				infoFormID = esm.reserveFormID(0, prevEDID, "INFO");
+					}
 				}
 			}
 			esm.startSubRecordTES4("PNAM");
@@ -342,34 +350,56 @@ namespace ESM
 			{
 				uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
 				uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
-				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
+//				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
 			}
 			if (mRace != "")
 			{
 				uint32_t raceFormID = esm.crossRefStringID(mRace, "RACE");
 				uint32_t compareFunction = 0x0045; // GetIsRace (decimal 69)
-				esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
+//				esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
 			}
 			if (mClass != "")
 			{
 				uint32_t classFormID = esm.crossRefStringID(mClass, "CLAS");
-				uint32_t compareFunction = 0x0044; // GetIsClass (decimal 68)
-				esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
+				if (classFormID == 0)
+				{
+					std::cout << "ERROR: classFormID resolved to null: [" << mClass << "]\n";
+				}
+				else
+				{
+					uint32_t compareFunction = 0x0044; // GetIsClass (decimal 68)
+//					esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
+				}
 			}
 			if (mFaction != "")
 			{
 				uint32_t factionFormID = esm.crossRefStringID(mFaction, "FACT");
-				uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
-				float factionRankVal = mData.mRank;
-				esm.exportConditionalExpression(compareFunction, factionFormID, ">", factionRankVal);
+// BREAK if factionFormID is null
+				if (factionFormID == 0)
+				{
+					std::cout << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
+				}
+				else
+				{
+					uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
+					float factionRankVal = mData.mRank;
+//					esm.exportConditionalExpression(compareFunction, factionFormID, ">", factionRankVal);
+				}
 			}
 			if (mPcFaction != "")
 			{
 				uint32_t pcFactFormID = esm.crossRefStringID(mPcFaction, "FACT");
-				uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
-				uint8_t flags = 0x02; // run on target (aka PC)
-				float factionRankVal = mData.mPCrank;
-				esm.exportConditionalExpression(compareFunction, pcFactFormID, ">", factionRankVal, flags);
+				if (pcFactFormID == 0)
+				{
+					std::cout << "ERROR: PCFactionFormID resolved to null: [" << mPcFaction << "]\n";
+				}
+				else
+				{
+					uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
+					uint8_t flags = 0x02; // run on target (aka PC)
+					float factionRankVal = mData.mPCrank;
+//					esm.exportConditionalExpression(compareFunction, pcFactFormID, ">", factionRankVal, flags);
+				}
 			}
 			if (mCell != "")
 			{
@@ -377,30 +407,31 @@ namespace ESM
 				if (cellFormID != 0)
 				{
 					uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
-					esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
+//					esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
 				}
 				else
 				{
 					// use mwDialogHelper quest
-					uint32_t compareFunction = 0x4F; // GetQuestVariable
-					std::string questVarName = "GetIn_" + esm.generateEDIDTES4(mCell, 0, "CELL");
-					uint32_t compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					uint32_t compareArg2 = 0; // todo: lookup questVarName;
-					esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0, 0, compareArg2);
+// TODO: finish questVarName lookup
+//					uint32_t compareFunction = 0x4F; // GetQuestVariable
+//					std::string questVarName = "GetIn_" + esm.generateEDIDTES4(mCell, 0, "CELL");
+//					uint32_t compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+//					uint32_t compareArg2 = 0; // todo: lookup questVarName;
+//					esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0, 0, compareArg2);
 				}
 			}
 			if (mData.mGender != ESM::DialInfo::Gender::NA)
 			{
 				uint32_t compareFunction = 0x46; // GetIsSex
 				uint32_t compareArg1 = mData.mGender;
-				esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0);
+//				esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0);
 			}
 			if (mData.mDisposition > 0) // include dispo check if greater than 0
 			{
 				uint32_t compareFunction = 0x4C; // GetDisposition
 				uint32_t compareArg1 = 0; // Target of conversation (player)
 				float compareVal = mData.mDisposition;
-				esm.exportConditionalExpression(compareFunction, compareArg1, ">=", compareVal);
+//				esm.exportConditionalExpression(compareFunction, compareArg1, ">=", compareVal);
 			}
 
 			for (auto selectItem = mSelects.begin(); selectItem != mSelects.end(); selectItem++)
@@ -446,6 +477,13 @@ namespace ESM
 					compareFunction = 0x3A; // GetStage (int 58)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "QUST");
+// BREAK if Quest value is null
+					if (compareArg1 == 0)
+					{
+						std::cout << "Dialog INFO: Could not resolve quest varname: " << varName << "\n";
+						compareFunction = 0;
+						break;
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
@@ -455,6 +493,12 @@ namespace ESM
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
 					compareFunction = 0xC1; // GetPCExpelled (int 193)
 					compareArg1 = esm.crossRefStringID(mFaction, "FACT");
+// BREAK if compareArg is null
+					if (compareArg1 == 0)
+					{
+						compareFunction = 0;
+						break;
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -521,6 +565,12 @@ namespace ESM
 					}
 					compareFunction = 0x4A; // GetGlobalValue (int 74)
 					compareArg1 = esm.crossRefStringID(varName, "GLOB");
+// BREAK if Global is NULL
+					if (compareArg1 == 0)
+					{
+						compareFunction = 0;
+						break;
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -531,6 +581,12 @@ namespace ESM
 					compareFunction = 0x2A; // SameFaction (int 42)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "FACT");
+// BREAK if compareArg is NULL
+					if (compareArg1 == 0)
+					{
+						compareFunction = 0;
+						break;
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
@@ -548,10 +604,14 @@ namespace ESM
 					varName = ""; // todo: make var for rankrequirement
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						std::cout << "Unresolved Conditioin:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						compareFunction = 0;
+						compareArg2 = 0;
 					}
 					else
+					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
@@ -607,13 +667,16 @@ namespace ESM
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
 						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						compareFunction = 0;
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
 					}
 					else
+					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
+					}
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
 					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
@@ -665,13 +728,16 @@ namespace ESM
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
 						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						compareFunction = 0;
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
 					}
 					else
+					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
+					}
 					compareOperator = flipCompareOperator(compareOperator);
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
@@ -691,6 +757,12 @@ namespace ESM
 					compareFunction = 0x44; // GetIsClass (decimal 68)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CLAS");
+// BREAK if compareArg is null
+					if (compareArg1 == 0)
+					{
+						compareFunction = 0;
+						break;
+					}
 					compareOperator = flipCompareOperator(compareOperator);
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
 						compareVal = selectWrapper.getVariant().getFloat();
@@ -702,15 +774,18 @@ namespace ESM
 					compareFunction = 0x43; // GetInCell (decimal 67)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CELL");
-					if (compareArg1 == 0)
-						compareArg1 = esm.crossRefStringID(varName, "REGN");
+// REPLACE CompareFunction with equivalent REGION CompareFunction
+//					if (compareArg1 == 0)
+//						compareArg1 = esm.crossRefStringID(varName, "REGN");
 					if (compareArg1 == 0)
 					{
 						// use mwDialogHelper quest
-						compareFunction = 0x4F; // GetQuestVariable
-						varName = "GetIn_" + varName;
-						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-						compareArg2 = 0; // todo: lookup varName;
+						compareFunction = 0;
+// TODO: finish varName lookup
+//						compareFunction = 0x4F; // GetQuestVariable
+//						varName = "GetIn_" + varName;
+//						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+//						compareArg2 = 0; // todo: lookup varName;
 					}
 					compareOperator = "=";
 					compareVal = 0.0f;
@@ -885,6 +960,12 @@ namespace ESM
 				case CSMWorld::ConstInfoSelectWrapper::Function_FactionRankDifference:
 					compareFunction = 0x3C; // GetFactionRankDifference
 					compareArg1 = esm.crossRefStringID(mFaction, "FACT");
+// BREAK if compareArg is NULL
+					if (compareArg1 == 0)
+					{
+						compareFunction = 0;
+						break;
+					}
 					varName = selectWrapper.getVariableName();
 					compareArg2 = esm.crossRefStringID(varName, "NPC_");
 					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
@@ -986,7 +1067,9 @@ namespace ESM
 					break;
 				}
 
-				esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
+// DISABLED TO FIX CSE CRASHES
+//				if (compareFunction != 0 && compareArg1 != 0)
+//					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
 
 			} // for each mSelects
 
@@ -1030,15 +1113,21 @@ namespace ESM
 		esm.writeT<uint8_t>(0); // unused * 4
 		esm.writeT<uint8_t>(0); // unused * 4
 		esm.writeT<uint8_t>(0); // unused * 4
-		esm.writeT<uint32_t>(refCount);
-		esm.writeT<uint32_t>(compiledSize);
-		esm.writeT<uint32_t>(varCount);
-		esm.writeT<uint32_t>(scriptType);
+		esm.writeT<uint32_t>(0); // refcount
+		esm.writeT<uint32_t>(0); // compiledsize
+		esm.writeT<uint32_t>(0); // varcount
+		esm.writeT<uint32_t>(0); // scripttype
+//		esm.writeT<uint32_t>(refCount);
+//		esm.writeT<uint32_t>(compiledSize);
+//		esm.writeT<uint32_t>(varCount);
+//		esm.writeT<uint32_t>(scriptType);
 		esm.endSubRecordTES4("SCHR");
 
+/*
 		// SCDA... (compiled script)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+		esm.write(0, 0);
+//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX... (script source text)
@@ -1053,7 +1142,7 @@ namespace ESM
 			esm.writeT<uint32_t>(*refItem); 
 			esm.endSubRecordTES4("SCRO");
 		}
-
+*/
 	}
 
 	std::string DialInfo::flipCompareOperator(const std::string & compareOp) const

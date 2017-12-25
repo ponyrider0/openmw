@@ -109,7 +109,7 @@ struct DialInfo
     ///< Loads Info record
 
     void save(ESMWriter &esm, bool isDeleted = false) const;
-	void exportTESx(ESMWriter &esm, int export_format, int newType, const std::string& topicEDID) const;
+	void exportTESx(ESMWriter &esm, int export_format, int newType, const std::string& topicEDID, uint32_t prevRecordID=0) const;
 	std::string flipCompareOperator(const std::string& compareOp) const;
 
     void blank();
