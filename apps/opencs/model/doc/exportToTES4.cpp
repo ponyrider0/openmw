@@ -685,10 +685,10 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			uint32_t flags = 0;
 			writer.startRecordTES4("DIAL", flags, greetingID, infoTopic);
 			writer.startSubRecordTES4("EDID");
-			writer.writeHCString(infoTopic.c_str());
+			writer.writeHCString(infoTopic);
 			writer.endSubRecordTES4("EDID");
 			writer.startSubRecordTES4("FULL");
-			writer.writeHCString(infoTopic.c_str());
+			writer.writeHCString(infoTopic);
 			writer.endSubRecordTES4("FULL");
 			writer.startSubRecordTES4("DATA");
 			writer.writeT<uint8_t>(0);
@@ -699,10 +699,21 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
 			{
 				std::string infoEDID = "info#" + greetingItem->first.mId;
+				if (prevRecordID == 0x408b501 && infoEDID == "info#1372930131120012690")
+				{
+					infoEDID = infoEDID + "B";
+				}
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				if (infoFormID == 0)
 				{
 					infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
+					if (infoFormID == 0x408B09A)
+					{
+//						std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
+					}
+				} else if (infoFormID == 0x408B09A)
+				{
+//					std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
 				}
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
@@ -710,6 +721,15 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				if (bSuccess)
 				{
+					// substitute PNAM if needed
+					if (writer.mPNAMINFOmap.empty() != true)
+					{
+						if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
+						{
+							prevRecordID = writer.mPNAMINFOmap[infoFormID];
+						}
+					}
+					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
 					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
@@ -4582,7 +4602,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 //	batchFileNIFConv_helper2.close();
 	batchFileLODNIFConv.close();
 
-	std::cout << std::endl << "Export Complete. Now writing out CSV log files..";
+	std::cout << std::endl << "Now writing out CSV log files..";
 
 	// write unmatched EDIDs
 	std::ofstream unmatchedCSVFile;
@@ -4648,7 +4668,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	}
 	unresolvedLocalVarStream.close();
 
-	std::cout << "..Log writing complete." << std::endl;
+	std::cout << "..Log writing done.\n\nEXPORT COMPLETED! You may now close the ModConverter, or open another ESP." << std::endl;
 }
 
 uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition)

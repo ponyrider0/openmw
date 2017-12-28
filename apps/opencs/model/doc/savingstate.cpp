@@ -464,6 +464,52 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 	return errorcode;
 }
 
+int CSMDoc::SavingState::loadPNAMINFOSubstitutionMap(std::string filename)
+{
+	int errorcode = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strINFOID, strPNAMID;
+		uint32_t formID, pnamID;
+
+		for (int i = 0; i < 2; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strINFOID = token;
+				break;
+			case 1:
+				strPNAMID = token;
+				break;
+			}
+		}
+
+		if (strINFOID == "" || strPNAMID == "")
+			continue;
+
+		std::istringstream hexToInt{ strINFOID };
+		hexToInt >> std::hex >> formID;
+
+		hexToInt.clear(); hexToInt.str(strPNAMID);
+		hexToInt >> std::hex >> pnamID;
+
+		mWriter.mPNAMINFOmap[formID] = pnamID;
+
+	}
+	inputFile.close();
+
+	return errorcode;
+}
+
 int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 {
 	int errorcode = 0;
@@ -870,6 +916,9 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	{
 		loadEDIDmap3("TamrielDataEDIDlist.csv");
 		loadEDIDmap3("TRMainlandEDIDlist.csv");
+
+//		loadPNAMINFOSubstitutionMap("TRMainlandGreetingPNAMINFOmap.csv");
+		loadPNAMINFOSubstitutionMap("TRMainland_Dialog_PNAMINFO.csv");
 	}
 	if (esmName.find("TR_Preview") != std::string::npos)
 	{

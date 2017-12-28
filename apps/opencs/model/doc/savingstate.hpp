@@ -89,6 +89,8 @@ namespace CSMDoc
 
 			std::vector<std::string> mDummyCellNames;
 
+			int loadPNAMINFOSubstitutionMap(std::string filename);
+
 	};
 
 

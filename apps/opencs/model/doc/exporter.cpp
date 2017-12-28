@@ -17,7 +17,7 @@ CSMDoc::Exporter::Exporter(Document& document, ToUTF8::FromType encoding)
   : mDocument(document),
     mEncoding(encoding)
 {
-    std::cout << "Exporter Base Initialized." << std::endl;
+    std::cout << "\n\nEXPORTER INITIALIZED. Ready to Export ESM/ESP (please wait for mod to fully load).\n" << std::endl;
 }
 
 CSMDoc::Exporter::~Exporter()

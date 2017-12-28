@@ -212,6 +212,9 @@ public:
 		std::map<std::string, std::pair<std::string, int>> mModelsToExportList; // mModel string, occurences
 		void QueueModelForExport(std::string origString, std::string convertedString, int recordType=0);
 
+		// Info, PNAM map
+		std::map<uint32_t, uint32_t> mPNAMINFOmap;
+
     private:
         std::list<RecordData> mRecords;
         std::ostream* mStream;
