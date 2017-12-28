@@ -215,6 +215,8 @@ public:
 		// Info, PNAM map
 		std::map<uint32_t, uint32_t> mPNAMINFOmap;
 
+		std::map<std::string, std::vector<std::string>> mESMMastersmap;
+
     private:
         std::list<RecordData> mRecords;
         std::ostream* mStream;

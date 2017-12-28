@@ -843,7 +843,7 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 		std::string strVarName, strVarIndex;
 		int varIndex;
 
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			std::string token;
 			std::getline(parserStream, token, ',');
@@ -873,6 +873,42 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 		mWriter.mLocalVarIndexmap[Misc::StringUtils::lowerCase(strVarName)] = varIndex;
 	}
 
+
+	return errorcode;
+}
+
+int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
+{
+	int errorcode = 0;
+	int lineNumber = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strESMName;
+
+		std::string token;
+		std::istringstream tokenStr;
+
+		std::getline(parserStream, token, ',');
+//		tokenStr.str(token);
+//		tokenStr >> strESMName;
+		strESMName = token;
+
+		std::vector<std::string> ESMmasterList;
+		while (std::getline(parserStream, token, ',') )
+		{
+			ESMmasterList.push_back(token);
+		}
+
+		mWriter.mESMMastersmap[Misc::StringUtils::lowerCase(strESMName)] = ESMmasterList;
+	}
 
 	return errorcode;
 }
@@ -928,6 +964,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadEDIDmap3("OverridesEDIDList.csv");
 	loadLocalVarIndexmap("LocalVarMap.csv");
+	loadESMMastersMap("ESMMastersMap.csv");
 
 	std::cout << "Loading CSV files complete." << std::endl;
 

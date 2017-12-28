@@ -174,8 +174,11 @@ CSMDoc::ExportHeaderTES4Stage::ExportHeaderTES4Stage (Document& document, Saving
 int CSMDoc::ExportHeaderTES4Stage::setup()
 {
 	mState.getWriter().setVersion();
-
 	mState.getWriter().clearMaster();
+
+	std::string esmName = mDocument.getSavePath().filename().stem().string();
+	mState.getWriter().clearReservedFormIDs();
+	mState.initializeSubstitutions(esmName);
 
 	if (mSimple)
 	{
@@ -212,16 +215,23 @@ int CSMDoc::ExportHeaderTES4Stage::setup()
 //		mState.getWriter().addMaster ("morroblivion-fixes.esp", 0);
 		mState.getWriter().addMaster ("Morrowind_Compatibility_Layer.esp", 0);
 
-		std::string esmName = mDocument.getSavePath().filename().stem().string();
-		if ((esmName.find("TR_Mainland") != std::string::npos) ||
+/*
+if ((esmName.find("TR_Mainland") != std::string::npos) ||
 			(esmName.find("TR_Preview") != std::string::npos))
 		{
 			mState.getWriter().addMaster("Tamriel_Data.esp", 0);
 		}
+*/
 
-		// load EDID substitution files only after all Masters are inserted
-		mState.getWriter().clearReservedFormIDs();
-		mState.initializeSubstitutions(esmName);
+		esmName = Misc::StringUtils::lowerCase(esmName);
+		if (mState.getWriter().mESMMastersmap.find(esmName) != mState.getWriter().mESMMastersmap.end())
+		{
+			std::vector<std::string> masterList = mState.getWriter().mESMMastersmap[esmName];
+			for (auto masterItem = masterList.begin(); masterItem != masterList.end(); masterItem++)
+			{
+				mState.getWriter().addMaster(*masterItem, 0);
+			}
+		}
 
 	}
 
