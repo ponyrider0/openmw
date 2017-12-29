@@ -218,8 +218,10 @@ public:
 		// ESM Masters List for Header
 		std::map<std::string, std::vector<std::string>> mESMMastersmap;
 
-		// DDS List for batchfile generation
+		// DDS List for export
 		std::map<std::string, std::pair<std::string, int>> mDDSToExportList;
+		// SOUND List for export
+		std::map<std::string, std::pair<std::string, int>> mSOUNDToExportList;
 
     private:
         std::list<RecordData> mRecords;
