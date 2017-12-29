@@ -123,11 +123,12 @@ namespace ESM
 		// ICON, mIcon
 		if (mIcon.size() > 4)
 		{
-//			tempStr = esm.generateEDIDTES4(mIcon, 1);
-//			tempStr.replace(tempStr.size()-4, 4, ".dds");
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size()-4, 4, ".dds");
 			tempPath.str(""); tempPath.clear();
-//			tempPath << "lights\\morro\\" << tempStr;
-			tempPath << esm.substituteLightModel(mId, 1);
+			tempPath << "lights\\morro\\" << tempStr;
+//			tempPath << esm.substituteLightModel(mId, 1);
+			esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
 			esm.startSubRecordTES4("ICON");
 			esm.writeHCString(tempPath.str());
 			esm.endSubRecordTES4("ICON");

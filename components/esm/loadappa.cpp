@@ -105,6 +105,7 @@ namespace ESM
 		tempStr.replace(tempStr.size()-4, 4, ".dds");
 		tempPath.str(""); tempPath.clear();
 		tempPath << "clutter\\magesguild\\morro\\" << tempStr;
+		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");

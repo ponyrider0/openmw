@@ -13,6 +13,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include "exportToTES4.hpp"
 #include "document.hpp"
 #include <components/esm/scriptconverter.hpp>
+#include <components/vfs/manager.hpp>
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -4496,6 +4497,171 @@ int CSMDoc::FinalizeExportTES4Stage::setup()
 	return 1;
 }
 
+void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
+{
+	std::cout << std::endl << "Creating batch file for NIF conversions...";
+
+	std::string modStem = mDocument.getSavePath().filename().stem().string();
+	std::string batchFileStem = "ModExporter_NIFConv_" + modStem;
+	std::ofstream batchFileNIFConv;
+	std::ofstream batchFileNIFConv_helper1;
+	//	std::ofstream batchFileNIFConv_helper2;
+	std::ofstream batchFileLODNIFConv;
+
+	batchFileNIFConv.open(batchFileStem + ".bat");
+	batchFileNIFConv_helper1.open(batchFileStem + "_helper.dat");
+	//	batchFileNIFConv_helper2.open(batchFileStem + "_helper2.dat");
+	batchFileLODNIFConv.open(batchFileStem + "_LOD.bat");
+
+	// set up header code for spawning
+	batchFileNIFConv << "@echo off\n";
+	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
+	batchFileNIFConv << "rename " << batchFileStem << "_helper.dat " << batchFileStem << "_helper.bat\n";
+	//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.dat " << batchFileStem << "_helper2.bat\n";
+	batchFileNIFConv << "start cmd /c " << batchFileStem << "_helper.bat\n";
+	//	batchFileNIFConv << "start cmd /c " << batchFileStem << "_herlper2.bat\n";
+
+	batchFileNIFConv_helper1 << "@echo off\n";
+	//	batchFileNIFConv_helper2 << "@echo off\n";
+	batchFileLODNIFConv << "@echo off\n";
+
+	int nSpawnCount = 0;
+	for (auto nifConvItem = esm.mModelsToExportList.begin(); nifConvItem != esm.mModelsToExportList.end(); nifConvItem++)
+	{
+		std::string cmdFlags;
+		if (nifConvItem->second.second == 1) // door
+		{
+			cmdFlags = " -l 2 -s 6 -q 2";
+		}
+		else if (nifConvItem->second.second == 2) // weapon
+		{
+			cmdFlags = " -m 5 -l 5 -s 4 -q 3";
+		}
+		else if (nifConvItem->second.second == 3) // clutter
+		{
+			cmdFlags = " -l 4 -s 4 -q 3";
+		}
+		else
+		{
+			cmdFlags = "";
+		}
+		//		int nSpawnNow = (nSpawnCount++ % 3);
+		int nSpawnNow = (nSpawnCount++ % 2);
+		if (nSpawnNow == 0)
+		{
+			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
+		}
+		//		else if (nSpawnNow == 1)
+		else
+		{
+			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
+		}
+		/*
+		else
+		{
+		batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+		}
+		*/
+		// create LOD batch file
+		if (nifConvItem->second.second == 4)
+		{
+			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
+			batchFileLODNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -l 15 -s 0 -q 0 -c " << " -d " << lodFileName << "\n";
+		}
+
+	}
+	batchFileNIFConv << "rename " << batchFileStem << "_helper.bat " << batchFileStem << "_helper.dat\n";
+	//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
+	batchFileNIFConv << "echo ----------------------\n";
+	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
+	batchFileNIFConv << "pause\n";
+	batchFileNIFConv_helper1 << "echo ----------------------\n";
+	batchFileNIFConv_helper1 << "\n\necho Helper thread: Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
+	batchFileNIFConv_helper1 << "pause\n";
+	//	batchFileNIFConv_helper2 << "echo ----------------------\n";
+	//	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
+	//	batchFileNIFConv_helper2 << "pause\n";
+	batchFileLODNIFConv << "echo ----------------------\n";
+	batchFileLODNIFConv << "echo LOD mesh generation complete.\n";
+	batchFileLODNIFConv << "pause\n";
+
+	batchFileNIFConv.close();
+	batchFileNIFConv_helper1.close();
+	//	batchFileNIFConv_helper2.close();
+	batchFileLODNIFConv.close();
+
+}
+
+void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
+{
+	std::cout << std::endl << "Creating batch file for DDS conversion...";
+
+	std::string modStem = mDocument.getSavePath().filename().stem().string();
+	std::string batchFileStem = "ModExporter_DDSConv_" + modStem;
+	std::ofstream batchFileDDSConv;
+	
+	batchFileDDSConv.open(batchFileStem + ".bat");
+
+	batchFileDDSConv << "@echo off\n";
+
+	if (boost::filesystem::exists("C:\\Oblivion.output\\Textures") == false)
+	{
+		boost::filesystem::create_directory("C:\\Oblivion.output\\Textures");
+	}
+	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
+	{
+		batchFileDDSConv << "echo @BSAunpack @morrowind " << ddsConvItem->first << " @oblivion  " << ddsConvItem->second.first << "\n";
+		int mode = ddsConvItem->second.second;
+		std::string ddsFolder;
+		if (mode == 0)
+		{
+			ddsFolder = "Textures\\";
+		}
+		else if (mode == 1)
+		{
+			ddsFolder = "Icons\\";
+		}
+		else if (mode == 2)
+		{
+			ddsFolder = "BookArt\\";
+		}
+		try 
+		{
+			auto fileStream = mDocument.getVFS()->get(ddsFolder + ddsConvItem->first);
+			std::ofstream newDDSFile;
+			// create output subdirectories
+			boost::filesystem::path p("C:\\Oblivion.output\\" + ddsFolder + ddsConvItem->second.first);
+			if (boost::filesystem::exists(p.parent_path()) == false)
+			{
+				boost::filesystem::create_directories(p.parent_path());
+			}
+			newDDSFile.open("C:\\Oblivion.output\\" + ddsFolder + ddsConvItem->second.first, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+			int len = 0;
+			char buffer[1024];
+			while (fileStream->eof() == false)
+			{
+				fileStream->read(buffer, sizeof(buffer));
+				len = fileStream->gcount();
+				newDDSFile.write(buffer, len);
+			}
+			newDDSFile.close();
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "Error: " << e.what() << "\n";
+		}
+		catch (...)
+		{
+			std::cout << "ERROR: something else bad happened!\n";
+		}
+	}
+
+	batchFileDDSConv << "echo ----------------------\n";
+	batchFileDDSConv << "echo DDS conversion complete.\n";
+	batchFileDDSConv << "pause\n";
+	batchFileDDSConv.close();
+}
+
 void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 {
 	if (mState.hasError())
@@ -4519,98 +4685,8 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	ESM::ESMWriter& esm = mState.getWriter();
 
-	std::cout << std::endl << "Creating batch file for NIF conversions...";
-
-	std::string modStem = mDocument.getSavePath().filename().stem().string();
-	std::string batchFileStem = "ModExporter_NIFConv_" + modStem;
-	std::ofstream batchFileNIFConv;
-	std::ofstream batchFileNIFConv_helper1;
-//	std::ofstream batchFileNIFConv_helper2;
-	std::ofstream batchFileLODNIFConv;
-
-	batchFileNIFConv.open(batchFileStem + ".bat");
-	batchFileNIFConv_helper1.open(batchFileStem + "_helper.dat");
-//	batchFileNIFConv_helper2.open(batchFileStem + "_helper2.dat");
-	batchFileLODNIFConv.open(batchFileStem + "_LOD.bat");
-
-	// set up header code for spawning
-	batchFileNIFConv << "@echo off\n";
-	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
-	batchFileNIFConv << "rename " << batchFileStem << "_helper.dat " << batchFileStem << "_helper.bat\n";
-//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.dat " << batchFileStem << "_helper2.bat\n";
-	batchFileNIFConv << "start cmd /c " << batchFileStem << "_helper.bat\n";
-//	batchFileNIFConv << "start cmd /c " << batchFileStem << "_herlper2.bat\n";
-
-	batchFileNIFConv_helper1 << "@echo off\n";
-//	batchFileNIFConv_helper2 << "@echo off\n";
-	batchFileLODNIFConv << "@echo off\n";
-
-	int nSpawnCount = 0;
-	for (auto nifConvItem = esm.mModelsToExportList.begin();
-		nifConvItem != esm.mModelsToExportList.end();
-		nifConvItem++)
-	{
-		std::string cmdFlags;
-		if ( nifConvItem->second.second == 1) // door
-		{
-			cmdFlags = " -l 2 -s 6 -q 2";
-		}
-		else if ( nifConvItem->second.second == 2) // weapon
-		{
-			cmdFlags = " -m 5 -l 5 -s 4 -q 3";
-		}
-		else if (nifConvItem->second.second == 3) // clutter
-		{
-			cmdFlags = " -l 4 -s 4 -q 3";
-		}
-		else
-		{
-			cmdFlags = "";
-		}
-//		int nSpawnNow = (nSpawnCount++ % 3);
-		int nSpawnNow = (nSpawnCount++ % 2);
-		if (nSpawnNow == 0)
-		{
-			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
-		}
-//		else if (nSpawnNow == 1)
-		else
-		{
-			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
-		}
-/*
-		else
-		{
-			batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
-		}
-*/
-		// create LOD batch file
-		if (nifConvItem->second.second == 4)
-		{
-			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length()-4) + "_far.nif";
-			batchFileLODNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -l 15 -s 0 -q 0 -c " << " -d " << lodFileName << "\n";
-		}
-
-	}
-	batchFileNIFConv << "rename " << batchFileStem << "_helper.bat " << batchFileStem << "_helper.dat\n";
-//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
-	batchFileNIFConv << "echo ----------------------\n";
-	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
-	batchFileNIFConv << "pause\n";
-	batchFileNIFConv_helper1 << "echo ----------------------\n";
-	batchFileNIFConv_helper1 << "\n\necho Helper thread: Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
-	batchFileNIFConv_helper1 << "pause\n";
-//	batchFileNIFConv_helper2 << "echo ----------------------\n";
-//	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
-//	batchFileNIFConv_helper2 << "pause\n";
-	batchFileLODNIFConv << "echo ----------------------\n";
-	batchFileLODNIFConv << "echo LOD mesh generation complete.\n";
-	batchFileLODNIFConv << "pause\n";
-
-	batchFileNIFConv.close();
-	batchFileNIFConv_helper1.close();
-//	batchFileNIFConv_helper2.close();
-	batchFileLODNIFConv.close();
+	MakeBatchNIFFiles(esm);
+	MakeBatchDDSFiles(esm);
 
 	std::cout << std::endl << "Now writing out CSV log files..";
 

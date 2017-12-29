@@ -209,13 +209,17 @@ public:
 			const std::string& compareOperator, float compareValue, uint8_t condFlags=0,
 			uint32_t compareArg2=0);
 
-		std::map<std::string, std::pair<std::string, int>> mModelsToExportList; // mModel string, occurences
+		// Model List for NIF conversion batch file generation
+		std::map<std::string, std::pair<std::string, int>> mModelsToExportList; // mModel string, model type
 		void QueueModelForExport(std::string origString, std::string convertedString, int recordType=0);
 
-		// Info, PNAM map
+		// Info, PNAM (Previous Record) map
 		std::map<uint32_t, uint32_t> mPNAMINFOmap;
-
+		// ESM Masters List for Header
 		std::map<std::string, std::vector<std::string>> mESMMastersmap;
+
+		// DDS List for batchfile generation
+		std::map<std::string, std::pair<std::string, int>> mDDSToExportList;
 
     private:
         std::list<RecordData> mRecords;
