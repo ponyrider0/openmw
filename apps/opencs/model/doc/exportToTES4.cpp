@@ -740,7 +740,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 							prevRecordID = writer.mPNAMINFOmap[infoFormID];
 						}
 					}
-					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
+//					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
 					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
@@ -4628,7 +4628,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 			inputFolder = "BookArt\\";
 			outputFolder = "Textures\\Menus\\"; // ?
 		}
-		batchFileDDSConv << inputFolder << ddsConvItem->first << "," << outputFolder << ddsConvItem->second.first << "\n";
+		batchFileDDSConv << inputFolder << ddsConvItem->first << "," << outputFolder << ddsConvItem->second.first << ",";
 		try 
 		{
 			auto fileStream = mDocument.getVFS()->get(inputFolder + ddsConvItem->first);
@@ -4649,10 +4649,12 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 				newDDSFile.write(buffer, len);
 			}
 			newDDSFile.close();
+			batchFileDDSConv << "export success\n";
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: " << e.what() << "\n";
+			std::cout << "Error: (" << inputFolder << ddsConvItem->first  << ") " << e.what() << "\n";
+			batchFileDDSConv << "export error\n";
 		}
 		catch (...)
 		{
