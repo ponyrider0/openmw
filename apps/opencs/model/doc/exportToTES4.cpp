@@ -4594,48 +4594,52 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 {
-	std::cout << std::endl << "Creating batch file for DDS conversion...";
+	std::cout << std::endl << "Exporting landscape and icon DDS textures...\n";
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
-	std::string batchFileStem = "ModExporter_DDSConv_" + modStem;
+	std::string batchFileStem = "ModExporter_DDSexports_" + modStem;
 	std::ofstream batchFileDDSConv;
 	
-	batchFileDDSConv.open(batchFileStem + ".bat");
+	batchFileDDSConv.open(batchFileStem + ".csv");
 
-	batchFileDDSConv << "@echo off\n";
+//	batchFileDDSConv << "@echo off\n";
+	batchFileDDSConv << "original texture,exported texture\n";
 
 	if (boost::filesystem::exists("C:\\Oblivion.output\\Textures") == false)
 	{
-		boost::filesystem::create_directory("C:\\Oblivion.output\\Textures");
+		boost::filesystem::create_directories("C:\\Oblivion.output\\Textures");
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
-		batchFileDDSConv << "echo @BSAunpack @morrowind " << ddsConvItem->first << " @oblivion  " << ddsConvItem->second.first << "\n";
 		int mode = ddsConvItem->second.second;
-		std::string ddsFolder;
+		std::string inputFolder, outputFolder;
 		if (mode == 0)
 		{
-			ddsFolder = "Textures\\";
+			inputFolder = "Textures\\";
+			outputFolder = "Textures\\Landscape\\";
 		}
 		else if (mode == 1)
 		{
-			ddsFolder = "Icons\\";
+			inputFolder = "Icons\\";
+			outputFolder = "Textures\\Menus\\Icons\\";
 		}
 		else if (mode == 2)
 		{
-			ddsFolder = "BookArt\\";
+			inputFolder = "BookArt\\";
+			outputFolder = "Textures\\Menus\\"; // ?
 		}
+		batchFileDDSConv << inputFolder << ddsConvItem->first << "," << outputFolder << ddsConvItem->second.first << "\n";
 		try 
 		{
-			auto fileStream = mDocument.getVFS()->get(ddsFolder + ddsConvItem->first);
+			auto fileStream = mDocument.getVFS()->get(inputFolder + ddsConvItem->first);
 			std::ofstream newDDSFile;
 			// create output subdirectories
-			boost::filesystem::path p("C:\\Oblivion.output\\" + ddsFolder + ddsConvItem->second.first);
+			boost::filesystem::path p("C:\\Oblivion.output\\" + outputFolder + ddsConvItem->second.first);
 			if (boost::filesystem::exists(p.parent_path()) == false)
 			{
 				boost::filesystem::create_directories(p.parent_path());
 			}
-			newDDSFile.open("C:\\Oblivion.output\\" + ddsFolder + ddsConvItem->second.first, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
 			int len = 0;
 			char buffer[1024];
 			while (fileStream->eof() == false)
@@ -4656,9 +4660,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 		}
 	}
 
-	batchFileDDSConv << "echo ----------------------\n";
-	batchFileDDSConv << "echo DDS conversion complete.\n";
-	batchFileDDSConv << "pause\n";
+//	batchFileDDSConv << "echo ----------------------\n";
+//	batchFileDDSConv << "echo DDS conversion complete.\n";
+//	batchFileDDSConv << "pause\n";
 	batchFileDDSConv.close();
 }
 
