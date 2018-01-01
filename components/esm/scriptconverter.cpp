@@ -356,7 +356,7 @@ namespace ESM
 			if (tokenItem->str == "->" || tokenItem->str == ".")
 			{
 				bUseCommandReference = true;
-				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+				mCommandReference = mESM.generateEDIDTES4(possibleRef, 1, "");
 				return;
 			}
 			// putback

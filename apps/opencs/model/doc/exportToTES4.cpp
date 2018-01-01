@@ -29,30 +29,6 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
 
-/*
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
-		(mDocument.getData().getGmsts(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BirthSign> >
-		(mDocument.getData().getBirthsigns(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::BodyPart> >
-		(mDocument.getData().getBodyParts(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::SoundGenerator> >
-		(mDocument.getData().getSoundGens(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::MagicEffect> >
-		(mDocument.getData().getMagicEffects(), currentSave));
-
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
-		(mDocument.getData().getStartScripts(), currentSave));
-*/
-	// Dialogue can reference objects and cells so must be written after these records for vanilla-compatible files
-
-//	mExportOperation->appendStage (new ExportPathgridCollectionTES4Stage (mDocument, currentSave));
-
 	bool skipMasterRecords = true;
 
 //	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
@@ -263,8 +239,10 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 	{
 		const CSMWorld::Record<ESM::Dialogue>& topic = mTopics.getRecord(i);
 		ESM::Dialogue dial = topic.get();
+		std::string keyphrase = Misc::StringUtils::lowerCase(dial.mId);
+		mKeyPhraseList.push_back(keyphrase);
 
-		bool exportMe =false;
+		bool exportMe = false;
 		if (mSkipMasterRecords == true)
 		{
 			if (topic.isModified() || topic.isDeleted())
@@ -287,6 +265,23 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 	return mActiveRecords.size();
 }
 
+std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTopicList(std::string infoText)
+{
+	std::string searchText = Misc::StringUtils::lowerCase(infoText);
+	std::vector<std::string> addTopicList;
+
+	for (auto keyphrase = mKeyPhraseList.begin(); keyphrase != mKeyPhraseList.end(); keyphrase++)
+	{
+		int searchResult;
+		if ( (searchResult = searchText.find(*keyphrase)) != searchText.npos)
+		{
+			if (searchResult == 0 || searchText[searchResult-1] == ' ')
+				addTopicList.push_back(mState.getWriter().generateEDIDTES4(*keyphrase, 4));
+		}
+	}
+
+	return addTopicList;
+}
 void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	bool bIsGreeting=false;
@@ -429,7 +424,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				if (info.mData.mJournalIndex == 0)
 					continue;
 
-				info.exportTESx(writer, 4, 10, topicEDID);
+				// quest stage export
+				info.exportTESx(writer, 4, 10, topicEDID, std::vector<std::string>());
 			}
 
 		}
@@ -471,6 +467,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			uint32_t flags = 0;
 			if (topic.isDeleted()) flags |= 0x800; // DISABLED
 			writer.startRecordTES4("DIAL", flags, formID, topicEDID);
+			// dialog topic export
 			dialog.exportTESx(writer, 4);
 			writer.endRecordTES4("DIAL");
 		}
@@ -515,20 +512,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				{
 					int choiceNum = 0;
 					CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectRule);
-/*
-					std::cout << topicEDID << "-'" << selectRule->mSelectRule << "'-[" << selectRule->mValue << "]: ";
-					std::cout << selectWrapper.convertToString(selectWrapper.getFunctionName()) << " " << 
-						selectWrapper.convertToString(selectWrapper.getComparisonType()) << " " <<
-						selectWrapper.convertToString(selectWrapper.getRelationType()) << " " <<
-						selectWrapper.getVariableName() << " " <<
-						"variant: " << selectWrapper.getVariant().getType();
-					if (selectWrapper.getVariant().getType() == ESM::VarType::VT_Int)
-						std::cout << selectWrapper.getVariant().getInteger() << std::endl;
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						std::cout << selectWrapper.getVariant().getFloat() << std::endl;
-					if (selectWrapper.getVariant().getType() == ESM::VT_String)
-						std::cout << selectWrapper.getVariant().getString() << std::endl;
-*/
 					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Choice)
 					{
 						choiceNum = selectWrapper.getVariant().getInteger();
@@ -549,7 +532,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					{
 						bIsHello = true;
 					}
-
 
 				}
 
@@ -613,7 +595,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				if (bSuccess)
 				{
-					info.exportTESx(writer, 4, newType, topicEDID);
+					// todo: resolve mActor->mFaction to put factionID with PCExpelled
+					info.exportTESx(writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
 					writer.endRecordTES4("INFO");
 				}
 				else
@@ -667,7 +650,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				if (bSuccess)
 				{
-					infoChoiceItem->exportTESx(writer, 4, 0, topicEDID);
+					infoChoiceItem->exportTESx(writer, 4, 0, topicEDID, CreateAddTopicList(infoChoiceItem->mResponse));
 					writer.endRecordTES4("INFO");
 				}
 				else
@@ -740,8 +723,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 							prevRecordID = writer.mPNAMINFOmap[infoFormID];
 						}
 					}
-//					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second);
-					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, prevRecordID);
+					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
+//					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
 				}
@@ -4597,17 +4580,17 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 	std::cout << std::endl << "Exporting landscape and icon DDS textures...\n";
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
-	std::string batchFileStem = "ModExporter_DDSexports_" + modStem;
+	std::string batchFileStem = "Exported_TextureList_" + modStem;
 	std::ofstream batchFileDDSConv;
 	
 	batchFileDDSConv.open(batchFileStem + ".csv");
 
 //	batchFileDDSConv << "@echo off\n";
-	batchFileDDSConv << "original texture,exported texture\n";
+	batchFileDDSConv << "Original texture,Exported texture,Export result\n";
 
-	if (boost::filesystem::exists("C:\\Oblivion.output\\Textures") == false)
+	if (boost::filesystem::exists("C:\\Oblivion.output\\Data\\Textures") == false)
 	{
-		boost::filesystem::create_directories("C:\\Oblivion.output\\Textures");
+		boost::filesystem::create_directories("C:\\Oblivion.output\\Data\\Textures");
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
@@ -4634,7 +4617,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 			auto fileStream = mDocument.getVFS()->get(inputFolder + ddsConvItem->first);
 			std::ofstream newDDSFile;
 			// create output subdirectories
-			boost::filesystem::path p("C:\\Oblivion.output\\" + outputFolder + ddsConvItem->second.first);
+			boost::filesystem::path p("C:\\Oblivion.output\\Data\\" + outputFolder + ddsConvItem->second.first);
 			if (boost::filesystem::exists(p.parent_path()) == false)
 			{
 				boost::filesystem::create_directories(p.parent_path());
@@ -4696,9 +4679,10 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	std::cout << std::endl << "Now writing out CSV log files..";
 
+	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	// write unmatched EDIDs
 	std::ofstream unmatchedCSVFile;
-	unmatchedCSVFile.open("UnresolvedEDIDlist.csv");
+	unmatchedCSVFile.open("UnresolvedEDIDlist_" + modStem + ".csv");
 	// write header
 	unmatchedCSVFile << "Record Types" << "," << "Mod File" << "," << "EDID" << "," << "Ref Count" << "," << "Put FormID Here" << "," << "Put Comments Here" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 
@@ -4727,7 +4711,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// Write EDIDmap for exported records
 	std::ofstream exportedEDIDCSVFile;
-	exportedEDIDCSVFile.open("exportedEDIDlist.csv");
+	exportedEDIDCSVFile.open("ExportedEDIDlist_" + modStem + ".csv");
 	// write header
 	int index=0;
 	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << std::endl;
@@ -4750,7 +4734,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// write unresolved local vars
 	std::ofstream unresolvedLocalVarStream;
-	unresolvedLocalVarStream.open("UnresolvedLocalVars.csv");
+	unresolvedLocalVarStream.open("UnresolvedLocalVars_" + modStem + ".csv");
 	unresolvedLocalVarStream << "Local Var" << "," << "QuestVar Index" << "," << "Occurences" << std::endl;
 	for (auto localVarItem = esm.mUnresolvedLocalVars.begin();
 		localVarItem != esm.mUnresolvedLocalVars.end();

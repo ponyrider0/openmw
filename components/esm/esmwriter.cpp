@@ -837,6 +837,21 @@ namespace ESM
 			{
 				tempString = generateEDIDTES4(stringID, 4);
 			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "fact")
+			{
+				if (Misc::StringUtils::lowerCase(stringID) == "mages guild")
+				{
+					tempString = "fbmwMagesGuild";
+				}
+				else if (Misc::StringUtils::lowerCase(stringID) == "fighters guild")
+				{
+					tempString = "fbmwFightersGuild";
+				}
+				else
+				{
+					tempString = generateEDIDTES4(stringID, 0, sSIG);
+				}
+			}
 			else
 			{
 				tempString = generateEDIDTES4(stringID, 0, sSIG);

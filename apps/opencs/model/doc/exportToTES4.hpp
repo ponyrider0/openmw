@@ -279,16 +279,14 @@ namespace CSMDoc
 		bool mQuestMode;
 		std::vector<std::pair<ESM::DialInfo, std::string> > mGreetingInfoList;
 		std::vector<std::pair<ESM::DialInfo, std::string> > mHelloInfoList;
+		std::vector<std::string> mKeyPhraseList;
 
 	public:
-
 		ExportDialogueCollectionTES4Stage (Document& document, SavingState& state, bool processQuests, bool skipMasters=true);
-
 		virtual int setup();
-		///< \return number of steps
-
 		virtual void perform (int stage, Messages& messages);
-		///< Messages resulting from this stage will be appended to \a messages.
+		std::vector<std::string> CreateAddTopicList(std::string infoText);
+
 	};
 
 

@@ -7,6 +7,7 @@
 #include <apps/opencs/model/world/infoselectwrapper.hpp>
 #include <iostream>
 #include "scriptconverter.hpp"
+#include "loadnpc.hpp"
 
 namespace ESM
 {
@@ -135,7 +136,7 @@ namespace ESM
         }
     }
 
-	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, uint32_t prevRecordID) const
+	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, std::vector<std::string>& addTopicList, uint32_t prevRecordID) const
 	{
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
@@ -144,7 +145,7 @@ namespace ESM
 
 		uint32_t tempFormID;
 		std::string strEDID, tempStr;
-		std::ostringstream tempStream, debugstream;
+		std::ostringstream debugstream;
 		strEDID = esm.generateEDIDTES4(mId, 4);
 
 		switch (newType)
@@ -255,13 +256,16 @@ namespace ESM
 			esm.endSubRecordTES4("PNAM");
 
 			// NAME... Add Topics: Bugged behavior in TES4 engine: preferred method is by addtopic command in result script
-			uint32_t topicFormID = 0;
-			//		topicFormID = esm.crossRefStringID("", "DIAL", false);
-			if (topicFormID != 0)
+			if (addTopicList.empty() != true)
 			{
-				esm.startSubRecordTES4("NAME");
-				esm.writeT<uint32_t>(topicFormID); // can have multiple
-				esm.endSubRecordTES4("NAME");
+				uint32_t topicFormID = 0;
+				for (auto addTopicItem = addTopicList.begin(); addTopicItem != addTopicList.end(); addTopicItem++)
+				{
+					topicFormID = esm.crossRefStringID(*addTopicItem, "DIAL", false);
+					esm.startSubRecordTES4("NAME");
+					esm.writeT<uint32_t>(topicFormID); // can have multiple
+					esm.endSubRecordTES4("NAME");
+				}
 			}
 
 			// TRDT, NAM1, NAM2... responses
@@ -350,13 +354,13 @@ namespace ESM
 			{
 				uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
 				uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
-//				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
+				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
 			}
 			if (mRace != "")
 			{
 				uint32_t raceFormID = esm.crossRefStringID(mRace, "RACE");
 				uint32_t compareFunction = 0x0045; // GetIsRace (decimal 69)
-//				esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
+				esm.exportConditionalExpression(compareFunction, raceFormID, "=", 1.0);
 			}
 			if (mClass != "")
 			{
@@ -368,7 +372,7 @@ namespace ESM
 				else
 				{
 					uint32_t compareFunction = 0x0044; // GetIsClass (decimal 68)
-//					esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
+					esm.exportConditionalExpression(compareFunction, classFormID, "=", 1.0);
 				}
 			}
 			if (mFaction != "")
@@ -383,7 +387,7 @@ namespace ESM
 				{
 					uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
 					float factionRankVal = mData.mRank;
-//					esm.exportConditionalExpression(compareFunction, factionFormID, ">", factionRankVal);
+					esm.exportConditionalExpression(compareFunction, factionFormID, ">", factionRankVal);
 				}
 			}
 			if (mPcFaction != "")
@@ -398,7 +402,7 @@ namespace ESM
 					uint32_t compareFunction = 0x0049; // GetFactionRank (decimal 73)
 					uint8_t flags = 0x02; // run on target (aka PC)
 					float factionRankVal = mData.mPCrank;
-//					esm.exportConditionalExpression(compareFunction, pcFactFormID, ">", factionRankVal, flags);
+					esm.exportConditionalExpression(compareFunction, pcFactFormID, ">", factionRankVal, flags);
 				}
 			}
 			if (mCell != "")
@@ -407,36 +411,51 @@ namespace ESM
 				if (cellFormID != 0)
 				{
 					uint32_t compareFunction = 0x0043; // GetInCell (decimal 67)
-//					esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
+					esm.exportConditionalExpression(compareFunction, cellFormID, "=", 1.0);
 				}
 				else
 				{
-					// use mwDialogHelper quest
-// TODO: finish questVarName lookup
-//					uint32_t compareFunction = 0x4F; // GetQuestVariable
-//					std::string questVarName = "GetIn_" + esm.generateEDIDTES4(mCell, 0, "CELL");
-//					uint32_t compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-//					uint32_t compareArg2 = 0; // todo: lookup questVarName;
-//					esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0, 0, compareArg2);
+					uint32_t compareFunction = 0x4F; // GetQuestVariable
+					std::string varName = "GetIn_" + esm.generateEDIDTES4(mCell, 0, "CELL");
+					varName = Misc::StringUtils::lowerCase( varName );
+					uint32_t compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+					uint32_t compareArg2;
+					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
+					{
+						std::cout << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
+							esm.mUnresolvedLocalVars[varName] = 1;
+						else
+							esm.mUnresolvedLocalVars[varName] += 1;
+//						compareFunction = 0;
+						compareArg2 = 0;
+					}
+					else
+					{
+						compareArg2 = esm.mLocalVarIndexmap[varName];
+					}
+					if (compareFunction != 0)
+						esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0, 0, compareArg2);
 				}
 			}
 			if (mData.mGender != ESM::DialInfo::Gender::NA)
 			{
 				uint32_t compareFunction = 0x46; // GetIsSex
 				uint32_t compareArg1 = mData.mGender;
-//				esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0);
+				esm.exportConditionalExpression(compareFunction, compareArg1, "=", 1.0);
 			}
 			if (mData.mDisposition > 0) // include dispo check if greater than 0
 			{
 				uint32_t compareFunction = 0x4C; // GetDisposition
 				uint32_t compareArg1 = 0; // Target of conversation (player)
 				float compareVal = mData.mDisposition;
-//				esm.exportConditionalExpression(compareFunction, compareArg1, ">=", compareVal);
+				esm.exportConditionalExpression(compareFunction, compareArg1, ">=", compareVal);
 			}
 
 			for (auto selectItem = mSelects.begin(); selectItem != mSelects.end(); selectItem++)
 			{
 				CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectItem);
+				std::stringstream tempStream;
 				uint32_t compareFunction=0;
 				uint32_t compareArg1=0;
 				uint32_t compareArg2=0;
@@ -492,7 +511,15 @@ namespace ESM
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
 					compareFunction = 0xC1; // GetPCExpelled (int 193)
-					compareArg1 = esm.crossRefStringID(mFaction, "FACT");
+					if (mFaction == "")
+					{
+						// retrieve NPC's faction
+//						ESM::NPC npcRec = 
+					}
+					else
+					{
+						compareArg1 = esm.crossRefStringID(mFaction, "FACT");
+					}
 // BREAK if compareArg is null
 					if (compareArg1 == 0)
 					{
@@ -601,21 +628,26 @@ namespace ESM
 					// rank == 3 Eligible, add in resultscript: PCRaiseRank to levelup rank
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					varName = ""; // todo: make var for rankrequirement
+					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+						compareVal = selectWrapper.getVariant().getFloat();
+					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+						compareVal = selectWrapper.getVariant().getInteger();
+					varName = "Function_RankRequirement";
+					varName = Misc::StringUtils::lowerCase( varName );
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
 						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-						compareFunction = 0;
+						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
+							esm.mUnresolvedLocalVars[varName] = 1;
+						else
+							esm.mUnresolvedLocalVars[varName] += 1;
+//						compareFunction = 0;
 						compareArg2 = 0;
 					}
 					else
 					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Item:
@@ -652,7 +684,7 @@ namespace ESM
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Local:
 					varName = Misc::StringUtils::lowerCase( selectWrapper.getVariableName() );
-					if (Misc::StringUtils::lowerCase(varName) == "nolore")
+					if ( varName == "nolore")
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
 						compareArg1 = esm.crossRefStringID("noLore", "FACT", false);
@@ -667,11 +699,12 @@ namespace ESM
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
 						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-						compareFunction = 0;
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
+//						compareFunction = 0;
+						compareArg2 = 0;
 					}
 					else
 					{
@@ -711,8 +744,8 @@ namespace ESM
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotLocal:
-					varName = selectWrapper.getVariableName();
-					if (Misc::StringUtils::lowerCase(varName) == "nolore")
+					varName = Misc::StringUtils::lowerCase( selectWrapper.getVariableName() );
+					if (varName == "nolore")
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
 						compareArg1 = esm.crossRefStringID("noLore", "FACT", false);
@@ -728,11 +761,12 @@ namespace ESM
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
 						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-						compareFunction = 0;
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
+//						compareFunction = 0;
+						compareArg2 = 0;
 					}
 					else
 					{
@@ -779,13 +813,24 @@ namespace ESM
 //						compareArg1 = esm.crossRefStringID(varName, "REGN");
 					if (compareArg1 == 0)
 					{
-						// use mwDialogHelper quest
-						compareFunction = 0;
-// TODO: finish varName lookup
-//						compareFunction = 0x4F; // GetQuestVariable
-//						varName = "GetIn_" + varName;
-//						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-//						compareArg2 = 0; // todo: lookup varName;
+						compareFunction = 0x4F; // GetQuestVariable
+						varName = "GetIn_" + esm.generateEDIDTES4(varName, 0, "CELL");
+						varName = Misc::StringUtils::lowerCase( varName );
+						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+						if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
+						{
+							std::cout << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+							if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
+								esm.mUnresolvedLocalVars[varName] = 1;
+							else
+								esm.mUnresolvedLocalVars[varName] += 1;
+//							compareFunction = 0;
+							compareArg2 = 0;
+						}
+						else
+						{
+							compareArg2 = esm.mLocalVarIndexmap[varName];
+						}
 					}
 					compareOperator = "=";
 					compareVal = 0.0f;
@@ -1068,8 +1113,8 @@ namespace ESM
 				}
 
 // DISABLED TO FIX CSE CRASHES
-//				if (compareFunction != 0 && compareArg1 != 0)
-//					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
+				if (compareFunction != 0)
+					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
 
 			} // for each mSelects
 
