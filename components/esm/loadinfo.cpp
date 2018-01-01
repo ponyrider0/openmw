@@ -136,7 +136,7 @@ namespace ESM
         }
     }
 
-	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, std::vector<std::string>& addTopicList, uint32_t prevRecordID) const
+	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, const std::vector<std::string>& addTopicList, uint32_t prevRecordID) const
 	{
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
