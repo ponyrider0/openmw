@@ -271,6 +271,7 @@ namespace CSMDoc
 
 	class ExportDialogueCollectionTES4Stage : public Stage
 	{
+		CSMDoc::Document& mDocument;
 		SavingState& mState;
 		const CSMWorld::IdCollection<ESM::Dialogue>& mTopics;
 		CSMWorld::InfoCollection& mInfos;

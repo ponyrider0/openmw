@@ -8,6 +8,7 @@
 #include <iostream>
 #include "scriptconverter.hpp"
 #include "loadnpc.hpp"
+#include <apps/opencs/model/doc/document.hpp>
 
 namespace ESM
 {
@@ -136,7 +137,7 @@ namespace ESM
         }
     }
 
-	void DialInfo::exportTESx(ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, const std::vector<std::string>& addTopicList, uint32_t prevRecordID) const
+	void DialInfo::exportTESx(CSMDoc::Document &doc, ESMWriter & esm, int export_format, int newType, const std::string& topicEDID, const std::vector<std::string>& addTopicList, uint32_t prevRecordID) const
 	{
 		bool bIsTopic=false;
 		bool bIsGreeting=false;
@@ -484,6 +485,10 @@ namespace ESM
 					compareOperator = "!=";
 					break;
 				}
+				if (selectWrapper.getVariant().getType() == ESM::VT_Float)
+					compareVal = selectWrapper.getVariant().getFloat();
+				if (selectWrapper.getVariant().getType() == ESM::VT_Int)
+					compareVal = selectWrapper.getVariant().getInteger();
 
 				std::string sSIG = "";
 				std::string varName = "";
@@ -503,34 +508,23 @@ namespace ESM
 						compareFunction = 0;
 						break;
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
 					compareFunction = 0xC1; // GetPCExpelled (int 193)
-					if (mFaction == "")
+					// retrieve NPC's faction
+					if (mActor != 0)
 					{
-						// retrieve NPC's faction
-//						ESM::NPC npcRec = 
+						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
+						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
+						compareArg1 = esm.crossRefStringID(actorFaction, "FACT");
 					}
 					else
 					{
-						compareArg1 = esm.crossRefStringID(mFaction, "FACT");
-					}
-// BREAK if compareArg is null
-					if (compareArg1 == 0)
-					{
+						// TODO: record unresolved faction
 						compareFunction = 0;
 						break;
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
-	//				flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Global:
@@ -538,20 +532,12 @@ namespace ESM
 					if (Misc::StringUtils::lowerCase(varName) == "random100")
 					{
 						compareFunction = 0x4D; // GetRandomPercent
-						if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-							compareVal = selectWrapper.getVariant().getFloat();
-						if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-							compareVal = selectWrapper.getVariant().getInteger();
 						break;
 					}
 					if (Misc::StringUtils::lowerCase(varName) == "pcrace")
 					{
 						compareFunction = 0x82; // GetPCIsRace
-						int tempRaceVal;
-						if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-							tempRaceVal = selectWrapper.getVariant().getFloat();
-						if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-							tempRaceVal = selectWrapper.getVariant().getInteger();
+						int tempRaceVal = compareVal;
 						uint32_t raceFormID;
 						switch (tempRaceVal)
 						{
@@ -595,30 +581,26 @@ namespace ESM
 // BREAK if Global is NULL
 					if (compareArg1 == 0)
 					{
+						// TODO: record unresolved global varname
 						compareFunction = 0;
 						break;
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameFaction:
+/*
 					compareFunction = 0x2A; // SameFaction (int 42)
-					varName = selectWrapper.getVariableName();
-					compareArg1 = esm.crossRefStringID(varName, "FACT");
-// BREAK if compareArg is NULL
+					compareArg1 = 0;
 					if (compareArg1 == 0)
 					{
-						compareFunction = 0;
-						break;
+						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
+						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
+						compareArg1 = esm.crossRefStringID(actorFaction, "FACT");
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
-					flags = 0x02; // Run on Target
+*/
+// BREAK if compareArg is NULL
+					compareFunction = 0x85; // SameFactionAsPC
+//					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_RankRequirement:
@@ -628,10 +610,6 @@ namespace ESM
 					// rank == 3 Eligible, add in resultscript: PCRaiseRank to levelup rank
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					varName = "Function_RankRequirement";
 					varName = Misc::StringUtils::lowerCase( varName );
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
@@ -641,7 +619,7 @@ namespace ESM
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
-//						compareFunction = 0;
+						compareFunction = 0;
 						compareArg2 = 0;
 					}
 					else
@@ -656,30 +634,20 @@ namespace ESM
 					if ( esm.mStringTypeMap.find(varName) != esm.mStringTypeMap.end())
 						sSIG = esm.mStringTypeMap.find(varName)->second;
 					compareArg1 = esm.crossRefStringID(varName, sSIG);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
-	//				flags = 0x02; // Run on Target
+					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotId:
+					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x48; // GetIsID (int 72)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
-					compareOperator = flipCompareOperator(compareOperator);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcGender:
 					compareFunction = 0x46; // GetIsSex (int 70)
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
+					compareArg1 = 1; // female==1?
+					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Local:
@@ -688,8 +656,6 @@ namespace ESM
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
 						compareArg1 = esm.crossRefStringID("noLore", "FACT", false);
-						compareOperator = "=";
-						compareVal = 1.0f;
 						break;
 					}
 					// use quest variable instead of directly accessing script-variable, so that
@@ -703,57 +669,37 @@ namespace ESM
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
-//						compareFunction = 0;
+						compareFunction = 0;
 						compareArg2 = 0;
 					}
 					else
 					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
 					}
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Dead:
 					compareFunction = 0x54; // GetDeadCount (int 84)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();				
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcReputation:
 					compareFunction = 0xF9; // GetPCFame (int 249)
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcCrimeLevel:
 					compareFunction = 0x74; // GetCrimeGold (int 116)
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotLocal:
+					compareOperator = flipCompareOperator(compareOperator);
 					varName = Misc::StringUtils::lowerCase( selectWrapper.getVariableName() );
 					if (varName == "nolore")
 					{
 						compareFunction = 0x47; // GetInFaction (int 71)
 						compareArg1 = esm.crossRefStringID("noLore", "FACT", false);
-						compareOperator = flipCompareOperator(compareOperator);
-						if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-							compareVal = selectWrapper.getVariant().getFloat();
-						if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-							compareVal = selectWrapper.getVariant().getInteger();
 						break;
 					}
 					compareFunction = 0x4F; // GetQuestVariable (int 79)
@@ -765,46 +711,38 @@ namespace ESM
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
 							esm.mUnresolvedLocalVars[varName] += 1;
-//						compareFunction = 0;
+						compareFunction = 0;
 						compareArg2 = 0;
 					}
 					else
 					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
 					}
-					compareOperator = flipCompareOperator(compareOperator);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameSex:
-					compareFunction = 0x2C; // SameSex (decimal 206)
-					varName = selectWrapper.getVariableName();
-					compareArg1 = esm.crossRefStringID(varName, "NPC_");
-					compareOperator = "=";
-					compareVal = 1.0f;
+//					compareFunction = 0x2C; // SameSex (decimal 206)
+//					varName = selectWrapper.getVariableName();
+//					compareArg1 = esm.crossRefStringID(varName, "NPC_");
+					compareFunction = 0x87; // SameSexAsPC
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotClass:
+					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x44; // GetIsClass (decimal 68)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CLAS");
 // BREAK if compareArg is null
 					if (compareArg1 == 0)
 					{
+						// TODO: record unresolved record
 						compareFunction = 0;
 						break;
 					}
-					compareOperator = flipCompareOperator(compareOperator);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotCell:
+					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x43; // GetInCell (decimal 67)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CELL");
@@ -824,7 +762,7 @@ namespace ESM
 								esm.mUnresolvedLocalVars[varName] = 1;
 							else
 								esm.mUnresolvedLocalVars[varName] += 1;
-//							compareFunction = 0;
+							compareFunction = 0;
 							compareArg2 = 0;
 						}
 						else
@@ -832,278 +770,180 @@ namespace ESM
 							compareArg2 = esm.mLocalVarIndexmap[varName];
 						}
 					}
-					compareOperator = "=";
-					compareVal = 0.0f;
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotFaction:
+					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x47; // GetInFaction (decimal 71)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "FACT");
-					compareOperator = flipCompareOperator(compareOperator);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
+					if (compareArg1 == 0)
+					{
+						// TODO: record unresolved record
+						compareFunction = 0;
+						break;
+					}
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_CreatureTarget:
-					compareFunction = 0x0; // ?
-					varName = selectWrapper.getVariableName();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
-					std::cout << selectWrapper.toString() << std::endl;
+					compareFunction = 0x40; // GetIsCreature
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcDestruction:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Destruction);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Hello:
 					compareFunction = 0x0; // ?
 					varName = selectWrapper.getVariableName();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					std::cout << "Unresolved Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotRace:
+					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x45; // GetIsRace
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "RACE");
-					compareOperator = flipCompareOperator(compareOperator);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
+					if (compareArg1 == 0)
+					{
+						// TODO: record unresolved record
+						compareFunction = 0;
+						break;
+					}
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Reputation:
 					compareFunction = 0x0; // ?
 					varName = selectWrapper.getVariableName();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					std::cout << selectWrapper.toString() << std::endl;
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcClothingModifier:
 					compareFunction = 0x29; // GetClothingVal
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcCommonDisease:
 					compareFunction = 0x27; // GetDisease
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcBlightDisease:
 					// TODO: replace with user quest var
 					compareFunction = 0x27; // GetDisease
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_TalkedToPc:
 					compareFunction = 0x32; // GetTalkedToPC
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcEnchant:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Enchant);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcIntelligence:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Intelligence);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcAgility:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Agility);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcSneak:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Sneak);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcSecurity:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Security);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Level:
 					compareFunction = 0x50; // GetLevel
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcConjuration:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Conjuration);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_FactionRankDifference:
 					compareFunction = 0x3C; // GetFactionRankDifference
-					compareArg1 = esm.crossRefStringID(mFaction, "FACT");
-// BREAK if compareArg is NULL
-					if (compareArg1 == 0)
+					compareArg2 = esm.crossRefStringID(mActor, "NPC_");
+					if (compareArg2 != 0)
 					{
+						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
+						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
+						compareArg1 = esm.crossRefStringID(actorFaction, "FACT");
+					}
+					else
+					{
+						// TODO: record unresolved record
 						compareFunction = 0;
 						break;
 					}
-					varName = selectWrapper.getVariableName();
-					compareArg2 = esm.crossRefStringID(varName, "NPC_");
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcAlchemy:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Alchemy);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcVampire:
 					compareFunction = 0x28; // GetVampire (decimal 14)
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcStrength:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Strength);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcPersonality:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Personality);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int )
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcMerchantile:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Mercantile);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcSpeechcraft:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Speechcraft);
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcLevel:
 					compareFunction = 0x50; // GetLevel
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
 					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Alarm:
 					compareFunction = 0x3D; // GetAlarmed
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
-	//				flags = 0x02; // Run on Target
+					// TODO: replace with generalized Alarm == val
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameRace:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					varName = selectWrapper.getVariableName();
-					compareArg1 = esm.crossRefStringID(varName, "NPC_");
-					if (selectWrapper.getVariant().getType() == ESM::VT_Float)
-						compareVal = selectWrapper.getVariant().getFloat();
-					if (selectWrapper.getVariant().getType() == ESM::VT_Int)
-						compareVal = selectWrapper.getVariant().getInteger();
+					compareFunction = 0x86; // SameRaceAsPC
 					break;
 
 				default:

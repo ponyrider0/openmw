@@ -7,6 +7,11 @@
 #include "defs.hpp"
 #include "variant.hpp"
 
+namespace CSMDoc
+{
+class Document;
+}
+
 namespace ESM
 {
 
@@ -109,7 +114,7 @@ struct DialInfo
     ///< Loads Info record
 
     void save(ESMWriter &esm, bool isDeleted = false) const;
-	void exportTESx(ESMWriter &esm, int export_format, int newType, const std::string& topicEDID, const std::vector<std::string>& addTopicList, uint32_t prevRecordID=0) const;
+	void exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format, int newType, const std::string& topicEDID, const std::vector<std::string>& addTopicList, uint32_t prevRecordID=0) const;
 	std::string flipCompareOperator(const std::string& compareOp) const;
 
     void blank();

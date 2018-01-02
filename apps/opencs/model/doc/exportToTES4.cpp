@@ -223,7 +223,7 @@ void CSMDoc::ExportHeaderTES4Stage::perform (int stage, Messages& messages)
 
 CSMDoc::ExportDialogueCollectionTES4Stage::ExportDialogueCollectionTES4Stage (Document& document,
 	SavingState& state, bool processQuests, bool skipMasters)
-	: mState (state),
+	: mDocument(document), mState (state),
 	mTopics (processQuests ? document.getData().getJournals() : document.getData().getTopics()),
 	mInfos (processQuests ? document.getData().getJournalInfos() : document.getData().getTopicInfos()),
 	mSkipMasterRecords (skipMasters),
@@ -425,7 +425,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					continue;
 
 				// quest stage export
-				info.exportTESx(writer, 4, 10, topicEDID, std::vector<std::string>());
+				info.exportTESx(mDocument, writer, 4, 10, topicEDID, std::vector<std::string>());
 			}
 
 		}
@@ -596,7 +596,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				if (bSuccess)
 				{
 					// todo: resolve mActor->mFaction to put factionID with PCExpelled
-					info.exportTESx(writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
+					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
 					writer.endRecordTES4("INFO");
 				}
 				else
@@ -650,7 +650,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 				if (bSuccess)
 				{
-					infoChoiceItem->exportTESx(writer, 4, 0, topicEDID, CreateAddTopicList(infoChoiceItem->mResponse));
+					infoChoiceItem->exportTESx(mDocument, writer, 4, 0, topicEDID, CreateAddTopicList(infoChoiceItem->mResponse));
 					writer.endRecordTES4("INFO");
 				}
 				else
@@ -723,8 +723,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 							prevRecordID = writer.mPNAMINFOmap[infoFormID];
 						}
 					}
-					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
-//					greetingItem->first.exportTESx(writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
+					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
+//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
 				}
