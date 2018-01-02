@@ -513,7 +513,7 @@ namespace ESM
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
 					compareFunction = 0xC1; // GetPCExpelled (int 193)
 					// retrieve NPC's faction
-					if (mActor != 0)
+					if (mActor != "")
 					{
 						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
 						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
