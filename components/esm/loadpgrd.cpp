@@ -4,6 +4,14 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+void inline OutputDebugString(char *c_string) { std::cout << c_string; };
+void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
+#endif
+
 namespace ESM
 {
     unsigned int Pathgrid::sRecordId = REC_PGRD;
@@ -210,14 +218,16 @@ namespace ESM
 				int CellXofNode = nodeIter->mX / 4096;
 				if (nodeIter->mX < 0)
 				{
-	//				CellXofNode--;
-					throw std::runtime_error("PathGrid ERROR: negative value for node position");
+					CellXofNode--;
+//					throw std::runtime_error("PathGrid ERROR: negative value for node position");
+					OutputDebugString("PathGrid ERROR: negative value for node position\n");
 				}
 				int CellYofNode = nodeIter->mY / 4096;
 				if (nodeIter->mY < 0) 
 				{
 					CellYofNode--;
-					throw std::runtime_error("PathGrid ERROR: negative value for node position");
+//					throw std::runtime_error("PathGrid ERROR: negative value for node position");
+					OutputDebugString("PathGrid ERROR: negative value for node position\n");
 				}
 				if ( CellXofNode == (subCellX % 2) && CellYofNode == (subCellY % 2) )
 					inThisSubCell = true;
