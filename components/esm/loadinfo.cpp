@@ -998,21 +998,21 @@ namespace ESM
 		esm.writeT<uint8_t>(0); // unused * 4
 		esm.writeT<uint8_t>(0); // unused * 4
 		esm.writeT<uint8_t>(0); // unused * 4
-		esm.writeT<uint32_t>(0); // refcount
-		esm.writeT<uint32_t>(0); // compiledsize
-		esm.writeT<uint32_t>(0); // varcount
-		esm.writeT<uint32_t>(0); // scripttype
-//		esm.writeT<uint32_t>(refCount);
-//		esm.writeT<uint32_t>(compiledSize);
-//		esm.writeT<uint32_t>(varCount);
-//		esm.writeT<uint32_t>(scriptType);
+//		esm.writeT<uint32_t>(0); // refcount
+//		esm.writeT<uint32_t>(0); // compiledsize
+//		esm.writeT<uint32_t>(0); // varcount
+//		esm.writeT<uint32_t>(0); // scripttype
+		esm.writeT<uint32_t>(refCount);
+		esm.writeT<uint32_t>(compiledSize);
+		esm.writeT<uint32_t>(varCount);
+		esm.writeT<uint32_t>(scriptType);
 		esm.endSubRecordTES4("SCHR");
 
-/*
+
 		// SCDA... (compiled script)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(0, 0);
-//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+//		esm.write(0, 0);
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX... (script source text)
@@ -1027,7 +1027,7 @@ namespace ESM
 			esm.writeT<uint32_t>(*refItem); 
 			esm.endSubRecordTES4("SCRO");
 		}
-*/
+
 	}
 
 	std::string DialInfo::flipCompareOperator(const std::string & compareOp) const
