@@ -273,10 +273,16 @@ std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTop
 	for (auto keyphrase = mKeyPhraseList.begin(); keyphrase != mKeyPhraseList.end(); keyphrase++)
 	{
 		int searchResult;
+		int keyphrase_length = keyphrase->length();
 		if ( (searchResult = searchText.find(*keyphrase)) != searchText.npos)
 		{
-			if (searchResult == 0 || searchText[searchResult-1] == ' ')
+			if (
+				(searchResult == 0 || (searchText[searchResult - 1] < 'a' || searchText[searchResult - 1] > 'z'))
+//				&&	(searchText.length() == keyphrase_length || (searchText[keyphrase_length] < 'a' || searchText[keyphrase_length] > 'z' || searchText[keyphrase_length] == 's') )
+				)
+			{
 				addTopicList.push_back(mState.getWriter().generateEDIDTES4(*keyphrase, 4));
+			}
 		}
 	}
 
@@ -4499,9 +4505,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	// set up header code for spawning
 	batchFileNIFConv << "@echo off\n";
 	batchFileNIFConv << "REM ModExporter_NIFConv batch file converter for " << modStem << " created with ModExporter" << "\n";
-	batchFileNIFConv << "rename " << batchFileStem << "_helper.dat " << batchFileStem << "_helper.bat\n";
+	batchFileNIFConv << "rename \"" << batchFileStem << "_helper.dat\" \"" << batchFileStem << "_helper.bat\"\n";
 	//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.dat " << batchFileStem << "_helper2.bat\n";
-	batchFileNIFConv << "start cmd /c " << batchFileStem << "_helper.bat\n";
+	batchFileNIFConv << "start cmd /c \"" << batchFileStem << "_helper.bat\"\n";
 	//	batchFileNIFConv << "start cmd /c " << batchFileStem << "_herlper2.bat\n";
 
 	batchFileNIFConv_helper1 << "@echo off\n";
@@ -4553,7 +4559,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		}
 
 	}
-	batchFileNIFConv << "rename " << batchFileStem << "_helper.bat " << batchFileStem << "_helper.dat\n";
+	batchFileNIFConv << "rename \"" << batchFileStem << "_helper.bat\" \"" << batchFileStem << "_helper.dat\"\n";
 	//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
 	batchFileNIFConv << "echo ----------------------\n";
 	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
