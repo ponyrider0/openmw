@@ -1466,7 +1466,7 @@ namespace ESM
 		if ( (Misc::StringUtils::lowerCase(name) == "player") ||
 			(Misc::StringUtils::lowerCase(name) == "playerref") )
 			return name;
-		if (Misc::StringUtils::lowerCase(finalEDID) == "gold_001")
+		if (Misc::StringUtils::lowerCase(name) == "gold_001")
 			return "Gold001";
 
 		if (sSIG != "")
