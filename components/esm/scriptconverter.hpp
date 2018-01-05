@@ -62,7 +62,10 @@ namespace ESM {
 		std::string mCallBackName = "";
 
 		bool bUseCommandReference = false;
+		bool bUseVarReference = false;
 		std::string mCommandReference = "";
+		std::string mVarReference = "";
+		int mDialogHelperIndex=0;
 		bool bSetCmd = false;
 		bool bIfCmd = false;
 		int mSetCmd_StartPosition=0;
@@ -81,8 +84,13 @@ namespace ESM {
 		void parse_expression(std::vector<struct Token>::iterator& tokenItem);
 		void parse_operator(std::vector<struct Token>::iterator& tokenItem);
 
+		uint16_t getOpCode(std::string OpCodeString);
+		void parse_moddisposition(std::vector<struct Token>::iterator& tokenItem);
 		void parse_set(std::vector<struct Token>::iterator& tokenItem);
-		void parse_unarycmd(std::vector<struct Token>::iterator& tokenItem);
+		void parse_0arg(std::vector<struct Token>::iterator& tokenItem);
+		bool sub_parse_arg(std::vector<struct Token>::iterator& tokenItem, std::string& argString, bool& bEvalArgString, bool& bNeedsDialogHelper);
+		void parse_1arg(std::vector<struct Token>::iterator& tokenItem);
+		void parse_2arg(std::vector<struct Token>::iterator& tokenItem);
 		void parse_localvar(std::vector<struct Token>::iterator& tokenItem);
 		void parse_if(std::vector<struct Token>::iterator& tokenItem);
 		void parse_endif(std::vector<struct Token>::iterator& tokenItem);
@@ -97,9 +105,9 @@ namespace ESM {
 		void compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, std::vector<uint8_t> param1data, std::vector<uint8_t> param2data);
 		std::vector<uint8_t> compile_param_long(int int_val);
 		std::vector<uint8_t> compile_param_float(double float_val);
-		std::vector<uint8_t> compile_param_varname(const std::string& varName);
-		uint16_t prepare_localvar(const std::string& varName);
-		uint16_t prepare_reference(const std::string& refName);
+		std::vector<uint8_t> compile_param_varname(const std::string& varName, const std::string &sSIG="", int mode=0);
+		uint16_t prepare_localvar(const std::string& varName, int mode=0);
+		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG="", int mode=0 );
 		void nextLine(std::vector<struct Token>::iterator & tokenItem);
 
 		void error_mesg(std::string);
