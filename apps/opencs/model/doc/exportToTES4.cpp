@@ -14,6 +14,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include "document.hpp"
 #include <components/esm/scriptconverter.hpp>
 #include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -4399,6 +4400,12 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	// TODO: substitute Morroblivion EDID
 	strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
 	uint32_t formID = writer.crossRefStringID(strEDID, "LTEX", false, true);
+	if (formID == 0)
+	{
+		// reserve new formID
+		formID = writer.getNextAvailableFormID();
+		formID = writer.reserveFormID(formID, strEDID, "LTEX");
+	}
 
 	bool bExportRecord = false;
 	if (mSkipMasterRecords)
@@ -4409,7 +4416,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 		bExportRecord |= landTexture.isModified();
 		bExportRecord |= landTexture.isDeleted();
 //		bExportRecord |= (formID == 0);
-//		bExportRecord |= ( (formID & 0xFF000000) > 0x01000000 );
+		bExportRecord &= ( (formID & 0xFF000000) > 0x01000000 );
 //		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
 	}
 	else
@@ -4427,13 +4434,6 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 
 	if (bExportRecord)
 	{
-		if (formID == 0)
-		{
-			// reserve new formID
-			formID = writer.getNextAvailableFormID();
-			formID = writer.reserveFormID(formID, strEDID, "LTEX");
-		}
-
 		uint32_t flags=0;
 		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
 			flags |= 0x800; // DO NOT USE DELETED, USE DISABLED
@@ -4581,49 +4581,55 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 }
 
-void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
+void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 {
 	std::cout << std::endl << "Exporting landscape and icon DDS textures...\n";
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
-	std::string batchFileStem = "Exported_TextureList_" + modStem;
-	std::ofstream batchFileDDSConv;
-	
-	batchFileDDSConv.open(batchFileStem + ".csv");
+	std::string logFileStem = "Exported_TextureList_" + modStem;
+	std::ofstream logFileDDSConv;
 
-//	batchFileDDSConv << "@echo off\n";
-	batchFileDDSConv << "Original texture,Exported texture,Export result\n";
+#ifdef _WIN32
+	std::string outputRoot = "C:\\";
+#else
+	std::string outputRoot = "~\\";
+#endif
 
-	if (boost::filesystem::exists("C:\\Oblivion.output\\Data\\Textures") == false)
+	logFileDDSConv.open(logFileStem + ".csv");
+
+	logFileDDSConv << "Original texture,Exported texture,Export result\n";
+	boost::filesystem::path rootDir(outputRoot + "Oblivion.output\\Data\\Textures");
+
+	if (boost::filesystem::exists(rootDir) == false)
 	{
-		boost::filesystem::create_directories("C:\\Oblivion.output\\Data\\Textures");
+		boost::filesystem::create_directories(rootDir);
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
 		int mode = ddsConvItem->second.second;
-		std::string inputFolder, outputFolder;
+		std::string inputFilename, outputFolder;
 		if (mode == 0)
 		{
-			inputFolder = "Textures\\";
+			inputFilename = Misc::ResourceHelpers::correctTexturePath(ddsConvItem->first, mDocument.getVFS());
 			outputFolder = "Textures\\Landscape\\";
 		}
 		else if (mode == 1)
 		{
-			inputFolder = "Icons\\";
+			inputFilename = Misc::ResourceHelpers::correctIconPath(ddsConvItem->first, mDocument.getVFS());
 			outputFolder = "Textures\\Menus\\Icons\\";
 		}
 		else if (mode == 2)
 		{
-			inputFolder = "BookArt\\";
+			inputFilename = Misc::ResourceHelpers::correctBookartPath(ddsConvItem->first, mDocument.getVFS());
 			outputFolder = "Textures\\Menus\\"; // ?
 		}
-		batchFileDDSConv << inputFolder << ddsConvItem->first << "," << outputFolder << ddsConvItem->second.first << ",";
+		logFileDDSConv << inputFilename << "," << outputFolder << ddsConvItem->second.first << ",";
 		try 
 		{
-			auto fileStream = mDocument.getVFS()->get(inputFolder + ddsConvItem->first);
+			auto fileStream = mDocument.getVFS()->get(inputFilename);
 			std::ofstream newDDSFile;
 			// create output subdirectories
-			boost::filesystem::path p("C:\\Oblivion.output\\Data\\" + outputFolder + ddsConvItem->second.first);
+			boost::filesystem::path p(outputRoot + "Oblivion.output\\Data\\" + outputFolder + ddsConvItem->second.first);
 			if (boost::filesystem::exists(p.parent_path()) == false)
 			{
 				boost::filesystem::create_directories(p.parent_path());
@@ -4638,12 +4644,12 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 				newDDSFile.write(buffer, len);
 			}
 			newDDSFile.close();
-			batchFileDDSConv << "export success\n";
+			logFileDDSConv << "export success\n";
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: (" << inputFolder << ddsConvItem->first  << ") " << e.what() << "\n";
-			batchFileDDSConv << "export error\n";
+			std::cout << "Error: (" << inputFilename << ") " << e.what() << "\n";
+			logFileDDSConv << "export error\n";
 		}
 		catch (...)
 		{
@@ -4651,10 +4657,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchDDSFiles(ESM::ESMWriter & esm)
 		}
 	}
 
-//	batchFileDDSConv << "echo ----------------------\n";
-//	batchFileDDSConv << "echo DDS conversion complete.\n";
-//	batchFileDDSConv << "pause\n";
-	batchFileDDSConv.close();
+	logFileDDSConv.close();
 }
 
 void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
@@ -4681,7 +4684,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	ESM::ESMWriter& esm = mState.getWriter();
 
 	MakeBatchNIFFiles(esm);
-	MakeBatchDDSFiles(esm);
+	ExportDDSFiles(esm);
 
 	std::cout << std::endl << "Now writing out CSV log files..";
 

@@ -823,7 +823,7 @@ namespace CSMDoc
 
 		FinalizeExportTES4Stage (Document& document, SavingState& state);
 		void MakeBatchNIFFiles(ESM::ESMWriter& esm);
-		void MakeBatchDDSFiles(ESM::ESMWriter& esm);
+		void ExportDDSFiles(ESM::ESMWriter& esm);
 
 		virtual int setup();
 		///< \return number of steps
