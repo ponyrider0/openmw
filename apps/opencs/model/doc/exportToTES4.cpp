@@ -16,6 +16,28 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <components/vfs/manager.hpp>
 #include <components/misc/resourcehelpers.hpp>
 
+namespace
+{
+
+    char normalize_char(char ch)
+    {
+        return ( ch == '\\' ) ? '/' : ch;
+    }
+
+    std::string get_normalized_path(const std::string& path_orig)
+    {
+        std::string path = "";
+
+        for (auto ci = path_orig.begin(); ci != path_orig.end(); ci++)
+        {
+            path += normalize_char(*ci);
+        }
+
+        return path;
+    }
+    
+}
+
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
     std::cout << "TES4 Exporter Initialized " << std::endl;
@@ -4590,15 +4612,16 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	std::ofstream logFileDDSConv;
 
 #ifdef _WIN32
-	std::string outputRoot = "C:\\";
+	std::string outputRoot = "C:/";
 #else
-	std::string outputRoot = "~\\";
+	std::string outputRoot = getenv("HOME");
+    outputRoot += "/";
 #endif
 
 	logFileDDSConv.open(logFileStem + ".csv");
 
 	logFileDDSConv << "Original texture,Exported texture,Export result\n";
-	boost::filesystem::path rootDir(outputRoot + "Oblivion.output\\Data\\Textures");
+	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Textures");
 
 	if (boost::filesystem::exists(rootDir) == false)
 	{
@@ -4607,29 +4630,31 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
 		int mode = ddsConvItem->second.second;
-		std::string inputFilename, outputFolder;
+        std::string mw_filename = get_normalized_path(ddsConvItem->first);
+        std::string ob_filename = get_normalized_path(ddsConvItem->second.first);
+		std::string inputFilepath, outputFilepath;
 		if (mode == 0)
 		{
-			inputFilename = Misc::ResourceHelpers::correctTexturePath(ddsConvItem->first, mDocument.getVFS());
-			outputFolder = "Textures\\Landscape\\";
+			inputFilepath = Misc::ResourceHelpers::correctTexturePath(mw_filename, mDocument.getVFS());
+			outputFilepath = "Textures/Landscape/" + ob_filename;
 		}
 		else if (mode == 1)
 		{
-			inputFilename = Misc::ResourceHelpers::correctIconPath(ddsConvItem->first, mDocument.getVFS());
-			outputFolder = "Textures\\Menus\\Icons\\";
+			inputFilepath = Misc::ResourceHelpers::correctIconPath(mw_filename, mDocument.getVFS());
+			outputFilepath = "Textures/Menus/Icons/" + ob_filename;
 		}
 		else if (mode == 2)
 		{
-			inputFilename = Misc::ResourceHelpers::correctBookartPath(ddsConvItem->first, mDocument.getVFS());
-			outputFolder = "Textures\\Menus\\"; // ?
+			inputFilepath = Misc::ResourceHelpers::correctBookartPath(mw_filename, mDocument.getVFS());
+			outputFilepath = "Textures/Menus/" + ob_filename;
 		}
-		logFileDDSConv << inputFilename << "," << outputFolder << ddsConvItem->second.first << ",";
+		logFileDDSConv << inputFilepath << "," << outputFilepath << ",";
 		try 
 		{
-			auto fileStream = mDocument.getVFS()->get(inputFilename);
+			auto fileStream = mDocument.getVFS()->get(inputFilepath);
 			std::ofstream newDDSFile;
 			// create output subdirectories
-			boost::filesystem::path p(outputRoot + "Oblivion.output\\Data\\" + outputFolder + ddsConvItem->second.first);
+			boost::filesystem::path p(outputRoot + "Oblivion.output/Data/" + outputFilepath);
 			if (boost::filesystem::exists(p.parent_path()) == false)
 			{
 				boost::filesystem::create_directories(p.parent_path());
@@ -4648,7 +4673,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: (" << inputFilename << ") " << e.what() << "\n";
+			std::cout << "Error: (" << inputFilepath << ") " << e.what() << "\n";
 			logFileDDSConv << "export error\n";
 		}
 		catch (...)
