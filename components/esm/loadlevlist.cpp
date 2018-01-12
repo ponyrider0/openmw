@@ -104,6 +104,8 @@ namespace ESM
 
 	bool ItemLevList::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		std::stringstream errStream;
+
 		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(newEDID);
@@ -127,7 +129,7 @@ namespace ESM
 		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
 		if (it_LVLO == mList.end())
 		{
-			std::cout << "WARNING, Leveled List contains no items: " << newEDID << std::endl;
+			errStream << "WARNING, Leveled List contains no items: " << newEDID << std::endl;
 		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
@@ -143,7 +145,7 @@ namespace ESM
 			}
 			else
 			{
-				std::cout << "WARNING: LVLI[" << newEDID << "] Can't resolve formID for item[" << itemEDID << "]" << std::endl;
+				errStream << "WARNING: LVLI[" << newEDID << "] Can't resolve formID for item[" << itemEDID << "]" << std::endl;
 				esm.writeT<uint32_t>(0x19116); //formID=Fork
 			}
 			esm.writeT<uint16_t>(1); //count
@@ -154,6 +156,8 @@ namespace ESM
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<unsigned char>(0); // unused
 		esm.endSubRecordTES4("DATA");
+
+		OutputDebugString(errStream.str().c_str());
 
 		return true;
 	}
@@ -167,6 +171,8 @@ namespace ESM
 
 	bool CreatureLevList::exportTESx(ESMWriter &esm, int export_format) const
 	{
+		std::stringstream errStream;
+
 		// export LVC
 		std::string newEDID = esm.generateEDIDTES4(mId);
 		esm.startSubRecordTES4("EDID");
@@ -191,7 +197,8 @@ namespace ESM
 		std::vector<LevelItem>::const_iterator it_LVLO = mList.begin();
 		if (it_LVLO == mList.end())
 		{
-			std::cout << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
+//			std::cout << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
+			errStream << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
 		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
@@ -208,7 +215,8 @@ namespace ESM
 			}
 			else
 			{
-				std::cout << "WARNING: LVLC[" << newEDID << "] Can't resolve formID for creature[" << itemEDID << "]" << std::endl;
+//				std::cout << "WARNING: LVLC[" << newEDID << "] Can't resolve formID for creature[" << itemEDID << "]" << std::endl;
+				errStream << "WARNING: LVLC[" << newEDID << "] Can't resolve formID for creature[" << itemEDID << "]" << std::endl;
 				esm.writeT<uint32_t>(0x1D0B6); //formID=TestBear
 			}
 			esm.writeT<uint16_t>(1); //count
@@ -220,6 +228,7 @@ namespace ESM
 		// script formID, SCRI
 		// creature template formID, TNAM
 */
+		OutputDebugString(errStream.str().c_str());
 
 		return true;
 	}

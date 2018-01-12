@@ -88,11 +88,13 @@ namespace ESM {
 		void parse_moddisposition(std::vector<struct Token>::iterator& tokenItem);
 		void parse_set(std::vector<struct Token>::iterator& tokenItem);
 		void parse_0arg(std::vector<struct Token>::iterator& tokenItem);
-		bool sub_parse_arg(std::vector<struct Token>::iterator& tokenItem, std::string& argString, bool& bEvalArgString, bool& bNeedsDialogHelper);
+		bool sub_parse_arg(std::vector<struct Token>::iterator& tokenItem, std::string& argString, bool& bEvalArgString, bool& bNeedsDialogHelper, std::string argSIG="");
 		void parse_1arg(std::vector<struct Token>::iterator& tokenItem);
 		void parse_2arg(std::vector<struct Token>::iterator& tokenItem);
+		void parse_messagebox(std::vector<struct Token>::iterator& tokenItem);
 		void parse_localvar(std::vector<struct Token>::iterator& tokenItem);
 		void parse_if(std::vector<struct Token>::iterator& tokenItem);
+		void parse_else(std::vector<struct Token>::iterator& tokenItem);
 		void parse_endif(std::vector<struct Token>::iterator& tokenItem);
 		void parse_end(std::vector<struct Token>::iterator& tokenItem);
 		void parse_begin(std::vector<struct Token>::iterator& tokenItem);
@@ -109,6 +111,7 @@ namespace ESM {
 		uint16_t prepare_localvar(const std::string& varName, int mode=0);
 		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG="", int mode=0 );
 		void nextLine(std::vector<struct Token>::iterator & tokenItem);
+		void pop_context_conditional(std::vector<struct Token>::iterator& tokenItem);
 
 		void error_mesg(std::string);
 		void abort(std::string);

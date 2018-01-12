@@ -466,8 +466,8 @@ namespace ESM
 			if (tokenItem->str == "->" || tokenItem->str == ".")
 			{
 				std::string expressionLine = mCurrentContext.convertedStatements.back();
-				expressionLine += possibleRef + ".";
-				mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+//				expressionLine += possibleRef + ".";
+//				mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
 				Debug_CurrentScriptLine << possibleRef << tokenItem->str;
 
 				if (tokenItem->str == "->")
@@ -505,10 +505,14 @@ namespace ESM
 				varString = mESM.generateEDIDTES4(tokenItem->str);
 			}
 			std::string expressionLine = mCurrentContext.convertedStatements.back();
-			if (bUseCommandReference || bUseVarReference)
-				expressionLine += varString;
+			if (bUseVarReference)
+			{
+				expressionLine += " " + mVarReference + "." + varString;
+			}
 			else
+			{
 				expressionLine += " " + varString;
+			}
 			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size()-1] = expressionLine;
 
 			// compile
@@ -625,47 +629,107 @@ namespace ESM
 		{
 			OpCode = 0x1053;
 		}
-		else if (cmdString == "setfight")
-		{
-			OpCode = 0;
-		}
-		else if (cmdString == "modpcfacrep")
-		{
-			OpCode = 0;
-		}
-		else if (cmdString == "pcraiserank")
-		{
-			OpCode = 0;
-		}
 		else if (cmdString == "messagebox")
 		{
-			OpCode = 0;
+			OpCode = 0x1000;
 		}
 		else if (cmdString == "addspell")
+		{
+			OpCode = 0x101C;
+		}
+		else if (cmdString == "removespell")
+		{
+			OpCode = 0x101D;
+		}
+		else if (cmdString == "getspell")
 		{
 			OpCode = 0;
 		}
 		else if (cmdString == "playsound")
 		{
-			OpCode = 0;
+			OpCode = 0x1026;
 		}
 		else if (cmdString == "centeroncell")
 		{
-			OpCode = 0;
+			OpCode = 0x011B;
 		}
 		else if (cmdString == "positioncell")
 		{
-			OpCode = 0;
+			OpCode = 0x1079;
 		}
 		else if (cmdString == "activate")
 		{
-			OpCode = 0;
+			OpCode = 0x100D;
 		}
 		else if (cmdString == "cast")
 		{
-			OpCode = 0;
+			OpCode = 0x101E;
 		}
 		else if (cmdString == "resurrect")
+		{
+			OpCode = 0x108C;
+		}
+		else if (cmdString == "equipitem") // aka equip
+		{
+			OpCode = 0x10EE;
+		}
+		else if (cmdString == "startcombat")
+		{
+			OpCode = 0x1016;
+		}
+		else if (cmdString == "return")
+		{
+			OpCode = 0x001E;
+		}
+		else if (cmdString == "end")
+		{
+			OpCode = 0x0011;
+		}
+		else if (cmdString == "elseif")
+		{
+			OpCode = 0x0018;
+		}
+		else if (cmdString == "if")
+		{
+			OpCode = 0x0017;
+		}
+		else if (cmdString == "activate")
+		{
+			OpCode = 0x100D;
+		}
+		else if (cmdString == "getitemcount")
+		{
+			OpCode = 0x102F;
+		}
+		else if (cmdString == "getrandompercent") // aka random100
+		{
+			OpCode = 0x104D;
+		}
+		else if (cmdString == "getactorvalue") // aka get<skill> or get<attribute>
+		{
+			OpCode = 0x100E;
+		}
+		else if (cmdString == "getdisabled")
+		{
+			OpCode = 0x1023;
+		}
+		else if (cmdString == "getsecondspassed")
+		{
+			OpCode = 0x100C;
+		}
+		else if (cmdString == "getdistance")
+		{
+			OpCode = 0x1001;
+		}
+		else if (cmdString == "getlevel")
+		{
+			OpCode = 0x1050;
+		}
+		else if (cmdString == "setstrength")
+		{
+			OpCode = 0;
+		}
+		else if (cmdString == "modreputation")
 		{
 			OpCode = 0;
 		}
@@ -677,19 +741,15 @@ namespace ESM
 		{
 			OpCode = 0;
 		}
-		else if (cmdString == "equip")
+		else if (cmdString == "setfight")
 		{
 			OpCode = 0;
 		}
-		else if (cmdString == "startcombat")
+		else if (cmdString == "modpcfacrep")
 		{
 			OpCode = 0;
 		}
-		else if (cmdString == "setstrength")
-		{
-			OpCode = 0;
-		}
-		else if (cmdString == "modreputation")
+		else if (cmdString == "pcraiserank")
 		{
 			OpCode = 0;
 		}
@@ -888,14 +948,27 @@ namespace ESM
 	{
 		// output translated script text
 		std::stringstream convertedStatement;
-		std::string command;
-		command = tokenItem->str;
+		std::string cmdString = tokenItem->str;
+
+		if (Misc::StringUtils::lowerCase(cmdString) == "random100")
+			cmdString = "GetRandomPercent";
+
 		if (bUseCommandReference)
 		{
-			command = mCommandReference + "." + command;
+			cmdString = mCommandReference + "." + cmdString;
 		}
-		convertedStatement << command;
-		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+
+		convertedStatement << cmdString;
+		if (mParseMode == 0)
+		{
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+		}
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
@@ -910,6 +983,10 @@ namespace ESM
 		{
 			OpCode = 0x1022;
 		}
+		else
+		{
+			OpCode = getOpCode(compareText);
+		}
 
 		if (OpCode != 0)
 		{
@@ -920,7 +997,7 @@ namespace ESM
 
 	}
 
-	bool ScriptConverter::sub_parse_arg(std::vector<struct Token>::iterator &tokenItem, std::string &argString, bool &bEvalArgString, bool &bNeedsDialogHelper)
+	bool ScriptConverter::sub_parse_arg(std::vector<struct Token>::iterator &tokenItem, std::string &argString, bool &bEvalArgString, bool &bNeedsDialogHelper, std::string argSIG)
 	{
 		bEvalArgString = false;
 		bNeedsDialogHelper = false;
@@ -941,7 +1018,7 @@ namespace ESM
 					abort("double command reference");
 					return false;
 				}
-				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+				mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
 				tokenItem++;
 			}
 			else if (tokenItem->str == ".")
@@ -955,7 +1032,7 @@ namespace ESM
 					abort("double var reference");
 					return false;
 				}
-				mVarReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+				mVarReference = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
 				tokenItem++;
 			}
 			else
@@ -965,7 +1042,11 @@ namespace ESM
 			}
 
 			// if not, treat as local/global variable
-			argString = tokenItem->str;
+			if (tokenItem->type == TokenType::identifierT)
+				argString = tokenItem->str;
+			else if (tokenItem->type == TokenType::string_literalT)
+				argString = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
+
 			// check if localvar, if not then check if reference
 			if (bIsFullScript == false &&
 				mESM.mLocalVarIndexmap.find(Misc::StringUtils::lowerCase(argString)) != mESM.mLocalVarIndexmap.end())
@@ -999,13 +1080,37 @@ namespace ESM
 	{
 		std::string cmdString = "", argString = "";
 		bool bEvalArgString = false;
+		bool bUseBinaryData = false;
 		bool bNeedsDialogHelper = false;
+		std::vector<uint8_t> argdata;
+		std::string argSIG = "";
+		bool bSkipArgParse = false;
 
 		cmdString = tokenItem->str;
 
-		tokenItem++;
-		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper) == false)
-			return;
+		if (Misc::StringUtils::lowerCase(cmdString) == "equip")
+		{
+			cmdString = "EquipItem";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getintelligence")
+		{
+			cmdString = "GetActorValue";
+			argString = "Intelligence";
+			bSkipArgParse = true;
+			uint32_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
+			for (int i = 0; i < 4; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "addtopic")
+		{
+			argSIG = "DIAL";
+		}
+
+		if (bSkipArgParse == false)
+		{
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+				return;
+		}
 
 		// translate statement
 		std::stringstream convertedStatement;
@@ -1018,7 +1123,16 @@ namespace ESM
 			argPrefix = "mwDialogHelper.";
 
 		convertedStatement << cmdString << " " << argPrefix << argString;
-		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		if (mParseMode == 0)
+		{
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+		}
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
@@ -1039,15 +1153,18 @@ namespace ESM
 			return;
 		}
 
-		int32_t nArgNumber;
 		if (bEvalArgString)
 		{
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(argString));
+			compile_command(OpCode, sizeParams, countParams, compile_param_varname(argString, argSIG, 100));
 		}
-		else
+		else if (bUseBinaryData == false)
 		{
-			nArgNumber = atoi(argString.c_str());;
+			int nArgNumber = atoi(argString.c_str());;
 			compile_command(OpCode, sizeParams, countParams, compile_param_long(nArgNumber));
+		}
+		else // (bUseBinaryData == true && bEvalArgString == false
+		{
+			compile_command(OpCode, sizeParams, countParams, argdata);
 		}
 
 		return;
@@ -1059,6 +1176,7 @@ namespace ESM
 		std::string cmdString = "", arg1String = "", arg2String = "";
 		bool bEvalArg1 = false, bEvalArg2 = false;
 		bool bNeedsDialogHelper1 = false, bNeedsDialogHelper2 = false;
+		std::string arg1SIG = "", arg2SIG = "";
 
 		cmdString = tokenItem->str;
 
@@ -1092,8 +1210,17 @@ namespace ESM
 			arg2Prefix = "mwDialogHelper.";
 
 		convertedStatement << cmdString << " " << arg1Prefix << arg1String << " " << arg2Prefix << arg2String;
+		if (mParseMode == 0)
+		{
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+		}
 
-		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
@@ -1119,19 +1246,75 @@ namespace ESM
 			return;
 		}
 
-		int32_t nArgNumber;
 		std::vector<uint8_t> arg1data, arg2data;
 		if (bEvalArg1)
-			arg1data = compile_param_varname(arg1String);
+			arg1data = compile_param_varname(arg1String, arg1SIG, 100);
 		else
 			arg1data = compile_param_long( atoi(arg1String.c_str()) );
 
 		if (bEvalArg2)
-			arg2data = compile_param_varname(arg2String);
+			arg2data = compile_param_varname(arg2String, arg2SIG, 100);
 		else
 			arg2data = compile_param_long( atoi(arg2String.c_str()) );
 
 		compile_command(OpCode, sizeParams, countParams, arg1data, arg2data);
+
+		return;
+
+	}
+
+	void ScriptConverter::parse_messagebox(std::vector<struct Token>::iterator & tokenItem)
+	{
+		// parse variable count strings arglist
+		std::string cmdString = tokenItem->str;
+		std::stringstream argList;
+
+//		tokenItem++;
+//		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper) == false)
+//			return;
+
+		while (tokenItem->type != TokenType::endlineT)
+		{
+			tokenItem++;
+			if (tokenItem->type == TokenType::string_literalT)
+				argList << "\"" << tokenItem->str << "\" ";
+			else
+				argList << tokenItem->str << " ";
+		}
+
+		// translate statement
+		std::stringstream convertedStatement;
+
+		convertedStatement << cmdString << " " << argList.str();
+		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 8;
+		sizeParams += argList.str().size();
+		uint16_t countParams = 1;
+
+		OpCode = getOpCode(cmdString);
+		if (OpCode == 0)
+		{
+			std::stringstream errorMesg;
+			errorMesg << "parse_generic(): unhandled command=" << cmdString << std::endl;
+			abort(errorMesg.str());
+			return;
+		}
+
+		compile_command(OpCode, sizeParams);
+		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
+
+		std::string argText = argList.str();
+		uint16_t argTextLen = argText.size();
+		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&argTextLen)[i]);
+		for (auto byte_it = argText.begin(); byte_it != argText.end(); byte_it++)
+		{
+			mCurrentContext.compiledCode.push_back((uint8_t) *byte_it);
+		}
+		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(0);
 
 		return;
 
@@ -1174,13 +1357,21 @@ namespace ESM
 	void ScriptConverter::parse_if(std::vector<struct Token>::iterator & tokenItem)
 	{
 		// start building expression
+		std::string ifString = tokenItem->str;
+		bool bElseIf = false;
 		mOperatorExpressionStack.clear();
+
+		if (Misc::StringUtils::lowerCase(tokenItem->str) == "elseif")
+		{
+			bElseIf = true;
+			pop_context_conditional(tokenItem);
+		}
 
 		tokenItem++;
 		// check for bIsCallBack mode
 		if (tokenItem->str == "(")
 			tokenItem++;
-		if (tokenItem->type == TokenType::keywordT)
+		if (tokenItem->type == TokenType::keywordT && bElseIf == false)
 		{
 			if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "onactivate") ||
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "ondeath") ||
@@ -1243,6 +1434,7 @@ namespace ESM
 		mCurrentContext.codeBlockDepth++;
 		mCurrentContext.JumpOps = 0;
 		std::stringstream blockName;
+		// the following "if" is just an ID for the block/context --> do not replace with ifString/elseif/variable
 		blockName << "if" << mCurrentContext.codeBlockDepth;
 		mCurrentContext.blockName = blockName.str();
 		mCurrentContext.compiledCode.clear();
@@ -1250,14 +1442,13 @@ namespace ESM
 
 		// Output translation
 		std::stringstream cmdString;
-		cmdString << "If" << " ";
+		cmdString << ifString << " ";
 		mCurrentContext.convertedStatements.push_back(cmdString.str());
 
 		// Compile IF statement header, then record byte position to update with JumpOffsets and ExpressionLength
 
-
 		// 16 00 [CompLen(2)] [JumpOps(2)] [ExpressionLen(2)] [ExpressionBuffer(N)]
-		uint16_t OpCode = 0x16;
+		uint16_t OpCode = getOpCode(ifString);
 		uint16_t CompLen = 0x00; // complen (2 bytes)
 		uint16_t JumpOps = 0x00; // jump operations (2 bytes) --number of operations to next conditional: elseif/else/endif
 		uint16_t ExpressionLen = 0x00; // exp len ( 2 bytes)
@@ -1274,8 +1465,47 @@ namespace ESM
 		return;
 	}
 
-	void ScriptConverter::parse_endif(std::vector<struct Token>::iterator & tokenItem)
+	void ScriptConverter::parse_else(std::vector<struct Token>::iterator & tokenItem)
 	{
+		pop_context_conditional(tokenItem);
+
+		// push context to stack
+		mContextStack.push_back(mCurrentContext);
+		// re-initialize current context
+		mCurrentContext.bIsCallBack = false;
+		mCurrentContext.codeBlockDepth++;
+		mCurrentContext.JumpOps = 0;
+		std::stringstream blockName;
+		// the following "if" is just an ID for the block/context --> do not replace with ifString/elseif/variable
+		blockName << "if" << mCurrentContext.codeBlockDepth;
+		mCurrentContext.blockName = blockName.str();
+		mCurrentContext.compiledCode.clear();
+		mCurrentContext.convertedStatements.clear();
+
+		// Output translation
+		std::stringstream cmdString;
+		cmdString << "else" << " ";
+		mCurrentContext.convertedStatements.push_back(cmdString.str());
+
+		// Compile IF statement header, then record byte position to update with JumpOffsets and ExpressionLength
+
+		// 16 00 [CompLen(2)] [JumpOps(2)] [ExpressionLen(2)] [ExpressionBuffer(N)]
+		uint16_t OpCode = getOpCode("else");
+		uint16_t CompLen = 0x02; // complen=2 for else statement (2 bytes)
+		uint16_t JumpOps = 0x00; // jump operations (2 bytes) --number of operations to next conditional: elseif/else/endif
+
+		mSetCmd_StartPosition = mCurrentContext.compiledCode.size(); // bookmark start of command
+		compile_command(OpCode, CompLen);
+		for (int i = 0; i<2; i++) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&JumpOps)[i]);
+
+		return;
+
+	}
+
+	void ScriptConverter::pop_context_conditional(std::vector<struct Token>::iterator & tokenItem)
+	{
+		std::string endCmdString = tokenItem->str;
+
 		// sanity check
 		std::stringstream blockName;
 		blockName << "if" << mCurrentContext.codeBlockDepth;
@@ -1313,7 +1543,7 @@ namespace ESM
 		}
 		while (statementItem != mCurrentContext.convertedStatements.end())
 		{
-			std::stringstream statementStream;		
+			std::stringstream statementStream;
 			statementStream << '\t' << *statementItem;
 			if (mCurrentContext.bIsCallBack)
 				mConvertedStatementList.push_back(statementStream.str());
@@ -1321,6 +1551,7 @@ namespace ESM
 				fromStack.convertedStatements.push_back(statementStream.str());
 			statementItem++;
 		}
+
 		std::stringstream endStatement;
 		if (mCurrentContext.bIsCallBack)
 		{
@@ -1329,11 +1560,12 @@ namespace ESM
 			mConvertedStatementList.push_back(endStatement.str());
 			mConvertedStatementList.push_back(emptyLine);
 		}
-		else
+		else if (Misc::StringUtils::lowerCase(endCmdString) == "endif")
 		{
-			endStatement << "Endif";
+			endStatement << endCmdString;
 			fromStack.convertedStatements.push_back(endStatement.str());
 		}
+		// do not put endstatement for else/elseif
 		mCurrentContext.convertedStatements.clear();
 		mCurrentContext.convertedStatements = fromStack.convertedStatements;
 
@@ -1342,14 +1574,37 @@ namespace ESM
 		{
 			int offset = 6;
 			uint32_t blockLength = mCurrentContext.compiledCode.size() - offset - 2;
-			for (int i=0; i<4; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&blockLength)[i];
+			for (int i = 0; i<4; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&blockLength)[i];
 		}
 		else
 		{
 			int jumpoffset = 4;
-			uint16_t JumpOps = mCurrentContext.JumpOps-1;
-			for (int i=0; i<2; i++) mCurrentContext.compiledCode[jumpoffset + i] = reinterpret_cast<uint8_t *>(&JumpOps)[i];
+			uint16_t JumpOps = mCurrentContext.JumpOps - 1;
+			for (int i = 0; i<2; i++) mCurrentContext.compiledCode[jumpoffset + i] = reinterpret_cast<uint8_t *>(&JumpOps)[i];
 		}
+
+		// byte compile: insert compiled context block to global or current buffer
+		if (mCurrentContext.bIsCallBack)
+			mCompiledByteBuffer.insert(mCompiledByteBuffer.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end());
+		else
+			fromStack.compiledCode.insert(fromStack.compiledCode.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end());
+
+		mCurrentContext.compiledCode.clear();
+		mCurrentContext.compiledCode = fromStack.compiledCode;
+
+		// reset context
+		mCurrentContext.blockName = fromStack.blockName;
+		mCurrentContext.codeBlockDepth = fromStack.codeBlockDepth;
+		mCurrentContext.bIsCallBack = fromStack.bIsCallBack;
+
+		return;
+	}
+
+	void ScriptConverter::parse_endif(std::vector<struct Token>::iterator & tokenItem)
+	{
+		std::string endCmdString = tokenItem->str;
+
+		pop_context_conditional(tokenItem);
 
 		uint32_t EndCode = 0x19; // end-if
 		if (mCurrentContext.bIsCallBack)
@@ -1357,21 +1612,7 @@ namespace ESM
 			EndCode = 0x11; // end begin-block
 		}
 		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&EndCode)[i]);
-
-		// byte compile: insert compiled context block to global or current buffer
-		if (mCurrentContext.bIsCallBack)
-			mCompiledByteBuffer.insert(mCompiledByteBuffer.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end() );
-		else
-			fromStack.compiledCode.insert(fromStack.compiledCode.end(), mCurrentContext.compiledCode.begin(), mCurrentContext.compiledCode.end() );
-
-		mCurrentContext.compiledCode.clear();
-		mCurrentContext.compiledCode = fromStack.compiledCode;
 		
-		// reset context
-		mCurrentContext.blockName = fromStack.blockName;
-		mCurrentContext.codeBlockDepth = fromStack.codeBlockDepth;
-		mCurrentContext.bIsCallBack = fromStack.bIsCallBack;
-
 		return;
 
 	}
@@ -1516,6 +1757,10 @@ namespace ESM
 		{
 			parse_choice(tokenItem);
 		}
+		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "messagebox")
+		{
+			parse_messagebox(tokenItem);
+		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "journal")
 		{
 			parse_journal(tokenItem);
@@ -1540,9 +1785,14 @@ namespace ESM
 		{
 			parse_end(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "if")
+		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "if")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "elseif") )
 		{
 			parse_if(tokenItem);
+		}
+		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "else")
+		{
+			parse_else(tokenItem);
 		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "endif")
 		{
@@ -1552,18 +1802,28 @@ namespace ESM
 		{
 			parse_set(tokenItem);
 		}
-		else if ((Misc::StringUtils::lowerCase(tokenItem->str) == "short")
+		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "short")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "long") 
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "float"))
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "float") 
+			)
 		{
 			parse_localvar(tokenItem);
 		}
-		else if ((Misc::StringUtils::lowerCase(tokenItem->str) == "disable")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "enable"))
+		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "disable")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "enable")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "return")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "activate")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "random100")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdisabled")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getsecondspassed")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getlevel")
+			)
 		{
 			parse_0arg(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "moddisposition") )
+		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "moddisposition") 
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cast")
+			)
 		{
 			parse_2arg(tokenItem);
 //			parse_moddisposition(tokenItem);
@@ -1574,9 +1834,15 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startcombat")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "sethealth")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "addspell")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "removespell")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getspell")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setdisposition")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modpccrimelevel")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modreputation")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getitemcount")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "playsound")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdistance")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getintelligence")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -1586,8 +1852,8 @@ namespace ESM
 			// Default: unhandled keyword, skip to next tokenStatement
 			std::stringstream errMesg;
 			errMesg << "Unhandled Keyword: <" << tokenItem->type << "> " << tokenItem->str << std::endl;
-//			error_mesg(errMesg.str());
-			OutputDebugString(errMesg.str().c_str());
+			error_mesg(errMesg.str());
+//			OutputDebugString(errMesg.str().c_str());
 			if (mParseMode == 1)
 				mFailureCode = 1;
 			return;
@@ -1805,7 +2071,7 @@ namespace ESM
 				// ERROR
 				std::stringstream errMsg;
 				errMsg << "could not resolve reference for referenced command: " << mCommandReference << std::endl;
-				error_mesg(errMsg.str());
+				abort(errMsg.str());
 				return;
 			}
 			bUseCommandReference = false;
@@ -1965,6 +2231,12 @@ namespace ESM
 			{
 				uint8_t cmdRefCode = 0x72;
 				uint16_t cmdRefIndex = prepare_reference(mVarReference);
+				if (cmdRefIndex == 0)
+				{
+					abort("compile_param_varname() error\n");
+					resultData.clear();
+					return resultData;
+				}
 				resultData.push_back(cmdRefCode);
 				for (int i = 0; i<2; ++i) resultData.push_back(reinterpret_cast<uint8_t *> (&cmdRefIndex)[i]);
 				bUseVarReference = false;
@@ -2087,10 +2359,13 @@ namespace ESM
 
 	void ScriptConverter::error_mesg(std::string errString)
 	{
+		std::stringstream errStream;
 		if (mScriptName != "")
-			std::cout << "Script Converter Error (" << mScriptName << "): " << errString;
+			errStream << "Script Converter Error (" << mScriptName << "): " << errString;
 		else
-			std::cout << "Script Converter Error <result script>: " << errString;
+			errStream << "Script Converter Error <result script>: " << errString;
+
+		OutputDebugString(errStream.str().c_str());
 	}
 
 	void ScriptConverter::abort(std::string error_string)
@@ -2154,8 +2429,51 @@ namespace ESM
 		mKeywords.push_back("onrepair");
 		mKeywords.push_back("menumode");
 
+		mKeywords.push_back("getlevel");
+
+		mKeywords.push_back("getstrength");
+		mKeywords.push_back("getendurance");
+		mKeywords.push_back("getpersonallity");
+		mKeywords.push_back("getluck");
+		mKeywords.push_back("getintelligence");
+		mKeywords.push_back("getwillpower");
+		mKeywords.push_back("getagility");
+		mKeywords.push_back("getspeed");
+
+		mKeywords.push_back("getspeechcraft");
+		mKeywords.push_back("getmercantile");
+		mKeywords.push_back("getsneak");
+		mKeywords.push_back("getsecurity");
+		mKeywords.push_back("getacrobatics");
+		mKeywords.push_back("getmarksman");
+		mKeywords.push_back("gethandtohand");
+		mKeywords.push_back("getshortblade");
+		mKeywords.push_back("getlightarmor");
+
+		mKeywords.push_back("getlongblade");
+		mKeywords.push_back("getaxe");
+		mKeywords.push_back("getbluntweapon");
+		mKeywords.push_back("getblock");
+		mKeywords.push_back("getarmorer");
+		mKeywords.push_back("getathletics");
+		mKeywords.push_back("getheavyarmor");
+		mKeywords.push_back("getmediumarmor");
+		mKeywords.push_back("getspear");
+
+		mKeywords.push_back("getrestoration");
+		mKeywords.push_back("getdestruction");
+		mKeywords.push_back("getconjuration");
+		mKeywords.push_back("getmysticism");
+		mKeywords.push_back("getalteration");
+		mKeywords.push_back("getillusion");
+		mKeywords.push_back("getenchant");
+		mKeywords.push_back("getalchemy");
+		mKeywords.push_back("getunarmored");
+
 		mKeywords.push_back("sethealth");
 		mKeywords.push_back("setmagicka");
+		mKeywords.push_back("setfatigue");
+
 		mKeywords.push_back("setstrength");
 		mKeywords.push_back("setendurance");
 		mKeywords.push_back("setagility");
@@ -2164,9 +2482,36 @@ namespace ESM
 		mKeywords.push_back("setintelligence");
 		mKeywords.push_back("setwillpower");
 		mKeywords.push_back("setluck");
+
+		mKeywords.push_back("setspeechcraft");
 		mKeywords.push_back("setmercantile");
-		mKeywords.push_back("setaxe");
+		mKeywords.push_back("setsneak");
+		mKeywords.push_back("setsecurity");
+		mKeywords.push_back("setacrobatics");
+		mKeywords.push_back("setmarksman");
+		mKeywords.push_back("sethandtohand");
 		mKeywords.push_back("setshortblade");
+		mKeywords.push_back("setlightarmor");
+
+		mKeywords.push_back("setlongblade");
+		mKeywords.push_back("setaxe");
+		mKeywords.push_back("setbluntweapon");
+		mKeywords.push_back("setblock");
+		mKeywords.push_back("setarmorer");
+		mKeywords.push_back("setathletics");
+		mKeywords.push_back("setheavyarmor");
+		mKeywords.push_back("setmediumarmor");
+		mKeywords.push_back("setspear");
+
+		mKeywords.push_back("setrestoration");
+		mKeywords.push_back("setdestruction");
+		mKeywords.push_back("setconjuration");
+		mKeywords.push_back("setmysticism");
+		mKeywords.push_back("setalteration");
+		mKeywords.push_back("setillusion");
+		mKeywords.push_back("setenchant");
+		mKeywords.push_back("setalchemy");
+		mKeywords.push_back("setunarmored");
 
 		mKeywords.push_back("setdisposition");
 		mKeywords.push_back("setfight");
@@ -2221,24 +2566,25 @@ namespace ESM
 		mKeywords.push_back("stopsound");
 		mKeywords.push_back("playloopsound3dvp");
 
+
+		mKeywords.push_back("random");
+		mKeywords.push_back("random100");
+		mKeywords.push_back("gamehour");
+		mKeywords.push_back("cellchanged");
 		mKeywords.push_back("getspell");
 		mKeywords.push_back("getitemcount");
-		mKeywords.push_back("getluck");
-		mKeywords.push_back("random");
 		mKeywords.push_back("gethealth");
 		mKeywords.push_back("getpccell");
 		mKeywords.push_back("getcurrentaipackage");
 		mKeywords.push_back("getjournalindex");
 		mKeywords.push_back("getsecondspassed");
 		mKeywords.push_back("getlocked");
-		mKeywords.push_back("gamehour");
 		mKeywords.push_back("getdisabled");
 		mKeywords.push_back("getpcrank");
 		mKeywords.push_back("getbuttonpressed");
 		mKeywords.push_back("getscale");
 		mKeywords.push_back("getpcjumping");
 		mKeywords.push_back("getcurrentweather");
-		mKeywords.push_back("cellchanged");
 		mKeywords.push_back("getdistance");
 
 		mKeywords.push_back("getweapondrawn");
@@ -2289,7 +2635,6 @@ namespace ESM
 					parse_expression(tokenItem);
 					tokenItem++;
 				}
-				// TODO: do specific expression completion for IF or SET
 				if (tokenItem != mTokenList.end())
 					parse_expression(tokenItem);
 				continue;

@@ -381,7 +381,8 @@ namespace ESM {
 					esm.endSubRecordTES4("PKID");
 					ai_debugstream << "Substituting Wander Package for: Travel to (" << it_aipackage->mTravel.mX << "," << it_aipackage->mTravel.mY << "," << it_aipackage->mTravel.mZ << ")";
 					ai_debugstream << std::endl;
-					std::cout << ai_debugstream.str();
+//					std::cout << ai_debugstream.str();
+					OutputDebugString(ai_debugstream.str().c_str());
 				}
 				break;
 			case ESM::AI_Activate:
@@ -394,7 +395,8 @@ namespace ESM {
 					esm.endSubRecordTES4("PKID");
 					ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
 					ai_debugstream << std::endl;
-					std::cout << ai_debugstream.str();
+//					std::cout << ai_debugstream.str();
+					OutputDebugString(ai_debugstream.str().c_str());
 				}
 				break;
 			case ESM::AI_Follow:
@@ -407,7 +409,8 @@ namespace ESM {
 					esm.endSubRecordTES4("PKID");
 					ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 					ai_debugstream << std::endl;
-					std::cout << ai_debugstream.str();
+//					std::cout << ai_debugstream.str();
+					OutputDebugString(ai_debugstream.str().c_str());
 				}
 				break;
 			case ESM::AI_Escort:
@@ -420,7 +423,8 @@ namespace ESM {
 					esm.endSubRecordTES4("PKID");
 					ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
 					ai_debugstream << std::endl;
-					std::cout << ai_debugstream.str();
+//					std::cout << ai_debugstream.str();
+					OutputDebugString(ai_debugstream.str().c_str());
 				}
 				break;
 			}

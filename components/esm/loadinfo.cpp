@@ -588,19 +588,7 @@ namespace ESM
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameFaction:
-/*
-					compareFunction = 0x2A; // SameFaction (int 42)
-					compareArg1 = 0;
-					if (compareArg1 == 0)
-					{
-						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
-						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
-						compareArg1 = esm.crossRefStringID(actorFaction, "FACT");
-					}
-*/
-// BREAK if compareArg is NULL
 					compareFunction = 0x85; // SameFactionAsPC
-//					flags = 0x02; // Run on Target
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_RankRequirement:
@@ -721,9 +709,6 @@ namespace ESM
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameSex:
-//					compareFunction = 0x2C; // SameSex (decimal 206)
-//					varName = selectWrapper.getVariableName();
-//					compareArg1 = esm.crossRefStringID(varName, "NPC_");
 					compareFunction = 0x87; // SameSexAsPC
 					break;
 
@@ -732,7 +717,6 @@ namespace ESM
 					compareFunction = 0x44; // GetIsClass (decimal 68)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "CLAS");
-// BREAK if compareArg is null
 					if (compareArg1 == 0)
 					{
 						// TODO: record unresolved record
@@ -789,12 +773,6 @@ namespace ESM
 					compareFunction = 0x40; // GetIsCreature
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcDestruction:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Destruction);
-					flags = 0x02; // Run on Target
-					break;
-
 				case CSMWorld::ConstInfoSelectWrapper::Function_Hello:
 					compareFunction = 0x0; // ?
 					varName = selectWrapper.getVariableName();
@@ -840,9 +818,27 @@ namespace ESM
 					compareFunction = 0x32; // GetTalkedToPC
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcEnchant:
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcStrength:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Enchant);
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Strength);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcEndurance:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Endurance);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcPersonality:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Personality);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcLuck:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Luck);
 					flags = 0x02; // Run on Target
 					break;
 
@@ -852,9 +848,68 @@ namespace ESM
 					flags = 0x02; // Run on Target
 					break;
 
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcWillpower:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Willpower);
+					flags = 0x02; // Run on Target
+					break;
+
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcAgility:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
 					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Agility);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcSpeed:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Speed);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcDestruction:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Destruction);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcRestoration:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Restoration);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcConjuration:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Conjuration);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcMysticism:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Mysticism);
+					flags = 0x02; // Run on Target
+					break;
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAlteration:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Alteration);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcIllusion:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Illusion);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcEnchant:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Enchant);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAlchemy:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Alchemy);
 					flags = 0x02; // Run on Target
 					break;
 
@@ -870,14 +925,110 @@ namespace ESM
 					flags = 0x02; // Run on Target
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_Level:
-					compareFunction = 0x50; // GetLevel
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcMerchantile:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Mercantile);
+					flags = 0x02; // Run on Target
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcConjuration:
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcSpeechcraft:
 					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Conjuration);
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Speechcraft);
 					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAcrobatics:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Acrobatics);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcMarksman:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Marksman);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcHandToHand:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::HandToHand);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcShortBlade:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::ShortBlade);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcLongBlade:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::LongBlade);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAxe:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Axe);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcBluntWeapon:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::BluntWeapon);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcSpear:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Spear);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcLightArmor:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::LightArmor);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcMediumArmor:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::MediumArmor);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcHeavyArmor:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::HeavyArmor);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcUnarmored:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Unarmored);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcBlock:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Block);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcAthletics:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Athletics);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcArmorer:
+					compareFunction = 0x0E; // GetActorVal (decimal 14)
+					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Armorer);
+					flags = 0x02; // Run on Target
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_Level:
+					compareFunction = 0x50; // GetLevel
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_FactionRankDifference:
@@ -897,38 +1048,8 @@ namespace ESM
 					}
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcAlchemy:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Alchemy);
-					flags = 0x02; // Run on Target
-					break;
-
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcVampire:
 					compareFunction = 0x28; // GetVampire (decimal 14)
-					flags = 0x02; // Run on Target
-					break;
-
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcStrength:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Strength);
-					flags = 0x02; // Run on Target
-					break;
-
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcPersonality:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.attributeToActorValTES4(ESM::Attribute::Personality);
-					flags = 0x02; // Run on Target
-					break;
-
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcMerchantile:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Mercantile);
-					flags = 0x02; // Run on Target
-					break;
-
-				case CSMWorld::ConstInfoSelectWrapper::Function_PcSpeechcraft:
-					compareFunction = 0x0E; // GetActorVal (decimal 14)
-					compareArg1 = esm.skillToActorValTES4(ESM::Skill::Speechcraft);
 					flags = 0x02; // Run on Target
 					break;
 
