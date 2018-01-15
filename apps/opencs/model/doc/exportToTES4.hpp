@@ -148,6 +148,13 @@ namespace CSMDoc
 					sSIG += reinterpret_cast<const char *> (&record.sRecordId)[tempindex];
 				sSIG[4] = '\0';
 
+				strEDID = writer.generateEDIDTES4(record.mId, 0, sSIG);
+				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+				if (formID == 0)
+				{
+					formID = writer.reserveFormID(formID, strEDID, sSIG);
+				}
+/*
 				if (record.sRecordId == ESM::REC_SCPT)
 					strEDID = writer.generateEDIDTES4(record.mId, 3);
 				if (record.sRecordId == ESM::REC_REGN)
@@ -183,6 +190,7 @@ namespace CSMDoc
 					formID = writer.getNextAvailableFormID();
 					formID = writer.reserveFormID(formID, strEDID, sSIG);
 				}
+*/
 			}
 		}
 
@@ -796,6 +804,24 @@ namespace CSMDoc
 		///< \return number of steps
 
 		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
+	class ExportScriptTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		int mActiveRefCount = 0;
+		bool mSkipMasterRecords = true;
+
+	public:
+
+		ExportScriptTES4Stage(Document& document, SavingState& state, bool skipMaster = true);
+
+		virtual int setup();
+		///< \return number of steps
+
+		virtual void perform(int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 

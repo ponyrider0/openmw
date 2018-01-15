@@ -172,7 +172,8 @@ namespace ESM
 		}
 
 		// process script early for use by other subrecords
-		ESM::ScriptConverter scriptConverter(mResultScript, esm);
+		ESM::ScriptConverter scriptConverter(mResultScript, esm, doc);
+		scriptConverter.processScript();
 		// create new response string with substituted names early
 		std::string newResponse = mResponse;
 		// There are two passes for each variable: 

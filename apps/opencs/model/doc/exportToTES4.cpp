@@ -75,8 +75,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >
 		(currentDoc.getData().getGlobals(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
-	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
-		(currentDoc.getData().getScripts(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
+//	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
+//		(currentDoc.getData().getScripts(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
+	appendStage(new ExportScriptTES4Stage(currentDoc, currentSave, skipMasterRecords));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
 		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
@@ -528,7 +529,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				}
 
 				// check Result script for names of future ChoiceTopics
-				ESM::ScriptConverter scriptReader(info.mResultScript, writer);
+				ESM::ScriptConverter scriptReader(info.mResultScript, writer, mDocument);
 				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
 				{
 					infoChoiceTopicNames.insert(std::make_pair(choicePair->first, choicePair->second));
@@ -4479,6 +4480,65 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 
 }
 
+CSMDoc::ExportScriptTES4Stage::ExportScriptTES4Stage(Document& document, SavingState& state, bool skipMasters)
+	: mDocument(document), mState(state)
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportScriptTES4Stage::setup()
+{
+	mActiveRefCount = mDocument.getData().getScripts().getSize();
+	return mActiveRefCount;
+}
+void CSMDoc::ExportScriptTES4Stage::perform(int stage, Messages& messages)
+{
+	std::string sSIG = "SCPT";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	auto record = mDocument.getData().getScripts().getRecord(stage);
+	ESM::Script script = record.get();
+	std::string strEDID = writer.generateEDIDTES4(script.mId, 0, sSIG);
+	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+
+	bool bExportRecord = false;
+	if (mSkipMasterRecords)
+	{
+		bExportRecord = false;
+		bExportRecord |= record.isModified();
+		bExportRecord |= record.isDeleted();
+	}
+	else
+	{
+		bExportRecord = true;
+	}
+
+	if (formID != 0 && writer.mUniqueIDcheck.find(formID) != writer.mUniqueIDcheck.end())
+	{
+		// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
+		// just go ahead and skip to mapping index
+		bExportRecord = false;
+		std::cout << "record already written, skipping ahead: (" << sSIG << ") " << strEDID << std::endl;
+	}
+
+	if (bExportRecord)
+	{
+		writer.startRecordTES4(sSIG, 0, formID, strEDID);
+		script.exportTESx(mDocument, writer);
+		writer.endRecordTES4(sSIG);
+	}
+
+	if (stage == mActiveRefCount - 1)
+	{
+		ESM::ESMWriter& writer = mState.getWriter();
+		writer.endGroupTES4(sSIG);
+	}
+}
 
 CSMDoc::CloseExportTES4Stage::CloseExportTES4Stage (SavingState& state)
 	: mState (state)

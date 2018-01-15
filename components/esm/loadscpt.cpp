@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include "scriptconverter.hpp"
-
+#include <apps/opencs/model/doc/document.hpp>
 
 namespace ESM
 {
@@ -158,7 +158,7 @@ namespace ESM
         esm.writeHNOString("SCTX", mScriptText);
     }
 
-	void Script::exportTESx(ESMWriter & esm, int export_type) const
+	void Script::exportTESx(CSMDoc::Document& doc, ESMWriter& esm, int export_type) const
 	{
 		uint32_t tempFormID;
 		std::string strEDID, tempStr;
@@ -171,7 +171,8 @@ namespace ESM
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
 
-		ESM::ScriptConverter scriptConverter(mScriptText, esm);
+		ESM::ScriptConverter scriptConverter(mScriptText, esm, doc);
+		scriptConverter.processScript();
 
 		// SCHR... (basic script data)
 		// [unused x4, refcount, compiled size, varcount, script type]
@@ -206,8 +207,8 @@ namespace ESM
 
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(0, 0);
-//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+//		esm.write(0, 0);
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)

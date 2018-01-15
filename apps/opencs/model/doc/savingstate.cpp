@@ -856,7 +856,7 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 			case 0:
 //				strVarName = token;
 				tokenStr.str(token);
-				tokenStr >> dump >> strVarName;
+				tokenStr >> dump >> strVarName; // dump var type (short, long, float)
 				break;
 			case 1:
 				strVarIndex = token;
@@ -876,6 +876,57 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 
 	return errorcode;
 }
+
+int CSMDoc::SavingState::loadScriptHelperVarMap(std::string filename)
+{
+	int errorcode = 0;
+	int lineNumber = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strVarName, strVarIndex;
+		int varIndex;
+
+		for (int i = 0; i < 3; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			std::istringstream tokenStr;
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				//				strVarName = token;
+				tokenStr.str(token);
+				tokenStr >> strVarName;
+				break;
+			case 1:
+				strVarIndex = token;
+				break;
+			}
+		}
+
+		if (strVarName == "" || strVarIndex == "")
+			continue;
+
+		varIndex = atoi(strVarIndex.c_str());
+
+
+		mWriter.mScriptHelperVarmap[Misc::StringUtils::lowerCase(strVarName)] = varIndex;
+	}
+
+
+	return errorcode;
+}
+
 
 int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
 {
@@ -963,7 +1014,9 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	}
 
 	loadEDIDmap3("OverridesEDIDList.csv");
+	loadEDIDmap3("Overrides_" + esmName + ".csv");
 	loadLocalVarIndexmap("LocalVarMap.csv");
+	loadScriptHelperVarMap("ScriptHelperVarMap.csv");
 	loadESMMastersMap("ESMMastersMap.csv");
 
 	std::cout << "Loading CSV files complete." << std::endl;

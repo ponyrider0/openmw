@@ -6,6 +6,11 @@
 #include <sstream>
 #include <components/esm/esmwriter.hpp>
 
+namespace CSMDoc
+{
+	class Document;
+}
+
 namespace ESM {
 
 	class ScriptConverter
@@ -41,6 +46,7 @@ namespace ESM {
 
 		std::string mScriptText;
 		ESM::ESMWriter& mESM;
+		CSMDoc::Document& mDoc;
 		std::vector<std::string> mKeywords;
 		std::vector<struct Token> mTokenList;
 		std::vector< std::string > mConvertedStatementList;
@@ -110,7 +116,9 @@ namespace ESM {
 		std::vector<uint8_t> compile_param_varname(const std::string& varName, const std::string &sSIG="", int mode=0);
 		uint16_t prepare_localvar(const std::string& varName, int mode=0);
 		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG="", int mode=0 );
-		void nextLine(std::vector<struct Token>::iterator & tokenItem);
+		std::vector<uint8_t> compile_external_localvar(const std::string& refName, const std::string& varName);
+		bool lookup_reference(const std::string &refName, std::string &refEDID, std::string &refSIG, std::string &refValString);
+		void gotoEOL(std::vector<struct Token>::iterator & tokenItem);
 		void pop_context_conditional(std::vector<struct Token>::iterator& tokenItem);
 
 		void error_mesg(std::string);
@@ -122,11 +130,14 @@ namespace ESM {
 		std::vector< uint32_t > mReferenceList;
 		std::vector< std::pair<std::string, std::string> > mLocalVarList;
 
-		ScriptConverter(const std::string& scriptText, ESM::ESMWriter& esm);
+		ScriptConverter(const std::string& scriptText, ESM::ESMWriter& esm, CSMDoc::Document &doc);
+		void processScript();
 		std::string GetConvertedScript();
 		bool PerformGoodbye();
 		const char* GetCompiledByteBuffer();
 		uint32_t GetByteBufferSize();
+		void ExtractLocalVars();
+		uint16_t LookupLocalVarIndex(const std::string& varName);
 
 	};
 }

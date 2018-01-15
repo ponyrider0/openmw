@@ -281,19 +281,18 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 			baseEDID = "FireSmokeMedium";
 //		else if (baseEDID == "0floraUbushU01")
 //			baseEDID = "Dbush15";
-		else if (baseEDID == "0miscUcomUbasketU01")
-			baseEDID = "LowerThatchbasket02New";
-		else if (baseEDID == "0miscUcomUwoodUfork")
-			baseEDID = "0miscUcomUwoodUforkUUNI1";
-		else if (baseEDID == "0miscUcomUsilverwareUfork")
-			baseEDID = "0miscUcomUsilverwareUforkUuni";
-		else if (baseEDID == "0potionUcyroUbrandyU01")
-			baseEDID = "PotionCyrodiilicBrandy";
-		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
-			baseEDID = "CheydinhalWell01";
-		else if (baseEDID.find("0TRUm1UFWUgate") != std::string::npos &&
-				baseEDID.find("UbarU0") != std::string::npos )
-			baseEDID = "0miscUcomUwoodUforkUUNI1";
+//		else if (baseEDID == "0miscUcomUbasketU01")
+//			baseEDID = "LowerThatchbasket02New";
+//		else if (baseEDID == "0miscUcomUwoodUfork")
+//			baseEDID = "0miscUcomUwoodUforkUUNI1";
+//		else if (baseEDID == "0miscUcomUsilverwareUfork")
+//			baseEDID = "0miscUcomUsilverwareUforkUuni";
+//		else if (baseEDID == "0potionUcyroUbrandyU01")
+//			baseEDID = "PotionCyrodiilicBrandy";
+//		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
+//			baseEDID = "CheydinhalWell01";
+//		else if (baseEDID.find("0TRUm1UFWUgate") != std::string::npos && baseEDID.find("UbarU0") != std::string::npos )
+//			baseEDID = "0miscUcomUwoodUforkUUNI1";
 		else if (baseEDID == "0CollisionSWallSTSINVISO")
 			baseEDID = "CollisionBoxStatic";
 /*
