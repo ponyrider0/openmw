@@ -244,7 +244,7 @@ void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeHNT("DATA", mPos, 24);
 }
 
-void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Position *returnPosition) const
+void ESM::CellRef::exportTES4 (ESMWriter &esm, const std::string &refEDID, uint32_t teleportRefID, ESM::Position *returnPosition) const
 {
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
@@ -289,8 +289,8 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, uint32_t teleportRefID, ESM::Posi
 //			baseEDID = "0miscUcomUsilverwareUforkUuni";
 //		else if (baseEDID == "0potionUcyroUbrandyU01")
 //			baseEDID = "PotionCyrodiilicBrandy";
-//		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
-//			baseEDID = "CheydinhalWell01";
+		else if (baseEDID == "0TUImpUSetNordUXUWellU01")
+			baseEDID = "CheydinhalWell01";
 //		else if (baseEDID.find("0TRUm1UFWUgate") != std::string::npos && baseEDID.find("UbarU0") != std::string::npos )
 //			baseEDID = "0miscUcomUwoodUforkUUNI1";
 		else if (baseEDID == "0CollisionSWallSTSINVISO")
@@ -576,10 +576,12 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 	}
 
 	// EDID = EditorID
-	//	esm.writeHNCString("NAME", mRefID);
-//	esm.startSubRecordTES4("EDID");
-//	esm.writeHCString(mRefID);
-//	esm.endSubRecordTES4("EDID");
+	if (refEDID != "")
+	{
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString(refEDID);
+		esm.endSubRecordTES4("EDID");
+	}
 
 	// XRGD, ragdoll
 	// XESP, parent object

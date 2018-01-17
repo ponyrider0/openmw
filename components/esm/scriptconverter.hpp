@@ -69,8 +69,8 @@ namespace ESM {
 
 		bool bUseCommandReference = false;
 		bool bUseVarReference = false;
-		std::string mCommandReference = "";
-		std::string mVarReference = "";
+		std::string mCommandRef_EDID = "";
+		std::string mVarRef_mID = "";
 		int mDialogHelperIndex=0;
 		bool bSetCmd = false;
 		bool bIfCmd = false;
@@ -115,9 +115,9 @@ namespace ESM {
 		std::vector<uint8_t> compile_param_float(double float_val);
 		std::vector<uint8_t> compile_param_varname(const std::string& varName, const std::string &sSIG="", int mode=0);
 		uint16_t prepare_localvar(const std::string& varName, int mode=0);
-		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG="", int mode=0 );
+		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG, int mode=0 );
 		std::vector<uint8_t> compile_external_localvar(const std::string& refName, const std::string& varName);
-		bool lookup_reference(const std::string &refName, std::string &refEDID, std::string &refSIG, std::string &refValString);
+		bool lookup_reference(const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 		void gotoEOL(std::vector<struct Token>::iterator & tokenItem);
 		void pop_context_conditional(std::vector<struct Token>::iterator& tokenItem);
 

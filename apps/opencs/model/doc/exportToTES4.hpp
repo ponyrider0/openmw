@@ -141,8 +141,9 @@ namespace CSMDoc
 			if (exportOrSkip)
 			{
 				mNumRecords++;
-				std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
+				std::string strEDID;
 				std::string sSIG;
+
 				for (int tempindex = 0; tempindex<4; ++tempindex)
 					/// \todo make endianess agnostic
 					sSIG += reinterpret_cast<const char *> (&record.sRecordId)[tempindex];
@@ -258,8 +259,10 @@ namespace CSMDoc
 			}
 			if (formID == 0)
 			{
-				std::cout << "WARNING: exporting record without pre-defined FormID (New FormID will be assigned): [" << sSIG << "] " << strEDID << std::endl;
+				std::stringstream errmesg;
+				errmesg << "WARNING: exporting record without pre-defined FormID (New FormID will be assigned): [" << sSIG << "] " << strEDID << std::endl;
 //				throw std::runtime_error("WARNING: found collection item without pre-assigned FormID: " + strEDID);
+				OutputDebugString(errmesg.str().c_str());
 			}
 
 			uint32_t flags=0;

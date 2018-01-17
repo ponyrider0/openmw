@@ -133,6 +133,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportCreatureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 	appendStage (new ExportLeveledCreatureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
+	// CREATE WORLD REFERENCES, THEN INTERIOR & EXTERIOR WORLD
 	appendStage (new ExportReferenceCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
@@ -2365,14 +2366,27 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 	for (int i=stage*100; i<stage*100+100 && i<size; ++i)
 	{
 		std::string sSIG = "REFR";
+		std::string baseRecordID = "";
 		bool persistentRef = false;
+		bool scriptedRef = false;
 
+		// get record then baseObj ID
 		const CSMWorld::Record<CSMWorld::CellRef>& record = mDocument.getData().getReferences().getRecord (i);
-		CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(record.get().mRefID);
+		baseRecordID = record.get().mRefID;
+		CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(baseRecordID);
 
+		// reference record ID
 		std::string strEDID = record.get().mId;
+		std::string tempStr = Misc::StringUtils::lowerCase(baseRecordID);
 
-		std::string tempStr = Misc::StringUtils::lowerCase(record.get().mRefID);
+		// check BaseObjToPersistentRefList
+		
+		if (writer.mBaseObjToScriptedREFList.find(tempStr) != writer.mBaseObjToScriptedREFList.end() )
+		{
+			persistentRef = true;
+			scriptedRef = true;
+		}
+
 		if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
 		{
 			persistentRef = true;
@@ -2394,7 +2408,8 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 
 		if ( record.isModified() || record.isDeleted() )
 		{
-			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			// reserve EDID + formID
+			uint32_t formID = writer.crossRefStringID(record.get().mId, sSIG, false, true);
 			if (formID == 0)
 			{
 				formID = writer.reserveFormID(formID, strEDID, sSIG);
@@ -2442,10 +2457,6 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				if (!interior)
 					tempCellReference = "worldspace-dummycell";
 				std::deque<int>& persistentRefListOfCurrentCell = mState.mPersistentRefMap[Misc::StringUtils::lowerCase (tempCellReference)];
-				// reserve FormID here, then push back the pair
-//				std::ostringstream refEDIDstr;
-//				uint32_t formID = mState.getWriter().getNextAvailableFormID();
-//				refEDIDstr << "*refindex" << i;
 
 				persistentRefListOfCurrentCell.push_back(i);
 				continue;
@@ -2717,9 +2728,9 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						{
 							CSMWorld::CellRef refRecord = ref.get();
 
-							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID, "BASEREF");
+//							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID, "BASEREF");
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-							if (baseRefID != 0)
+							if (baseRefIndex.first != -1)
 							{
 								std::string sSIG;
 								switch (baseRefIndex.second)
@@ -2737,8 +2748,13 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 									sSIG = "REFR";
 									break;
 								}
-								std::string refStringID = refRecord.mId;
-								uint32_t refFormID = writer.crossRefStringID(refStringID, sSIG, false, true);
+								std::string refEDID = "";
+								std::string compString = Misc::StringUtils::lowerCase(refRecord.mRefID);
+								if (writer.mBaseObjToScriptedREFList.find(compString) != writer.mBaseObjToScriptedREFList.end())
+								{
+									refEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "PREF");
+								}
+								uint32_t refFormID = writer.crossRefStringID(refRecord.mId, sSIG, false, true);
 								if (refFormID == 0)
 								{
 									throw std::runtime_error("Interior Cell Persistent Reference: retrieved invalid formID from *refindex lookup");
@@ -2759,8 +2775,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 									refFlags |= 0x800; // DISABLED
 								refFlags |= 0x400; // persistent flag
 								// start record
-								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
-								refRecord.exportTES4 (writer, teleportDoorRefID, &returnPosition);
+								writer.startRecordTES4(sSIG, refFlags, refFormID, refEDID);
+								refRecord.exportTES4 (writer, refEDID, teleportDoorRefID, &returnPosition);
 								// end record
 								writer.endRecordTES4(sSIG);
 							}
@@ -2798,16 +2814,11 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 							mDocument.getData().getReferences().getRecord (*iter);
 
 						CSMWorld::CellRef refRecord = ref.get();
-						std::string refStringID = refRecord.mId;
-						uint32_t refFormID = writer.crossRefStringID(refStringID, "REFR", false, false);
 						if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
 						{
-		//                    uint32_t refFormID = writer.getNextAvailableFormID();
-		//                    refFormID = writer.reserveFormID(refFormID, refRecord.mId);
-							uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID, "BASEREF");
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
 
-							if (baseRefID != 0)
+							if (baseRefIndex.first != -1)
 							{
 								std::string sSIG;
 								switch (baseRefIndex.second)
@@ -2824,13 +2835,16 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 									sSIG = "REFR";
 									break;
 								}
+								// use mID for non-persistent (aka "temporary") ref
+								uint32_t refFormID = writer.crossRefStringID(refRecord.mId, "REFR", false, false);
+
 								uint32_t refFlags=0;
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 									refFlags |= 0x800; // DISABLED
-								// start record
-                        
-								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
-								refRecord.exportTES4 (writer);
+								
+								// start record                        
+								writer.startRecordTES4(sSIG, refFlags, refFormID, "");
+								refRecord.exportTES4 (writer, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 							}
@@ -3111,13 +3125,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			
 			CSMWorld::CellRef refRecord = ref.get();
 			
-//			std::ostringstream refEDIDstr;
-//			refEDIDstr << "*refindex" << *refindex_iter;
-//			std::string strEDID = writer.generateEDIDTES4(refRecord.mId);
-			std::string strEDID = refRecord.mId;
-			uint32_t baseRefID = writer.crossRefStringID(refRecord.mRefID, "BASEREF");
 			CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);
-			if (baseRefID != 0 && baseRefIndex.first != -1)
+			if (baseRefIndex.first != -1)
 			{
 				sSIG="";
 				switch (baseRefIndex.second)
@@ -3132,7 +3141,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						sSIG = "REFR";
 						break;
 				}
-				uint32_t refFormID = writer.crossRefStringID(strEDID, sSIG, false, true);
+				std::string strEDID = "";
+				std::string compString = Misc::StringUtils::lowerCase(refRecord.mRefID);
+				if (writer.mBaseObjToScriptedREFList.find(compString) != writer.mBaseObjToScriptedREFList.end())
+				{
+					strEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "PREF");
+				}
+				uint32_t refFormID = writer.crossRefStringID(refRecord.mId, sSIG, false, true);
 				if (refFormID == 0)
 				{
 					throw std::runtime_error("Exterior Cell Persistent Reference: retrieved invalid formID from *refindex lookup: " + strEDID);
@@ -3151,7 +3166,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					refFlags |= 0x800; // DISABLED
 				// start record
 				writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
-				refRecord.exportTES4 (writer, teleportDoorRefID, &returnPosition);
+				refRecord.exportTES4 (writer, strEDID, teleportDoorRefID, &returnPosition);
 				// end record
 				writer.endRecordTES4(sSIG);
 //				debugstream.str(""); debugstream.clear();
@@ -3536,7 +3551,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 									refFlags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
-								refRecord.exportTES4 (writer);
+								refRecord.exportTES4 (writer, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 								debugstream << "(" << sSIG << ")[" << refFormID << "] ";
@@ -4808,7 +4823,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	exportedEDIDCSVFile.open("ExportedEDIDlist_" + modStem + ".csv");
 	// write header
 	int index=0;
-	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << std::endl;
+	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Persistent Refs" << std::endl;
 	for (auto exportItem = esm.mStringIDMap.begin();
 		exportItem != esm.mStringIDMap.end();
 		exportItem++)
@@ -4817,11 +4832,24 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		if ((exportItem->second & esm.mESMoffset) == esm.mESMoffset)
 		{
 			// get sSIG from record
-			std::string sSIG = "UNKN";
+			// if refEDID contains ref#, then check baseRecord for scriptedRef
+			std::string sSIG = "";
+			std::string sEDID = "";
 			auto recordType = esm.mStringTypeMap.find(Misc::StringUtils::lowerCase(exportItem->first));
 			if (recordType != esm.mStringTypeMap.end() && recordType->second != "")
 				sSIG = recordType->second;
-			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << std::endl;
+			if (exportItem->first.find("ref#") != std::string::npos)
+			{
+				int tempIndex = mDocument.getData().getReferences().searchId(exportItem->first);
+				auto record = mDocument.getData().getReferences().getRecord(tempIndex).get();
+				std::string baseRecordID = Misc::StringUtils::lowerCase(record.mRefID);
+				if (esm.mBaseObjToScriptedREFList.find(baseRecordID) != esm.mBaseObjToScriptedREFList.end())
+				{
+					sEDID = esm.generateEDIDTES4(record.mRefID, 0, "PREF");
+//					sSIG += "-PREF";
+				}
+			}
+			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << "," << sEDID << std::endl;
 		}
 	}
 	exportedEDIDCSVFile.close();

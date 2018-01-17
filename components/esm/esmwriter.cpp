@@ -16,9 +16,13 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <components/misc/stringops.hpp>
 #include <components/to_utf8/to_utf8.hpp>
 
+
 namespace ESM
 {
-    ESMWriter::ESMWriter()
+	// static class member
+	std::map<std::string, std::string> ESMWriter::mMorroblivionEDIDmap;
+
+	ESMWriter::ESMWriter()
         : mRecords()
         , mStream(NULL)
         , mHeaderPos()
@@ -197,7 +201,7 @@ namespace ESM
 				debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: [" << name << "](" << overRideStringID << ") " << std::hex << formID <<
 					", overwritten by: (" << stringID << ") " << std::hex << activeID << std::endl;
 				OutputDebugString(debugstream.str().c_str());
-				std::cout << debugstream.str();
+//				std::cout << debugstream.str();
 			}
 //			bSuccess = false;
 //			return bSuccess;
@@ -1457,6 +1461,7 @@ namespace ESM
 	std::string ESMWriter::generateEDIDTES4(const std::string& name, int conversion_mode, const std::string& sSIG)
 	{
 		std::string tempEDID, finalEDID;
+		std::string postFix = "";
 		bool removeOther=false;
 		bool addScript=false;
 		bool addRegion=false;
@@ -1465,6 +1470,8 @@ namespace ESM
 		// Do EDID substitutions
 		if ( (Misc::StringUtils::lowerCase(name) == "player") ||
 			(Misc::StringUtils::lowerCase(name) == "playerref") )
+			return name;
+		if (Misc::StringUtils::lowerCase(name) == "northmarker")
 			return name;
 		if (Misc::StringUtils::lowerCase(name) == "gold_001")
 			return "Gold001";
@@ -1477,6 +1484,8 @@ namespace ESM
 			}
 			if (Misc::StringUtils::lowerCase(sSIG) == "glob")
 			{
+//				conversion_mode = 1;
+//				postFix = "Uglobal";
 				conversion_mode = 2;
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "scpt")
@@ -1495,6 +1504,11 @@ namespace ESM
 			else if (Misc::StringUtils::lowerCase(sSIG) == "dial")
 			{
 				conversion_mode = 4;
+			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "pref")
+			{
+				conversion_mode = 5; // like quest but add REF postfix
+				postFix = "REF";
 			}
 		}
 
@@ -1522,7 +1536,7 @@ namespace ESM
 			if (name.size() > 0 && name[0] != '0')
 				tempEDID = "1" + name;
 			break;
-		case 5: // for quests: leading "mw" and no extra-char types
+		case 5: // for quests (and some other records): leading "mw" and no extra-char types
 			tempEDID = "mw" + name;
 			removeOther = true;
 			break;
@@ -1601,6 +1615,14 @@ namespace ESM
 				finalEDID += "Region";
 			}
 		}
+
+		// add generic postFix
+		if (postFix != "")
+		{
+			finalEDID += postFix;
+		}
+
+		finalEDID = substituteMorroblivionEDID(finalEDID, sSIG);
 
 		return finalEDID;
 	}
@@ -2943,6 +2965,23 @@ namespace ESM
 		return distance_XYZ;		
 	}
 
+	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, const std::string & recordSIG)
+	{
+		if (recordSIG.size() != 4)
+			return genericEDID;
+
+		uint32_t recordType = 0;
+		uint8_t *byteptr;
+		byteptr = (uint8_t *) &recordType;
+
+		for (int i = 0; i < 4; i++)
+		{
+			byteptr[i] = recordSIG[i];
+		}
+
+		return substituteMorroblivionEDID(genericEDID, (ESM::RecNameInts) recordType);
+	}
+
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, ESM::RecNameInts recordType)
 	{
 		std::string morroblivionEDID = genericEDID;
@@ -3029,6 +3068,31 @@ namespace ESM
 	void ESMWriter::QueueModelForExport(std::string origString, std::string convertedString, int recordType)
 	{
 		mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
+	}
+
+	void ESMWriter::RegisterBaseObjForScriptedREF(const std::string &stringIDArg, std::string sSIG, int nMode)
+	{
+		int numTimesReferenced = 1;
+
+		std::string compString = Misc::StringUtils::lowerCase(stringIDArg);
+		auto record = mBaseObjToScriptedREFList.find(compString);
+		if (record != mBaseObjToScriptedREFList.end())
+		{
+			numTimesReferenced = record->second.second + 1;
+		}
+		mBaseObjToScriptedREFList[compString] = std::make_pair(sSIG, numTimesReferenced);
+
+	}
+
+	void ESMWriter::RegisterScriptToQuest(const std::string & scriptName, std::string questName, int nMode)
+	{
+		std::string questEDID = "";
+		if (questName == "")
+		{
+			questEDID = generateEDIDTES4(scriptName, 0, "QUST");
+			questEDID += "UScriptToQuest";
+		}
+		mScriptToQuestList[scriptName] = std::make_pair(questEDID, nMode);
 	}
 
 }

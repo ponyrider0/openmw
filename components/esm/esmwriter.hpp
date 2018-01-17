@@ -197,8 +197,9 @@ public:
 		void exportFaceGen(const std::string& headName);
 		static float calcDistance(ESM::Position pointA, ESM::Position pointB);
 
-		std::string substituteMorroblivionEDID(const std::string& genericEDID, ESM::RecNameInts recordType);
-		std::map<std::string, std::string> mMorroblivionEDIDmap;
+		static std::string substituteMorroblivionEDID(const std::string& genericEDID, const std::string &recordSIG);
+		static std::string substituteMorroblivionEDID(const std::string& genericEDID, ESM::RecNameInts recordType);
+		static std::map<std::string, std::string> mMorroblivionEDIDmap;
 		std::map<std::string, std::pair<std::string, int>> unMatchedEDIDmap;
 
 		std::map<std::string, int> mScriptHelperVarmap; // mwScriptHelper var index
@@ -223,6 +224,14 @@ public:
 		std::map<std::string, std::pair<std::string, int>> mDDSToExportList;
 		// SOUND List for export
 		std::map<std::string, std::pair<std::string, int>> mSOUNDToExportList;
+
+		// BaseOjbect stringID map for creation of Persistent REFs
+		std::map<std::string, std::pair<std::string, int>> mBaseObjToScriptedREFList;
+		void RegisterBaseObjForScriptedREF(const std::string &stringID, std::string sSIG, int nMode=0);
+
+		// Script stringID map for creation of ScriptToQuest records
+		std::map<std::string, std::pair<std::string, int>> mScriptToQuestList; // scriptName, questName?, mode?
+		void RegisterScriptToQuest(const std::string &scriptName, std::string questName=0, int nMode=0);
 
     private:
         std::list<RecordData> mRecords;

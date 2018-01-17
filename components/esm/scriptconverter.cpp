@@ -386,8 +386,8 @@ namespace ESM
 		{
 			bUseCommandReference = false;
 			bUseVarReference = false;
-			mCommandReference = "";
-			mVarReference = "";
+			mCommandRef_EDID = "";
+			mVarRef_mID= "";
 			mNewStatement = true;
 			Debug_CurrentScriptLine.str(""); Debug_CurrentScriptLine.clear();
 		}
@@ -404,18 +404,30 @@ namespace ESM
 			{
 				bUseCommandReference = true;
 				if (refEDID != "")
-					mCommandReference = refEDID;
+					mCommandRef_EDID = refEDID;
 				else
-					mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+					mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, "");
 				return;
 			}
 			else if (tokenItem->str == ".")
 			{
-				bUseVarReference = true;
-				if (refEDID != "")
-					mVarReference = refEDID;
+				// unless this is an if/set expression, then treat as a referenced command
+				if (mParseMode == 1)
+				{
+					error_mesg("parse_statement(): unexpected expression mode encountered.\n");
+					bUseVarReference = true;
+					if (refEDID != "")
+						mVarRef_mID = possibleRef;
+				}
 				else
-					mVarReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+				{
+					error_mesg("parse_statement(): unexpected \".\" operator in a non-expression line.\n");
+					bUseCommandReference = true;
+					if (refEDID != "")
+						mCommandRef_EDID = refEDID;
+					else
+						mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, "");
+				}
 				return;
 			}
 			// putback
@@ -499,8 +511,8 @@ namespace ESM
 			mParseMode = 0;
 			bUseCommandReference = false;
 			bUseVarReference = false;
-			mCommandReference = "";
-			mVarReference = "";
+			mCommandRef_EDID = "";
+			mVarRef_mID = "";
 			return;
 		}
 
@@ -508,7 +520,7 @@ namespace ESM
 		{
 			parse_operator(tokenItem);
 			bUseVarReference = false;
-			mVarReference = "";
+			mVarRef_mID = "";
 			return;
 		}
 
@@ -530,14 +542,14 @@ namespace ESM
 				{
 					bUseCommandReference = true;
 					if (refEDID != "")
-						mCommandReference = refEDID;
+						mCommandRef_EDID = refEDID;
 					else
-						mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, "");
+						mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, "");
 				}
 				else if (tokenItem->str == ".")
 				{
 					bUseVarReference = true;
-					mVarReference = possibleRef;
+					mVarRef_mID = possibleRef;
 				}
 				return;
 			}
@@ -550,14 +562,14 @@ namespace ESM
 			bool bLookupFailed = false;
 			if (bUseVarReference)
 			{
-				varData = compile_external_localvar(mVarReference, varString);
+				varData = compile_external_localvar(mVarRef_mID, varString);
 				if (varData.empty() == true)
 				{
 					std::stringstream errMesg;
-					errMesg << "error trying to compile referenced.localvar: " << mVarReference << "." << varString << std::endl;
+					errMesg << "error trying to compile referenced.localvar: " << mVarRef_mID << "." << varString << std::endl;
 					abort(errMesg.str());
 					bUseVarReference = false;
-					mVarReference = "";
+					mVarRef_mID = "";
 					return;
 				}
 			}
@@ -567,7 +579,8 @@ namespace ESM
 				{
 					if (prepare_reference(refEDID, refSIG, 100) == 0)
 						bLookupFailed = true;
-					varString = refEDID;
+					else
+						varString = refEDID;
 				}
 			}
 			if (bLookupFailed)
@@ -576,7 +589,7 @@ namespace ESM
 				errMesg << "identifier not found: (" << refSIG << ") " << varString << " or " << mESM.generateEDIDTES4(tokenItem->str) << std::endl;
 				abort(errMesg.str());
 				bUseVarReference = false;
-				mVarReference = "";
+				mVarRef_mID = "";
 				return;
 			}
 
@@ -584,14 +597,14 @@ namespace ESM
 			if (bUseVarReference)
 			{
 				// lookup appropriate refEDID
-				lookup_reference(mVarReference, refEDID, refSIG, refVal);
+				lookup_reference(mVarRef_mID, refEDID, refSIG, refVal);
 				if (refEDID == "")
 				{
 					std::stringstream errMesg;
-					errMesg << "could not resolve reference: (" << refSIG << ") " << mVarReference << std::endl;
+					errMesg << "could not resolve reference: (" << refSIG << ") " << mVarRef_mID << std::endl;
 					abort(errMesg.str());
 					bUseVarReference = false;
-					mVarReference = "";
+					mVarRef_mID = "";
 					return;
 				}
 				expressionLine += " " + refEDID + "." + varString;
@@ -611,7 +624,7 @@ namespace ESM
 //			mCurrentContext.compiledCode.push_back(OpCode_Push);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
 			bUseVarReference = false;
-			mVarReference = "";
+			mVarRef_mID = "";
 			return;
 		}
 
@@ -627,7 +640,7 @@ namespace ESM
 			for (int i=0; i < tokenItem->str.size(); i++) mCurrentContext.compiledCode.push_back(tokenItem->str[i]);
 
 			bUseVarReference = false;
-			mVarReference = "";
+			mVarRef_mID = "";
 			return;
 		}
 
@@ -636,7 +649,7 @@ namespace ESM
 		{
 			parse_keyword(tokenItem);
 			bUseVarReference = false;
-			mVarReference = "";
+			mVarRef_mID = "";
 			return;
 		}
 
@@ -644,7 +657,7 @@ namespace ESM
 		errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 		abort(errMesg.str());
 		bUseVarReference = false;
-		mVarReference = "";
+		mVarRef_mID = "";
 		return;
 
 	}
@@ -956,7 +969,7 @@ namespace ESM
 		command = "ModDisposition";
 		if (bUseCommandReference)
 		{
-			command = mCommandReference + "." + command;
+			command = mCommandRef_EDID + "." + command;
 		}
 		convertedStatement << command << " " << actorEDID << " " << valueString;
 		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -1010,7 +1023,7 @@ namespace ESM
 			if (tokenItem->str == ".")
 			{
 				bUseVarReference = true;
-				mVarReference = refEDID;
+				mVarRef_mID = possibleRef;
 				
 				tokenItem++;
 				if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
@@ -1051,7 +1064,7 @@ namespace ESM
 
 		// reset reference vars, they should have already been used in compile_param above
 		bUseVarReference = false;
-		mVarReference = "";
+		mVarRef_mID = "";
 
 		tokenItem++;
 		// read "to" (sanity check)
@@ -1118,8 +1131,8 @@ namespace ESM
 		{
 			bSkipCompile = true;
 			bUseCommandReference = true;
-			mCommandReference = "mwScriptHelper";
-			auto varData = compile_external_localvar(mCommandReference, cmdString);
+			mCommandRef_EDID = "mwScriptHelper";
+			auto varData = compile_external_localvar(mCommandRef_EDID, cmdString);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getinterior")
@@ -1130,15 +1143,15 @@ namespace ESM
 		{
 			bSkipCompile = true;
 			bUseCommandReference = true;
-			mCommandReference = "mwScriptHelper";
-			auto varData = compile_external_localvar(mCommandReference, cmdString);
+			mCommandRef_EDID = "mwScriptHelper";
+			auto varData = compile_external_localvar(mCommandRef_EDID, cmdString);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
 		}
 
 		//----------------------------------------------
 		if (bUseCommandReference)
 		{
-			cmdString = mCommandReference + "." + cmdString;
+			cmdString = mCommandRef_EDID + "." + cmdString;
 		}
 
 		convertedStatement << cmdString;
@@ -1156,15 +1169,14 @@ namespace ESM
 		if (bSkipCompile)
 		{
 			bUseCommandReference = false;
-			mCommandReference = "";
+			mCommandRef_EDID = "";
 			return;
 		}
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
 
-		std::string compareText = Misc::StringUtils::lowerCase(tokenItem->str);
-		OpCode = getOpCode(compareText);
+		OpCode = getOpCode(tokenItem->str);
 
 		if (OpCode != 0)
 		{
@@ -1172,7 +1184,7 @@ namespace ESM
 		}
 		else
 		{
-			abort("parse_0arg(): 0x0 opcode: " + compareText + "\n");
+			abort("parse_0arg(): 0x0 opcode: " + tokenItem->str + "\n");
 		}
 
 		return;
@@ -1196,6 +1208,7 @@ namespace ESM
 			// check if it's part of a reference command or reference variable
 			if (tokenItem->str == "->")
 			{
+				tokenItem++;
 				if (bUseCommandReference == false)
 				{
 					bUseCommandReference = true;
@@ -1206,27 +1219,42 @@ namespace ESM
 					return false;
 				}
 				if (refEDID != "")
-					mCommandReference = refEDID;
+					mCommandRef_EDID = refEDID;
 				else
-					mCommandReference = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
-				tokenItem++;
+					mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
 			}
 			else if (tokenItem->str == ".")
 			{
-				if (bUseVarReference == false)
+				tokenItem++;
+				if (tokenItem->type == TokenType::number_literalT)
 				{
-					bUseVarReference = true;
+					// add decimal point to number literal and proceed
+					std::string numLiteralString = tokenItem->str;
+					auto deleteThisToken = tokenItem;
+					tokenItem--;
+					tokenItem->str = "0." + numLiteralString;
+					mTokenList.erase(deleteThisToken);
+					tokenItem--;
+				}
+				else if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+				{
+					if (bUseVarReference == false)
+					{
+						bUseVarReference = true;
+					}
+					else
+					{
+						abort("double var reference");
+						return false;
+					}
+					mVarRef_mID = possibleRef;
 				}
 				else
 				{
-					abort("double var reference");
+					// abort
+					abort("sub_parse_arg(): unexpected token type following \".\" " + tokenItem->str + "\n");
 					return false;
 				}
-				if (refEDID != "")
-					mVarReference = refEDID;
-				else
-					mVarReference = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
-				tokenItem++;
 			}
 			else
 			{
@@ -1236,9 +1264,19 @@ namespace ESM
 
 			// if not, treat as local/global variable
 			if (tokenItem->type == TokenType::identifierT)
+			{
 				argString = tokenItem->str;
+			}
 			else if (tokenItem->type == TokenType::string_literalT)
+			{
 				argString = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
+			}
+			else
+			{
+				error_mesg("sub_parse_arg(): unexpected tokenType:" + tokenItem->str + "\n");
+				argString = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
+			}
+
 
 			// check if localvar, if not then check if reference
 			if (bIsFullScript == false &&
@@ -1377,8 +1415,9 @@ namespace ESM
 				if (bUseCommandReference)
 				{
 					bUseCommandReference = false;
-					mCommandReference = "";
+					mCommandRef_EDID = "";
 				}
+				abort("parse_1arg():: sub_parse_arg() failed - ");
 				return;
 			}
 		}
@@ -1388,7 +1427,7 @@ namespace ESM
 		std::string argPrefix = "";
 
 		if (bUseCommandReference)
-			cmdString = mCommandReference + "." + cmdString;
+			cmdString = mCommandRef_EDID + "." + cmdString;
 
 		if (bNeedsDialogHelper)
 			argPrefix = "mwDialogHelper.";
@@ -1424,13 +1463,19 @@ namespace ESM
 			if (bUseCommandReference)
 			{
 				bUseCommandReference = false;
-				mCommandReference = "";
+				mCommandRef_EDID = "";
 			}
 			return;
 		}
 
 		if (bEvalArgString)
 		{
+			if (argString == "")
+			{
+				// abort error
+				abort("parse_1arg(): empty argString");
+				return;
+			}
 			compile_command(OpCode, sizeParams, countParams, compile_param_varname(argString, argSIG, 100));
 		}
 		else if (bUseBinaryData == false)
@@ -1499,7 +1544,7 @@ namespace ESM
 		std::string arg1Prefix = "";
 		std::string arg2Prefix = "";
 		if (bUseCommandReference)
-			cmdString = mCommandReference + "." + cmdString;
+			cmdString = mCommandRef_EDID + "." + cmdString;
 
 		if (bNeedsDialogHelper1)
 			arg1Prefix = "mwDialogHelper.";
@@ -2203,7 +2248,7 @@ namespace ESM
 			if (bUseCommandReference)
 			{
 				bUseCommandReference = false;
-				mCommandReference = "";
+				mCommandRef_EDID = "";
 			}
 			// Default: unhandled keyword, skip to next tokenStatement
 			std::stringstream errMesg;
@@ -2273,7 +2318,7 @@ namespace ESM
 			command = "RemoveItem";
 		if (bUseCommandReference)
 		{
-			command = mCommandReference + "." + command;
+			command = mCommandRef_EDID + "." + command;
 		}
 		convertedStatement << command << " " << itemEDID << " " << itemCountString;
 		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -2415,7 +2460,7 @@ namespace ESM
 		}
 		if (bUseCommandReference)
 		{
-			uint16_t RefData = prepare_reference(mCommandReference, "", 100);
+			uint16_t RefData = prepare_reference(mCommandRef_EDID, "", 100);
 			if (RefData != 0)
 			{
 				uint16_t RefCode;
@@ -2435,12 +2480,12 @@ namespace ESM
 			{
 				// ERROR
 				std::stringstream errMsg;
-				errMsg << "could not resolve reference for referenced command: " << mCommandReference << std::endl;
+				errMsg << "could not resolve reference for referenced command: " << mCommandRef_EDID << std::endl;
 				abort(errMsg.str());
 				return;
 			}
 			bUseCommandReference = false;
-			mCommandReference = "";
+			mCommandRef_EDID = "";
 		}
 
 		if (mParseMode == 1)
@@ -2515,9 +2560,9 @@ namespace ESM
 				uint8_t OpCode_Push = 0x20;
 				resultData.push_back(OpCode_Push);
 			}
-			resultData = compile_external_localvar(mVarReference, varName);
+			resultData = compile_external_localvar(mVarRef_mID, varName);
 			bUseVarReference = false;
-			mVarReference = "";
+			mVarRef_mID = "";
 			return resultData;
 		}
 
@@ -2540,7 +2585,7 @@ namespace ESM
 				else
 				{
 					bUseVarReference = false;
-					mVarReference = "";
+					mVarRef_mID = "";
 					abort("mLocalVarList contains invalid datatype\n");
 					resultData.clear();
 					return resultData;
@@ -2549,10 +2594,11 @@ namespace ESM
 		}
 		else
 		{
+			std::string varname_lowercase = Misc::StringUtils::lowerCase(varName);
 			// if dialog script, then set up DialogHelper quest for localvar references...
-			if (mESM.mLocalVarIndexmap.find(varName) != mESM.mLocalVarIndexmap.end())
+			if (mESM.mLocalVarIndexmap.find(varname_lowercase) != mESM.mLocalVarIndexmap.end())
 			{
-				dialghelperIndex = mESM.mLocalVarIndexmap[varName];
+				dialghelperIndex = mESM.mLocalVarIndexmap[varname_lowercase];
 				RefData = prepare_reference("mwDialogHelper", "QUST", 100);
 				// sanity check
 				if (RefData != 0)
@@ -2561,12 +2607,17 @@ namespace ESM
 				}
 				else
 				{
-					bUseVarReference = false;
-					mVarReference = "";
-					abort("compile_param_varname() error trying to set up mwDialogHelper reference\n");
+					abort("compile_param_varname() error trying to set up mwDialogHelper reference for localVar: " + varName + "\n");
 					resultData.clear();
+					bUseVarReference = false;
+					mVarRef_mID = "";
 					return resultData;
 				}
+			}
+			else
+			{
+				// localvar not found, pass through to check for reference below
+//				error_mesg("compile_param_varname(): localvar not found for: " + varName + "\n");
 			}
 
 		}
@@ -2604,7 +2655,7 @@ namespace ESM
 				else
 				{
 					bUseVarReference = false;
-					mVarReference = "";
+					mVarRef_mID = "";
 					abort("compile_param_varname() error\n");
 					resultData.clear();
 					return resultData;
@@ -2618,7 +2669,7 @@ namespace ESM
 		}
 		// always clear at end of each compile param
 		bUseVarReference = false;
-		mVarReference = "";
+		mVarRef_mID = "";
 
 		return resultData;
 	}
@@ -2626,12 +2677,7 @@ namespace ESM
 	uint16_t ScriptConverter::prepare_localvar(const std::string& varName, int mode)
 	{
 		uint16_t RefData = 0;
-		std::string searchName = varName;
-
-		if (mode == 0)
-		{
-			searchName = Misc::StringUtils::lowerCase(varName);
-		}
+		std::string searchName = Misc::StringUtils::lowerCase(varName);
 
 		if (bIsFullScript)
 		{
@@ -2657,7 +2703,7 @@ namespace ESM
 		return RefData;
 	}
 
-	uint16_t ScriptConverter::prepare_reference(const std::string & refName, const std::string& sSIG, int mode)
+	uint16_t ScriptConverter::prepare_reference(const std::string & baseName, const std::string& sSIG, int mode)
 	{
 		uint16_t RefData = 0;
 		std::string searchName;
@@ -2666,7 +2712,13 @@ namespace ESM
 		std::string refSIG = sSIG;
 		std::string refVal = "";
 
-		searchName = Misc::StringUtils::lowerCase(refName);
+		if (baseName == "")
+		{
+			abort("prepare_reference(): baseName is empty!\n");
+			return 0;
+		}
+
+		searchName = Misc::StringUtils::lowerCase(baseName);
 		if (searchName == "player" || searchName == "playerref")
 		{
 			formID = 0x14;
@@ -2675,12 +2727,12 @@ namespace ESM
 		{
 			if (mode == 100)
 			{
-				refEDID = searchName;
+				refEDID = baseName;
 			}
 			else
 			{
 //				searchName = mESM.generateEDIDTES4(searchName, 0, sSIG);
-				lookup_reference(refName, refEDID, refSIG, refVal);
+				lookup_reference(baseName, refEDID, refSIG, refVal);
 			}
 			formID = mESM.crossRefStringID(refEDID, refSIG, false);
 		}
@@ -2707,7 +2759,10 @@ namespace ESM
 		else
 		{
 			// do not abort, just issue error and return 0 so scriptconverter can continue
-			error_mesg("could not resolve reference name=" + refName + "\n");
+			if (mode == 100)
+				error_mesg("could not resolve reference BaseObj EDID (" + refSIG + ") " + refEDID + "\n");
+			else
+				error_mesg("could not resolve reference BaseObj stringID=" + baseName + "\n");
 		}
 
 		return RefData;
@@ -2810,9 +2865,9 @@ namespace ESM
 		return varData;
 	}
 
-	bool ScriptConverter::lookup_reference(const std::string &refName, std::string &refEDID, std::string &refSIG, std::string &refValString)
+	bool ScriptConverter::lookup_reference(const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString)
 	{
-		std::string refString = refName;
+		std::string refString = baseName;
 		std::string refScript = "";
 		std::string refFact = "";
 
@@ -2925,7 +2980,34 @@ namespace ESM
 			break;
 		}
 
-		refEDID = mESM.generateEDIDTES4(refString, 0, refSIG);
+		// Generate Reference EDID to be used in TES4 Script
+		//  For scriptable world objects, this is usually a persistent reference.
+		//  For scripts, this is a quest reference.
+		//  For inventory objects... ?
+		//  For cells?
+		// refEDID = mESM.generateEDIDTES4(refString, 0, refSIG);
+		std::string compString = Misc::StringUtils::lowerCase(refSIG);
+		if (compString == "npc_" ||
+			compString == "crea" ||
+			compString == "acti" ||
+			compString == "door")
+		{
+			refEDID = mESM.generateEDIDTES4(baseName, 0, "PREF");
+			// register baseobj for persistent ref creation
+			mESM.RegisterBaseObjForScriptedREF(baseName, refSIG);
+		}
+		else if (compString == "script")
+		{
+			refEDID = mESM.generateEDIDTES4(baseName, 0, "QUST");
+			std::string questEDID = mESM.generateEDIDTES4(refString, 0, "QUST");
+			questEDID += "UScriptToQuest";
+			// register script for Script_to_Quest creation
+			mESM.RegisterScriptToQuest(baseName, questEDID);
+		}
+		else
+		{
+			refEDID = mESM.generateEDIDTES4(baseName, 0, refSIG);
+		}
 
 		if (Misc::StringUtils::lowerCase(refValString) == "script")
 			refValString = refScript;
