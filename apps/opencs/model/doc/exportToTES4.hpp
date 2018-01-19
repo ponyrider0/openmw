@@ -247,6 +247,7 @@ namespace CSMDoc
 
 		if (exportOrSkip)
 		{
+/*
 			std::string strEDID = writer.generateEDIDTES4(record.mId, 0);
 			if (record.sRecordId == ESM::REC_SCPT)
 				strEDID = writer.generateEDIDTES4(record.mId, 3);
@@ -257,6 +258,9 @@ namespace CSMDoc
 				strEDID = writer.generateEDIDTES4(record.mId, 2);
 				formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			}
+*/
+			std::string strEDID = writer.generateEDIDTES4(record.mId, 0, sSIG);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
 				std::stringstream errmesg;
@@ -298,6 +302,7 @@ namespace CSMDoc
 		virtual int setup();
 		virtual void perform (int stage, Messages& messages);
 		std::vector<std::string> CreateAddTopicList(std::string infoText);
+		void appendSpecialRecords();
 
 	};
 

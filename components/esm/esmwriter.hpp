@@ -231,7 +231,8 @@ public:
 
 		// Script stringID map for creation of ScriptToQuest records
 		std::map<std::string, std::pair<std::string, int>> mScriptToQuestList; // scriptName, questName?, mode?
-		void RegisterScriptToQuest(const std::string &scriptName, std::string questName=0, int nMode=0);
+		void RegisterScriptToQuest(const std::string &scriptName, std::string questName="", int nMode=0);
+		std::map<std::string, int> mAutoStartList;
 
     private:
         std::list<RecordData> mRecords;

@@ -138,8 +138,10 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
-	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, true, skipMasterRecords));
+	// dialogs
 	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, false, skipMasterRecords));
+	// quests
+	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, true, skipMasterRecords));
 
 	// close file and clean up
 	appendStage (new CloseExportTES4Stage (currentSave));
@@ -259,6 +261,31 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 {
 	ESM::ESMWriter& writer = mState.getWriter();
 
+	if (mQuestMode)
+	{
+		// Loop through StartScript Collection and record scriptIDs to auto start
+		int numStartScripts = mDocument.getData().getStartScripts().getSize();
+		for (int i = 0; i < numStartScripts; i++)
+		{
+			auto autostartRecord = mDocument.getData().getStartScripts().getRecord(i);
+			bool bExportRecord = false;
+			if (mSkipMasterRecords)
+				bExportRecord |= autostartRecord.isModified() | autostartRecord.isDeleted();
+			else
+				bExportRecord = true;
+			if (bExportRecord)
+			{
+				// retrieve script reference
+				std::string scriptID_lowercase = Misc::StringUtils::lowerCase(autostartRecord.get().mId);
+				// add scriptID to autostart list
+				writer.mAutoStartList[scriptID_lowercase] = 1;
+				// add to scriptquest list if not already there
+				writer.RegisterScriptToQuest(autostartRecord.get().mId);
+			}
+		}
+
+	}
+
 	int collectionSize = mTopics.getSize();
 	for (int i=0; i < collectionSize; i++)
 	{
@@ -271,9 +298,7 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 		if (mSkipMasterRecords == true)
 		{
 			if (topic.isModified() || topic.isDeleted())
-			{
 				exportMe = true;
-			}
 		}
 		else
 		{
@@ -287,6 +312,12 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 
 	}
 	
+	if (mActiveRecords.size() == 0)
+	{
+		// return one so we can later check if any ScriptQuests need to be generated
+		return 1;
+	}
+
 	return mActiveRecords.size();
 }
 
@@ -313,6 +344,167 @@ std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTop
 
 	return addTopicList;
 }
+
+void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
+{
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// Append special records to end of group (GREETING topic, ScriptToQuests)
+	if (mQuestMode == false && mGreetingInfoList.size() > 0)
+	{
+		// write out GREETINGS info
+		std::string infoTopic = "GREETING";
+		//			std::string infoTopic = mGreetingInfoList.begin()->second;
+		uint32_t greetingID = writer.crossRefStringID(infoTopic, "DIAL", false, true);
+		if (greetingID == 0)
+		{
+			greetingID = writer.reserveFormID(greetingID, infoTopic, "DIAL");
+		}
+		uint32_t flags = 0;
+		writer.startRecordTES4("DIAL", flags, greetingID, infoTopic);
+		writer.startSubRecordTES4("EDID");
+		writer.writeHCString(infoTopic);
+		writer.endSubRecordTES4("EDID");
+		writer.startSubRecordTES4("FULL");
+		writer.writeHCString(infoTopic);
+		writer.endSubRecordTES4("FULL");
+		writer.startSubRecordTES4("DATA");
+		writer.writeT<uint8_t>(0);
+		writer.endSubRecordTES4("DATA");
+		writer.endRecordTES4("DIAL");
+		writer.startGroupTES4(greetingID, 7);
+
+		uint32_t prevRecordID = 0;
+		for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
+		{
+			std::string infoEDID = "info#" + greetingItem->first.mId;
+			if (prevRecordID == 0x408b501 && infoEDID == "info#1372930131120012690")
+			{
+				infoEDID = infoEDID + "B";
+			}
+			uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+			if (infoFormID == 0)
+			{
+				infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
+				if (infoFormID == 0x408B09A)
+				{
+//						std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
+				}
+			}
+			else if (infoFormID == 0x408B09A)
+			{
+//					std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
+			}
+			uint32_t infoFlags = 0;
+			// ***** didn't store records to check deleted/disabled status *****
+			bool bSuccess;
+			bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+			if (bSuccess)
+			{
+				// substitute PNAM if needed
+				if (writer.mPNAMINFOmap.empty() != true)
+				{
+					if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
+					{
+						prevRecordID = writer.mPNAMINFOmap[infoFormID];
+					}
+				}
+				greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
+				//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
+				writer.endRecordTES4("INFO");
+				prevRecordID = infoFormID;
+			}
+			else
+			{
+				std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+			}
+		}
+		writer.endGroupTES4(greetingID);
+
+		/*
+		// write out HELLO info
+		uint32_t helloID = writer.crossRefStringID("HELLO", "DIAL", false, true);
+		flags = 0;
+		writer.startRecordTES4("DIAL", flags, helloID, "HELLO");
+		writer.startSubRecordTES4("EDID");
+		writer.writeHCString("HELLO");
+		writer.endSubRecordTES4("EDID");
+		writer.startSubRecordTES4("FULL");
+		writer.writeHCString("HELLO");
+		writer.endSubRecordTES4("FULL");
+		writer.startSubRecordTES4("DATA");
+		writer.writeT<uint8_t>(0);
+		writer.endSubRecordTES4("DATA");
+		writer.endRecordTES4("DIAL");
+		writer.startGroupTES4(helloID, 7);
+		for (auto helloItem = mHelloInfoList.begin(); helloItem != mHelloInfoList.end(); helloItem++)
+		{
+		std::string infoEDID = "info#" + helloItem->first.mId;
+		uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+		uint32_t infoFlags = 0;
+		if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
+		writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+		helloItem->first.exportTESx(writer, 4, 0, helloItem->second);
+		writer.endRecordTES4("INFO");
+		}
+		writer.endGroupTES4(helloID);
+		*/
+	}
+	else if (mQuestMode == true && writer.mScriptToQuestList.size() > 0)
+	{
+		// QUEST MODE == true
+		for (auto questItem = writer.mScriptToQuestList.begin(); questItem != writer.mScriptToQuestList.end(); questItem++)
+		{
+			std::string scriptEDID = writer.generateEDIDTES4(questItem->first, 0, "SCPT");
+			std::string questEDID = questItem->second.first;
+			uint32_t questFormID = writer.crossRefStringID(questEDID, "QUST", false, true);
+			if (questFormID == 0)
+			{
+				questFormID = writer.reserveFormID(questFormID, questEDID, "QUST");
+			}
+			uint32_t scriptFormID = writer.crossRefStringID(scriptEDID, "SCPT", false, true);
+			if (scriptFormID == 0)
+			{
+				std::stringstream errMesg;
+				errMesg << "Export ScriptQuest: could not find formID for script: " << scriptEDID << std::endl;
+				OutputDebugString(errMesg.str().c_str());
+			}
+			uint32_t flags = 0;
+			// ******************* did not store record data to lookup deleted/disabled status
+//			if (topic.isDeleted()) flags |= 0x800; // DISABLED
+			writer.startRecordTES4("QUST", flags, questFormID, questEDID);
+
+			writer.startSubRecordTES4("EDID");
+			writer.writeHCString(questEDID);
+			writer.endSubRecordTES4("EDID");
+
+			if (scriptFormID != 0)
+			{
+				writer.startSubRecordTES4("SCRI");
+				writer.writeT<uint32_t>(scriptFormID);
+				writer.endSubRecordTES4("SCRI");
+			}
+
+			// crossref autostart
+			uint8_t questFlags = 0; // start game enabled = 0x01; allow repeat topics=0x04; allow repeat stages=0x08;
+			std::string scriptID_lowercase = Misc::StringUtils::lowerCase(questItem->first);
+			if (writer.mAutoStartList.find(scriptID_lowercase) != writer.mAutoStartList.end())
+			{
+				questFlags |= 0x01;
+			}
+			uint8_t questPriority = 0;
+			writer.startSubRecordTES4("DATA");
+			writer.writeT<uint8_t>(questFlags);
+			writer.writeT<uint8_t>(questPriority);
+			writer.endSubRecordTES4("DATA");
+
+			writer.endRecordTES4("QUST");
+		}
+
+	}
+
+}
+
 void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	bool bIsGreeting=false;
@@ -325,9 +517,23 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 	else
 		sSIG = "DIAL";
 
-	if (stage == 0 && mActiveRecords.size() > 0)
+	if (stage == 0)
 	{
-		writer.startGroupTES4(sSIG, 0);
+		if (mActiveRecords.size() > 0)
+		{
+			writer.startGroupTES4(sSIG, 0);
+		}
+		else
+		{
+			// check for existence of special records
+			if (mQuestMode == true && writer.mScriptToQuestList.size() > 0)
+			{
+				writer.startGroupTES4(sSIG, 0);
+				appendSpecialRecords();
+				writer.endGroupTES4(sSIG);
+			}
+			return;
+		}
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
@@ -464,7 +670,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		// quest target list:
 		// QSTA, formID
 		// CTDA, target conditions
-
 		writer.endRecordTES4("QUST");
 
 	}
@@ -695,107 +900,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
-// REPLACE FOLLOWING CODE WITH SEPARATE ESP FILE?...
-// TODO for separate ESP FILE: 
-		if (mQuestMode == false)
-		{
-			// write out GREETINGS info
-			std::string infoTopic = "GREETING";
-//			std::string infoTopic = mGreetingInfoList.begin()->second;
-			uint32_t greetingID = writer.crossRefStringID(infoTopic, "DIAL", false, true);
-			if (greetingID == 0)
-			{
-				greetingID = writer.reserveFormID(greetingID, infoTopic, "DIAL");
-			}
-			uint32_t flags = 0;
-			writer.startRecordTES4("DIAL", flags, greetingID, infoTopic);
-			writer.startSubRecordTES4("EDID");
-			writer.writeHCString(infoTopic);
-			writer.endSubRecordTES4("EDID");
-			writer.startSubRecordTES4("FULL");
-			writer.writeHCString(infoTopic);
-			writer.endSubRecordTES4("FULL");
-			writer.startSubRecordTES4("DATA");
-			writer.writeT<uint8_t>(0);
-			writer.endSubRecordTES4("DATA");
-			writer.endRecordTES4("DIAL");
-			writer.startGroupTES4(greetingID, 7);
-			uint32_t prevRecordID=0;
-			for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
-			{
-				std::string infoEDID = "info#" + greetingItem->first.mId;
-				if (prevRecordID == 0x408b501 && infoEDID == "info#1372930131120012690")
-				{
-					infoEDID = infoEDID + "B";
-				}
-				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-				if (infoFormID == 0)
-				{
-					infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
-					if (infoFormID == 0x408B09A)
-					{
-//						std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
-					}
-				} else if (infoFormID == 0x408B09A)
-				{
-//					std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
-				}
-				uint32_t infoFlags = 0;
-				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-				bool bSuccess;
-				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				if (bSuccess)
-				{
-					// substitute PNAM if needed
-					if (writer.mPNAMINFOmap.empty() != true)
-					{
-						if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
-						{
-							prevRecordID = writer.mPNAMINFOmap[infoFormID];
-						}
-					}
-					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
-//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
-					writer.endRecordTES4("INFO");
-					prevRecordID = infoFormID;
-				}
-				else
-				{
-					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
-				}
-			}
-			writer.endGroupTES4(greetingID);
-
-/*
-			// write out HELLO info
-			uint32_t helloID = writer.crossRefStringID("HELLO", "DIAL", false, true);
-			flags = 0;
-			writer.startRecordTES4("DIAL", flags, helloID, "HELLO");
-			writer.startSubRecordTES4("EDID");
-			writer.writeHCString("HELLO");
-			writer.endSubRecordTES4("EDID");
-			writer.startSubRecordTES4("FULL");
-			writer.writeHCString("HELLO");
-			writer.endSubRecordTES4("FULL");
-			writer.startSubRecordTES4("DATA");
-			writer.writeT<uint8_t>(0);
-			writer.endSubRecordTES4("DATA");
-			writer.endRecordTES4("DIAL");
-			writer.startGroupTES4(helloID, 7);
-			for (auto helloItem = mHelloInfoList.begin(); helloItem != mHelloInfoList.end(); helloItem++)
-			{
-				std::string infoEDID = "info#" + helloItem->first.mId;
-				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-				uint32_t infoFlags = 0;
-				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				helloItem->first.exportTESx(writer, 4, 0, helloItem->second);
-				writer.endRecordTES4("INFO");
-			}
-			writer.endGroupTES4(helloID);
-*/
-		}
-
+		appendSpecialRecords();
 		writer.endGroupTES4(sSIG);
 	}
 
@@ -4866,7 +4971,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	}
 	unresolvedLocalVarStream.close();
 
-	std::cout << "..Log writing done.\n\nEXPORT COMPLETED! You may now close the ModConverter, or open another ESP." << std::endl;
+	std::cout << "..Log writing done.\n\nEXPORT COMPLETED! You may now close the ModExporter, or open another ESP." << std::endl;
 }
 
 uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition)

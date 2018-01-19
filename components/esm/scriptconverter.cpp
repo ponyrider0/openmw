@@ -465,7 +465,6 @@ namespace ESM
 	void ScriptConverter::parse_expression(std::vector<struct Token>::iterator & tokenItem)
 	{
 		std::vector<uint8_t> varData;
-		bool bSkipCompile = false;
 
 		Debug_CurrentScriptLine << tokenItem->str << " ";
 		if (tokenItem->type == TokenType::endlineT)
@@ -509,6 +508,7 @@ namespace ESM
 				for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&expressionLength)[i];
 			}
 			mParseMode = 0;
+			bSetCmd = false;
 			bUseCommandReference = false;
 			bUseVarReference = false;
 			mCommandRef_EDID = "";
@@ -596,6 +596,10 @@ namespace ESM
 			std::string expressionLine = mCurrentContext.convertedStatements.back();
 			if (bUseVarReference)
 			{
+				std::string tokenPrefix = "";
+				if (bNegationOperator)
+					tokenPrefix = "-";
+				
 				// lookup appropriate refEDID
 				lookup_reference(mVarRef_mID, refEDID, refSIG, refVal);
 				if (refEDID == "")
@@ -607,22 +611,31 @@ namespace ESM
 					mVarRef_mID = "";
 					return;
 				}
-				expressionLine += " " + refEDID + "." + varString;
+				expressionLine += " " + tokenPrefix + refEDID + "." + varString;
 			}
 			else
 			{
-				expressionLine += " " + varString;
+				std::string tokenPrefix = "";
+				if (bNegationOperator)
+					tokenPrefix = "-";
+				expressionLine += " " + tokenPrefix + varString;
 			}
 			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size()-1] = expressionLine;
 
 			// compile
-			if (bSkipCompile == false)
-				varData = compile_param_varname(tokenItem->str);
+			varData = compile_param_varname(tokenItem->str, refSIG, 1);
 
-			// no need to add 0x20 because already added by compile commands
-//			uint8_t OpCode_Push = 0x20;
-//			mCurrentContext.compiledCode.push_back(OpCode_Push);
+			// Push OpCode only gets applied during expression parsing, should not be done in any other compiler function
+			uint8_t OpCode_Push = 0x20;
+			mCurrentContext.compiledCode.push_back(OpCode_Push);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
+			if (bNegationOperator)
+			{
+				// push ~
+				mCurrentContext.compiledCode.push_back(OpCode_Push);
+				mCurrentContext.compiledCode.push_back('~');
+				bNegationOperator = false;
+			}
 			bUseVarReference = false;
 			mVarRef_mID = "";
 			return;
@@ -631,13 +644,24 @@ namespace ESM
 		if (tokenItem->type == TokenType::number_literalT)
 		{
 			// translate and compile to buffer
+			std::string tokenPrefix = "";
+			if (bNegationOperator)
+				tokenPrefix = "-";
 			std::string expressionLine = mCurrentContext.convertedStatements.back();
-			expressionLine += " " + tokenItem->str;
+			expressionLine += " " + tokenPrefix + tokenItem->str;
 			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size()-1] = expressionLine;
 			// compile to buffer
+			// Push OpCode only gets applied during expression parsing, should not be done in any other compiler function
 			uint8_t OpCode_Push = 0x20;
 			mCurrentContext.compiledCode.push_back(OpCode_Push);
 			for (int i=0; i < tokenItem->str.size(); i++) mCurrentContext.compiledCode.push_back(tokenItem->str[i]);
+			if (bNegationOperator)
+			{
+				// push ~
+				mCurrentContext.compiledCode.push_back(OpCode_Push);				
+				mCurrentContext.compiledCode.push_back('~');
+				bNegationOperator = false;
+			}
 
 			bUseVarReference = false;
 			mVarRef_mID = "";
@@ -647,6 +671,9 @@ namespace ESM
 		// translate and compile to buffer
 		if (tokenItem->type == TokenType::keywordT)
 		{
+			// Push OpCode only gets applied during expression parsing, should not be done in any other compiler function
+			uint8_t OpCode_Push = 0x20;
+			mCurrentContext.compiledCode.push_back(OpCode_Push);
 			parse_keyword(tokenItem);
 			bUseVarReference = false;
 			mVarRef_mID = "";
@@ -667,7 +694,21 @@ namespace ESM
 		uint8_t OpCode_Push = 0x20;
 
 		// TODO: detect "negation" operator and treat different from "minus" operator
-		// ...
+		if (tokenItem->str == "-")
+		{
+			tokenItem--;
+			if ( (tokenItem->type != TokenType::identifierT) &&
+				(tokenItem->type != TokenType::number_literalT) &&
+				(tokenItem->type != TokenType::string_literalT) &&
+				(tokenItem->str != ")") )
+			{
+				tokenItem++;
+				bNegationOperator = true;
+				tokenItem->str = "~";
+				return;
+			}
+			tokenItem++;
+		}
 
 		// translate
 		std::string expressionLine = mCurrentContext.convertedStatements.back();
@@ -880,6 +921,26 @@ namespace ESM
 		{
 			OpCode = 0x1009;
 		}
+		else if (cmdString == "startquest")
+		{
+			OpCode = 0x1036;
+		}
+		else if (cmdString == "stopquest")
+		{
+			OpCode = 0x1037;
+		}
+		else if (cmdString == "setangle")
+		{
+			OpCode = 0x1009;
+		}
+		else if (cmdString == "getincell")
+		{
+			OpCode = 0x1043;
+		}
+		else if (cmdString == "getbuttonpressed")
+		{
+			OpCode = 0x101F;
+		}
 		else if (cmdString == "setstrength")
 		{
 			OpCode = 0;
@@ -997,7 +1058,7 @@ namespace ESM
 	// Set [varName] To [Expression]
 	void ScriptConverter::parse_set(std::vector<struct Token>::iterator & tokenItem)
 	{
-		std::string varName;
+		std::string varName = "";
 		bool bIsLocalVar=false;
 		int varIndex;
 		std::vector<uint8_t> varData;
@@ -1008,10 +1069,35 @@ namespace ESM
 
 		tokenItem++;
 		// variable token
-		if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+		if (tokenItem->type == TokenType::keywordT)
+		{
+			if ((Misc::StringUtils::lowerCase(tokenItem->str) == "onactivate") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "ondeath") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onknockout") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onmurder") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpcadd") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpcdrop") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpcequip") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpchitme") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpcsoulgemuse") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "onrepair") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "menumode"))
+			{
+				// ignore callbacks
+				gotoEOL(tokenItem);
+				return;
+			}
+			else
+			{
+				// issue error
+				std::stringstream errStr;
+				errStr << "unexpected token type in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+				abort(errStr.str());
+			}
+		} 
+		else if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
 		{
 			// Read variable
-			varName = tokenItem->str;
 			std::string possibleRef = tokenItem->str;
 			std::string refEDID = "";
 			std::string refSIG = "";
@@ -1041,18 +1127,27 @@ namespace ESM
 			{
 				// putback
 				tokenItem--;
-			}
 
-			// check if localvar, if not then check if reference
-			if (bIsFullScript == false &&
-				mESM.mLocalVarIndexmap.find(Misc::StringUtils::lowerCase(varName)) != mESM.mLocalVarIndexmap.end() )
-			{
-				// add mDialogHelper to script
-				bNeedsDialogHelper = true;
+				// check if localvar, if not then check if reference
+				if (prepare_localvar(possibleRef) != 0)
+				{
+					varName = possibleRef;
+				}
+				else
+				{
+					varName = refEDID;
+					if (refEDID == "")
+					{
+						std::stringstream errStr;
+						errStr << "parse_set(): could not resolve reference name to refEDID [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+						abort(errStr.str());
+					}
+				}
+
 			}
 
 			// compile to varData
-			varData = compile_param_varname(varName);
+			varData = compile_param_varname(varName, refSIG, (2|4) );
 			mSetCmd_VarSize = varData.size();
 		}
 		else
@@ -1080,7 +1175,10 @@ namespace ESM
 		std::string varPrefix="";
 		if (bUseVarReference)
 		{
-			cmdString << "Set" << " " << bUseVarReference << "." << varName << " " << "To" << " ";
+			std::string refEDID="", refSIG="", refVal="";
+			lookup_reference(mVarRef_mID, refEDID, refSIG, refVal);
+			
+			cmdString << "Set" << " " << refEDID << "." << varName << " " << "To" << " ";
 		}
 		else
 		{
@@ -1104,6 +1202,7 @@ namespace ESM
 		// change parsemode to expression build mode
 		mParseMode = 1;
 		bSetCmd = true;
+
 
 		return;
 	}
@@ -1200,7 +1299,7 @@ namespace ESM
 		{
 			std::string possibleRef = tokenItem->str;
 			std::string refEDID = "";
-			std::string refSIG = "";
+			std::string refSIG = argSIG;
 			std::string refVal = "";
 			lookup_reference(possibleRef, refEDID, refSIG, refVal);
 
@@ -1262,34 +1361,32 @@ namespace ESM
 				tokenItem--;
 			}
 
-			// if not, treat as local/global variable
-			if (tokenItem->type == TokenType::identifierT)
+			mDialogHelperIndex = 0;
+			if (prepare_localvar(possibleRef) != 0)
 			{
-				argString = tokenItem->str;
-			}
-			else if (tokenItem->type == TokenType::string_literalT)
-			{
-				argString = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
+				argString = possibleRef;
+				if (mDialogHelperIndex != 0)
+					bNeedsDialogHelper = true;
 			}
 			else
 			{
-				error_mesg("sub_parse_arg(): unexpected tokenType:" + tokenItem->str + "\n");
-				argString = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
-			}
-
-
-			// check if localvar, if not then check if reference
-			if (bIsFullScript == false &&
-				mESM.mLocalVarIndexmap.find(Misc::StringUtils::lowerCase(argString)) != mESM.mLocalVarIndexmap.end())
-			{
-				// add mDialogHelper to script
-				bNeedsDialogHelper = true;
+				if (refEDID != "")
+				{
+					argString = refEDID;
+				}
+				else
+				{
+					std::stringstream errMesg;
+					errMesg << "sub_parse_arg(): could not resolve arg into reference: " << possibleRef << "\n";
+					abort(errMesg.str());
+					return false;
+				}
 			}
 			bEvalArgString = true;
 		}
-		else if (tokenItem->type == TokenType::number_literalT || tokenItem->str == "-")
+		else if (tokenItem->type == TokenType::number_literalT || tokenItem->str == "-" || tokenItem->str == "+")
 		{
-			if (tokenItem->str == "-")
+			if (tokenItem->str == "-" || tokenItem->str == "+")
 			{
 				argString = tokenItem->str;
 				tokenItem++;
@@ -1404,6 +1501,49 @@ namespace ESM
 			cmdString = "GetStage";
 			argSIG = "QUST";
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getpccell")
+		{
+			cmdString = "GetInCell";
+			argSIG = "CELL";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "startscript")
+		{
+			cmdString = "StartQuest";
+			bSkipArgParse = true;
+			argSIG = "QUST";
+			tokenItem++;
+			if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+			{
+				std::string scriptID = tokenItem->str;
+				argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
+				mESM.RegisterScriptToQuest(scriptID, argString);
+				bEvalArgString = true;
+			}
+			else
+			{
+				abort("parse_1arg(): error processing: " + cmdString + "\n");
+				return;
+			}
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "stopscript")
+		{
+			cmdString = "StopQuest";
+			bSkipArgParse = true;
+			argSIG = "QUST";
+			tokenItem++;
+			if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+			{
+				std::string scriptID = tokenItem->str;
+				argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
+				mESM.RegisterScriptToQuest(scriptID, argString);
+				bEvalArgString = true;
+			}
+			else
+			{
+				abort("parse_1arg(): error processing: " + cmdString + "\n");
+				return;
+			}
+		}
 
 
 		//-------------------------------------------------
@@ -1424,15 +1564,15 @@ namespace ESM
 
 		// translate statement
 		std::stringstream convertedStatement;
-		std::string argPrefix = "";
+		std::string argPrefix = "", cmdPrefix="";
 
 		if (bUseCommandReference)
-			cmdString = mCommandRef_EDID + "." + cmdString;
+			cmdPrefix = mCommandRef_EDID + ".";
 
 		if (bNeedsDialogHelper)
 			argPrefix = "mwDialogHelper.";
 
-		convertedStatement << cmdString << " " << argPrefix << argString;
+		convertedStatement << cmdPrefix << cmdString << " " << argPrefix << argString;
 		if (mParseMode == 0)
 		{
 			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -1446,12 +1586,23 @@ namespace ESM
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
-		uint16_t OpCode = 0; 
-		uint16_t sizeParams = 2;
 		if (bEvalArgString)
-			sizeParams += 3;
-		else
-			sizeParams += 5;
+		{
+			if (argString == "")
+			{
+				// abort error
+				abort("parse_1arg(): empty argString");
+				return;
+			}
+			argdata = compile_param_varname(argString, argSIG, 4);
+		}
+		else if (bUseBinaryData == false)
+		{
+			int nArgNumber = atoi(argString.c_str());;
+			argdata = compile_param_long(nArgNumber);
+		}
+		uint16_t OpCode = 0; 
+		uint16_t sizeParams = 2 + argdata.size();
 		uint16_t countParams = 1;
 
 		OpCode = getOpCode(cmdString);
@@ -1468,25 +1619,7 @@ namespace ESM
 			return;
 		}
 
-		if (bEvalArgString)
-		{
-			if (argString == "")
-			{
-				// abort error
-				abort("parse_1arg(): empty argString");
-				return;
-			}
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(argString, argSIG, 100));
-		}
-		else if (bUseBinaryData == false)
-		{
-			int nArgNumber = atoi(argString.c_str());;
-			compile_command(OpCode, sizeParams, countParams, compile_param_long(nArgNumber));
-		}
-		else // (bUseBinaryData == true && bEvalArgString == false
-		{
-			compile_command(OpCode, sizeParams, countParams, argdata);
-		}
+		compile_command(OpCode, sizeParams, countParams, argdata);
 
 		return;
 
@@ -1541,17 +1674,18 @@ namespace ESM
 
 		// translate statement
 		std::stringstream convertedStatement;
+		std::string cmdPrefix = "";
 		std::string arg1Prefix = "";
 		std::string arg2Prefix = "";
 		if (bUseCommandReference)
-			cmdString = mCommandRef_EDID + "." + cmdString;
+			cmdPrefix = mCommandRef_EDID + ".";
 
 		if (bNeedsDialogHelper1)
 			arg1Prefix = "mwDialogHelper.";
 		if (bNeedsDialogHelper2)
 			arg2Prefix = "mwDialogHelper.";
 
-		convertedStatement << cmdString << " " << arg1Prefix << arg1String << " " << arg2Prefix << arg2String;
+		convertedStatement << cmdPrefix << cmdString << " " << arg1Prefix << arg1String << " " << arg2Prefix << arg2String;
 		if (mParseMode == 0)
 		{
 			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -1589,12 +1723,12 @@ namespace ESM
 		}
 
 		if (bEvalArg1)
-			arg1data = compile_param_varname(arg1String, arg1SIG, 100);
+			arg1data = compile_param_varname(arg1String, arg1SIG, 4);
 		else if (bUseBinaryData1 == false)
 			arg1data = compile_param_long( atoi(arg1String.c_str()) );
 
 		if (bEvalArg2)
-			arg2data = compile_param_varname(arg2String, arg2SIG, 100);
+			arg2data = compile_param_varname(arg2String, arg2SIG, 4);
 		else if (bUseBinaryData2 == false)
 			arg2data = compile_param_long( atoi(arg2String.c_str()) );
 
@@ -1758,21 +1892,26 @@ namespace ESM
 
 				// byte code: (OnActivate) 10 00 08 00 02 00 [BlockLen(4)] 00 00
 				uint16_t BeginModeCode = 0x10;
-				uint16_t ModeData = 0x00;
-				uint16_t OtherData = 0x00;
+				uint16_t ParamSize = 0x08;
+				uint16_t CallbackType = 0x00;
 				uint32_t BlockLen = 0;
 				if (Misc::StringUtils::lowerCase(mCallBackName) == "onactivate")
 				{
-					ModeData = 0x08;
-					OtherData = 0x02;
+					ParamSize = 0x08;
+					CallbackType = 0x02;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "menumode")
 				{
-					ModeData = 0x00;
-					OtherData = 0x01;
+					ParamSize = 0x08;
+					CallbackType = 0x01;
 				}
-				compile_command(BeginModeCode, ModeData);
-				for (int i=0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *>(&OtherData)[i]);
+				else
+				{
+					abort("ERROR: unhandled callback event! " + mCallBackName + "\n");
+				}
+
+				compile_command(BeginModeCode, ParamSize);
+				for (int i=0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *>(&CallbackType)[i]);
 				for (int i=0; i<4; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *>(&BlockLen)[i]);
 				for (int i=0; i<2; ++i) mCurrentContext.compiledCode.push_back(0);
 
@@ -1871,8 +2010,15 @@ namespace ESM
 		if (mCurrentContext.blockName != blockName.str())
 		{
 			std::stringstream errMesg;
-			errMesg << "mismatched code block end at code depth: " << mCurrentContext.codeBlockDepth << std::endl;
-			abort(errMesg.str());
+			errMesg << "pop_context_conditional(): mismatched code block end at code depth: " << mCurrentContext.codeBlockDepth;
+			if (mCurrentContext.codeBlockDepth == 0)
+			{
+				error_mesg("WARNING:" + errMesg.str() + " - ignoring line.\n");
+			}
+			else
+			{
+				abort(errMesg.str() + " - aborting script compilation.\n");
+			}
 			return;
 		}
 
@@ -1954,7 +2100,7 @@ namespace ESM
 		// reset context
 		if (mCurrentContext.bIsCallBack == false)
 		{
-			mCurrentContext.JumpOps += fromStack.JumpOps + 2; // for if/endif of inner context
+			mCurrentContext.JumpOps += fromStack.JumpOps; // for endif of inner context
 		}
 		else
 		{
@@ -1980,7 +2126,8 @@ namespace ESM
 		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&EndCode)[i]);
 
 		pop_context_conditional(tokenItem);
-		
+		// increment 1 for "endif"
+		mCurrentContext.JumpOps++;
 		return;
 
 	}
@@ -2201,6 +2348,7 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getcurrentweather")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getinterior")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cellchanged")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getbuttonpressed")
 			)
 		{
 			parse_0arg(tokenItem);
@@ -2238,6 +2386,9 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "gethealth")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getintelligence")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getresistdisease")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startscript")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopscript")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getpccell")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -2268,15 +2419,20 @@ namespace ESM
 
 	void ScriptConverter::parse_addremoveitem(std::vector<struct Token>::iterator& tokenItem, bool bRemove)
 	{
-		std::string itemEDID, itemCountString;
+		std::string itemCountString="";
 		bool bEvalItemCountVar=false;
+
+		std::string refEDID = "";
+		std::string refSIG = "";
+		std::string refVal = "";
 
 		tokenItem++;
 		// object EDID
 		if (tokenItem->type == TokenType::string_literalT ||
 			tokenItem->type == TokenType::identifierT)
 		{
-			itemEDID = ESM::ESMWriter::generateEDIDTES4(tokenItem->str, 0, "");
+//			itemEDID = ESM::ESMWriter::generateEDIDTES4(tokenItem->str, 0, "");
+			lookup_reference(tokenItem->str, refEDID, refSIG, refVal);
 		}
 		else
 		{
@@ -2312,15 +2468,15 @@ namespace ESM
 
 		// translate statement
 		std::stringstream convertedStatement;
-		std::string command;
+		std::string command, cmdPrefix="";
 		command = "AddItem";
 		if (bRemove)
 			command = "RemoveItem";
 		if (bUseCommandReference)
 		{
-			command = mCommandRef_EDID + "." + command;
+			cmdPrefix = mCommandRef_EDID + ".";
 		}
-		convertedStatement << command << " " << itemEDID << " " << itemCountString;
+		convertedStatement << cmdPrefix << command << " " << refEDID << " " << itemCountString;
 		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
 
 		// bytecompiled statement:
@@ -2333,12 +2489,12 @@ namespace ESM
 		uint32_t nItemCount;
 		if (bEvalItemCountVar)
 		{
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(itemEDID, "", 100), compile_param_varname(itemCountString));
+			compile_command(OpCode, sizeParams, countParams, compile_param_varname(refEDID, refSIG, 4), compile_param_varname(itemCountString));
 		}
 		else
 		{
 			nItemCount = atoi(itemCountString.c_str());;
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(itemEDID, "", 100), compile_param_long(nItemCount));
+			compile_command(OpCode, sizeParams, countParams, compile_param_varname(refEDID, refSIG, 4), compile_param_long(nItemCount));
 		}
 
 		return;
@@ -2440,7 +2596,7 @@ namespace ESM
 		uint16_t OpCode = 0x1039; // setstage
 		uint16_t sizeParams = 10;
 		uint16_t countParams = 2;
-		compile_command(OpCode, sizeParams, countParams, compile_param_varname(questEDID, "QUST", 100), questStageData);
+		compile_command(OpCode, sizeParams, countParams, compile_param_varname(questEDID, "QUST", 4), questStageData);
 		return;
 
 	}
@@ -2448,7 +2604,7 @@ namespace ESM
 	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams)
 	{
 		// outside of if expression, increment jumpops
-		if (mParseMode == 0 || bSetCmd == true)
+		if (mParseMode == 0)
 		{
 			mCurrentContext.JumpOps++;
 		}
@@ -2456,11 +2612,12 @@ namespace ESM
 		if (mParseMode == 1)
 		{
 			uint8_t OpCode_Push = 0x20;
-			mCurrentContext.compiledCode.push_back(OpCode_Push);
+//			mCurrentContext.compiledCode.push_back(OpCode_Push);
 		}
 		if (bUseCommandReference)
 		{
-			uint16_t RefData = prepare_reference(mCommandRef_EDID, "", 100);
+			std::string refSIG = "";
+			uint16_t RefData = prepare_reference(mCommandRef_EDID, refSIG, 100);
 			if (RefData != 0)
 			{
 				uint16_t RefCode;
@@ -2544,7 +2701,8 @@ namespace ESM
 		return resultData;
 	}
 
-	std::vector<uint8_t> ScriptConverter::compile_param_varname(const std::string & varName, const std::string& sSIG, int mode)
+	// modeflag=0 (default), modeflag=1 (expression term), modeflag=2 (set cmd),modeflag=4 (no lookup?)
+	std::vector<uint8_t> ScriptConverter::compile_param_varname(const std::string & varName, const std::string& sSIG, int modeflag)
 	{
 		uint8_t RefCode = 0;
 		uint16_t RefData = 0;
@@ -2558,7 +2716,7 @@ namespace ESM
 			if (mParseMode == 1)
 			{
 				uint8_t OpCode_Push = 0x20;
-				resultData.push_back(OpCode_Push);
+//				resultData.push_back(OpCode_Push);
 			}
 			resultData = compile_external_localvar(mVarRef_mID, varName);
 			bUseVarReference = false;
@@ -2598,8 +2756,9 @@ namespace ESM
 			// if dialog script, then set up DialogHelper quest for localvar references...
 			if (mESM.mLocalVarIndexmap.find(varname_lowercase) != mESM.mLocalVarIndexmap.end())
 			{
+				std::string refSIG = "QUST";
 				dialghelperIndex = mESM.mLocalVarIndexmap[varname_lowercase];
-				RefData = prepare_reference("mwDialogHelper", "QUST", 100);
+				RefData = prepare_reference("mwDialogHelper", refSIG, 100);
 				// sanity check
 				if (RefData != 0)
 				{
@@ -2622,14 +2781,18 @@ namespace ESM
 
 		}
 
-		// if no local var matched, try to match with reference
+		// if no local var matched, try to match with reference (global record or other base record)
 		if (RefData == 0)
 		{
-			RefData = prepare_reference(varName, sSIG, mode);
+			std::string refSIG = sSIG;
+			int mode=0;
+			if (modeflag & 4)
+				mode = 100;
+			RefData = prepare_reference(varName, refSIG, mode);
 			if (RefData != 0) // reference matched
 			{
-				if (mParseMode == 1)
-					RefCode = 0x47; // global formID
+				if (Misc::StringUtils::lowerCase(refSIG) == "glob")
+					RefCode = 0x47; // global formID expression term (NOT function parameter)
 				else
 					RefCode = 0x72; // param reference
 			}
@@ -2640,7 +2803,7 @@ namespace ESM
 			if (mParseMode == 1)
 			{
 				uint8_t OpCode_Push = 0x20;
-				resultData.push_back(OpCode_Push);
+//				resultData.push_back(OpCode_Push);
 			}
 			resultData.push_back(RefCode);
 			for (int i = 0; i<2; ++i) resultData.push_back(reinterpret_cast<uint8_t *> (&RefData)[i]);
@@ -2703,13 +2866,12 @@ namespace ESM
 		return RefData;
 	}
 
-	uint16_t ScriptConverter::prepare_reference(const std::string & baseName, const std::string& sSIG, int mode)
+	uint16_t ScriptConverter::prepare_reference(const std::string & baseName, std::string& refSIG, int mode)
 	{
 		uint16_t RefData = 0;
 		std::string searchName;
 		uint32_t formID;
 		std::string refEDID = "";
-		std::string refSIG = sSIG;
 		std::string refVal = "";
 
 		if (baseName == "")
@@ -2812,7 +2974,7 @@ namespace ESM
 		{
 			if (lookup_reference(refName, refEDID, refSIG, refScript) == false)
 			{
-				abort("compile_external_localvar(): unable to lookup reference\n");
+				abort("compile_external_localvar(): unable to lookup reference: " + refName + " (" + refEDID + ")\n");
 				varData.clear();
 				return varData;
 			}
@@ -2853,7 +3015,7 @@ namespace ESM
 		if (mParseMode == 1)
 		{
 			uint8_t OpCode_Push = 0x20;
-			varData.push_back(OpCode_Push);
+//			varData.push_back(OpCode_Push);
 		}
 		uint8_t cmdRefCode = 0x72;
 		varData.push_back(cmdRefCode);
@@ -2867,6 +3029,8 @@ namespace ESM
 
 	bool ScriptConverter::lookup_reference(const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString)
 	{
+		bool result=true;
+
 		std::string refString = baseName;
 		std::string refScript = "";
 		std::string refFact = "";
@@ -2876,33 +3040,64 @@ namespace ESM
 		{
 			if (refRecord.first = mDoc.getData().getCells().searchId(refString) != -1)
 			{
-				refRecord.second = CSMWorld::UniversalId::Type_Cell;
 				refSIG = "CELL";
 			}
 			else if (refRecord.first = mDoc.getData().getJournals().searchId(refString) != -1)
 			{
-				refRecord.second = CSMWorld::UniversalId::Type_Journal;
 				refSIG = "QUST";
 			}
 			else if (refRecord.first = mDoc.getData().getFactions().searchId(refString) != -1)
 			{
-				refRecord.second = CSMWorld::UniversalId::Type_Faction;
 				refSIG = "FACT";
 			}
 			else if (refRecord.first = mDoc.getData().getGlobals().searchId(refString) != -1)
 			{
-				refRecord.second = CSMWorld::UniversalId::Type_Global;
 				refSIG = "GLOB";
 			}
 			else if (refRecord.first = mDoc.getData().getScripts().searchId(refString) != -1)
 			{
-				refRecord.second = CSMWorld::UniversalId::Type_Script;
 				refScript = refString;
 				refSIG = "SCPT";
 			}
+			else if (refRecord.first = mDoc.getData().getSpells().searchId(refString) != -1)
+			{
+				refSIG = "SPEL";
+			}
+			else if (mDoc.getData().getClasses().searchId(refString) != -1)
+			{
+				refSIG = "CLAS";
+			}
+			else if (mDoc.getData().getMagicEffects().searchId(refString) != -1)
+			{
+//				refSIG = "CLAS";
+			}
+			else if (mDoc.getData().getPathgrids().searchId(refString) != -1)
+			{
+				refSIG = "PGRD";
+			}
+			else if (mDoc.getData().getRaces().searchId(refString) != -1)
+			{
+				refSIG = "RACE";
+			}
+			else if (mDoc.getData().getRegions().searchId(refString) != -1)
+			{
+				refSIG = "REGN";
+			}
+			else if (mDoc.getData().getSkills().searchId(refString) != -1)
+			{
+				refSIG = "SKIL";
+			}
+			else if (mDoc.getData().getSounds().searchId(refString) != -1)
+			{
+				refSIG = "SOUN";
+			}
+			else if (mDoc.getData().getTopics().searchId(refString) != -1)
+			{
+//				refSIG = "TOPI";
+			}
 			else
 			{
-				return false;
+				result = false;
 			}
 		}
 
@@ -2978,6 +3173,10 @@ namespace ESM
 			refScript = mDoc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
 			refSIG = "WEAP";
 			break;
+
+		default:
+			result = false;
+			break;
 		}
 
 		// Generate Reference EDID to be used in TES4 Script
@@ -2986,23 +3185,21 @@ namespace ESM
 		//  For inventory objects... ?
 		//  For cells?
 		// refEDID = mESM.generateEDIDTES4(refString, 0, refSIG);
-		std::string compString = Misc::StringUtils::lowerCase(refSIG);
-		if (compString == "npc_" ||
-			compString == "crea" ||
-			compString == "acti" ||
-			compString == "door")
+		std::string refSIG_lowercase = Misc::StringUtils::lowerCase(refSIG);
+		if (refSIG_lowercase == "npc_" ||
+			refSIG_lowercase == "crea" ||
+			refSIG_lowercase == "acti" ||
+			refSIG_lowercase == "door")
 		{
 			refEDID = mESM.generateEDIDTES4(baseName, 0, "PREF");
 			// register baseobj for persistent ref creation
 			mESM.RegisterBaseObjForScriptedREF(baseName, refSIG);
 		}
-		else if (compString == "script")
+		else if (refSIG_lowercase == "scpt")
 		{
-			refEDID = mESM.generateEDIDTES4(baseName, 0, "QUST");
-			std::string questEDID = mESM.generateEDIDTES4(refString, 0, "QUST");
-			questEDID += "UScriptToQuest";
+			refEDID = mESM.generateEDIDTES4(baseName, 0, "SQUST");
 			// register script for Script_to_Quest creation
-			mESM.RegisterScriptToQuest(baseName, questEDID);
+			mESM.RegisterScriptToQuest(baseName, refEDID);
 		}
 		else
 		{
@@ -3016,7 +3213,8 @@ namespace ESM
 		else
 			refValString = "";
 
-		return true;
+
+		return result;
 	}
 
 	void ScriptConverter::gotoEOL(std::vector<struct Token>::iterator & tokenItem)
@@ -3073,6 +3271,8 @@ namespace ESM
 		mKeywords.push_back("while");
 		mKeywords.push_back("endwhile");
 		mKeywords.push_back("return");
+		mKeywords.push_back("startscript");
+		mKeywords.push_back("stopscript");
 
 		mKeywords.push_back("journal");
 		mKeywords.push_back("choice");
@@ -3103,7 +3303,9 @@ namespace ESM
 		mKeywords.push_back("getlevel");
 		mKeywords.push_back("getpos");
 		mKeywords.push_back("getinterior");
+		mKeywords.push_back("getpccell");
 
+		mKeywords.push_back("getbuttonpressed");
 		mKeywords.push_back("getresistdisease");
 
 		mKeywords.push_back("getstrength");
@@ -3290,6 +3492,7 @@ namespace ESM
 	void ScriptConverter::parser()
 	{
 		mParseMode = 0;
+		bSetCmd = false;
 
 		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
 		{
@@ -3318,6 +3521,7 @@ namespace ESM
 
 			// unhandled mode, reset mode and skip to new line
 			mParseMode = 0;
+			bSetCmd = false;
 			gotoEOL(tokenItem);
 			continue;
 
@@ -3328,6 +3532,7 @@ namespace ESM
 	void ScriptConverter::ExtractLocalVars()
 	{
 		mParseMode = 0;
+		bSetCmd = false;
 
 		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
 		{

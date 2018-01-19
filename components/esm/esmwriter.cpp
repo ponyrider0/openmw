@@ -1461,7 +1461,7 @@ namespace ESM
 	std::string ESMWriter::generateEDIDTES4(const std::string& name, int conversion_mode, const std::string& sSIG)
 	{
 		std::string tempEDID, finalEDID;
-		std::string postFix = "";
+		std::string preFix = "", postFix = "";
 		bool removeOther=false;
 		bool addScript=false;
 		bool addRegion=false;
@@ -1510,6 +1510,13 @@ namespace ESM
 				conversion_mode = 5; // like quest but add REF postfix
 				postFix = "REF";
 			}
+			else if (Misc::StringUtils::lowerCase(sSIG) == "squst")
+			{
+				conversion_mode = 3; // like quest but add REF postfix
+				preFix = "mw";
+				postFix = "Quest";
+			}
+
 		}
 
 		switch (conversion_mode)
@@ -1541,7 +1548,8 @@ namespace ESM
 			removeOther = true;
 			break;
 		}
-
+		tempEDID = preFix + tempEDID;
+		
 		int len = tempEDID.length();
 
 		finalEDID = "";
@@ -3070,29 +3078,30 @@ namespace ESM
 		mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
 	}
 
-	void ESMWriter::RegisterBaseObjForScriptedREF(const std::string &stringIDArg, std::string sSIG, int nMode)
+	void ESMWriter::RegisterBaseObjForScriptedREF(const std::string &stringID, std::string sSIG, int nMode)
 	{
 		int numTimesReferenced = 1;
 
-		std::string compString = Misc::StringUtils::lowerCase(stringIDArg);
-		auto record = mBaseObjToScriptedREFList.find(compString);
+		std::string stringID_lowercase = Misc::StringUtils::lowerCase(stringID);
+		auto record = mBaseObjToScriptedREFList.find(stringID_lowercase);
 		if (record != mBaseObjToScriptedREFList.end())
 		{
 			numTimesReferenced = record->second.second + 1;
 		}
-		mBaseObjToScriptedREFList[compString] = std::make_pair(sSIG, numTimesReferenced);
+		mBaseObjToScriptedREFList[stringID_lowercase] = std::make_pair(sSIG, numTimesReferenced);
 
 	}
 
-	void ESMWriter::RegisterScriptToQuest(const std::string & scriptName, std::string questName, int nMode)
+	void ESMWriter::RegisterScriptToQuest(const std::string & scriptID, std::string questName, int nMode)
 	{
-		std::string questEDID = "";
+		std::string scriptID_lowercase = Misc::StringUtils::lowerCase(scriptID);
+		std::string questEDID = questName;
 		if (questName == "")
 		{
-			questEDID = generateEDIDTES4(scriptName, 0, "QUST");
-			questEDID += "UScriptToQuest";
+			questEDID = generateEDIDTES4(scriptID, 0, "SQUST");
 		}
-		mScriptToQuestList[scriptName] = std::make_pair(questEDID, nMode);
+		
+		mScriptToQuestList[scriptID_lowercase] = std::make_pair(questEDID, nMode);
 	}
 
 }

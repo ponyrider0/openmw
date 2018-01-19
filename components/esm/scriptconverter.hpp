@@ -77,6 +77,7 @@ namespace ESM {
 		int mSetCmd_StartPosition=0;
 		int mSetCmd_VarSize=0;
 		std::vector< struct Token > mOperatorExpressionStack;
+		bool bNegationOperator = false;
 
 		void setup_dictionary();
 		void lexer();
@@ -113,9 +114,9 @@ namespace ESM {
 		void compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, std::vector<uint8_t> param1data, std::vector<uint8_t> param2data);
 		std::vector<uint8_t> compile_param_long(int int_val);
 		std::vector<uint8_t> compile_param_float(double float_val);
-		std::vector<uint8_t> compile_param_varname(const std::string& varName, const std::string &sSIG="", int mode=0);
+		std::vector<uint8_t> compile_param_varname(const std::string& varName, const std::string &sSIG="", int modeflag=0);
 		uint16_t prepare_localvar(const std::string& varName, int mode=0);
-		uint16_t prepare_reference(const std::string& refName, const std::string& sSIG, int mode=0 );
+		uint16_t prepare_reference(const std::string& refName, std::string& refSIG, int mode=0 );
 		std::vector<uint8_t> compile_external_localvar(const std::string& refName, const std::string& varName);
 		bool lookup_reference(const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 		void gotoEOL(std::vector<struct Token>::iterator & tokenItem);
