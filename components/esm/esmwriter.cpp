@@ -15,7 +15,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 
 #include <components/misc/stringops.hpp>
 #include <components/to_utf8/to_utf8.hpp>
-
+#include <apps/opencs/model/doc/document.hpp>
 
 namespace ESM
 {
@@ -3103,5 +3103,197 @@ namespace ESM
 		
 		mScriptToQuestList[scriptID_lowercase] = std::make_pair(questEDID, nMode);
 	}
+
+
+	bool ESMWriter::lookup_reference(const CSMDoc::Document &doc, const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString)
+	{
+		bool result = true;
+
+		std::string refString = baseName;
+		std::string refScript = "";
+		std::string refFact = "";
+
+		std::pair<int, CSMWorld::UniversalId::Type> refRecord = doc.getData().getReferenceables().getDataSet().searchId(refString);
+		if (refRecord.first == -1)
+		{
+			if (refRecord.first = doc.getData().getCells().searchId(refString) != -1)
+			{
+				refSIG = "CELL";
+			}
+			else if (refRecord.first = doc.getData().getJournals().searchId(refString) != -1)
+			{
+				refSIG = "QUST";
+			}
+			else if (refRecord.first = doc.getData().getFactions().searchId(refString) != -1)
+			{
+				refSIG = "FACT";
+			}
+			else if (refRecord.first = doc.getData().getGlobals().searchId(refString) != -1)
+			{
+				refSIG = "GLOB";
+			}
+			else if (refRecord.first = doc.getData().getScripts().searchId(refString) != -1)
+			{
+				refScript = refString;
+				refSIG = "SCPT";
+			}
+			else if (refRecord.first = doc.getData().getSpells().searchId(refString) != -1)
+			{
+				refSIG = "SPEL";
+			}
+			else if (doc.getData().getClasses().searchId(refString) != -1)
+			{
+				refSIG = "CLAS";
+			}
+			else if (doc.getData().getMagicEffects().searchId(refString) != -1)
+			{
+				//				refSIG = "CLAS";
+			}
+			else if (doc.getData().getPathgrids().searchId(refString) != -1)
+			{
+				refSIG = "PGRD";
+			}
+			else if (doc.getData().getRaces().searchId(refString) != -1)
+			{
+				refSIG = "RACE";
+			}
+			else if (doc.getData().getRegions().searchId(refString) != -1)
+			{
+				refSIG = "REGN";
+			}
+			else if (doc.getData().getSkills().searchId(refString) != -1)
+			{
+				refSIG = "SKIL";
+			}
+			else if (doc.getData().getSounds().searchId(refString) != -1)
+			{
+				refSIG = "SOUN";
+			}
+			else if (doc.getData().getTopics().searchId(refString) != -1)
+			{
+				//				refSIG = "TOPI";
+			}
+			else
+			{
+				result = false;
+			}
+		}
+
+		switch (refRecord.second)
+		{
+		case CSMWorld::UniversalId::Type_Npc:
+			refScript = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mScript;
+			refFact = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mFaction;
+			refSIG = "NPC_";
+			break;
+
+		case CSMWorld::UniversalId::Type_Book:
+			refScript = doc.getData().getReferenceables().getDataSet().getBooks().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "BOOK";
+			break;
+
+		case CSMWorld::UniversalId::Type_Activator:
+			refScript = doc.getData().getReferenceables().getDataSet().getActivators().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ACTI";
+			break;
+
+		case CSMWorld::UniversalId::Type_Potion:
+			refScript = doc.getData().getReferenceables().getDataSet().getPotions().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ALCH";
+			break;
+
+		case CSMWorld::UniversalId::Type_Apparatus:
+			refScript = doc.getData().getReferenceables().getDataSet().getApparati().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "APPA";
+			break;
+
+		case CSMWorld::UniversalId::Type_Armor:
+			refScript = doc.getData().getReferenceables().getDataSet().getArmors().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ARMO";
+			break;
+
+		case CSMWorld::UniversalId::Type_Clothing:
+			refScript = doc.getData().getReferenceables().getDataSet().getClothing().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CLOT";
+			break;
+
+		case CSMWorld::UniversalId::Type_Container:
+			refScript = doc.getData().getReferenceables().getDataSet().getContainers().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CONT";
+			break;
+
+		case CSMWorld::UniversalId::Type_Creature:
+			refScript = doc.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CREA";
+			break;
+
+		case CSMWorld::UniversalId::Type_Door:
+			refScript = doc.getData().getReferenceables().getDataSet().getDoors().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "DOOR";
+			break;
+
+		case CSMWorld::UniversalId::Type_Ingredient:
+			refScript = doc.getData().getReferenceables().getDataSet().getIngredients().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "INGR";
+			break;
+
+		case CSMWorld::UniversalId::Type_Light:
+			refScript = doc.getData().getReferenceables().getDataSet().getLights().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "LIGH";
+			break;
+
+		case CSMWorld::UniversalId::Type_Miscellaneous:
+			refScript = doc.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "MISC";
+			break;
+
+		case CSMWorld::UniversalId::Type_Weapon:
+			refScript = doc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "WEAP";
+			break;
+
+		default:
+			result = false;
+			break;
+		}
+
+		// Generate Reference EDID to be used in TES4 Script
+		//  For scriptable world objects, this is usually a persistent reference.
+		//  For scripts, this is a quest reference.
+		//  For inventory objects... ?
+		//  For cells?
+		// refEDID = mESM.generateEDIDTES4(refString, 0, refSIG);
+		std::string refSIG_lowercase = Misc::StringUtils::lowerCase(refSIG);
+		if (refSIG_lowercase == "npc_" ||
+			refSIG_lowercase == "crea" ||
+			refSIG_lowercase == "acti" ||
+			refSIG_lowercase == "door")
+		{
+			refEDID = generateEDIDTES4(baseName, 0, "PREF");
+			// register baseobj for persistent ref creation
+			RegisterBaseObjForScriptedREF(baseName, refSIG);
+		}
+		else if (refSIG_lowercase == "scpt")
+		{
+			refEDID = generateEDIDTES4(baseName, 0, "SQUST");
+			// register script for Script_to_Quest creation
+			RegisterScriptToQuest(baseName, refEDID);
+		}
+		else
+		{
+			refEDID = generateEDIDTES4(baseName, 0, refSIG);
+		}
+
+		if (Misc::StringUtils::lowerCase(refValString) == "script")
+			refValString = refScript;
+		else if (Misc::StringUtils::lowerCase(refValString) == "faction")
+			refValString = refFact;
+		else
+			refValString = "";
+
+
+		return result;
+	}
+
 
 }

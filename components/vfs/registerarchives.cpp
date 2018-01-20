@@ -20,6 +20,16 @@ namespace VFS
             {
                 // Last BSA has the highest priority
                 const std::string archivePath = collections.getPath(*archive).string();
+
+				// Skip Bethesda BSAs
+				if ((Misc::StringUtils::lowerCase(archivePath).find("morrowind.bsa") != std::string::npos) ||
+					(Misc::StringUtils::lowerCase(archivePath).find("tribunal.bsa") != std::string::npos) ||
+					(Misc::StringUtils::lowerCase(archivePath).find("bloodmoon.bsa") != std::string::npos)
+					)
+				{
+					std::cout << "Skipping BSA archive " << archivePath << std::endl;
+					continue;
+				}
                 std::cout << "Adding BSA archive " << archivePath << std::endl;
 
                 vfs->addArchive(new BsaArchive(archivePath));

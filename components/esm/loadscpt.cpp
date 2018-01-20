@@ -188,7 +188,7 @@ namespace ESM
 		// SCHD (unknown script header)
 
 		// SCHR data...
-/*/
+
 		esm.startSubRecordTES4("SCHR");
 		esm.writeT<uint32_t>(0); // unused x4
 		esm.writeT<uint32_t>(refCount); // refcount (uint32)
@@ -196,7 +196,7 @@ namespace ESM
 		esm.writeT<uint32_t>(varCount); // var count (uint32)
 		esm.writeT<uint32_t>(scriptType); // type (uint32) 0=object, 1=quest, $100 = magic effect
 		esm.endSubRecordTES4("SCHR");
-*/
+/*
 		esm.startSubRecordTES4("SCHR");
 		esm.writeT<uint32_t>(0); // unused byte * 4
 		esm.writeT<uint32_t>(refCount);
@@ -204,25 +204,14 @@ namespace ESM
 		esm.writeT<uint32_t>(varCount);
 		esm.writeT<uint32_t>(scriptType);
 		esm.endSubRecordTES4("SCHR");
-
+*/
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-//		esm.write(0, 0);
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+		esm.write(0, 0);
+//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)
-/*
-		convertedScriptText << "ScriptName " << strEDID << std::endl << std::endl;
-		std::string inputLine;
-		while (std::getline(inputScriptText, inputLine))
-		{
-			convertedScriptText << "; " << inputLine << std::endl;
-		}
-		esm.startSubRecordTES4("SCTX");
-		esm.writeHCString(convertedScriptText.str());
-		esm.endSubRecordTES4("SCTX");
-*/
 		esm.startSubRecordTES4("SCTX");
 		esm.writeHCString(scriptConverter.GetConvertedScript());
 		esm.endSubRecordTES4("SCTX");

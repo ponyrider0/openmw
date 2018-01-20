@@ -264,9 +264,12 @@ namespace ESM
 				for (auto addTopicItem = addTopicList.begin(); addTopicItem != addTopicList.end(); addTopicItem++)
 				{
 					topicFormID = esm.crossRefStringID(*addTopicItem, "DIAL", false);
-					esm.startSubRecordTES4("NAME");
-					esm.writeT<uint32_t>(topicFormID); // can have multiple
-					esm.endSubRecordTES4("NAME");
+					if (topicFormID != 0)
+					{
+						esm.startSubRecordTES4("NAME");
+						esm.writeT<uint32_t>(topicFormID); // can have multiple
+						esm.endSubRecordTES4("NAME");
+					}
 				}
 			}
 
@@ -1034,7 +1037,9 @@ namespace ESM
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_FactionRankDifference:
 					compareFunction = 0x3C; // GetFactionRankDifference
-					compareArg2 = esm.crossRefStringID(mActor, "NPC_");
+					// ***** retrieve PREF instead of actor baserecord ****
+//					compareArg2 = esm.crossRefStringID(mActor, "NPC_");
+					compareArg2 = esm.crossRefStringID(mActor, "PREF");
 					if (compareArg2 != 0)
 					{
 						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
@@ -1074,7 +1079,6 @@ namespace ESM
 					break;
 				}
 
-// DISABLED TO FIX CSE CRASHES
 				if (compareFunction != 0)
 					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
 

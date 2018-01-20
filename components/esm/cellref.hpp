@@ -5,6 +5,11 @@
 
 #include "defs.hpp"
 
+namespace CSMDoc
+{
+	class Document;
+}
+
 namespace ESM
 {
     class ESMWriter;
@@ -109,7 +114,7 @@ namespace ESM
 
             void save (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
 			void exportTES3 (ESMWriter &esm, bool wideRefNum = false, bool inInventory = false, bool isDeleted = false) const;
-			void exportTES4 (ESMWriter &esm, const std::string &refEDID, uint32_t teleportRefID=0, ESM::Position *returnPosition=0) const;
+			void exportTES4 (ESMWriter &esm, const CSMDoc::Document &doc, const std::string &refEDID, uint32_t teleportRefID=0, ESM::Position *returnPosition=0) const;
 
             void blank();
     };

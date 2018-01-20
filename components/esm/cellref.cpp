@@ -5,6 +5,8 @@
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
 
+#include <apps/opencs/model/doc/document.hpp>
+
 void ESM::RefNum::load (ESMReader& esm, bool wide, const std::string& tag)
 {
     if (wide)
@@ -244,7 +246,7 @@ void ESM::CellRef::exportTES3 (ESMWriter &esm, bool wideRefNum, bool inInventory
 		esm.writeHNT("DATA", mPos, 24);
 }
 
-void ESM::CellRef::exportTES4 (ESMWriter &esm, const std::string &refEDID, uint32_t teleportRefID, ESM::Position *returnPosition) const
+void ESM::CellRef::exportTES4 (ESMWriter &esm, const CSMDoc::Document &doc, const std::string &refEDID, uint32_t teleportRefID, ESM::Position *returnPosition) const
 {
 //	mRefNum.save (esm, wideRefNum);
 	// NAME = FormID
@@ -276,6 +278,8 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, const std::string &refEDID, uint3
 	{
 		baseEDID = esm.generateEDIDTES4(mRefID);
 		baseEDID = esm.substituteMorroblivionEDID(baseEDID, (ESM::RecNameInts)0);
+//		std::string refSIG="", refVal="";
+//		esm.lookup_reference(doc, mRefID, baseEDID, refSIG, refVal);
 
 		if (baseEDID == "0chimneyUsmokeUsmall")
 			baseEDID = "FireSmokeMedium";
@@ -553,7 +557,10 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 	}
 
 	esm.startSubRecordTES4("NAME");
-	esm.writeT<uint32_t>(baseFormID);
+	if (baseFormID == 0)
+		esm.writeT<uint32_t>(0x3B);
+	else
+		esm.writeT<uint32_t>(baseFormID);
 	esm.endSubRecordTES4("NAME");
 
 	if (mTeleport == true)
@@ -580,6 +587,12 @@ lanternExceptionsMap.insert(std::make_pair(Misc::StringUtils::lowerCase("0lightu
 	{
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(refEDID);
+		esm.endSubRecordTES4("EDID");
+	}
+	else if (baseFormID == 0)
+	{
+		esm.startSubRecordTES4("EDID");
+		esm.writeHCString("NULLREF" + baseEDID);
 		esm.endSubRecordTES4("EDID");
 	}
 

@@ -584,10 +584,10 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
-		std::string strPosOffset="", strRotOffset="", strScale="";
+		std::string strPosOffset="", strRotOffset="", strScale="", strRefEDID="";
 		uint32_t formID=0;
 
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			std::string token;
             parserStream.clear();
@@ -666,6 +666,10 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				// scale
 				strScale = token;
 				break;
+			case 9:
+				// scale
+				strRefEDID = token;
+				break;
 			}
 		}
 
@@ -727,7 +731,24 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 			float fscale;
 			fscale = atof(strScale.c_str());
 			mWriter.mStringTransformMap[strEDID].fscale = fscale;
+		}
 
+		if (strRefEDID != "")
+		{
+			if (strEDID.find("ref#") != std::string::npos)
+			{
+				uint32_t searchInt = mWriter.crossRefStringID(strRefEDID, "", false, true);
+				if (searchInt == formID)
+				{
+					// skip... 
+//					std::string errMessage = "LoadEDIDmap3(" + filename + "): refEDID already set to requested formID: " + strRefEDID + "\n";
+//					OutputDebugString(errMessage.c_str());
+				}
+				else
+				{
+					reserveResult = mWriter.reserveFormID(formID, strRefEDID, strRecordType, true);
+				}
+			}
 		}
 
 	}

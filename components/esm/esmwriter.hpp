@@ -16,6 +16,11 @@ namespace ToUTF8
     class Utf8Encoder;
 }
 
+namespace CSMDoc
+{
+	class Document;
+}
+
 namespace ESM {
 
 struct RefTransformOp
@@ -233,6 +238,8 @@ public:
 		std::map<std::string, std::pair<std::string, int>> mScriptToQuestList; // scriptName, questName?, mode?
 		void RegisterScriptToQuest(const std::string &scriptName, std::string questName="", int nMode=0);
 		std::map<std::string, int> mAutoStartList;
+
+		bool lookup_reference(const CSMDoc::Document &doc, const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 
     private:
         std::list<RecordData> mRecords;

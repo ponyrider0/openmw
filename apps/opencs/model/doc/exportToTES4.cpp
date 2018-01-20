@@ -2879,9 +2879,15 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 									refFlags |= 0x800; // DISABLED
 								refFlags |= 0x400; // persistent flag
+								// check for NPCDremora
+								if ((Misc::StringUtils::lowerCase(refRecord.mRefID).find("dremora") != std::string::npos &&
+									Misc::StringUtils::lowerCase(sSIG) == "acre"))
+								{
+									sSIG = "ACHR";
+								}
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refEDID);
-								refRecord.exportTES4 (writer, refEDID, teleportDoorRefID, &returnPosition);
+								refRecord.exportTES4 (writer, mDocument, refEDID, teleportDoorRefID, &returnPosition);
 								// end record
 								writer.endRecordTES4(sSIG);
 							}
@@ -2922,7 +2928,6 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						if (ref.isModified() || ref.mState == CSMWorld::RecordBase::State_Deleted)
 						{
 							CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(refRecord.mRefID);	
-
 							if (baseRefIndex.first != -1)
 							{
 								std::string sSIG;
@@ -2947,9 +2952,15 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 									refFlags |= 0x800; // DISABLED
 								
-								// start record                        
+								// check for NPCDremora
+								if ( (Misc::StringUtils::lowerCase(refRecord.mRefID).find("dremora") != std::string::npos &&
+									Misc::StringUtils::lowerCase(sSIG) == "acre") )
+								{
+									sSIG = "ACHR";
+								}
+								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, "");
-								refRecord.exportTES4 (writer, "");
+								refRecord.exportTES4 (writer, mDocument, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 							}
@@ -3269,9 +3280,16 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				uint32_t refFlags= 0x0400; // persistent ref on
 				if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 					refFlags |= 0x800; // DISABLED
+				// check for NPCDremora
+				if ((Misc::StringUtils::lowerCase(refRecord.mRefID).find("dremora") != std::string::npos &&
+					Misc::StringUtils::lowerCase(sSIG) == "acre"))
+				{
+					if ( Misc::StringUtils::lowerCase(refRecord.mRefID) == "TR_m2_q_4_SorenDremora")
+						sSIG = "ACHR";
+				}
 				// start record
 				writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
-				refRecord.exportTES4 (writer, strEDID, teleportDoorRefID, &returnPosition);
+				refRecord.exportTES4 (writer, mDocument, strEDID, teleportDoorRefID, &returnPosition);
 				// end record
 				writer.endRecordTES4(sSIG);
 //				debugstream.str(""); debugstream.clear();
@@ -3654,9 +3672,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								uint32_t refFlags=0;
 								if (ref.mState == CSMWorld::RecordBase::State_Deleted)
 									refFlags |= 0x800; // DO NOT USE DELETED FLAG, USE DISABLED INSTEAD
+								// check for NPCDremora
+								if ((Misc::StringUtils::lowerCase(refRecord.mRefID).find("dremora") != std::string::npos &&
+									Misc::StringUtils::lowerCase(sSIG) == "acre"))
+								{
+									sSIG = "ACHR";
+								}
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
-								refRecord.exportTES4 (writer, "");
+								refRecord.exportTES4 (writer, mDocument, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 								debugstream << "(" << sSIG << ")[" << refFormID << "] ";
@@ -4719,6 +4743,16 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin(); nifConvItem != esm.mModelsToExportList.end(); nifConvItem++)
 	{
+		std::string rawFilename = nifConvItem->first;
+		std::string nifInputName = "";
+		std::string nifOutputName = "";
+		nifInputName = Misc::ResourceHelpers::correctActorModelPath(rawFilename, mDocument.getVFS());
+		nifOutputName = nifConvItem->second.first;
+//		if (mDocument.getVFS()->exists(nifInputName) != true)
+//		{
+//			continue;
+//		}
+
 		std::string cmdFlags;
 		if (nifConvItem->second.second == 1) // door
 		{
@@ -4740,24 +4774,24 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		int nSpawnNow = (nSpawnCount++ % 2);
 		if (nSpawnNow == 0)
 		{
-			batchFileNIFConv << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
+			batchFileNIFConv << "NIF_Conv.exe " << nifInputName << cmdFlags << " -d " << nifOutputName << "\n";
 		}
 		//		else if (nSpawnNow == 1)
 		else
 		{
-			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifConvItem->first << cmdFlags << " -d " << nifConvItem->second.first << "\n";
+			batchFileNIFConv_helper1 << "NIF_Conv.exe " << nifInputName << cmdFlags << " -d " << nifOutputName << "\n";
 		}
 		/*
 		else
 		{
-		batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifConvItem->first << " -d " << nifConvItem->second << "\n";
+		batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifInputName << " -d " << nifConvItem->second << "\n";
 		}
 		*/
 		// create LOD batch file
 		if (nifConvItem->second.second == 4)
 		{
 			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
-			batchFileLODNIFConv << "NIF_Conv.exe " << nifConvItem->first << " -l 15 -s 0 -q 0 -c " << " -d " << lodFileName << "\n";
+			batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -c " << " -d " << lodFileName << "\n";
 		}
 
 	}
@@ -4809,9 +4843,12 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
+		std::string mw_filename = "";
+		std::string ob_filename = "";
+		mw_filename = get_normalized_path(ddsConvItem->first);
+		ob_filename = get_normalized_path(ddsConvItem->second.first);
+
 		int mode = ddsConvItem->second.second;
-        std::string mw_filename = get_normalized_path(ddsConvItem->first);
-        std::string ob_filename = get_normalized_path(ddsConvItem->second.first);
 		std::string inputFilepath, outputFilepath;
 		if (mode == 0)
 		{
@@ -4828,6 +4865,11 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			inputFilepath = Misc::ResourceHelpers::correctBookartPath(mw_filename, mDocument.getVFS());
 			outputFilepath = "Textures/Menus/" + ob_filename;
 		}
+		if (mDocument.getVFS()->exists(inputFilepath) != true )
+		{
+			continue;
+		}
+
 		logFileDDSConv << inputFilepath << "," << outputFilepath << ",";
 		try 
 		{
@@ -4928,7 +4970,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	exportedEDIDCSVFile.open("ExportedEDIDlist_" + modStem + ".csv");
 	// write header
 	int index=0;
-	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Persistent Refs" << std::endl;
+	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Position Offset" << "," << "Rotation Offset" << "," << "Scale" << "," << "Persistent Refs" << std::endl;
 	for (auto exportItem = esm.mStringIDMap.begin();
 		exportItem != esm.mStringIDMap.end();
 		exportItem++)
@@ -4954,7 +4996,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 //					sSIG += "-PREF";
 				}
 			}
-			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << "," << sEDID << std::endl;
+			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << "," << "," << "," << "," << sEDID << std::endl;
 		}
 	}
 	exportedEDIDCSVFile.close();
