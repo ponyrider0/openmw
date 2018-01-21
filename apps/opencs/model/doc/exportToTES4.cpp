@@ -4716,6 +4716,13 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 {
 	std::cout << std::endl << "Creating batch file for NIF conversions...";
 
+#ifdef _WIN32
+    std::string outputRoot = "";
+#else
+    std::string outputRoot = getenv("HOME");
+    outputRoot += "/";
+#endif
+
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	std::string batchFileStem = "ModExporter_NIFConv_" + modStem;
 	std::ofstream batchFileNIFConv;
@@ -4723,10 +4730,10 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	//	std::ofstream batchFileNIFConv_helper2;
 	std::ofstream batchFileLODNIFConv;
 
-	batchFileNIFConv.open(batchFileStem + ".bat");
-	batchFileNIFConv_helper1.open(batchFileStem + "_helper.dat");
-	//	batchFileNIFConv_helper2.open(batchFileStem + "_helper2.dat");
-	batchFileLODNIFConv.open(batchFileStem + "_LOD.bat");
+	batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
+	batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat");
+	//	batchFileNIFConv_helper2.open(outputRoot + batchFileStem + "_helper2.dat");
+	batchFileLODNIFConv.open(outputRoot + batchFileStem + "_LOD.bat");
 
 	// set up header code for spawning
 	batchFileNIFConv << "@echo off\n";
@@ -4827,12 +4834,14 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 
 #ifdef _WIN32
 	std::string outputRoot = "C:/";
+    std::string logRoot = "";
 #else
 	std::string outputRoot = getenv("HOME");
     outputRoot += "/";
+    std::string logRoot = outputRoot;
 #endif
 
-	logFileDDSConv.open(logFileStem + ".csv");
+	logFileDDSConv.open(logRoot + logFileStem + ".csv");
 
 	logFileDDSConv << "Original texture,Exported texture,Export result\n";
 	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Textures");
@@ -4935,10 +4944,17 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	std::cout << std::endl << "Now writing out CSV log files..";
 
+#ifdef _WIN32
+    std::string outputRoot = "";
+#else
+    std::string outputRoot = getenv("HOME");
+    outputRoot += "/";
+#endif
+    
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	// write unmatched EDIDs
 	std::ofstream unmatchedCSVFile;
-	unmatchedCSVFile.open("UnresolvedEDIDlist_" + modStem + ".csv");
+	unmatchedCSVFile.open(outputRoot + "UnresolvedEDIDlist_" + modStem + ".csv");
 	// write header
 	unmatchedCSVFile << "Record Types" << "," << "Mod File" << "," << "EDID" << "," << "Ref Count" << "," << "Put FormID Here" << "," << "Put Comments Here" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 
@@ -4967,7 +4983,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// Write EDIDmap for exported records
 	std::ofstream exportedEDIDCSVFile;
-	exportedEDIDCSVFile.open("ExportedEDIDlist_" + modStem + ".csv");
+	exportedEDIDCSVFile.open(outputRoot + "ExportedEDIDlist_" + modStem + ".csv");
 	// write header
 	int index=0;
 	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Position Offset" << "," << "Rotation Offset" << "," << "Scale" << "," << "Persistent Refs" << std::endl;
@@ -5003,7 +5019,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// write unresolved local vars
 	std::ofstream unresolvedLocalVarStream;
-	unresolvedLocalVarStream.open("UnresolvedLocalVars_" + modStem + ".csv");
+	unresolvedLocalVarStream.open(outputRoot + "UnresolvedLocalVars_" + modStem + ".csv");
 	unresolvedLocalVarStream << "Local Var" << "," << "QuestVar Index" << "," << "Occurences" << std::endl;
 	for (auto localVarItem = esm.mUnresolvedLocalVars.begin();
 		localVarItem != esm.mUnresolvedLocalVars.end();

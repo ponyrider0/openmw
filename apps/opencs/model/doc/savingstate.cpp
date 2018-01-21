@@ -1002,43 +1002,50 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	std::cout << "Loading CSV files...." << std::endl;
 
-	loadEDIDmap3("OblivionFormIDlist4.csv");
-	loadEDIDmap3("MorroblivionFormIDlist4.csv");
+#ifdef win32
+    std::string csvRoot = "";
+#else
+    std::string csvRoot = getenv("HOME");
+    csvRoot += "/";
+#endif
+
+	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
+	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
 //	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
 //	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
-	loadEDIDmap3("Morrowind_Compatibility_LayerEDIDlist.csv");
+	loadEDIDmap3(csvRoot + "Morrowind_Compatibility_LayerEDIDlist.csv");
 
 //	loadCellIDmap2("MorroblivionCellIDmap.csv");
 //	loadEDIDmap2("TR_MainlandFormIDlist.csv");
 //	loadCellIDmap2("TR_MainlandCellIDmap.csv");
-	loadCellIDmap3("MorroblivionCellmap4.csv");
+	loadCellIDmap3(csvRoot + "MorroblivionCellmap4.csv");
 
-	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapLTEX.csv");
-	loadmwEDIDSubstitutionMap("GenericToMorroblivionEDIDmapCREA.csv");
+	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
+	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
 
 	if (esmName.find("Tamriel_Data") != std::string::npos)
 	{
-		loadEDIDmap3("TamrielDataEDIDlist.csv");
+		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
 	}
 	if (esmName.find("TR_Mainland") != std::string::npos) 
 	{
-		loadEDIDmap3("TamrielDataEDIDlist.csv");
-		loadEDIDmap3("TRMainlandEDIDlist.csv");
+		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+		loadEDIDmap3(csvRoot + "TRMainlandEDIDlist.csv");
 
 //		loadPNAMINFOSubstitutionMap("TRMainlandGreetingPNAMINFOmap.csv");
-		loadPNAMINFOSubstitutionMap("TRMainland_Dialog_PNAMINFO.csv");
+		loadPNAMINFOSubstitutionMap(csvRoot + "TRMainland_Dialog_PNAMINFO.csv");
 	}
 	if (esmName.find("TR_Preview") != std::string::npos)
 	{
-		loadEDIDmap3("TamrielDataEDIDlist.csv");
-		loadEDIDmap3("TRPreviewEDIDlist.csv");
+		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+		loadEDIDmap3(csvRoot + "TRPreviewEDIDlist.csv");
 	}
 
-	loadEDIDmap3("OverridesEDIDList.csv");
-	loadEDIDmap3("Overrides_" + esmName + ".csv");
-	loadLocalVarIndexmap("LocalVarMap.csv");
-	loadScriptHelperVarMap("ScriptHelperVarMap.csv");
-	loadESMMastersMap("ESMMastersMap.csv");
+	loadEDIDmap3(csvRoot + "OverridesEDIDList.csv");
+	loadEDIDmap3(csvRoot + "Overrides_" + esmName + ".csv");
+	loadLocalVarIndexmap(csvRoot + "LocalVarMap.csv");
+	loadScriptHelperVarMap(csvRoot + "ScriptHelperVarMap.csv");
+	loadESMMastersMap(csvRoot + "ESMMastersMap.csv");
 
 	std::cout << "Loading CSV files complete." << std::endl;
 
