@@ -955,31 +955,38 @@ int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
 	int lineNumber = 0;
 
 	std::ifstream inputFile(filename);
-	std::string inputLine;
+	std::string inputLine_noN;
 
 	// skip header line
-	std::getline(inputFile, inputLine);
+	std::getline(inputFile, inputLine_noN);
 
-	while (std::getline(inputFile, inputLine))
+	while (std::getline(inputFile, inputLine_noN, '\n'))
 	{
-		std::istringstream parserStream(inputLine);
-		std::string strESMName;
+		std::istringstream inputLine_Str(inputLine_noN);
+		std::string inputLine_noR;
 
-		std::string token;
-		std::istringstream tokenStr;
+        while (std::getline(inputLine_Str, inputLine_noR, '\r'))
+        {
+            std::istringstream parserStream(inputLine_noR);
+            std::string strESMName;
 
-		std::getline(parserStream, token, ',');
-//		tokenStr.str(token);
-//		tokenStr >> strESMName;
-		strESMName = token;
+            std::string token;
+            std::istringstream tokenStr;
 
-		std::vector<std::string> ESMmasterList;
-		while (std::getline(parserStream, token, ',') )
-		{
-			ESMmasterList.push_back(token);
-		}
+            std::getline(parserStream, token, ',');
+            strESMName = token;
 
-		mWriter.mESMMastersmap[Misc::StringUtils::lowerCase(strESMName)] = ESMmasterList;
+            std::vector<std::string> ESMmasterList;
+            while (std::getline(parserStream, token, ',') )
+            {
+                if (token.size() > 5)
+                    ESMmasterList.push_back(token);
+            }
+            
+            mWriter.mESMMastersmap[Misc::StringUtils::lowerCase(strESMName)] = ESMmasterList;
+
+        }
+
 	}
 
 	return errorcode;

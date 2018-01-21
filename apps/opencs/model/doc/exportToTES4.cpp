@@ -230,6 +230,7 @@ if ((esmName.find("TR_Mainland") != std::string::npos) ||
 		esmName = Misc::StringUtils::lowerCase(esmName);
 		if (mState.getWriter().mESMMastersmap.find(esmName) != mState.getWriter().mESMMastersmap.end())
 		{
+
 			std::vector<std::string> masterList = mState.getWriter().mESMMastersmap[esmName];
 			for (auto masterItem = masterList.begin(); masterItem != masterList.end(); masterItem++)
 			{
