@@ -3221,8 +3221,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 		writer.writeT<uint8_t>(0x02); // flag: has water=0x02
 		writer.endSubRecordTES4("DATA");
 		writer.startSubRecordTES4("XCLC");
-		writer.writeT<long>(0); // X=0
-		writer.writeT<long>(0); // Y=0
+		writer.writeT<int32_t>(0); // X=0
+		writer.writeT<int32_t>(0); // Y=0
 		writer.endSubRecordTES4("XCLC");
 		writer.endRecordTES4("CELL");
 		// Create CELL dummy top children group

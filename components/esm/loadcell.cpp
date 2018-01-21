@@ -344,8 +344,8 @@ namespace ESM
 		if (isExterior())
 		{
 			esm.startSubRecordTES4("XCLC");
-			esm.writeT<long>(subX);
-			esm.writeT<long>(subY);
+			esm.writeT<int32_t>(subX);
+			esm.writeT<int32_t>(subY);
 			esm.endSubRecordTES4("XCLC");
 			debugstream << "X,Y=[" << (subX) <<"," << (subY) << "]; ";
 		}
