@@ -929,10 +929,6 @@ namespace ESM
 		{
 			OpCode = 0x1037;
 		}
-		else if (cmdString == "setangle")
-		{
-			OpCode = 0x1009;
-		}
 		else if (cmdString == "getincell")
 		{
 			OpCode = 0x1043;
@@ -973,85 +969,162 @@ namespace ESM
 		return OpCode;
 	}
 
-	void ScriptConverter::parse_moddisposition(std::vector<struct Token>::iterator & tokenItem)
+	void ScriptConverter::parse_modfactionrep(std::vector<struct Token>::iterator & tokenItem)
 	{
-		std::string actorEDID, valueString="";
-		bool bEvalVarString = false;
+		// ModPCFacRep 2 "Mages Guild"
+		// Set fbmwMGAdvancement.MageReputation TO fbmwMGAdvancement.MageReputation + 2
 
-		actorEDID = "Player";
+		std::string cmdString = "Set", numberLiteral = "", factionEDID = "";
+		bool bEvalArg = false;
+		bool bNeedsDialogHelper = false;
+		std::string factionQuestEDID = "", factionQuestVar = "";
+		std::string factSIG = "QUST";
 
+		// arg1: parse number literal
 		tokenItem++;
-		// item count
-		if (tokenItem->type == TokenType::operatorT)
+		if (sub_parse_arg(tokenItem, numberLiteral, bEvalArg, bNeedsDialogHelper) == false)
+			return;
+
+		if (numberLiteral[0] != '+' && numberLiteral[0] != '-')
 		{
-			if (tokenItem->str == "-")
-			{
-				// set negative operator
-				valueString = tokenItem->str;
-			}
-			else if (tokenItem->str == "+")
-			{
-				// do nothing
-			}
-			else
-			{
-				std::stringstream errorMesg;
-				errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
-				abort(errorMesg.str());
-			}
-			tokenItem++;
+			// insert '+'
+			numberLiteral = "+" + numberLiteral;
 		}
 
-		if (tokenItem->type == TokenType::number_literalT)
+
+		// arg2: parse string literal
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, factionEDID, bEvalArg, bNeedsDialogHelper, "FACT") == false)
+			return;
+
+		// match string literal to guild/faction
+		// reference ==> faction advancement quest ==> questEDID
+		// localvar ==> MageReputation/Faction Reputation
+		uint32_t refIndex, refLocalVarIndex;
+		std::string arg2_lowercase = Misc::StringUtils::lowerCase(factionEDID);
+		// Factions: mages, fighters, thieves, tribunal, imperial, hlaalu, telvanni, redoran, blades
+		if (arg2_lowercase == "fbmwmagesguild")
 		{
-			valueString += tokenItem->str;
+			// fbmwMGAdvancement.MageReputation
+			factionQuestEDID = "fbmwMGAdvancement";
+			factionQuestVar = "MageReputation";
+			refLocalVarIndex = 2;
 		}
-		else if (tokenItem->type == TokenType::identifierT)
+		else if (arg2_lowercase == "fbmwfightersguild")
 		{
-			valueString = tokenItem->str;
-			bEvalVarString = true;
+			factionQuestEDID = "fbmwFGAdvancement";
+			factionQuestVar = "FighterReputation";
+			refLocalVarIndex = 2;
 		}
-		else if (tokenItem->type == TokenType::endlineT)
+		else if (arg2_lowercase == "0eastsempirescompany")
 		{
-			valueString = "1";
-			tokenItem--; // put EOL back
+			factionQuestEDID = "fbmwCOAdvancement";
+			factionQuestVar = "CompanyReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0hlaalu")
+		{
+			factionQuestEDID = "fbmwHHAdvancement";
+			factionQuestVar = "HlaaluReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0redoran")
+		{
+			factionQuestEDID = "fbmwHRAdvancement";
+			factionQuestVar = "RedoranReputation";
+			refLocalVarIndex = 1;
+		}
+		else if (arg2_lowercase == "0telvanni")
+		{
+			factionQuestEDID = "fbmwHTAdvancement";
+			factionQuestVar = "TelvanniReputation";
+			refLocalVarIndex = 6;
+		}
+		else if (arg2_lowercase == "0imperialscult")
+		{
+			factionQuestEDID = "fbmwICAdvancement";
+			factionQuestVar = "CultReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0imperialslegion")
+		{
+			factionQuestEDID = "fbmwILAdvancement";
+			factionQuestVar = "LegionReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0moragstong")
+		{
+			factionQuestEDID = "fbmwMTAdvancement";
+			factionQuestVar = "MTReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0thievessguild")
+		{
+			factionQuestEDID = "fbmwTGAdvancement";
+			factionQuestVar = "ThiefReputation";
+			refLocalVarIndex = 2;
+		}
+		else if (arg2_lowercase == "0temple")
+		{
+			factionQuestEDID = "fbmwTTAdvancement";
+			factionQuestVar = "TempleReputation";
+			refLocalVarIndex = 2;
 		}
 		else
 		{
-			std::stringstream errorMesg;
-			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
-			abort(errorMesg.str());
-			//			std::cout << std::endl << "DEBUG OUTPUT: " << std::endl << mScriptText << std::endl << std::endl;
+			factionQuestEDID = factionEDID + "AdvancementQuest";
+			factionQuestVar = factionEDID + "Reputation";
+			refLocalVarIndex = 1;
 		}
+		refIndex = prepare_reference(factionQuestEDID, factSIG, 100); // prepare reference...
 
-		// translate statement
-		std::stringstream convertedStatement;
-		std::string command;
-		command = "ModDisposition";
-		if (bUseCommandReference)
-		{
-			command = mCommandRef_EDID + "." + command;
-		}
-		convertedStatement << command << " " << actorEDID << " " << valueString;
-		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		// add translation
+		// "Set fbmwMGAdvancement.MageReputation TO fbmwMGAdvancement.MageReputation " "+/-" "number literal"
+		std::string expressionLine = cmdString + " " + factionQuestEDID + "." + factionQuestVar + " to " + factionQuestEDID + "." + factionQuestVar + " " + numberLiteral;
+		mCurrentContext.convertedStatements.push_back(expressionLine);
 
-		// bytecompiled statement:
-		// OpCode, ParamBytes, ParamCount, Parameters
-		uint16_t OpCode = 0x1053; // ModDisposition
-		uint16_t sizeParams = 10;
-		uint16_t countParams = 2;
-		int32_t nValNumber;
-		if (bEvalVarString)
-		{
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(actorEDID), compile_param_varname(valueString));
-		}
-		else
-		{
-			nValNumber = atoi(valueString.c_str());;
-			compile_command(OpCode, sizeParams, countParams, compile_param_varname(actorEDID), compile_param_long(nValNumber));
-		}
+		// compile factionEDID.factionVar set expression
+		std::vector<uint8_t> varData;
+		// better to just hardcode factionAdvancementQuest and questVar
+		uint8_t cmdRefCode = 0x72;
+		varData.push_back(cmdRefCode);
+		for (int i = 0; i<2; ++i) varData.push_back(reinterpret_cast<uint8_t *> (&refIndex)[i]);
+		uint8_t localvarRefCode = 0x73;
+		varData.push_back(localvarRefCode);
+		for (int i = 0; i<2; ++i) varData.push_back(reinterpret_cast<uint8_t *> (&refLocalVarIndex)[i]);
 
-		return;
+		// compile code
+		// hardcode expression statement
+		// Output byte-compiled code: 15 00 [Length(2)] [Var(N)] [ExpressionLength(2)] [Expression(N)]
+		uint16_t OpCode = 0x15;
+		uint16_t statementLen = varData.size(); // Var(N) + ExpressionLength(2) + Expression(N)
+		uint16_t expressionLen = 0x00;
+
+		mSetCmd_StartPosition = mCurrentContext.compiledCode.size(); // bookmark start of command
+		compile_command(OpCode, statementLen);
+		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
+		for (int i = 0; i<2; i++) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&expressionLen)[i]);
+
+		// compile expression ( varData [+ number literal] )
+		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
+		// pushback Back...
+		uint8_t pushCode = 0x20;
+		mCurrentContext.compiledCode.push_back(pushCode);
+		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
+		mCurrentContext.compiledCode.push_back(pushCode);
+		for (int i=0; i < numberLiteral.size(); i++) mCurrentContext.compiledCode.push_back(numberLiteral[i]);
+
+		// update startposition
+		// 15 00 [Length(2)]
+		int offset = mSetCmd_StartPosition + 2; // +2 bytes for if/set opcode
+		uint16_t statementLength = mCurrentContext.compiledCode.size() - offset - 2; // -2: do not count offset length in length
+		for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&statementLength)[i];
+
+		// 15 00 [Length(2)] [Var(N)] [ExpLength(2)]
+		offset += (2 + mSetCmd_VarSize);
+		uint16_t expressionLength = statementLength - mSetCmd_VarSize - 2; // -2: do not count offset length in length
+		for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&expressionLength)[i];
+
 
 	}
 
@@ -2284,6 +2357,10 @@ namespace ESM
 		{
 			parse_choice(tokenItem);
 		}
+		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "modpcfacrep")
+		{
+			parse_modfactionrep(tokenItem);
+		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "messagebox")
 		{
 			parse_messagebox(tokenItem);
@@ -2357,10 +2434,10 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cast")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotate")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotateworld")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setangle")
 			)
 		{
 			parse_2arg(tokenItem);
-//			parse_moddisposition(tokenItem);
 		}
 		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "addtopic")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modfight")

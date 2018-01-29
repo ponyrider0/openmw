@@ -1009,7 +1009,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	std::cout << "Loading CSV files...." << std::endl;
 
-#ifdef win32
+#ifdef _WIN32
     std::string csvRoot = "";
 #else
     std::string csvRoot = getenv("HOME");
