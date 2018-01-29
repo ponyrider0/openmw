@@ -139,6 +139,7 @@ namespace ESM {
 		uint32_t GetByteBufferSize();
 		void ExtractLocalVars();
 		uint16_t LookupLocalVarIndex(const std::string& varName);
+		void ExtractChoices();
 
 	};
 }

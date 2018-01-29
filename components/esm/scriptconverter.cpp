@@ -1591,7 +1591,7 @@ namespace ESM
 			{
 				std::string scriptID = tokenItem->str;
 				argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
-				mESM.RegisterScriptToQuest(scriptID, argString);
+				mESM.RegisterScriptToQuest(scriptID);
 				bEvalArgString = true;
 			}
 			else
@@ -1610,7 +1610,7 @@ namespace ESM
 			{
 				std::string scriptID = tokenItem->str;
 				argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
-				mESM.RegisterScriptToQuest(scriptID, argString);
+				mESM.RegisterScriptToQuest(scriptID);
 				bEvalArgString = true;
 			}
 			else
@@ -3278,7 +3278,7 @@ namespace ESM
 		{
 			refEDID = mESM.generateEDIDTES4(baseName, 0, "SQUST");
 			// register script for Script_to_Quest creation
-			mESM.RegisterScriptToQuest(baseName, refEDID);
+			mESM.RegisterScriptToQuest(baseName);
 		}
 		else
 		{
@@ -3606,6 +3606,26 @@ namespace ESM
 
 		}
 
+	}
+
+	void ScriptConverter::ExtractChoices()
+	{
+		mParseMode = 0;
+		bSetCmd = false;
+
+		for (auto tokenItem = mTokenList.begin(); tokenItem != mTokenList.end(); tokenItem++)
+		{
+			if (Misc::StringUtils::lowerCase(tokenItem->str) == "begin")
+			{
+				parse_begin(tokenItem);
+			}
+			else if (Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
+			{
+				parse_choice(tokenItem);
+			}
+			gotoEOL(tokenItem); // goto EOL
+			tokenItem++; // skip EOL
+		}
 	}
 
 	void ScriptConverter::ExtractLocalVars()

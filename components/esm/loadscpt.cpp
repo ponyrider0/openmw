@@ -181,9 +181,10 @@ namespace ESM
 		uint32_t varCount = scriptConverter.mLocalVarList.size();
 		uint32_t scriptType = 0x0; // default = object script
 
-		std::string questEDID = esm.generateEDIDTES4(mId, 0, "SQUST");
-		if ( esm.mScriptToQuestList.find(questEDID) != esm.mScriptToQuestList.end() ||
-			esm.mScriptToQuestList.find(Misc::StringUtils::lowerCase(questEDID)) != esm.mScriptToQuestList.end() )
+//		std::string questEDID = esm.generateEDIDTES4(mId, 0, "SQUST");
+		// match script mID to scripttoquestlist
+		std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(strEDID);
+		if ( esm.mScriptToQuestList.find(scriptEDID_lowercase) != esm.mScriptToQuestList.end() )
 			scriptType = 1; // quest script
 		if (Misc::StringUtils::lowerCase(strEDID).find("effect") != std::string::npos)
 			scriptType = 0x100; // effect script

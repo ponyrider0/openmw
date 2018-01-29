@@ -3092,16 +3092,11 @@ namespace ESM
 
 	}
 
-	void ESMWriter::RegisterScriptToQuest(const std::string & scriptID, std::string questName, int nMode)
+	void ESMWriter::RegisterScriptToQuest(const std::string & scriptID, int nMode)
 	{
-		std::string scriptID_lowercase = Misc::StringUtils::lowerCase(scriptID);
-		std::string questEDID = questName;
-		if (questName == "")
-		{
-			questEDID = generateEDIDTES4(scriptID, 0, "SQUST");
-		}
+		std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(scriptID);
 		
-		mScriptToQuestList[scriptID_lowercase] = std::make_pair(questEDID, nMode);
+		mScriptToQuestList[scriptEDID_lowercase] = std::make_pair(scriptID, nMode);
 	}
 
 
@@ -3277,7 +3272,7 @@ namespace ESM
 		{
 			refEDID = generateEDIDTES4(baseName, 0, "SQUST");
 			// register script for Script_to_Quest creation
-			RegisterScriptToQuest(baseName, refEDID);
+			RegisterScriptToQuest(baseName);
 		}
 		else
 		{

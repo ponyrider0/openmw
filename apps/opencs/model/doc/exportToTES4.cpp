@@ -277,9 +277,10 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 			if (bExportRecord)
 			{
 				// retrieve script reference
-				std::string scriptID_lowercase = Misc::StringUtils::lowerCase(autostartRecord.get().mId);
+				std::string scriptEDID = writer.generateEDIDTES4(autostartRecord.get().mId, 0, "SCPT");
+				std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(scriptEDID);
 				// add scriptID to autostart list
-				writer.mAutoStartList[scriptID_lowercase] = 1;
+				writer.mAutoStartScriptEDID[scriptEDID_lowercase] = 1;
 				// add to scriptquest list if not already there
 				writer.RegisterScriptToQuest(autostartRecord.get().mId);
 			}
@@ -456,8 +457,9 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		// QUEST MODE == true
 		for (auto questItem = writer.mScriptToQuestList.begin(); questItem != writer.mScriptToQuestList.end(); questItem++)
 		{
-			std::string scriptEDID = writer.generateEDIDTES4(questItem->first, 0, "SCPT");
-			std::string questEDID = questItem->second.first;
+			std::string scriptEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SCPT");
+//			std::string questEDID = questItem->second.first;
+			std::string questEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SQUST");
 			uint32_t questFormID = writer.crossRefStringID(questEDID, "QUST", false, true);
 			if (questFormID == 0)
 			{
@@ -488,8 +490,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 
 			// crossref autostart
 			uint8_t questFlags = 0; // start game enabled = 0x01; allow repeat topics=0x04; allow repeat stages=0x08;
-			std::string scriptID_lowercase = Misc::StringUtils::lowerCase(questItem->first);
-			if (writer.mAutoStartList.find(scriptID_lowercase) != writer.mAutoStartList.end())
+			std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(scriptEDID);
+			if (writer.mAutoStartScriptEDID.find(scriptEDID_lowercase) != writer.mAutoStartScriptEDID.end())
 			{
 				questFlags |= 0x01;
 			}
@@ -737,8 +739,14 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 				// check Result script for names of future ChoiceTopics
 				ESM::ScriptConverter scriptReader(info.mResultScript, writer, mDocument);
+				scriptReader.ExtractChoices();
 				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
 				{
+					if (choicePair->second == "")
+					{
+						std::string errorMesg = "ERROR: empty choice text: " + info.mId + "\n";
+						OutputDebugString(errorMesg.c_str());
+					}
 					infoChoiceTopicNames.insert(std::make_pair(choicePair->first, choicePair->second));
 				}
 
@@ -857,6 +865,12 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			std::stringstream choiceTopicStr;
 			choiceTopicStr << topicEDID << "Choice" << choiceNum;
 			std::string fullString = infoChoiceTopicNames[choiceNum];
+
+			if (fullString == "")
+			{
+				std::string errorMesg = "ERROR: choice topic is empty: " + choiceTopicStr.str() + "\n";
+				OutputDebugString(errorMesg.c_str());
+			}
 
 			uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
 			if (formID == 0)
@@ -4987,7 +5001,21 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	exportedEDIDCSVFile.open(outputRoot + "ExportedEDIDlist_" + modStem + ".csv");
 	// write header
 	int index=0;
-	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Position Offset" << "," << "Rotation Offset" << "," << "Scale" << "," << "Persistent Refs" << std::endl;
+	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Position Offset" << "," << "Rotation Offset" << "," << "Scale" << "," << "Extra Tags" << std::endl;
+
+	// generate EDID map for questscript lookup
+	std::map<std::string, int> questScriptEDIDLookup;
+	for (auto scriptRec = esm.mScriptToQuestList.begin(); scriptRec != esm.mScriptToQuestList.end(); scriptRec++)
+	{
+		int startscript = 0;
+		std::string scriptEDID = esm.generateEDIDTES4(scriptRec->second.first, 0, "SCPT");
+		if (esm.mAutoStartScriptEDID.find(Misc::StringUtils::lowerCase(scriptEDID)) != esm.mAutoStartScriptEDID.end())
+		{
+			startscript = 1;
+		}
+		questScriptEDIDLookup[Misc::StringUtils::lowerCase(scriptEDID)] = startscript;
+	}
+
 	for (auto exportItem = esm.mStringIDMap.begin();
 		exportItem != esm.mStringIDMap.end();
 		exportItem++)
@@ -4998,7 +5026,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 			// get sSIG from record
 			// if refEDID contains ref#, then check baseRecord for scriptedRef
 			std::string sSIG = "";
-			std::string sEDID = "";
+			std::string sTAGS = "";
 			auto recordType = esm.mStringTypeMap.find(Misc::StringUtils::lowerCase(exportItem->first));
 			if (recordType != esm.mStringTypeMap.end() && recordType->second != "")
 				sSIG = recordType->second;
@@ -5009,11 +5037,24 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 				std::string baseRecordID = Misc::StringUtils::lowerCase(record.mRefID);
 				if (esm.mBaseObjToScriptedREFList.find(baseRecordID) != esm.mBaseObjToScriptedREFList.end())
 				{
-					sEDID = esm.generateEDIDTES4(record.mRefID, 0, "PREF");
-//					sSIG += "-PREF";
+					if (sTAGS != "") sTAGS += " ";
+					sTAGS = "#PREF" + esm.generateEDIDTES4(record.mRefID, 0, "PREF");
 				}
 			}
-			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << "," << "," << "," << "," << sEDID << std::endl;
+			if (Misc::StringUtils::lowerCase(sSIG) == "scpt")
+			{
+				if (questScriptEDIDLookup.find(Misc::StringUtils::lowerCase(exportItem->first)) != questScriptEDIDLookup.end())
+				{
+					if (sTAGS != "") sTAGS += " ";
+					sTAGS += "#QUEST";
+					if (questScriptEDIDLookup[exportItem->first] == 1)
+					{
+						sTAGS += " #STARTSCRIPT";
+					}
+				}
+			}
+			sTAGS = "\""+ sTAGS +"\"";
+			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->first << "\"," << "" << "," << "0x" << std::hex << exportItem->second << "," << std::dec << index++ << "," << "," << "," << "," << sTAGS << std::endl;
 		}
 	}
 	exportedEDIDCSVFile.close();

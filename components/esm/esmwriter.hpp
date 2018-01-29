@@ -236,8 +236,8 @@ public:
 
 		// Script stringID map for creation of ScriptToQuest records
 		std::map<std::string, std::pair<std::string, int>> mScriptToQuestList; // scriptName, questName?, mode?
-		void RegisterScriptToQuest(const std::string &scriptName, std::string questName="", int nMode=0);
-		std::map<std::string, int> mAutoStartList;
+		void RegisterScriptToQuest(const std::string &scriptID, int nMode=0);
+		std::map<std::string, int> mAutoStartScriptEDID;
 
 		bool lookup_reference(const CSMDoc::Document &doc, const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 
