@@ -1092,6 +1092,7 @@ namespace ESM
 		uint8_t localvarRefCode = 0x73;
 		varData.push_back(localvarRefCode);
 		for (int i = 0; i<2; ++i) varData.push_back(reinterpret_cast<uint8_t *> (&refLocalVarIndex)[i]);
+		mSetCmd_VarSize = varData.size();
 
 		// compile code
 		// hardcode expression statement
@@ -1106,13 +1107,14 @@ namespace ESM
 		for (int i = 0; i<2; i++) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&expressionLen)[i]);
 
 		// compile expression ( varData [+ number literal] )
-		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
-		// pushback Back...
 		uint8_t pushCode = 0x20;
+		// pushback Back...
 		mCurrentContext.compiledCode.push_back(pushCode);
 		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
 		mCurrentContext.compiledCode.push_back(pushCode);
-		for (int i=0; i < numberLiteral.size(); i++) mCurrentContext.compiledCode.push_back(numberLiteral[i]);
+		for (int i=1; i < numberLiteral.size(); i++) mCurrentContext.compiledCode.push_back(numberLiteral[i]);
+		mCurrentContext.compiledCode.push_back(pushCode);
+		mCurrentContext.compiledCode.push_back(numberLiteral[0]);
 
 		// update startposition
 		// 15 00 [Length(2)]
