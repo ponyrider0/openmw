@@ -584,7 +584,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 
 		std::istringstream parserStream(inputLine);
 		std::string strRecordType="", strModFileName="", strHexFormID="", numReferences="", strEDID="";
-		std::string strPosOffset="", strRotOffset="", strScale="", strRefEDID="";
+		std::string strPosOffset="", strRotOffset="", strScale="", strTAGS="";
 		uint32_t formID=0;
 
 		for (int i = 0; i < 10; i++)
@@ -668,7 +668,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				break;
 			case 9:
 				// scale
-				strRefEDID = token;
+				strTAGS = token;
 				break;
 			}
 		}
@@ -684,26 +684,31 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 		uint32_t searchInt = mWriter.crossRefStringID(strEDID, "", false, true);
 
 		if (searchStr == strEDID && searchInt == formID)
-			continue;
-
-		if (searchStr == strEDID && searchInt != 0)
 		{
-			std::cout << "WARNING: EDID substitution conflict: " << strEDID << " already assigned to " 
-				<< std::hex << searchInt << ", new FormID: " << formID << std::endl;
+			// skip formID registration only if exact match
 		}
-
-		if (strRecordType.size() != 4)
-			strRecordType = "UNKN";
-
-		// add to formID map
-		uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, strRecordType, true);
-		if (reserveResult != formID && reserveResult != 0)
+		else
 		{
-			// error: formID couldn't be reserved??
-			errorcode = -2;
-			std::cout << "FormID Import ERROR: Unable to import [" << strEDID << "] to "
-				<< formID << ", assigned to " << reserveResult << " instead." << std::endl;
-			continue;
+			if (searchStr == strEDID && searchInt != 0)
+			{
+				std::cout << "WARNING: EDID substitution conflict: " << strEDID << " already assigned to "
+					<< std::hex << searchInt << ", new FormID: " << formID << std::endl;
+			}
+
+			if (strRecordType.size() != 4)
+				strRecordType = "UNKN";
+
+			// add to formID map
+			uint32_t reserveResult = mWriter.reserveFormID(formID, strEDID, strRecordType, true);
+			if (reserveResult != formID && reserveResult != 0)
+			{
+				// error: formID couldn't be reserved??
+				errorcode = -2;
+				std::cout << "FormID Import ERROR: Unable to import [" << strEDID << "] to "
+					<< formID << ", assigned to " << reserveResult << " instead." << std::endl;
+				continue;
+			}
+
 		}
 
 		if (strPosOffset != "" ||  strRotOffset != "" || strScale != "")
@@ -733,10 +738,27 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 			mWriter.mStringTransformMap[strEDID].fscale = fscale;
 		}
 
-		if (strRefEDID != "")
+		if (strTAGS != "")
 		{
+			if (strTAGS.find("#quest") != std::string::npos)
+			{
+				int startscript = 0;
+				if (strTAGS.find("#start") != std::string::npos)
+				{
+					mWriter.mAutoStartScriptEDID[Misc::StringUtils::lowerCase(strEDID)] = 1;
+					startscript = 1;
+				}
+				mWriter.mScriptToQuestList[Misc::StringUtils::lowerCase(strEDID)] = std::make_pair(strEDID, startscript);
+			}
 			if (strEDID.find("ref#") != std::string::npos)
 			{
+				std::stringstream streamTAGS(strTAGS);
+				std::string strRefEDID = "";
+				while (std::getline(streamTAGS, strRefEDID, ' '))
+				{
+					if (strRefEDID.find("#pref") == 0)
+						strRefEDID = strRefEDID.substr(5, strRefEDID.size()-5);
+				}
 				uint32_t searchInt = mWriter.crossRefStringID(strRefEDID, "", false, true);
 				if (searchInt == formID)
 				{
@@ -746,7 +768,7 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				}
 				else
 				{
-					reserveResult = mWriter.reserveFormID(formID, strRefEDID, strRecordType, true);
+//					reserveResult = mWriter.reserveFormID(formID, strRefEDID, strRecordType, true);
 				}
 			}
 		}

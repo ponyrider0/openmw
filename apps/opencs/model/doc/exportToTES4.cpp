@@ -5049,7 +5049,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 					sTAGS += "#QUEST";
 					if (questScriptEDIDLookup[exportItem->first] == 1)
 					{
-						sTAGS += " #STARTSCRIPT";
+						sTAGS += " #START";
 					}
 				}
 			}
