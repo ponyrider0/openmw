@@ -1466,6 +1466,8 @@ namespace ESM
 		bool addScript=false;
 		bool addRegion=false;
 
+		if (name == "")
+			return name;
 
 		// Do EDID substitutions
 		if ( (Misc::StringUtils::lowerCase(name) == "player") ||
@@ -3012,6 +3014,10 @@ namespace ESM
 				morroblivionEDID = "fbmwMagesGuild";
 			break;
 
+		case ESM::REC_QUES:
+			if (genericEDID == "mwTRDBAttack")
+				morroblivionEDID = "fbmwTRDBAttack";
+
 		case ESM::REC_LTEX:
 			if (genericEDID == "0Sand")
 				morroblivionEDID = "mwComSand01Tex";
@@ -3094,8 +3100,7 @@ namespace ESM
 
 	void ESMWriter::RegisterScriptToQuest(const std::string & scriptID, int nMode)
 	{
-		std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(scriptID);
-		
+		std::string scriptEDID_lowercase = Misc::StringUtils::lowerCase(generateEDIDTES4(scriptID, 0, "SCPT"));
 		mScriptToQuestList[scriptEDID_lowercase] = std::make_pair(scriptID, nMode);
 	}
 

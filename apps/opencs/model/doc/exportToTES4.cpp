@@ -457,6 +457,9 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		// QUEST MODE == true
 		for (auto questItem = writer.mScriptToQuestList.begin(); questItem != writer.mScriptToQuestList.end(); questItem++)
 		{
+			if (questItem->second.first == "")
+				continue;
+
 			std::string scriptEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SCPT");
 //			std::string questEDID = questItem->second.first;
 			std::string questEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SQUST");

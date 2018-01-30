@@ -748,7 +748,8 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 					mWriter.mAutoStartScriptEDID[Misc::StringUtils::lowerCase(strEDID)] = 1;
 					startscript = 1;
 				}
-				mWriter.mScriptToQuestList[Misc::StringUtils::lowerCase(strEDID)] = std::make_pair(strEDID, startscript);
+				mWriter.mScriptToQuestList[Misc::StringUtils::lowerCase(strEDID)] = std::make_pair("", startscript);
+//				mWriter.RegisterScriptToQuest(strEDID, startscript);
 			}
 			if (strEDID.find("ref#") != std::string::npos)
 			{

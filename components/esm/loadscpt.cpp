@@ -196,23 +196,16 @@ namespace ESM
 		esm.startSubRecordTES4("SCHR");
 		esm.writeT<uint32_t>(0); // unused x4
 		esm.writeT<uint32_t>(refCount); // refcount (uint32)
-		esm.writeT<uint32_t>(0); // compiledsize
+//		esm.writeT<uint32_t>(0); // compiledsize
+		esm.writeT<uint32_t>(compiledSize); // compiledsize
 		esm.writeT<uint32_t>(varCount); // var count (uint32)
 		esm.writeT<uint32_t>(scriptType); // type (uint32) 0=object, 1=quest, $100 = magic effect
 		esm.endSubRecordTES4("SCHR");
-/*
-		esm.startSubRecordTES4("SCHR");
-		esm.writeT<uint32_t>(0); // unused byte * 4
-		esm.writeT<uint32_t>(refCount);
-		esm.writeT<uint32_t>(compiledSize);
-		esm.writeT<uint32_t>(varCount);
-		esm.writeT<uint32_t>(scriptType);
-		esm.endSubRecordTES4("SCHR");
-*/
+
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-		esm.write(0, 0);
-//		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+//		esm.write(0, 0);
+		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)
