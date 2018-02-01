@@ -3021,24 +3021,37 @@ namespace ESM
 		case ESM::REC_LTEX:
 			if (genericEDID == "0Sand")
 				morroblivionEDID = "mwComSand01Tex";
-			if (genericEDID == "0RockUCoastal")
+			else if (genericEDID == "0RockUCoastal")
 				morroblivionEDID = "mwComRockCoastalTex";
-			if (genericEDID == "0RoadSDirt")
+			else if (genericEDID == "0RoadSDirt")
 				morroblivionEDID = "mwComRoadDirtTex";
 			break;
 	
+		case ESM::REC_GLOB:
+			if (genericEDID == "Day")
+				morroblivionEDID = "GameDay";
+			else if (genericEDID == "DaysPassed")
+				morroblivionEDID = "GameDaysPassed";
+			else if (genericEDID == "Month")
+				morroblivionEDID = "GameMonth";
+			else if (genericEDID == "Year")
+				morroblivionEDID = "GameYear";
+			else if (genericEDID == "Hour")
+				morroblivionEDID = "GameHour";
+			break;
+
 		default:
 			if (genericEDID == "0ActiveUComUBarUDoor")
 				morroblivionEDID = "mwComBarDoor";
-			if (genericEDID == "0ActiveUDeUBarUDoor")
+			else if (genericEDID == "0ActiveUDeUBarUDoor")
 				morroblivionEDID = "mwDeBarDoor";
-			if (genericEDID == "0potionUcyroUbrandyU01")
+			else if (genericEDID == "0potionUcyroUbrandyU01")
 				morroblivionEDID = "PotionCyrodiilicBrandy";
-			if (genericEDID == "0MiscUQuill")
+			else if (genericEDID == "0MiscUQuill")
 				morroblivionEDID = "Quill01";
-			if (genericEDID == "0ingredUfrostUsaltsU01")
+			else if (genericEDID == "0ingredUfrostUsaltsU01")
 				morroblivionEDID = "FrostSalts";
-			if (genericEDID == "0CollisionSWallSTSINVISO")
+			else if (genericEDID == "0CollisionSWallSTSINVISO")
 				morroblivionEDID = "CollisionBoxStatic";
 //			if (genericEDID == "0TUImpUDrinkUWineSurilieBrU01")
 //				morroblivionEDID = "DrinkWine1SurilieGood";

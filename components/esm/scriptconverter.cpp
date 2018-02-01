@@ -937,6 +937,30 @@ namespace ESM
 		{
 			OpCode = 0x101F;
 		}
+		else if (cmdString == "addscriptpackage")
+		{
+			OpCode = 0x1097;
+		}
+		else if (cmdString == "stopcombat")
+		{
+			OpCode = 0x1017;
+		}
+		else if (cmdString == "setactorvalue")
+		{
+			OpCode = 0x100F;
+		}
+		else if (cmdString == "modactorvalue")
+		{
+			OpCode = 0x1010;
+		}
+		else if (cmdString == "getdeadcount")
+		{
+			OpCode = 0x1054;
+		}
+		else if (cmdString == "modpcfame")
+		{
+			OpCode = 0x10F8;
+		}
 		else if (cmdString == "setstrength")
 		{
 			OpCode = 0;
@@ -969,6 +993,116 @@ namespace ESM
 		return OpCode;
 	}
 
+	void ScriptConverter::parse_positionCW(std::vector<struct Token>::iterator & tokenItem)
+	{
+		// output translated script text
+		std::string cmdString = tokenItem->str;
+
+		// record 4 float args
+		std::string strX, strY, strZ, strR;
+		std::string argString, argSIG;
+		bool bEvalArgString, bNeedsDialogHelper;
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, strX, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, strY, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, strZ, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, strR, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		// translate statement
+		std::stringstream convertedStatement;
+		std::string argPrefix = "", cmdPrefix = "";
+
+		if (bUseCommandReference)
+			cmdPrefix = mCommandRef_EDID + ".";
+
+		if (bNeedsDialogHelper)
+			argPrefix = "mwDialogHelper.";
+
+		convertedStatement << cmdPrefix << cmdString << " " << strX << " " << strY << " " << strZ << " " << strR << " " << argPrefix << argString;
+		if (mParseMode == 0)
+		{
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+		}
+
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 2;
+		sizeParams += (1+8)*4; // (1 + 8 bytes) * 4 (64bit floats)
+		sizeParams += 3; // 1 + 2 bytes (ref param)
+		uint16_t countParams = 5;
+
+		OpCode = getOpCode(cmdString);
+		if (OpCode == 0)
+		{
+			std::stringstream errorMesg;
+			errorMesg << "parse_positionCW(): unhandled command=" << cmdString << std::endl;
+			abort(errorMesg.str());
+			return;
+		}
+
+		std::vector<uint8_t> argXdata, argYdata, argZdata, argRdata, argDestData;
+		argXdata = compile_param_float(atof(strX.c_str()));
+		argYdata = compile_param_float(atof(strY.c_str()));
+		argZdata = compile_param_float(atof(strZ.c_str()));
+		argRdata = compile_param_float(atof(strR.c_str()));
+
+		// combine all above into one block
+		argXdata.insert(argXdata.end(), argYdata.begin(), argYdata.end());
+		argXdata.insert(argXdata.end(), argZdata.begin(), argZdata.end());
+		argXdata.insert(argXdata.end(), argRdata.begin(), argRdata.end());
+
+		argDestData = compile_param_varname(argString, argSIG, 4);
+
+		if (sizeParams != (2 + argXdata.size() + argDestData.size()) )
+		{
+			abort("Parse_PositionCW: error, unexpected data size.");
+			return;
+		}
+		compile_command(OpCode, sizeParams, countParams, argXdata, argDestData);
+
+		return;
+
+
+
+	}
+
 	void ScriptConverter::parse_modfactionrep(std::vector<struct Token>::iterator & tokenItem)
 	{
 		// ModPCFacRep 2 "Mages Guild"
@@ -990,7 +1124,6 @@ namespace ESM
 			// insert '+'
 			numberLiteral = "+" + numberLiteral;
 		}
-
 
 		// arg2: parse string literal
 		tokenItem++;
@@ -1126,7 +1259,6 @@ namespace ESM
 		offset += (2 + mSetCmd_VarSize);
 		uint16_t expressionLength = statementLength - mSetCmd_VarSize - 2; // -2: do not count offset length in length
 		for (int i = 0; i<2; i++) mCurrentContext.compiledCode[offset + i] = reinterpret_cast<uint8_t *>(&expressionLength)[i];
-
 
 	}
 
@@ -1495,29 +1627,33 @@ namespace ESM
 		{
 			cmdString = "EquipItem";
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "modreputation")
+		{
+			cmdString = "ModPCFame";
+		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getintelligence")
 		{
 			cmdString = "GetActorValue";
 			argString = "Intelligence";
 			bSkipArgParse = true;
-			uint32_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
-			for (int i = 0; i < 4; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getresistdisease")
 		{
 			cmdString = "GetActorValue";
 			argString = "ResistDisease";
 			bSkipArgParse = true;
-			uint32_t actorvalue = 63; // hardcoded with TES4 AV for ResistDisease
-			for (int i = 0; i < 4; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			uint16_t actorvalue = 63; // hardcoded with TES4 AV for ResistDisease
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "gethealth")
 		{
 			cmdString = "GetActorValue";
 			argString = "Health";
 			bSkipArgParse = true;
-			uint32_t actorvalue = 8; // hardcoded with TES4 Actorvalue for health
-			for (int i = 0; i < 4; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			uint16_t actorvalue = 8; // hardcoded with TES4 Actorvalue for health
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getpos")
 		{
@@ -1619,7 +1755,23 @@ namespace ESM
 				return;
 			}
 		}
-
+		else if (Misc::StringUtils::lowerCase(cmdString) == "aifollow")
+		{
+			tokenItem++;
+			argString = tokenItem->str;
+			// check if player, then hardcode to FollowPlayer package
+			if (Misc::StringUtils::lowerCase(argString).find("player") != std::string::npos)
+			{
+				// hardcode
+				// cmdline: AddScriptPackage ref:FollowPlayer
+				// FORMID: 0x0009828A 
+				cmdString = "AddScriptPackage";
+				argString = "FollowPlayer";
+				argSIG = "PACK";
+				bSkipArgParse = true;
+				bEvalArgString = true;
+			}
+		}
 
 		//-------------------------------------------------
 		if (bSkipArgParse == false)
@@ -1735,17 +1887,81 @@ namespace ESM
 			if (Misc::StringUtils::lowerCase(tokenItem->str) == "z")
 				arg1String = "Z";
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setfight")
+		{
+			cmdString = "SetActorValue";
+			arg1String = "Aggression";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 33; // hardcoded with TES4 AV for Aggression
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			bUseBinaryData2 = true;			
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, arg2String, bEvalArg2, bNeedsDialogHelper2) == false)
+			{
+				abort("parse_2arg(): error parse argument2.\n");
+				return;
+			}
+			int aggressionVal = 0;
+			int fightval = atoi(arg2String.c_str());
+			if (fightval == 0) aggressionVal = 0;
+			else if (fightval <= 30) aggressionVal = 5;
+			else if (fightval >= 80) aggressionVal = 6;
+			arg2data = compile_param_long(aggressionVal);
+			std::stringstream newString;
+			newString << aggressionVal;
+			arg2String = newString.str();
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "modfight")
+		{
+			// skip ??
+			cmdString = "ModActorValue";
+			arg1String = "Aggression";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 33; // hardcoded with TES4 AV for Aggression
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setflee")
+		{
+			cmdString = "SetActorValue";
+			arg1String = "Confidence";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 34; // hardcoded with TES4 AV for Confidence
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			bUseBinaryData2 = true;
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, arg2String, bEvalArg2, bNeedsDialogHelper2) == false)
+			{
+				abort("parse_2arg(): error parse argument2.\n");
+				return;
+			}
+			int confidenceVal = 0;
+			int fleeVal = atoi(arg2String.c_str());
+			confidenceVal = 100 - fleeVal;
+			arg2data = compile_param_long(confidenceVal);
+			std::stringstream newString;
+			newString << confidenceVal;
+			arg2String = newString.str();
+		}
 
 		if (arg1String == "")
 		{
 			tokenItem++;
 			if (sub_parse_arg(tokenItem, arg1String, bEvalArg1, bNeedsDialogHelper1) == false)
+			{
+				abort("parse_2arg(): error parsing argument1.\n");
 				return;
+			}
 		}
 
-		tokenItem++;
-		if (sub_parse_arg(tokenItem, arg2String, bEvalArg2, bNeedsDialogHelper2) == false)
-			return;
+		if (arg2String == "")
+		{
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, arg2String, bEvalArg2, bNeedsDialogHelper2) == false)
+			{
+				abort("parse_2arg(): error parse argument2.\n");
+				return;
+			}
+		}
 
 		// translate statement
 		std::stringstream convertedStatement;
@@ -1777,15 +1993,6 @@ namespace ESM
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
 		uint16_t sizeParams = 2;
-		if (bEvalArg1)
-			sizeParams += 3;
-		else
-			sizeParams += 5;
-		if (bEvalArg2)
-			sizeParams += 3;
-		else
-			sizeParams += 5;
-
 		uint16_t countParams = 2;
 
 		OpCode = getOpCode(cmdString);
@@ -1807,6 +2014,7 @@ namespace ESM
 		else if (bUseBinaryData2 == false)
 			arg2data = compile_param_long( atoi(arg2String.c_str()) );
 
+		sizeParams += arg1data.size() + arg2data.size();
 		compile_command(OpCode, sizeParams, countParams, arg1data, arg2data);
 
 		return;
@@ -1974,6 +2182,21 @@ namespace ESM
 				{
 					ParamSize = 0x08;
 					CallbackType = 0x02;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "ondeath")
+				{
+					ParamSize = 0x08;
+					CallbackType = 0x0A;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onequip")
+				{
+					ParamSize = 0x08;
+					CallbackType = 0x04;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onunequip")
+				{
+					ParamSize = 0x08;
+					CallbackType = 0x05;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "menumode")
 				{
@@ -2359,6 +2582,11 @@ namespace ESM
 		{
 			parse_choice(tokenItem);
 		}
+		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "positioncell")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "positionworld") )
+		{
+			parse_positionCW(tokenItem);
+		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "modpcfacrep")
 		{
 			parse_modfactionrep(tokenItem);
@@ -2428,6 +2656,7 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getinterior")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cellchanged")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getbuttonpressed")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopcombat")
 			)
 		{
 			parse_0arg(tokenItem);
@@ -2437,13 +2666,14 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotate")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotateworld")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setangle")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modfight")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setfight")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setflee")
 			)
 		{
 			parse_2arg(tokenItem);
 		}
 		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "addtopic")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modfight")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setfight")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startcombat")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "sethealth")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "addspell")
@@ -2468,6 +2698,8 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startscript")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopscript")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getpccell")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "aifollow")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdeadcount")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -3386,6 +3618,7 @@ namespace ESM
 
 		mKeywords.push_back("getbuttonpressed");
 		mKeywords.push_back("getresistdisease");
+		mKeywords.push_back("getdeadcount");
 
 		mKeywords.push_back("getstrength");
 		mKeywords.push_back("getendurance");
@@ -3471,6 +3704,7 @@ namespace ESM
 
 		mKeywords.push_back("setdisposition");
 		mKeywords.push_back("setfight");
+		mKeywords.push_back("setflee");
 
 		mKeywords.push_back("setpos");
 		mKeywords.push_back("setscale");

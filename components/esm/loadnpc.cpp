@@ -315,6 +315,11 @@ namespace ESM
 
 		// AI Data
 		uint8_t aggression=0;
+		aggression = 5;
+		// TODO: export mFight to CSV and re-import as script or AAV
+		// ALTERNATIVE: add faction for different aggression levels...
+		//    or add AIPackage for different aggression level
+/*
 		if (mAiData.mFight <= 0)
 			aggression = 5;
 		else if (mAiData.mFight <= 10)
@@ -327,6 +332,7 @@ namespace ESM
 			aggression = 30;
 		else if (mAiData.mFight > 80)
 			aggression = 80;
+*/
 
 		esm.startSubRecordTES4("AIDT");
 		esm.writeT<unsigned char>(aggression); // aggression

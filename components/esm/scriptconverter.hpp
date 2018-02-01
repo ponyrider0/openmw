@@ -92,6 +92,7 @@ namespace ESM {
 		void parse_operator(std::vector<struct Token>::iterator& tokenItem);
 
 		uint16_t getOpCode(std::string OpCodeString);
+		void parse_positionCW(std::vector<struct Token>::iterator& tokenItem);
 		void parse_modfactionrep(std::vector<struct Token>::iterator& tokenItem);
 		void parse_set(std::vector<struct Token>::iterator& tokenItem);
 		void parse_0arg(std::vector<struct Token>::iterator& tokenItem);
