@@ -377,12 +377,14 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		writer.startGroupTES4(greetingID, 7);
 
 		uint32_t prevRecordID = 0;
+		char duplicateChar = 'A';
 		for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
 		{
 			std::string infoEDID = "info#" + greetingItem->first.mId;
-			if (prevRecordID == 0x408b501 && infoEDID == "info#1372930131120012690")
+//			if ( (prevRecordID == 0x408b501 || prevRecordID == 0x0408b6c0) && infoEDID == "info#1372930131120012690")
+			if (infoEDID == "info#1372930131120012690")
 			{
-				infoEDID = infoEDID + "B";
+				infoEDID = infoEDID + duplicateChar++;
 			}
 			uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 			if (infoFormID == 0)
@@ -573,8 +575,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		}
 	}
 
-	std::map<int, std::vector<ESM::DialInfo> > infoChoiceList;
-	std::map<int, std::string> infoChoiceTopicNames;
+	std::map<std::string, std::vector<ESM::DialInfo> > infoChoiceList;
+	std::map<std::string, std::string> infoChoiceTopicNames;
 
 	if (infoModified && mQuestMode==true)
 	{
@@ -745,12 +747,15 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				scriptReader.ExtractChoices();
 				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
 				{
+					std::string actorEDID = writer.generateEDIDTES4(info.mActor, 0, "NPC_");
+					std::stringstream choiceTopicKey;
+					choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choicePair->first;
 					if (choicePair->second == "")
 					{
 						std::string errorMesg = "ERROR: empty choice text: " + info.mId + "\n";
 						OutputDebugString(errorMesg.c_str());
 					}
-					infoChoiceTopicNames.insert(std::make_pair(choicePair->first, choicePair->second));
+					infoChoiceTopicNames.insert(std::make_pair(choiceTopicKey.str(), choicePair->second));
 				}
 
 				bool bIsHello = false;
@@ -762,16 +767,19 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectRule);
 					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Choice)
 					{
+						std::string actorEDID = writer.generateEDIDTES4(info.mActor, 0, "NPC_");
 						choiceNum = selectWrapper.getVariant().getInteger();
-						infoChoiceList[choiceNum].push_back(info);
+						std::stringstream choiceTopicKey;
+						choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choiceNum;
+						infoChoiceList[choiceTopicKey.str()].push_back(info);
 						bSkipInfo = true;
 
-						std::stringstream choiceTopicStr;
-						choiceTopicStr << topicEDID << "Choice" << choiceNum;
-						uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
+//						std::stringstream choiceTopicStr;
+//						choiceTopicStr << topicEDID << "Choice" << choiceNum;
+						uint32_t formID = writer.crossRefStringID(choiceTopicKey.str(), "DIAL", false, true);
 						if (formID == 0)
 						{
-							formID = writer.reserveFormID(formID, choiceTopicStr.str(), "DIAL");
+							formID = writer.reserveFormID(formID, choiceTopicKey.str(), "DIAL");
 						}
 						break;
 					}
@@ -864,10 +872,11 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		// Process "Choice" Dialog Topics... each choice becomes new Topic + N, where N is choice number
 		for (auto choiceNumPair = infoChoiceList.begin(); choiceNumPair != infoChoiceList.end(); choiceNumPair++)
 		{
-			int choiceNum = choiceNumPair->first;
-			std::stringstream choiceTopicStr;
-			choiceTopicStr << topicEDID << "Choice" << choiceNum;
-			std::string fullString = infoChoiceTopicNames[choiceNum];
+//			int choiceNum = choiceNumPair->first;
+			std::string choiceTopicKey = choiceNumPair->first;
+			std::string fullString = infoChoiceTopicNames[choiceTopicKey];
+			std::stringstream choiceTopicStr(choiceTopicKey);
+//			choiceTopicStr << topicEDID << "Choice" << choiceNum;
 
 			if (fullString == "")
 			{

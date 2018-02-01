@@ -1092,9 +1092,12 @@ namespace ESM
 			for (auto choice = scriptConverter.mChoicesList.begin(); choice != scriptConverter.mChoicesList.end(); choice++)
 			{
 				// resolve choice
-				std::stringstream choiceTopicStr;
-				choiceTopicStr << topicEDID << "Choice" << choice->first;
-				uint32_t choiceFormID = esm.crossRefStringID(choiceTopicStr.str(), "DIAL", false);
+				std::string actorEDID = esm.generateEDIDTES4(mActor, 0, "NPC_");
+				std::stringstream choiceTopicKey;
+				choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choice->first;
+//				std::stringstream choiceTopicStr;
+//				choiceTopicStr << topicEDID << "Choice" << choice->first;
+				uint32_t choiceFormID = esm.crossRefStringID(choiceTopicKey.str(), "DIAL", false);
 				if (choiceFormID != 0)
 				{
 					esm.startSubRecordTES4("TCLT");
