@@ -61,9 +61,11 @@ namespace ESM
 
 		for (auto statement = mConvertedStatementList.begin(); statement != mConvertedStatementList.end(); statement++)
 		{
-			exportStr << *statement << std::endl;
+//			exportStr << *statement << std::endl;
+			exportStr << *statement << "\n";
 		}
-		exportStr << std::endl << oldCode;
+//		exportStr << std::endl << oldCode;
+		exportStr << "\n" << oldCode;
 
 		return std::string(exportStr.str());
 	}
@@ -993,6 +995,128 @@ namespace ESM
 		return OpCode;
 	}
 
+	void ScriptConverter::parse_placeatme(std::vector<struct Token>::iterator & tokenItem)
+	{
+		// output translated script text
+		std::string cmdString = tokenItem->str;
+
+		// record 4 float args
+		std::string strX="", strY="", strZ="", strR="";
+		std::string argString, argSIG;
+		bool bEvalArgString, bNeedsDialogHelper;
+
+		tokenItem++;
+		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG, true) == false)
+		{
+			abort("parse_positionCW():: sub_parse_arg() failed - ");
+			return;
+		}
+
+		tokenItem++;
+		// Check for EOL
+		if (tokenItem->type != TokenType::endlineT)
+		{
+			if (sub_parse_arg(tokenItem, strX, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			{
+				abort("parse_positionCW():: sub_parse_arg() failed - ");
+				return;
+			}
+
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, strY, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			{
+				abort("parse_positionCW():: sub_parse_arg() failed - ");
+				return;
+			}
+
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, strZ, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			{
+				abort("parse_positionCW():: sub_parse_arg() failed - ");
+				return;
+			}
+
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, strR, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			{
+				abort("parse_positionCW():: sub_parse_arg() failed - ");
+				return;
+			}
+
+		}
+
+		// translate statement
+		std::stringstream convertedStatement;
+		std::string argPrefix = "", cmdPrefix = "";
+
+		if (bUseCommandReference)
+			cmdPrefix = mCommandRef_EDID + ".";
+
+		if (bNeedsDialogHelper)
+			argPrefix = "mwDialogHelper.";
+
+		std::string argCoords="";
+		if (strX != "")
+		{
+			argCoords = " " + strX + " " + strY + " " + strZ + " " + strR;
+		}
+
+		convertedStatement << cmdPrefix << cmdString << " " << argPrefix << argString << argCoords;
+		if (mParseMode == 0)
+		{
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+		}
+
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 2;
+		sizeParams += 3; // 1 + 2 bytes (ref param)
+		if (argCoords != "")
+			sizeParams += (1 + 8) * 4; // (1 + 8 bytes) * 4 (64bit floats)
+		uint16_t countParams = 5;
+
+		OpCode = getOpCode(cmdString);
+		if (OpCode == 0)
+		{
+			std::stringstream errorMesg;
+			errorMesg << "parse_positionCW(): unhandled command=" << cmdString << std::endl;
+			abort(errorMesg.str());
+			return;
+		}
+
+		std::vector<uint8_t> argXdata, argYdata, argZdata, argRdata, argDestData;
+		if (argCoords != "")
+		{
+			argXdata = compile_param_float(atof(strX.c_str()));
+			argYdata = compile_param_float(atof(strY.c_str()));
+			argZdata = compile_param_float(atof(strZ.c_str()));
+			argRdata = compile_param_float(atof(strR.c_str()));
+			// combine all above into one block
+			argXdata.insert(argXdata.end(), argYdata.begin(), argYdata.end());
+			argXdata.insert(argXdata.end(), argZdata.begin(), argZdata.end());
+			argXdata.insert(argXdata.end(), argRdata.begin(), argRdata.end());
+		}
+
+		argDestData = compile_param_varname(argString, argSIG, 4);
+
+		if (sizeParams != (2 + argXdata.size() + argDestData.size()))
+		{
+			abort("Parse_PositionCW: error, unexpected data size.");
+			return;
+		}
+		compile_command(OpCode, sizeParams, countParams, argDestData, argXdata);
+
+		return;
+
+	}
+
 	void ScriptConverter::parse_positionCW(std::vector<struct Token>::iterator & tokenItem)
 	{
 		// output translated script text
@@ -1098,8 +1222,6 @@ namespace ESM
 		compile_command(OpCode, sizeParams, countParams, argXdata, argDestData);
 
 		return;
-
-
 
 	}
 
@@ -1497,7 +1619,7 @@ namespace ESM
 
 	}
 
-	bool ScriptConverter::sub_parse_arg(std::vector<struct Token>::iterator &tokenItem, std::string &argString, bool &bEvalArgString, bool &bNeedsDialogHelper, std::string argSIG)
+	bool ScriptConverter::sub_parse_arg(std::vector<struct Token>::iterator &tokenItem, std::string &argString, bool &bEvalArgString, bool &bNeedsDialogHelper, std::string argSIG, bool bReturnBase)
 	{
 		bEvalArgString = false;
 		bNeedsDialogHelper = false;
@@ -1508,6 +1630,7 @@ namespace ESM
 			std::string refEDID = "";
 			std::string refSIG = argSIG;
 			std::string refVal = "";
+			if (bReturnBase) refVal = "base";
 			lookup_reference(possibleRef, refEDID, refSIG, refVal);
 
 			tokenItem++;
@@ -1620,6 +1743,7 @@ namespace ESM
 		std::vector<uint8_t> argdata;
 		std::string argSIG = "";
 		bool bSkipArgParse = false;
+		bool bReturnBase = false;
 
 		cmdString = tokenItem->str;
 
@@ -1772,12 +1896,52 @@ namespace ESM
 				bEvalArgString = true;
 			}
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "aiwander")
+		{
+			tokenItem++;
+			std::string wanderRangeStr = tokenItem->str;
+			int wanderRange = atoi(wanderRangeStr.c_str());
+			// default
+			argString = "aaaDefaultExploreCurrentLoc256";
+			if (wanderRange == 0)
+			{
+				argString = "aaaDefaultStayAtEditorLocation";
+			}
+			else if (wanderRange <= 256)
+			{
+				argString = "aaaDefaultExploreCurrentLoc256";
+			}
+			else if (wanderRange <= 512)
+			{
+				argString = "aaaDefaultExploreCurrentLoc512";
+			}
+			else if (wanderRange <= 1000)
+			{
+				argString = "aaaDefaultExploreEditorLoc1024";
+			}
+			else if (wanderRange > 1000)
+			{
+				argString = "aaaDefaultExploreEditorLoc3000";
+			}
+			// hardcode
+			// cmdline: AddScriptPackage ref:FollowPlayer
+			// FORMID: 0x0009828A 
+			cmdString = "AddScriptPackage";
+			argSIG = "PACK";
+			bSkipArgParse = true;
+			bEvalArgString = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getdeadcount")
+		{
+			bReturnBase = true;
+		}
+
 
 		//-------------------------------------------------
 		if (bSkipArgParse == false)
 		{
 			tokenItem++;
-			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG, bReturnBase) == false)
 			{
 				if (bUseCommandReference)
 				{
@@ -1941,6 +2105,14 @@ namespace ESM
 			std::stringstream newString;
 			newString << confidenceVal;
 			arg2String = newString.str();
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "sethealth")
+		{
+			cmdString = "SetActorValue";
+			arg1String = "Health";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 8; // hardcoded with TES4 AV for Aggression
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
 
 		if (arg1String == "")
@@ -2587,6 +2759,10 @@ namespace ESM
 		{
 			parse_positionCW(tokenItem);
 		}
+		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "placeatme")
+		{
+			parse_placeatme(tokenItem);
+		}
 		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "modpcfacrep")
 		{
 			parse_modfactionrep(tokenItem);
@@ -2669,13 +2845,13 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modfight")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setfight")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setflee")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "sethealth")
 			)
 		{
 			parse_2arg(tokenItem);
 		}
 		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "addtopic")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startcombat")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "sethealth")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "addspell")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "removespell")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getspell")
@@ -2699,6 +2875,7 @@ namespace ESM
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopscript")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getpccell")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "aifollow")
+			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "aiwander")
 			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdeadcount")
 			)
 		{
@@ -3490,6 +3667,14 @@ namespace ESM
 			break;
 		}
 
+		bool bReturnBase = false;
+		if (Misc::StringUtils::lowerCase(refValString) == "script")
+			refValString = refScript;
+		else if (Misc::StringUtils::lowerCase(refValString) == "faction")
+			refValString = refFact;
+		else if (Misc::StringUtils::lowerCase(refValString) == "base")
+			bReturnBase = true;
+
 		// Generate Reference EDID to be used in TES4 Script
 		//  For scriptable world objects, this is usually a persistent reference.
 		//  For scripts, this is a quest reference.
@@ -3497,10 +3682,12 @@ namespace ESM
 		//  For cells?
 		// refEDID = mESM.generateEDIDTES4(refString, 0, refSIG);
 		std::string refSIG_lowercase = Misc::StringUtils::lowerCase(refSIG);
-		if (refSIG_lowercase == "npc_" ||
+		if ( bReturnBase == false &&
+			(refSIG_lowercase == "npc_" ||
 			refSIG_lowercase == "crea" ||
 			refSIG_lowercase == "acti" ||
 			refSIG_lowercase == "door")
+			)
 		{
 			refEDID = mESM.generateEDIDTES4(baseName, 0, "PREF");
 			// register baseobj for persistent ref creation
@@ -3516,14 +3703,6 @@ namespace ESM
 		{
 			refEDID = mESM.generateEDIDTES4(baseName, 0, refSIG);
 		}
-
-		if (Misc::StringUtils::lowerCase(refValString) == "script")
-			refValString = refScript;
-		else if (Misc::StringUtils::lowerCase(refValString) == "faction")
-			refValString = refFact;
-		else
-			refValString = "";
-
 
 		return result;
 	}

@@ -92,11 +92,12 @@ namespace ESM {
 		void parse_operator(std::vector<struct Token>::iterator& tokenItem);
 
 		uint16_t getOpCode(std::string OpCodeString);
+		void parse_placeatme(std::vector<struct Token>::iterator& tokenItem);
 		void parse_positionCW(std::vector<struct Token>::iterator& tokenItem);
 		void parse_modfactionrep(std::vector<struct Token>::iterator& tokenItem);
 		void parse_set(std::vector<struct Token>::iterator& tokenItem);
 		void parse_0arg(std::vector<struct Token>::iterator& tokenItem);
-		bool sub_parse_arg(std::vector<struct Token>::iterator& tokenItem, std::string& argString, bool& bEvalArgString, bool& bNeedsDialogHelper, std::string argSIG="");
+		bool sub_parse_arg(std::vector<struct Token>::iterator& tokenItem, std::string& argString, bool& bEvalArgString, bool& bNeedsDialogHelper, std::string argSIG="", bool bReturnBase=false);
 		void parse_1arg(std::vector<struct Token>::iterator& tokenItem);
 		void parse_2arg(std::vector<struct Token>::iterator& tokenItem);
 		void parse_messagebox(std::vector<struct Token>::iterator& tokenItem);
