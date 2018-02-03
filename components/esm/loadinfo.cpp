@@ -183,6 +183,12 @@ namespace ESM
 		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCName", "&sUActnQuick1;");
 		newResponse = Misc::StringUtils::replaceAll(newResponse, " %Name", "&sUActnQuick2;");
 		newResponse = Misc::StringUtils::replaceAll(newResponse, "%Name", "&sUActnQuick2;");
+
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCNAME", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCNAME", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %NAME", "&sUActnQuick2;");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%NAME", "&sUActnQuick2;");
+
 		// first pass catches uncapitalized instances of words
 		// second pass should catch remaining instances needing capitalization
 		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRace", " outlander");
@@ -191,6 +197,13 @@ namespace ESM
 		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCClass", "Outlander");
 		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRank", " outlander");
 		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRank", "Outlander");
+
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRACE", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRACE", "Outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCCLASS", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCCLASS", "Outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRANK", " outlander");
+		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRANK", "Outlander");
 
 		if (bIsQuestStage)
 		{
@@ -235,6 +248,7 @@ namespace ESM
 
 			// PNAM, prev topic record
 			// IF prevRecordID is present, it overrides stringID-based recordID resolution
+/*
 			uint32_t infoFormID = 0;
 			if (prevRecordID != 0)
 			{
@@ -253,8 +267,10 @@ namespace ESM
 					}
 				}
 			}
+*/
 			esm.startSubRecordTES4("PNAM");
-			esm.writeT<uint32_t>(infoFormID); // can have multiple
+//			esm.writeT<uint32_t>(infoFormID); // can have multiple
+			esm.writeT<uint32_t>(prevRecordID); // can have multiple
 			esm.endSubRecordTES4("PNAM");
 
 			// NAME... Add Topics: Bugged behavior in TES4 engine: preferred method is by addtopic command in result script

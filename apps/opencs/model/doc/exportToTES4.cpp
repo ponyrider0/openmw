@@ -167,7 +167,10 @@ void CSMDoc::OpenExportTES4Stage::perform (int stage, Messages& messages)
 		std::ios::binary);
 
 	if (!mState.getStream().is_open())
-		throw std::runtime_error ("failed to open stream for saving");
+	{
+		throw std::runtime_error("failed to open stream for saving");
+		std::cout << "ERROR: Could not open [" << mState.getPath() << "] for export.\n";
+	}
 }
 
 
@@ -351,12 +354,15 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 {
 	ESM::ESMWriter& writer = mState.getWriter();
 
+	int totalGreetingSize = 0;
+	for (int i=0; i < 10; i++)
+		totalGreetingSize += mGreetingInfoList[i].size();
+
 	// Append special records to end of group (GREETING topic, ScriptToQuests)
-	if (mQuestMode == false && mGreetingInfoList.size() > 0)
+	if (mQuestMode == false && totalGreetingSize > 0)
 	{
 		// write out GREETINGS info
 		std::string infoTopic = "GREETING";
-		//			std::string infoTopic = mGreetingInfoList.begin()->second;
 		uint32_t greetingID = writer.crossRefStringID(infoTopic, "DIAL", false, true);
 		if (greetingID == 0)
 		{
@@ -378,50 +384,47 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 
 		uint32_t prevRecordID = 0;
 		char duplicateChar = 'A';
-		for (auto greetingItem = mGreetingInfoList.begin(); greetingItem != mGreetingInfoList.end(); greetingItem++)
+		for (int i = 0; i < 10; i++)
 		{
-			std::string infoEDID = "info#" + greetingItem->first.mId;
-//			if ( (prevRecordID == 0x408b501 || prevRecordID == 0x0408b6c0) && infoEDID == "info#1372930131120012690")
-			if (infoEDID == "info#1372930131120012690")
+			for (auto greetingItem = mGreetingInfoList[i].begin(); greetingItem != mGreetingInfoList[i].end(); greetingItem++)
 			{
-				infoEDID = infoEDID + duplicateChar++;
-			}
-			uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-			if (infoFormID == 0)
-			{
-				infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
-				if (infoFormID == 0x408B09A)
+				std::string infoEDID = "info#" + greetingItem->first.mId;
+				if (infoEDID == "info#1372930131120012690")
 				{
-//						std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
+					infoEDID = infoEDID + duplicateChar++;
 				}
-			}
-			else if (infoFormID == 0x408B09A)
-			{
-//					std::cout << "\nERROR FOUND: infoEDID=[" << infoEDID << "]" << std::endl;
-			}
-			uint32_t infoFlags = 0;
-			// ***** didn't store records to check deleted/disabled status *****
-			bool bSuccess;
-			bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-			if (bSuccess)
-			{
-				// substitute PNAM if needed
-				if (writer.mPNAMINFOmap.empty() != true)
+				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				if (infoFormID == 0)
 				{
-					if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
+					infoFormID = writer.reserveFormID(infoFormID, infoEDID, "INFO");
+				}
+				uint32_t infoFlags = 0;
+				// ***** didn't store records to check deleted/disabled status *****
+				bool bSuccess;
+				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				if (bSuccess)
+				{
+					// substitute PNAM if needed
+/*
+					if (writer.mPNAMINFOmap.empty() != true)
 					{
-						prevRecordID = writer.mPNAMINFOmap[infoFormID];
+						if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
+						{
+							prevRecordID = writer.mPNAMINFOmap[infoFormID];
+						}
 					}
+*/
+//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
+					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
+					writer.endRecordTES4("INFO");
+					prevRecordID = infoFormID;
 				}
-				greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
-				//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
-				writer.endRecordTES4("INFO");
-				prevRecordID = infoFormID;
+				else
+				{
+					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+				}
 			}
-			else
-			{
-				std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
-			}
+
 		}
 		writer.endGroupTES4(greetingID);
 
@@ -463,7 +466,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 				continue;
 
 			std::string scriptEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SCPT");
-//			std::string questEDID = questItem->second.first;
+			//			std::string questEDID = questItem->second.first;
 			std::string questEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SQUST");
 			uint32_t questFormID = writer.crossRefStringID(questEDID, "QUST", false, true);
 			if (questFormID == 0)
@@ -685,8 +688,8 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 	if (infoModified && mQuestMode==false)
 	{
 		ESM::Dialogue dialog;
-		if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified
-			&& topic.mState != CSMWorld::RecordBase::State_ModifiedOnly)
+		if (infoModified && topic.mState != CSMWorld::RecordBase::State_Modified 
+						&& topic.mState != CSMWorld::RecordBase::State_ModifiedOnly)
 		{
 			 dialog = topic.mBase;
 		}
@@ -715,8 +718,133 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			dialog.exportTESx(writer, 4);
 			writer.endRecordTES4("DIAL");
 		}
+/*
+		for (auto info_it = dialog.mInfo.begin(); info_it != dialog.mInfo.end(); info_it++)
+		{
+			auto infoRecord = mInfos.getRecord(mInfos.searchId(info_it->mId));
+			if (infoRecord.isModified() || infoRecord.isDeleted())
+			{
+				// check Result script for names of future ChoiceTopics
+				ESM::ScriptConverter scriptReader(info_it->mResultScript, writer, mDocument);
+				scriptReader.ExtractChoices();
+				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
+				{
+					std::string actorEDID = writer.generateEDIDTES4(info_it->mActor, 0, "NPC_");
+					std::stringstream choiceTopicKey;
+					choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choicePair->first;
+					if (choicePair->second == "")
+					{
+						std::string errorMesg = "ERROR: empty choice text: " + info_it->mId + "\n";
+						OutputDebugString(errorMesg.c_str());
+					}
+					infoChoiceTopicNames.insert(std::make_pair(choiceTopicKey.str(), choicePair->second));
+				}
+
+				bool bIsHello = false;
+				bool bSkipInfo = false;
+				// iterate through INFO conditional statements to see if there is a Choice function used
+				for (auto selectRule = info_it->mSelects.begin(); selectRule != info_it->mSelects.end(); selectRule++)
+				{
+					int choiceNum = 0;
+					CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectRule);
+					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Choice)
+					{
+						std::string actorEDID = writer.generateEDIDTES4(info_it->mActor, 0, "NPC_");
+						choiceNum = selectWrapper.getVariant().getInteger();
+						std::stringstream choiceTopicKey;
+						choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choiceNum;
+						infoChoiceList[choiceTopicKey.str()].push_back(*info_it);
+						bSkipInfo = true;
+
+						uint32_t formID = writer.crossRefStringID(choiceTopicKey.str(), "DIAL", false, true);
+						if (formID == 0)
+						{
+							formID = writer.reserveFormID(formID, choiceTopicKey.str(), "DIAL");
+						}
+						break;
+					}
+
+					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Hello)
+					{
+						bIsHello = true;
+					}
+
+				}
+
+				if (bSkipInfo == true)
+					continue;
+
+				// only add to greeting list after bSkipInfo section above
+				if (bIsGreeting == true)
+				{
+					mGreetingInfoList.push_back(std::make_pair(*info_it, topicEDID));
+					continue;
+				}
+
+				if (bIsHello)
+				{
+					std::cout << "HELLO used by : [" << topicEDID << "] '" << info_it->mResponse << "'" << std::endl;
+//					mHelloInfoList.push_back(std::make_pair(info, topicEDID));
+					continue;
+				}
+
+				if (bHasInfoGroup == false)
+				{
+					bHasInfoGroup = true;
+					// create child group
+					writer.startGroupTES4(formID, 7);
+				}
+
+				std::string infoEDID = "info#" + info_it->mId;
+				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				int newType = 0;
+				switch (topic.get().mType)
+				{
+				case ESM::Dialogue::Topic:
+					newType = 0;
+					break;
+				case ESM::Dialogue::Voice:
+					newType = 1;
+					break;
+				case ESM::Dialogue::Greeting:
+					newType = 0;
+					break;
+				case ESM::Dialogue::Persuasion:
+					newType = 3;
+					break;
+				case ESM::Dialogue::Journal:
+					// issue error
+					throw std::runtime_error("ERROR: unexpected journal/quest data while processing dialog");
+					abort();
+					break;
+				case ESM::Dialogue::Unknown:
+					newType = 0;
+					break;
+				default:
+					newType = 0;
+				}
+				uint32_t infoFlags = 0;
+				if (infoRecord.isDeleted()) infoFlags |= 0x800; // DISABLED
+				bool bSuccess;
+				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				if (bSuccess)
+				{
+					// todo: resolve mActor->mFaction to put factionID with PCExpelled
+					info_it->exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info_it->mResponse));
+					writer.endRecordTES4("INFO");
+				}
+				else
+				{
+					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
+				}
+
+
+			}
+		}
+*/
 
 		// write modified selected info records
+		uint32_t prevRecordID = 0;
 		for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
 		{
 			if (iter->isModified() || iter->mState == CSMWorld::RecordBase::State_Deleted)
@@ -799,7 +927,26 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				// only add to greeting list after bSkipInfo section above
 				if (bIsGreeting == true)
 				{
-					mGreetingInfoList.push_back(std::make_pair(info, topicEDID));
+					if (dialog.mId.find("0") != std::string::npos)
+						mGreetingInfoList[0].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("1") != std::string::npos)
+						mGreetingInfoList[1].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("2") != std::string::npos)
+						mGreetingInfoList[2].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("3") != std::string::npos)
+						mGreetingInfoList[3].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("4") != std::string::npos)
+						mGreetingInfoList[4].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("5") != std::string::npos)
+						mGreetingInfoList[5].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("6") != std::string::npos)
+						mGreetingInfoList[6].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("7") != std::string::npos)
+						mGreetingInfoList[7].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("8") != std::string::npos)
+						mGreetingInfoList[8].push_back(std::make_pair(info, topicEDID));
+					else if (dialog.mId.find("9") != std::string::npos)
+						mGreetingInfoList[9].push_back(std::make_pair(info, topicEDID));
 					continue;
 				}
 
@@ -852,8 +999,10 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				if (bSuccess)
 				{
 					// todo: resolve mActor->mFaction to put factionID with PCExpelled
-					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
+//					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
+					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse), prevRecordID);
 					writer.endRecordTES4("INFO");
+					prevRecordID = infoFormID;
 				}
 				else
 				{
@@ -4953,6 +5102,8 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 		if (boost::filesystem::exists (mState.getTmpPath()))
 			boost::filesystem::remove (mState.getTmpPath());
+
+		return;
 	}
 	else if (!mState.isProjectFile())
 	{
@@ -5083,7 +5234,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	}
 	unresolvedLocalVarStream.close();
 
-	std::cout << "..Log writing done.\n\nEXPORT COMPLETED! You may now close the ModExporter, or open another ESP." << std::endl;
+	std::cout << "..Log writing done.\n\n[" << modStem << "] EXPORT COMPLETED! You may now close the ModExporter, or open another ESP." << std::endl;
 }
 
 uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition)

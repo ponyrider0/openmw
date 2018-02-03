@@ -293,7 +293,7 @@ namespace CSMDoc
 		std::vector<int> mActiveRecords;
 		bool mSkipMasterRecords;
 		bool mQuestMode;
-		std::vector<std::pair<ESM::DialInfo, std::string> > mGreetingInfoList;
+		std::vector<std::pair<ESM::DialInfo, std::string> > mGreetingInfoList[10];
 		std::vector<std::pair<ESM::DialInfo, std::string> > mHelloInfoList;
 		std::vector<std::string> mKeyPhraseList;
 
