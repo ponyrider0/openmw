@@ -11,6 +11,8 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <apps/opencs/model/doc/document.hpp>
+
 namespace ESM
 {
 
@@ -118,7 +120,13 @@ namespace ESM
         mParts.save(esm);
         esm.writeHNOCString("ENAM", mEnchant);
     }
-	bool Armor::exportTESx(ESMWriter &esm, int export_format) const
+
+	bool Armor::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		return false;
+	}
+
+	bool Armor::exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
 		std::string strEDID, tempStr;
@@ -197,28 +205,128 @@ namespace ESM
 		std::string maleStr, femaleStr, modelStr, iconStr;
 		if (mParts.mParts.size() > 0)
 		{
+/*
 			if (mParts.mParts.begin()->mMale.size() > 0)
 				maleStr = mParts.mParts.begin()->mMale;
 			else
 				maleStr = mModel;
 			if (mParts.mParts.begin()->mFemale.size() > 0)
-				femaleStr = maleStr;
+				femaleStr = mParts.mParts.begin()->mFemale;
+//				femaleStr = maleStr;
 			else
 				femaleStr = "";
+*/
+			// each body part must be added to commandline
+			std::stringstream cmdlineM, cmdlineF;
+			for (auto part_it = mParts.mParts.begin(); part_it != mParts.mParts.end(); part_it++)
+			{
+				if (part_it->mMale != "")
+				{
+					// resolve part_it->mMale to body part record
+					int index = doc.getData().getBodyParts().getIndex(part_it->mMale);
+					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
+					std::string partmodel = bodypartRecord.get().mModel;
+//					int partnum = bodypartRecord.get().;
+					cmdlineM << " -bp " << (int) part_it->mPart << " " << partmodel;
+				}
+				if (part_it->mFemale != "")
+				{
+					int index = doc.getData().getBodyParts().getIndex(part_it->mFemale);
+					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
+					std::string partmodel = bodypartRecord.get().mModel;
+					int partnum = 0;
+					cmdlineF << " -bp " << (int)part_it->mPart << " " << partmodel;
+				}
+			}
+			maleStr = cmdlineM.str();
+			femaleStr = cmdlineF.str();
+			int OblivionType;
+			switch (mData.mType)
+			{
+			case ESM::Armor::Type::Helmet:
+				OblivionType = 1;
+				break;
+
+			case ESM::Armor::Type::Cuirass:
+				OblivionType = 2;
+				break;
+
+			case ESM::Armor::Type::Greaves:
+				OblivionType = 3;
+				break;
+
+			case ESM::Armor::Type::Boots:
+				OblivionType = 5;
+				break;
+
+			default:
+				OblivionType = 6;
+				break;
+			}
+
 			postFixStream << mData.mType;
+			if (OblivionType != 6)
+			{
+				std::stringstream oblivionTypeStr;
+				oblivionTypeStr << OblivionType;
+				if (maleStr != "")
+				{
+					maleStr = "-cl " + oblivionTypeStr.str() + " " + maleStr;
+				}
+				if (femaleStr != "")
+				{
+					femaleStr = "-cl " + oblivionTypeStr.str() + " " + femaleStr;
+				}
+			}
 		}
 		else
 		{
-			maleStr = mModel;
+			maleStr = modelStr;
 		}
+		std::string prefix = "armor\\morro\\";
+		std::string postfix = postFixStream.str();
+		std::string modelStem;
+		if (Misc::StringUtils::lowerCase(mModel).find("_gnd") != std::string::npos)
+			modelStem = mModel.substr(0, mModel.find_last_of("_"));
+		else
+			modelStem = mModel.substr(0, mModel.find_last_of("."));
 		modelStr = mModel;
-//		esm.exportBipedModelTES4("armor\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon, ESMWriter::ExportBipedFlags::postfix_gnd | ESMWriter::ExportBipedFlags::postfixF);
-
-		maleStr = esm.substituteArmorModel(mName, 0);
-		femaleStr = esm.substituteArmorModel(mName, 1);
-		modelStr = esm.substituteArmorModel(mName, 2);
-		iconStr = esm.substituteArmorModel(mName, 4);
-		esm.exportBipedModelTES4("", "", maleStr, femaleStr, modelStr, iconStr, ESMWriter::ExportBipedFlags::noNameMangling);
+		std::string newMaleStr, newFemaleStr, newGndStr, newIconStr;
+		int queueType = (mData.mType == 0) ? -1 : -mData.mType;
+		if (maleStr != "")
+		{
+			newMaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + ".nif";
+			esm.QueueModelForExport(maleStr, newMaleStr, queueType);
+		}
+		if (femaleStr != "")
+		{
+			newFemaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "F.nif";
+			esm.QueueModelForExport(femaleStr, newFemaleStr, queueType);
+		}
+		if (modelStr != "")
+		{
+			newGndStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "_gnd.nif";
+			esm.QueueModelForExport(modelStr, newGndStr, queueType);
+		}
+		if (mIcon != "")
+		{
+			std::string iconStr = mIcon.substr(0, mIcon.find_last_of("."));
+			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
+			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
+		}
+		if (true)
+		{
+//			esm.exportBipedModelTES4("armor\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon, ESMWriter::ExportBipedFlags::postfix_gnd | ESMWriter::ExportBipedFlags::postfixF);
+			esm.exportBipedModelTES4("", "", newMaleStr, newFemaleStr, newGndStr, newIconStr, ESMWriter::ExportBipedFlags::noNameMangling);
+		}
+		else
+		{
+			maleStr = esm.substituteArmorModel(mName, 0);
+			femaleStr = esm.substituteArmorModel(mName, 1);
+			modelStr = esm.substituteArmorModel(mName, 2);
+			iconStr = esm.substituteArmorModel(mName, 4);
+			esm.exportBipedModelTES4("", "", maleStr, femaleStr, modelStr, iconStr, ESMWriter::ExportBipedFlags::noNameMangling);
+		}
 
 		// DATA, float (item weight)
 		esm.startSubRecordTES4("DATA");

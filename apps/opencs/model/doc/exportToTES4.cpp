@@ -16,6 +16,13 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <components/vfs/manager.hpp>
 #include <components/misc/resourcehelpers.hpp>
 
+#include <osg/Image>
+#include <osgDB/ReadFile>
+#include <osgDB/WriteFile>
+
+#include <GL/gl.h>
+#include <components/esm/loadarmo.hpp>
+
 namespace
 {
 
@@ -2165,7 +2172,7 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 		writer.startRecordTES4(sSIG, flags, formID, armorRecord.get().mId);
 */
 		StartModRecord(sSIG, armorRecord.get().mId, writer, armorRecord.mState);
-		armorRecord.get().exportTESx(writer, 4);
+		armorRecord.get().exportTESx(mDocument, writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
 
@@ -4976,19 +4983,21 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
 			batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -f -c " << " -d " << lodFileName << "\n";
 		}
-
 	}
-	batchFileNIFConv << "rename \"" << batchFileStem << "_helper.bat\" \"" << batchFileStem << "_helper.dat\"\n";
-	//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
 	batchFileNIFConv << "echo ----------------------\n";
 	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
 	batchFileNIFConv << "pause\n";
+	batchFileNIFConv << "rename \"" << batchFileStem << "_helper.bat\" \"" << batchFileStem << "_helper.dat\"\n";
+//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
+
 	batchFileNIFConv_helper1 << "echo ----------------------\n";
 	batchFileNIFConv_helper1 << "\n\necho Helper thread: Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
 	batchFileNIFConv_helper1 << "pause\n";
-	//	batchFileNIFConv_helper2 << "echo ----------------------\n";
-	//	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
-	//	batchFileNIFConv_helper2 << "pause\n";
+
+//	batchFileNIFConv_helper2 << "echo ----------------------\n";
+//	batchFileNIFConv_helper2 << "\n\necho Conversion of " << modStem << " is complete.  You may close this window.\n";
+//	batchFileNIFConv_helper2 << "pause\n";
+
 	batchFileLODNIFConv << "echo ----------------------\n";
 	batchFileLODNIFConv << "echo LOD mesh generation complete.\n";
 	batchFileLODNIFConv << "pause\n";
@@ -4997,6 +5006,33 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	batchFileNIFConv_helper1.close();
 	//	batchFileNIFConv_helper2.close();
 	batchFileLODNIFConv.close();
+
+	// ****************
+	// ARMOR conversion
+	// ****************
+	std::ofstream batchFileArmorConv;
+	batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat");
+	batchFileArmorConv << "@echo off\n";
+	for (auto nifConvItem = esm.mArmorToExportList.begin(); nifConvItem != esm.mArmorToExportList.end(); nifConvItem++)
+	{
+		std::string rawFilename = nifConvItem->first;
+		std::string nifInputName = "";
+		std::string nifOutputName = "";
+		nifInputName = Misc::ResourceHelpers::correctActorModelPath(rawFilename, mDocument.getVFS());
+		nifOutputName = nifConvItem->second.first;
+
+		std::string cmdFlags = "";
+		cmdFlags = nifInputName;
+
+		batchFileArmorConv << "echo ----------------------\n";
+		batchFileArmorConv << "echo NIF_Conv.exe " << cmdFlags << " -d " << nifOutputName << "\n";
+		batchFileArmorConv << "NIF_Conv.exe " << cmdFlags << " -d " << nifOutputName << "\n";
+	}
+	batchFileArmorConv << "echo ----------------------\n";
+	batchFileArmorConv << "echo Armor mesh generation complete.\n";
+	batchFileArmorConv << "pause\n";
+	batchFileArmorConv.close();
+
 
 }
 
@@ -5035,17 +5071,17 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 
 		int mode = ddsConvItem->second.second;
 		std::string inputFilepath, outputFilepath;
-		if (mode == 0)
+		if (mode == 0) // landscape == 0
 		{
 			inputFilepath = Misc::ResourceHelpers::correctTexturePath(mw_filename, mDocument.getVFS());
 			outputFilepath = "Textures/Landscape/" + ob_filename;
 		}
-		else if (mode == 1)
+		else if (mode == 1) // icons == 1
 		{
 			inputFilepath = Misc::ResourceHelpers::correctIconPath(mw_filename, mDocument.getVFS());
 			outputFilepath = "Textures/Menus/Icons/" + ob_filename;
 		}
-		else if (mode == 2)
+		else if (mode == 2) // bookart == 2
 		{
 			inputFilepath = Misc::ResourceHelpers::correctBookartPath(mw_filename, mDocument.getVFS());
 			outputFilepath = "Textures/Menus/" + ob_filename;
@@ -5056,6 +5092,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 		}
 
 		logFileDDSConv << inputFilepath << "," << outputFilepath << ",";
+
 		try 
 		{
 			auto fileStream = mDocument.getVFS()->get(inputFilepath);
@@ -5067,6 +5104,48 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 				boost::filesystem::create_directories(p.parent_path());
 			}
 			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+
+			osgDB::ReaderWriter* imageReader = osgDB::Registry::instance()->getReaderWriterForExtension(inputFilepath.substr(inputFilepath.find_last_of(".")+1));
+			osgDB::ReaderWriter* tgaWriter = osgDB::Registry::instance()->getReaderWriterForExtension("tga");
+			osgDB::ReaderWriter* ddsWriter = osgDB::Registry::instance()->getReaderWriterForExtension("dds");
+			auto result = imageReader->readImage(*fileStream);
+			osg::Image *icon = result.getImage();
+			if (icon != NULL)
+			{
+				if (mode == 1)
+				{
+//					std::cout << "(" << p.filename().string() << ") ImageReader=[" << imageReader->getCompoundClassName();
+//					std::cout << "] format=0x" << std::hex << icon->getInternalTextureFormat();
+					if (icon->getInternalTextureFormat() == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ||
+						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
+					{
+//						std::cout << " - S3TC detected.";
+//						char pixels[32*32*32];
+//						glTexImage2D(0, 0, 0, 32, 32, 0, 0, 0, pixels);
+//						glReadPixels(0, 0, 32, 32, 0, 0, (GLvoid *) pixels);
+						// copy image to texture
+						// create RGBA texture
+						// copy s3tc texture to rgba texture
+						// make rgba image
+						// scale rgba image
+						// create new s3tc icon
+						// copy rgba texture to s3tc texture to s3tc icon???
+					}
+					else
+					{
+//						icon->scaleImage(64, 64, 1);
+					}
+//					std::cout << "\n";
+				}
+				ddsWriter->writeImage(*icon, newDDSFile);
+			}
+			else
+			{
+				std::cout << "Failed to load: " << p.string() << "\n";
+			}
+/*
 			int len = 0;
 			char buffer[1024];
 			while (fileStream->eof() == false)
@@ -5075,7 +5154,41 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 				len = fileStream->gcount();
 				newDDSFile.write(buffer, len);
 			}
+*/
 			newDDSFile.close();
+
+			// if icon, scale x2
+			if (mode == -1)
+			{
+
+				// open image from first file
+
+				osg::Image *icon = osgDB::readImageFile(p.string());
+				if (icon != NULL)
+				{
+					if (icon->s() == 64)
+					{
+						std::string errorMesg = "[" + p.string() + "]: icon width already 64";
+						throw (std::runtime_error(errorMesg.c_str()));
+					}
+					icon->scaleImage(64, 64, 1);
+					if (icon->s() == 64)
+					{
+						// write out final file
+						if (osgDB::writeImageFile((*icon), p.string()) == true)
+						{
+							std::cout << "scaling success: " << p.string() << "\n";
+						}
+					}
+					else
+					{
+						std::string errorMesg = "[" + p.string() + "]: unable scale to 64";
+						throw (std::runtime_error(errorMesg.c_str()));
+					}
+				}
+
+			}
+
 			logFileDDSConv << "export success\n";
 		}
 		catch (std::runtime_error e)

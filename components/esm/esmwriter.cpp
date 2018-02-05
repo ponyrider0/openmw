@@ -3094,7 +3094,15 @@ namespace ESM
 
 	void ESMWriter::QueueModelForExport(std::string origString, std::string convertedString, int recordType)
 	{
-		mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
+		if (recordType < 0)
+		{
+//			mArmorToExportList[origString] = std::make_pair(convertedString, -recordType);
+			mArmorToExportList.push_back( std::make_pair(origString, std::make_pair(convertedString, -recordType)) );
+		}
+		else
+		{
+			mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
+		}
 	}
 
 	void ESMWriter::RegisterBaseObjForScriptedREF(const std::string &stringID, std::string sSIG, int nMode)

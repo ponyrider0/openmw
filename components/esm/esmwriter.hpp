@@ -218,6 +218,8 @@ public:
 
 		// Model List for NIF conversion batch file generation
 		std::map<std::string, std::pair<std::string, int>> mModelsToExportList; // mModel string, model type
+		std::vector<std::pair<std::string, std::pair<std::string, int>>> mArmorToExportList; // mModel string, model type
+
 		void QueueModelForExport(std::string origString, std::string convertedString, int recordType=0);
 
 		// Info, PNAM (Previous Record) map

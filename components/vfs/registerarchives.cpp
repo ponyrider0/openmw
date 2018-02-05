@@ -27,8 +27,8 @@ namespace VFS
 					(Misc::StringUtils::lowerCase(archivePath).find("bloodmoon.bsa") != std::string::npos)
 					)
 				{
-					std::cout << "Skipping BSA archive " << archivePath << std::endl;
-					continue;
+//					std::cout << "Skipping BSA archive " << archivePath << std::endl;
+//					continue;
 				}
                 std::cout << "Adding BSA archive " << archivePath << std::endl;
 

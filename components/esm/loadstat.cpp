@@ -67,7 +67,8 @@ namespace ESM
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
 		int recordType = 0;
-		if (modelPath.str().find("\\x\\") != std::string::npos)
+		if (Misc::StringUtils::lowerCase(modelPath.str()).find("\\x\\") != std::string::npos ||
+			Misc::StringUtils::lowerCase(modelPath.str()).find("terrain") != std::string::npos )
 		{
 			recordType = 4;
 		}
