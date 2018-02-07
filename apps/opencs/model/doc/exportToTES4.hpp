@@ -5,6 +5,7 @@
 #include "../world/idcollection.hpp"
 #include "../world/scope.hpp"
 #include "../world/infoselectwrapper.hpp"
+#include "../world/regionmap.hpp"
 
 #include <components/esm/defs.hpp>
 #include <components/esm/loadland.hpp>
@@ -321,6 +322,21 @@ namespace CSMDoc
 		///< \return number of steps
 
 		virtual void perform (int stage, Messages& messages);
+		///< Messages resulting from this stage will be appended to \a messages.
+	};
+
+	class ExportRegionDataTES4Stage : public Stage
+	{
+		Document& mDocument;
+		SavingState& mState;
+		bool mSkipMasterRecords;
+		std::vector<int> mActiveRecords;
+		CSMWorld::RegionMap mRegionMap;
+	public:
+		ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters = true);
+		virtual int setup();
+		///< \return number of steps
+		virtual void perform(int stage, Messages& messages);
 		///< Messages resulting from this stage will be appended to \a messages.
 	};
 

@@ -105,8 +105,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Enchantment> >
 		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
-	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
+	appendStage (new ExportRegionDataTES4Stage (currentDoc, currentSave, skipMasterRecords));
+//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
+//		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 //	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
@@ -1089,7 +1090,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 }
 
-
 CSMDoc::ExportRefIdCollectionTES4Stage::ExportRefIdCollectionTES4Stage (Document& document, SavingState& state)
 	: mDocument (document), mState (state)
 {}
@@ -1114,6 +1114,71 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 //	mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().exportTESx (stage, mState.getWriter(), 4);
 
 	if (stage == mActiveRefCount-1)
+	{
+		writer.endGroupTES4(sSIG);
+	}
+}
+
+CSMDoc::ExportRegionDataTES4Stage::ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters)
+	: mDocument(document), mState(state), mRegionMap(document.getData())
+{
+	mSkipMasterRecords = skipMasters;
+}
+int CSMDoc::ExportRegionDataTES4Stage::setup()
+{
+	ESM::ESMWriter &writer = mState.getWriter();
+	std::string sSIG = "REGN";
+
+	int regionListSize = mDocument.getData().getRegions().getSize();
+	for (int i = 0; i < regionListSize; i++)
+	{
+		const CSMWorld::Record<ESM::Region>& record = mDocument.getData().getRegions().getNthRecord(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+		{
+			exportOrSkip = record.isModified() || record.isDeleted();
+		}
+		else
+		{
+			exportOrSkip = true;
+		}
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+	return mActiveRecords.size();
+}
+void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
+{
+	std::string sSIG = "REGN";
+	ESM::ESMWriter& writer = mState.getWriter();
+
+	// GRUP
+	if (stage == 0 && mActiveRecords.size() > 0)
+	{
+		writer.startGroupTES4(sSIG, 0);
+	}
+
+	int index = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Region> regionRec = mDocument.getData().getRegions().getNthRecord(index);
+	std::string strEDID = writer.generateEDIDTES4(regionRec.get().mId, 0, sSIG);
+	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+
+	StartModRecord(sSIG, regionRec.get().mId, writer, regionRec.mState);
+	regionRec.get().exportTESx(writer, 4);
+	writer.endRecordTES4(sSIG);
+
+	if (mActiveRecords.size() > 0 && stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4(sSIG);
 	}
@@ -5435,7 +5500,7 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 
 void CSMDoc::StartModRecord(const std::string& sSIG,  const std::string& mId, ESM::ESMWriter& esm, const CSMWorld::RecordBase::State& state)
 {
-	std::string strEDID = esm.generateEDIDTES4(mId);
+	std::string strEDID = esm.generateEDIDTES4(mId, 0, sSIG);
 	uint32_t formID = esm.crossRefStringID(strEDID, sSIG, false, true);
 	uint32_t flags=0;
 	if (state == CSMWorld::RecordBase::State_Deleted)
