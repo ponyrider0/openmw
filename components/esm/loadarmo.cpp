@@ -220,14 +220,26 @@ namespace ESM
 			std::stringstream cmdlineM, cmdlineF;
 			for (auto part_it = mParts.mParts.begin(); part_it != mParts.mParts.end(); part_it++)
 			{
+				if (part_it->mPart == ESM::PartReferenceType::PRT_Shield)
+				{
+					int index = doc.getData().getBodyParts().getIndex(part_it->mMale);
+					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
+					std::string partmodel = bodypartRecord.get().mModel;
+					cmdlineM << " " << partmodel;
+					break;
+				}
 				if (part_it->mMale != "")
 				{
 					// resolve part_it->mMale to body part record
 					int index = doc.getData().getBodyParts().getIndex(part_it->mMale);
+					// hardcoded workarounds
 					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
 					std::string partmodel = bodypartRecord.get().mModel;
-//					int partnum = bodypartRecord.get().;
 					cmdlineM << " -bp " << (int) part_it->mPart << " " << partmodel;
+					if (part_it->mPart == ESM::PartReferenceType::PRT_RHand)
+						cmdlineM << " -bp " << (int)ESM::PartReferenceType::PRT_LHand << " " << partmodel;
+					if (part_it->mPart == ESM::PartReferenceType::PRT_RWrist)
+						cmdlineM << " -bp " << (int)ESM::PartReferenceType::PRT_LWrist << " " << partmodel;
 				}
 				if (part_it->mFemale != "")
 				{
@@ -236,10 +248,12 @@ namespace ESM
 					std::string partmodel = bodypartRecord.get().mModel;
 					int partnum = 0;
 					cmdlineF << " -bp " << (int)part_it->mPart << " " << partmodel;
+					if (part_it->mPart == ESM::PartReferenceType::PRT_RHand)
+						cmdlineF << " -bp " << (int)ESM::PartReferenceType::PRT_LHand << " " << partmodel;
+					if (part_it->mPart == ESM::PartReferenceType::PRT_RWrist)
+						cmdlineF << " -bp " << (int)ESM::PartReferenceType::PRT_LWrist << " " << partmodel;
 				}
 			}
-			maleStr = cmdlineM.str();
-			femaleStr = cmdlineF.str();
 			int OblivionType;
 			switch (mData.mType)
 			{
@@ -248,10 +262,60 @@ namespace ESM
 				break;
 
 			case ESM::Armor::Type::Cuirass:
+				// insert default arms
+				if (cmdlineM.str() != "")
+				{
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RUpperarm << " " << "tr\\a\\tr_a_silver_pauld_UA.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LUpperarm << " " << "tr\\a\\tr_a_silver_pauld_UA.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RWrist << " " << "tr\\a\\tr_a_silver_bracer_W.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LWrist << " " << "tr\\a\\tr_a_silver_bracer_W.nif";
+//					cmdlineM << " -bp 2 b\\B_N_Breton_F_Neck.nif";
+/*
+					cmdlineM << " -bp 8 b\\B_N_Breton_F_Wrist.nif";
+					cmdlineM << " -bp 9 b\\B_N_Breton_F_Wrist.nif";
+					cmdlineM << " -bp 11 b\\B_N_Breton_F_Forearm.nif";
+					cmdlineM << " -bp 12 b\\B_N_Breton_F_Forearm.nif";
+					cmdlineM << " -bp 13 \"b\\B_N_Breton_F_Upper Arm.nif\"";
+					cmdlineM << " -bp 14 \"b\\B_N_Breton_F_Upper Arm.nif\"";
+*/
+					cmdlineM << " -bp 8 TR\\c\\tr_c_shirt_com_001_w.nif";
+					cmdlineM << " -bp 9 TR\\c\\tr_c_shirt_com_001_w.nif";
+					cmdlineM << " -bp 11 TR\\c\\tr_c_shirt_com_001_fa.nif";
+					cmdlineM << " -bp 12 TR\\c\\tr_c_shirt_com_001_fa.nif";
+					cmdlineM << " -bp 13 TR\\c\\tr_c_shirt_com_001_ua.nif";
+					cmdlineM << " -bp 14 TR\\c\\tr_c_shirt_com_001_ua.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
+//					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
+				}
+				if (cmdlineF.str() != "")
+				{
+					cmdlineF << " -bp 8 TR\\c\\tr_c_shirt_com_001_w.nif";
+					cmdlineF << " -bp 9 TR\\c\\tr_c_shirt_com_001_w.nif";
+					cmdlineF << " -bp 11 TR\\c\\tr_c_shirt_com_001_fa.nif";
+					cmdlineF << " -bp 12 TR\\c\\tr_c_shirt_com_001_fa.nif";
+					cmdlineF << " -bp 13 TR\\c\\tr_c_shirt_com_001_ua.nif";
+					cmdlineF << " -bp 14 TR\\c\\tr_c_shirt_com_001_ua.nif";
+				}
 				OblivionType = 2;
 				break;
 
 			case ESM::Armor::Type::Greaves:
+				if (cmdlineM.str() != "")
+				{
+					cmdlineM << " -bp 17 TR\\c\\tr_c_pant_com_001_a.nif";
+					cmdlineM << " -bp 18 TR\\c\\tr_c_pant_com_001_a.nif";
+					cmdlineM << " -bp 19 TR\\c\\tr_c_pant_com_001_k.nif";
+					cmdlineM << " -bp 20 TR\\c\\tr_c_pant_com_001_k.nif";
+				}
+				if (cmdlineF.str() != "")
+				{
+					cmdlineF << " -bp 17 TR\\c\\tr_c_pant_com_001_a.nif";
+					cmdlineF << " -bp 18 TR\\c\\tr_c_pant_com_001_a.nif";
+					cmdlineF << " -bp 19 TR\\c\\tr_c_pant_com_001_k.nif";
+					cmdlineF << " -bp 20 TR\\c\\tr_c_pant_com_001_k.nif";
+				}
 				OblivionType = 3;
 				break;
 
@@ -263,6 +327,8 @@ namespace ESM
 				OblivionType = 6;
 				break;
 			}
+			maleStr = cmdlineM.str();
+			femaleStr = cmdlineF.str();
 
 			postFixStream << mData.mType;
 			if (OblivionType != 6)
@@ -314,7 +380,8 @@ namespace ESM
 			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
 			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
 		}
-		if (true)
+		bool bConvertArmor = true; 
+		if (bConvertArmor)
 		{
 //			esm.exportBipedModelTES4("armor\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon, ESMWriter::ExportBipedFlags::postfix_gnd | ESMWriter::ExportBipedFlags::postfixF);
 			esm.exportBipedModelTES4("", "", newMaleStr, newFemaleStr, newGndStr, newIconStr, ESMWriter::ExportBipedFlags::noNameMangling);
@@ -324,8 +391,8 @@ namespace ESM
 			maleStr = esm.substituteArmorModel(mName, 0);
 			femaleStr = esm.substituteArmorModel(mName, 1);
 			modelStr = esm.substituteArmorModel(mName, 2);
-			iconStr = esm.substituteArmorModel(mName, 4);
-			esm.exportBipedModelTES4("", "", maleStr, femaleStr, modelStr, iconStr, ESMWriter::ExportBipedFlags::noNameMangling);
+//			iconStr = esm.substituteArmorModel(mName, 4);
+			esm.exportBipedModelTES4("", "", maleStr, femaleStr, modelStr, newIconStr, ESMWriter::ExportBipedFlags::noNameMangling);
 		}
 
 		// DATA, float (item weight)
