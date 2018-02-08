@@ -327,17 +327,28 @@ namespace CSMDoc
 
 	class ExportRegionDataTES4Stage : public Stage
 	{
+		class MinMaxPair 
+		{
+		public:
+			int min=0; 
+			int max=0;
+			void updateMinMax(int newVal);
+			MinMaxPair(int newVal);
+		};
+
 		Document& mDocument;
 		SavingState& mState;
 		bool mSkipMasterRecords;
 		std::vector<int> mActiveRecords;
-		std::map<std::string, std::vector<std::pair<int, int>>> mRegionIDToCellList;
+		std::map<std::string, std::vector< std::pair< int, MinMaxPair > > > mRegionIDToCellList;
+		void buildRegionMaps();
+		void insertX(std::string regionId, int X, int Y);
 	public:
 		ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters = true);
+		/// return number of steps
 		virtual int setup();
-		///< \return number of steps
+		/// Messages resulting from this stage will be appended to \a messages.
 		virtual void perform(int stage, Messages& messages);
-		///< Messages resulting from this stage will be appended to \a messages.
 	};
 
 	class ExportAmmoCollectionTES4Stage : public Stage

@@ -1124,33 +1124,73 @@ CSMDoc::ExportRegionDataTES4Stage::ExportRegionDataTES4Stage(Document& document,
 {
 	mSkipMasterRecords = skipMasters;
 }
-int CSMDoc::ExportRegionDataTES4Stage::setup()
+void CSMDoc::ExportRegionDataTES4Stage::buildRegionMaps()
 {
-	ESM::ESMWriter &writer = mState.getWriter();
-	std::string sSIG = "REGN";
-
 	// create regionID to CellList
 	int numCells = mDocument.getData().getCells().getSize();
 	for (int cellIndex = 0; cellIndex < numCells; cellIndex++)
 	{
 		auto cellRecord = mDocument.getData().getCells().getNthRecord(cellIndex);
-		if ( !cellRecord.isModified() && !cellRecord.isDeleted() )
+		if (!cellRecord.isModified() && !cellRecord.isDeleted())
+		{
+			// mark regionid for skipping?
 			continue;
+		}
 		auto cell = cellRecord.get();
 		std::string regionId = cell.mRegion;
 		if (regionId != "")
 		{
-			// prep cell coords
-			int cellX = cell.mData.mX * 2;
-			int cellY = cell.mData.mY * 2;
-
-			// add to regionId vector
-			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX, cellY));
-			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX+1, cellY));
-			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX, cellY+1));
-			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX+1, cellY+1));
+			// insert X
+			for (int a=0; a < 2; a++)
+				for (int b = 0; b < 2; b++)
+				{
+					int cellX = (cell.mData.mX + a) * 2;
+					int cellY = (cell.mData.mY + b) * 2;
+					insertX(regionId, cellX, cellY);
+				}
 		}
 	}
+}
+void CSMDoc::ExportRegionDataTES4Stage::insertX(std::string regionId, int X, int Y)
+{
+	std::vector<std::pair<int, MinMaxPair>> &sortedList = mRegionIDToCellList[regionId];
+	auto sort_item = sortedList.begin();
+	while (sort_item != sortedList.end() && sort_item->first < X)
+		sort_item++;
+	if (sort_item == sortedList.end())
+	{
+		sortedList.push_back(std::make_pair(X, MinMaxPair(Y)));
+		return;
+	}
+	else if (sort_item->first == X)
+	{
+		sort_item->second.updateMinMax(Y);
+		return;
+	}
+	else if (sort_item->first > X)
+	{
+		// insert new item
+		sortedList.insert(sort_item, std::make_pair(X, MinMaxPair(Y)));
+		return;
+	}
+
+}
+void CSMDoc::ExportRegionDataTES4Stage::MinMaxPair::updateMinMax(int newVal)
+{
+	min = (min < newVal) ? min : newVal;
+	max = (max > newVal) ? max : newVal;
+}
+CSMDoc::ExportRegionDataTES4Stage::MinMaxPair::MinMaxPair(int newVal)
+{
+	min = newVal;
+	max = newVal;
+}
+int CSMDoc::ExportRegionDataTES4Stage::setup()
+{
+	ESM::ESMWriter &writer = mState.getWriter();
+	std::string sSIG = "REGN";
+
+	buildRegionMaps();
 
 	int regionListSize = mDocument.getData().getRegions().getSize();
 	for (int i = 0; i < regionListSize; i++)
@@ -1224,12 +1264,25 @@ void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 	writer.startSubRecordTES4("RPLD");
 	// get region mapped vector cell-list
 	// ...floats x,y...
-	std::vector<std::pair<int,int>> &cellList = mRegionIDToCellList[region.mId];
+	std::vector<std::pair<int,MinMaxPair>> &cellList = mRegionIDToCellList[region.mId];
+	// go up then down
 	for (auto cell = cellList.begin(); cell != cellList.end(); cell++)
 	{
+		// insert interpolation point
+		// ....
 		// correct cell Coord conversion
 		float x = cell->first * 4096;
-		float y = cell->second * 4096;
+		float y = cell->second.min * 4096;
+		writer.writeT<float>(x);
+		writer.writeT<float>(y);
+	}
+	for (auto cell = cellList.rbegin(); cell != cellList.rend(); cell++)
+	{
+		// insert interpolation point
+		// ....
+		// correct cell Coord conversion
+		float x = cell->first * 4096;
+		float y = cell->second.max * 4096;
 		writer.writeT<float>(x);
 		writer.writeT<float>(y);
 	}
