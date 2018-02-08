@@ -1120,7 +1120,7 @@ void CSMDoc::ExportRefIdCollectionTES4Stage::perform (int stage, Messages& messa
 }
 
 CSMDoc::ExportRegionDataTES4Stage::ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters)
-	: mDocument(document), mState(state), mRegionMap(document.getData())
+	: mDocument(document), mState(state)
 {
 	mSkipMasterRecords = skipMasters;
 }
@@ -1128,6 +1128,29 @@ int CSMDoc::ExportRegionDataTES4Stage::setup()
 {
 	ESM::ESMWriter &writer = mState.getWriter();
 	std::string sSIG = "REGN";
+
+	// create regionID to CellList
+	int numCells = mDocument.getData().getCells().getSize();
+	for (int cellIndex = 0; cellIndex < numCells; cellIndex++)
+	{
+		auto cellRecord = mDocument.getData().getCells().getNthRecord(cellIndex);
+		if ( !cellRecord.isModified() && !cellRecord.isDeleted() )
+			continue;
+		auto cell = cellRecord.get();
+		std::string regionId = cell.mRegion;
+		if (regionId != "")
+		{
+			// prep cell coords
+			int cellX = cell.mData.mX * 2;
+			int cellY = cell.mData.mY * 2;
+
+			// add to regionId vector
+			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX, cellY));
+			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX+1, cellY));
+			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX, cellY+1));
+			mRegionIDToCellList[regionId].push_back(std::make_pair(cellX+1, cellY+1));
+		}
+	}
 
 	int regionListSize = mDocument.getData().getRegions().getSize();
 	for (int i = 0; i < regionListSize; i++)
@@ -1144,6 +1167,13 @@ int CSMDoc::ExportRegionDataTES4Stage::setup()
 			exportOrSkip = true;
 		}
 
+		if (!exportOrSkip)
+		{
+			std::string regionId = record.get().mId;
+			if (mRegionIDToCellList.find(regionId) != mRegionIDToCellList.end())
+				exportOrSkip = true;
+		}
+
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
@@ -1156,7 +1186,9 @@ int CSMDoc::ExportRegionDataTES4Stage::setup()
 			}
 		}
 	}
+
 	return mActiveRecords.size();
+
 }
 void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 {
@@ -1171,11 +1203,62 @@ void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 
 	int index = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Region> regionRec = mDocument.getData().getRegions().getNthRecord(index);
-	std::string strEDID = writer.generateEDIDTES4(regionRec.get().mId, 0, sSIG);
+	auto region = regionRec.get();
+
+	std::string strEDID = writer.generateEDIDTES4(region.mId, 0, sSIG);
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	StartModRecord(sSIG, regionRec.get().mId, writer, regionRec.mState);
-	regionRec.get().exportTESx(writer, 4);
+	StartModRecord(sSIG, region.mId, writer, regionRec.mState);
+	regionRec.get().exportTESx(writer, 4); // initial output...
+
+	// WNAM - Worldspace
+	writer.startSubRecordTES4("WNAM");
+	writer.writeT<uint32_t>(0x01380000); // World FormID
+	writer.endSubRecordTES4("WNAM");
+
+	// Region Areas - array of region areas
+	// one region area: RPLI + array of RPLD(X,Y)
+	writer.startSubRecordTES4("RPLI");
+	writer.writeT<uint32_t>(1024); // RPLI aka edge-falloff
+	writer.endSubRecordTES4("RPLI");
+	writer.startSubRecordTES4("RPLD");
+	// get region mapped vector cell-list
+	// ...floats x,y...
+	std::vector<std::pair<int,int>> &cellList = mRegionIDToCellList[region.mId];
+	for (auto cell = cellList.begin(); cell != cellList.end(); cell++)
+	{
+		// correct cell Coord conversion
+		float x = cell->first * 4096;
+		float y = cell->second * 4096;
+		writer.writeT<float>(x);
+		writer.writeT<float>(y);
+	}
+	writer.endSubRecordTES4("RPLD");
+
+	// Region Data Entries?
+	// Objects, Map, Grass, Sound, Weather
+	writer.startSubRecordTES4("RDAT");
+	writer.writeT<uint32_t>(4); // Type (Map == 4)
+	writer.writeT<uint8_t>(0); // Flags
+	writer.writeT<uint8_t>(50); // Priority
+	writer.writeT<uint8_t>(4); // Unused
+	writer.writeT<uint8_t>(4); // Unused
+	writer.endSubRecordTES4("RDAT");
+	writer.startSubRecordTES4("RDMP");
+	writer.writeHCString(region.mName);
+	writer.endSubRecordTES4("RDMP");
+
+	writer.startSubRecordTES4("RDAT");
+	writer.writeT<uint32_t>(3); // Type (Weather == 3)
+	writer.writeT<uint8_t>(0); // Flags
+	writer.writeT<uint8_t>(50); // Priority
+	writer.writeT<uint8_t>(4); // Unused
+	writer.writeT<uint8_t>(4); // Unused
+	writer.endSubRecordTES4("RDAT");
+	writer.startSubRecordTES4("RDWT");
+	region.exportWeatherListTES4(writer);
+	writer.endSubRecordTES4("RDWT");
+
 	writer.endRecordTES4(sSIG);
 
 	if (mActiveRecords.size() > 0 && stage == mActiveRecords.size()-1)

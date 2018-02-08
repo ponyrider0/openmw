@@ -5,7 +5,7 @@
 #include "../world/idcollection.hpp"
 #include "../world/scope.hpp"
 #include "../world/infoselectwrapper.hpp"
-#include "../world/regionmap.hpp"
+//#include "../world/regionmap.hpp"
 
 #include <components/esm/defs.hpp>
 #include <components/esm/loadland.hpp>
@@ -331,7 +331,7 @@ namespace CSMDoc
 		SavingState& mState;
 		bool mSkipMasterRecords;
 		std::vector<int> mActiveRecords;
-		CSMWorld::RegionMap mRegionMap;
+		std::map<std::string, std::vector<std::pair<int, int>>> mRegionIDToCellList;
 	public:
 		ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters = true);
 		virtual int setup();

@@ -109,17 +109,6 @@ namespace ESM
 
 	bool Region::exportTESx(ESMWriter &esm, int export_format) const
 	{
-//		esm.writeHNCString("NAME", mId);
-//		esm.writeHNOCString("FNAM", mName);
-//		if (esm.getVersion() == VER_12)
-//			esm.writeHNT("WEAT", mData, sizeof(mData) - 2);
-//		else
-//			esm.writeHNT("WEAT", mData);
-//		esm.writeHNOCString("BNAM", mSleepList);
-//		esm.writeHNT("CNAM", mMapColor);
-//		for (std::vector<SoundRef>::const_iterator it = mSoundList.begin(); it != mSoundList.end(); ++it)
-//			esm.writeHNT<SoundRef>("SNAM", *it);
-
 		std::string tempStr;
 		tempStr = esm.generateEDIDTES4(mId, 2);
 		esm.startSubRecordTES4("EDID");
@@ -137,8 +126,9 @@ namespace ESM
 
 		// Region Areas? RPLI, RPLD(X,Y)
 
+/*
 		// Region Data Entries?
-			// Objects, Map, Grass, Sound, Weather
+		// Objects, Map, Grass, Sound, Weather
 		esm.startSubRecordTES4("RDAT");
 		esm.writeT<uint32_t>(4); // Type (Map == 4)
 		esm.writeT<uint8_t>(0); // Flags
@@ -160,7 +150,7 @@ namespace ESM
 		esm.startSubRecordTES4("RDWT");
 		exportWeatherListTES4(esm);
 		esm.endSubRecordTES4("RDWT");
-
+*/
 		return true;
 	}
 
