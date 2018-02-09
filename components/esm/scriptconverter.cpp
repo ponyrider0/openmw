@@ -2204,10 +2204,15 @@ namespace ESM
 //			return;
 
 		tokenItem++;
+		std::string rawText = tokenItem->str;
 		if (tokenItem->type == TokenType::string_literalT)
+		{
 			argList << "\"" << tokenItem->str << "\"";
+		}
 		else
+		{
 			argList << tokenItem->str;
+		}
 		tokenItem++;
 		while (tokenItem->type != TokenType::endlineT)
 		{
@@ -2219,6 +2224,14 @@ namespace ESM
 			tokenItem++;
 		}
 
+/*
+		// debug search for script strings
+		if (Misc::StringUtils::lowerCase(argList.str()).find("trial of") != std::string::npos)
+		{
+			std::string debugstr = "DEBUG: found string: " + argList.str() + "\n";
+			OutputDebugString(debugstr.c_str());
+		}
+*/
 		// translate statement
 		std::stringstream convertedStatement;
 
@@ -2244,15 +2257,14 @@ namespace ESM
 		compile_command(OpCode, sizeParams);
 		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
 
-		std::string argText = argList.str();
-		uint16_t argTextLen = argText.size() + 2;
+//		std::string argText = argList.str();
+		std::string argText = rawText;
+		uint16_t argTextLen = argText.size();
 		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&argTextLen)[i]);
-		mCurrentContext.compiledCode.push_back('\"');
 		for (auto byte_it = argText.begin(); byte_it != argText.end(); byte_it++)
 		{
 			mCurrentContext.compiledCode.push_back((uint8_t) *byte_it);
 		}
-		mCurrentContext.compiledCode.push_back('\"');
 		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(0);
 
 		return;
@@ -2324,6 +2336,23 @@ namespace ESM
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "onrepair") ||
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "menumode") )
 			{
+				std::string tempCallbackName = tokenItem->str;
+				// EXCEPTION CHECK for On<Event> == 0 reverse events... for now issue error and skip those events
+				tokenItem++;
+				if (tokenItem->str != "==" && tokenItem->str != ")")
+				{
+					// unhandled On<Event> condition
+					abort("[" + tempCallbackName + "] unhandled callback condition: '" + tokenItem->str + "'");
+				}
+				else if (tokenItem->str == "==")
+				{
+					tokenItem++;
+					if (tokenItem->str != "1")
+					{
+						abort("[" + tempCallbackName + "] unhandled callback condition: =='" + tokenItem->str + "'");
+					}
+				}
+
 				// reset expression
 				mOperatorExpressionStack.clear();
 				// setup callback context and return
@@ -2340,7 +2369,7 @@ namespace ESM
 				mCurrentContext.convertedStatements.clear();
 
 				// output callback begin
-				mCallBackName = tokenItem->str;
+				mCallBackName = tempCallbackName;
 				std::stringstream callBackHeader;
 				callBackHeader << "Begin" << " " << mCallBackName;
 				mCurrentContext.convertedStatements.push_back(callBackHeader.str());
