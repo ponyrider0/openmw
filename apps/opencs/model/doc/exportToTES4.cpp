@@ -1230,6 +1230,114 @@ int CSMDoc::ExportRegionDataTES4Stage::setup()
 	return mActiveRecords.size();
 
 }
+void CSMDoc::ExportRegionDataTES4Stage::traceBoundaryBack(std::vector<std::pair<int, MinMaxPair>>::iterator start_cell, std::vector<std::pair<int, MinMaxPair>>::iterator end_cell)
+{
+	ESM::ESMWriter &writer = mState.getWriter();
+
+	std::vector<std::pair<int, MinMaxPair>>::iterator current_cell;
+	for (current_cell = start_cell; current_cell != end_cell; current_cell--)
+	{
+		// insert interpolation point
+		// insert interpolation point
+		if (current_cell != start_cell)
+		{
+			auto prevCell = current_cell; prevCell++;
+			if (prevCell->second.max != current_cell->second.max)
+			{
+				// pick highest minimum or lowest maximum
+				float x = current_cell->first * 4096;
+				float y = prevCell->second.max * 4096;
+				if (current_cell->second.max < prevCell->second.max)
+				{
+					x = prevCell->first * 4096;
+					y = current_cell->second.max * 4096;
+				}
+				writer.writeT<float>(x);
+				writer.writeT<float>(y);
+			}
+		}
+		float x = current_cell->first * 4096;
+		float y = current_cell->second.max * 4096;
+		writer.writeT<float>(x);
+		writer.writeT<float>(y);
+	}
+	// process end_cell
+	auto prevCell = current_cell; prevCell++;
+	if (prevCell->second.max != current_cell->second.max)
+	{
+		// pick highest minimum or lowest maximum
+		float x = current_cell->first * 4096;
+		float y = prevCell->second.max * 4096;
+		if (current_cell->second.max < prevCell->second.max)
+		{
+			x = prevCell->first * 4096;
+			y = current_cell->second.max * 4096;
+		}
+		writer.writeT<float>(x);
+		writer.writeT<float>(y);
+	}
+	float x = current_cell->first * 4096;
+	float y = current_cell->second.max * 4096;
+	writer.writeT<float>(x);
+	writer.writeT<float>(y);
+
+	writer.endSubRecordTES4("RPLD");
+}
+std::vector<std::pair<int, CSMDoc::ExportRegionDataTES4Stage::MinMaxPair>>::iterator CSMDoc::ExportRegionDataTES4Stage::traceBoundaryForward(std::vector<std::pair<int, MinMaxPair>>::iterator start_cell, std::vector<std::pair<int, MinMaxPair>>::iterator end_cell)
+{
+	ESM::ESMWriter &writer = mState.getWriter();
+
+	std::vector<std::pair<int, MinMaxPair>>::iterator current_cell;
+	for (current_cell = start_cell; current_cell != end_cell; current_cell++)
+	{
+		// step 1: check if starting cell to initialize regiondata
+		if (current_cell == start_cell)
+		{
+			writer.startSubRecordTES4("RPLI");
+			writer.writeT<uint32_t>(1024); // RPLI aka edge-falloff
+			writer.endSubRecordTES4("RPLI");
+			writer.startSubRecordTES4("RPLD");
+		}
+		else
+		{
+			auto prevCell = current_cell; prevCell--;
+
+			// step 2: always check if this point is continuous with last
+			if (current_cell->first - prevCell->first > 2)
+			{
+				traceBoundaryBack(prevCell, start_cell);
+				return current_cell;
+			}
+
+			// interpolate from last point
+			if (prevCell->second.min != current_cell->second.min)
+			{
+				// pick highest minimum or lowest maximum
+				float x = current_cell->first * 4096;
+				float y = prevCell->second.min * 4096;
+				if (current_cell->second.min > prevCell->second.min)
+				{
+					x = prevCell->first * 4096;
+					y = current_cell->second.min * 4096;
+				}
+				writer.writeT<float>(x);
+				writer.writeT<float>(y);
+			}
+		}
+		float x = current_cell->first * 4096;
+		float y = current_cell->second.min * 4096;
+		writer.writeT<float>(x);
+		writer.writeT<float>(y);
+	}
+	if (current_cell == end_cell)
+	{
+		auto prevCell = current_cell; prevCell--;
+		// end of list, traceback
+		traceBoundaryBack(prevCell, start_cell);
+	}
+	return current_cell;
+
+}
 void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 {
 	std::string sSIG = "REGN";
@@ -1258,35 +1366,12 @@ void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 
 	// Region Areas - array of region areas
 	// one region area: RPLI + array of RPLD(X,Y)
-	writer.startSubRecordTES4("RPLI");
-	writer.writeT<uint32_t>(1024); // RPLI aka edge-falloff
-	writer.endSubRecordTES4("RPLI");
-	writer.startSubRecordTES4("RPLD");
-	// get region mapped vector cell-list
-	// ...floats x,y...
 	std::vector<std::pair<int,MinMaxPair>> &cellList = mRegionIDToCellList[region.mId];
-	// go up then down
-	for (auto cell = cellList.begin(); cell != cellList.end(); cell++)
+	auto current_cell = cellList.begin();
+	while (current_cell != cellList.end())
 	{
-		// insert interpolation point
-		// ....
-		// correct cell Coord conversion
-		float x = cell->first * 4096;
-		float y = cell->second.min * 4096;
-		writer.writeT<float>(x);
-		writer.writeT<float>(y);
+		current_cell = traceBoundaryForward(current_cell, cellList.end());
 	}
-	for (auto cell = cellList.rbegin(); cell != cellList.rend(); cell++)
-	{
-		// insert interpolation point
-		// ....
-		// correct cell Coord conversion
-		float x = cell->first * 4096;
-		float y = cell->second.max * 4096;
-		writer.writeT<float>(x);
-		writer.writeT<float>(y);
-	}
-	writer.endSubRecordTES4("RPLD");
 
 	// Region Data Entries?
 	// Objects, Map, Grass, Sound, Weather

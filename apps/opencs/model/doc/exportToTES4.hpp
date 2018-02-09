@@ -343,6 +343,8 @@ namespace CSMDoc
 		std::map<std::string, std::vector< std::pair< int, MinMaxPair > > > mRegionIDToCellList;
 		void buildRegionMaps();
 		void insertX(std::string regionId, int X, int Y);
+		void traceBoundaryBack(std::vector<std::pair<int, MinMaxPair>>::iterator start_cell, std::vector<std::pair<int, MinMaxPair>>::iterator end_cell);
+		std::vector<std::pair<int, MinMaxPair>>::iterator traceBoundaryForward(std::vector<std::pair<int, MinMaxPair>>::iterator start_cell, std::vector<std::pair<int, MinMaxPair>>::iterator end_cell);
 	public:
 		ExportRegionDataTES4Stage(Document& document, SavingState& state, bool skipMasters = true);
 		/// return number of steps
