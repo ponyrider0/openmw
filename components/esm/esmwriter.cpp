@@ -3040,6 +3040,13 @@ namespace ESM
 				morroblivionEDID = "GameHour";
 			break;
 
+		case ESM::REC_ARMO:
+			if (Misc::StringUtils::lowerCase(genericEDID) == "0dwemerupauldronuleft")
+				morroblivionEDID = "0DwemerUGauntlets";
+			if (Misc::StringUtils::lowerCase(genericEDID) == "0dwemerupauldronuright")
+				morroblivionEDID = "0miscUdwrvUcoin00";
+			break;
+
 		default:
 			if (genericEDID == "0ActiveUComUBarUDoor")
 				morroblivionEDID = "mwComBarDoor";
