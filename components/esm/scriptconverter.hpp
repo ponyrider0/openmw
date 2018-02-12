@@ -15,6 +15,49 @@ namespace ESM {
 
 	class ScriptConverter
 	{
+		char* actorvalueStrings[39] =
+		{
+			"strength",
+			"intelligence",
+			"willpower",
+			"agility",
+			"speed",
+			"endurance",
+			"personality",
+			"luck",
+			"health",
+			"magicka",
+			"fatigue",
+			"encumbrance",
+			"armorer",
+			"athletics",
+			"blade",
+			"block",
+			"blunt",
+			"handtohand",
+			"heavyarmor",
+			"alchemy",
+			"alteration",
+			"conjuration",
+			"destruction",
+			"illusion",
+			"mysticism",
+			"restoration",
+			"acrobatics",
+			"lightarmor",
+			"marksman",
+			"mercantile",
+			"security",
+			"sneak",
+			"speechcraft", // 33
+			"mediumarmor",
+			"enchantment",
+			"axe",
+			"spear", // 37
+			"shortblade", // 38
+			"longblade"
+		};
+
 		enum TokenType
 		{
 			identifierT = 0,
@@ -123,6 +166,8 @@ namespace ESM {
 		bool lookup_reference(const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 		void gotoEOL(std::vector<struct Token>::iterator & tokenItem);
 		void pop_context_conditional(std::vector<struct Token>::iterator& tokenItem);
+		int check_get_set_mod_AV_command(const std::string &commandString);
+		bool sub_parse_get_set_mod_AV_command(std::vector<struct Token>::iterator &tokenItem, int actorValue, std::string &cmdString, std::string &arg1String, std::vector<uint8_t> &arg1data);
 
 		void error_mesg(std::string);
 		void abort(std::string);

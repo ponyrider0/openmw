@@ -3060,6 +3060,8 @@ namespace ESM
 				morroblivionEDID = "FrostSalts";
 			else if (genericEDID == "0CollisionSWallSTSINVISO")
 				morroblivionEDID = "CollisionBoxStatic";
+			else if (genericEDID == "0skillraise")
+				morroblivionEDID = "UIStatsSkillUp";
 //			if (genericEDID == "0TUImpUDrinkUWineSurilieBrU01")
 //				morroblivionEDID = "DrinkWine1SurilieGood";
 //			if (genericEDID == "0TUImpUDrinkUWineFreeEstatU01")

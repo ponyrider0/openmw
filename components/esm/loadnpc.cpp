@@ -227,6 +227,8 @@ namespace ESM
 			flags |= 0x08;
 		if (mFlags & Flags::Autocalc)
 			flags |= 0x10;
+		// turn on NoRumors
+		flags |= 0x2000;
 		esm.writeT<uint32_t>(flags); //flags
 		tempVal = (autocalc) ? 50 : mNpdt52.mMana;
 		esm.writeT<uint16_t>(tempVal); // base spell pts
@@ -451,7 +453,9 @@ namespace ESM
 				esm.startSubRecordTES4("PKID");
 				esm.writeT<uint32_t>(pkgFormID);
 				esm.endSubRecordTES4("PKID");
-				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
+//				ai_debugstream << "Wander Dist:" << distance << " Dur:" << duration;
+//				ai_debugstream << std::endl;
+				ai_debugstream.str(""); ai_debugstream.clear();
 				break;
 			case ESM::AI_Travel:
 				pkgEDID = "aaaDefaultExploreEditorLoc512";
@@ -494,9 +498,11 @@ namespace ESM
 //				std::cout << ai_debugstream.str();
 				break;
 			}
-			ai_debugstream << std::endl;
-//			std::cout << ai_debugstream.str();
-			OutputDebugString(ai_debugstream.str().c_str());
+			if (!ai_debugstream.str().empty())
+			{
+				OutputDebugString(ai_debugstream.str().c_str());
+//				std::cout << ai_debugstream.str();
+			}
 		}
 		// KFFZ, animations
 

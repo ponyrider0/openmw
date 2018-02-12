@@ -16,6 +16,9 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <components/to_utf8/to_utf8.hpp>
 #include <apps/opencs/model/doc/document.hpp>
 
+#define IS_CMD(A) Misc::StringUtils::lowerCase(cmdString) == Misc::StringUtils::lowerCase(A)
+#define IS_SUBCMD(A) Misc::StringUtils::lowerCase(cmdString).find( Misc::StringUtils::lowerCase(A) ) != std::string::npos
+
 namespace ESM
 {
 
@@ -429,6 +432,7 @@ namespace ESM
 						mCommandRef_EDID = refEDID;
 					else
 						mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, "");
+					prepare_reference(mCommandRef_EDID, refSIG, 100);
 				}
 				return;
 			}
@@ -547,6 +551,7 @@ namespace ESM
 						mCommandRef_EDID = refEDID;
 					else
 						mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, "");
+					prepare_reference(mCommandRef_EDID, refSIG, 100);
 				}
 				else if (tokenItem->str == ".")
 				{
@@ -811,10 +816,6 @@ namespace ESM
 		{
 			OpCode = 0x101D;
 		}
-		else if (cmdString == "getspell")
-		{
-			OpCode = 0;
-		}
 		else if (cmdString == "playsound")
 		{
 			OpCode = 0x1026;
@@ -830,10 +831,6 @@ namespace ESM
 		else if (cmdString == "positioncell")
 		{
 			OpCode = 0x1079;
-		}
-		else if (cmdString == "activate")
-		{
-			OpCode = 0x100D;
 		}
 		else if (cmdString == "cast")
 		{
@@ -887,7 +884,7 @@ namespace ESM
 		{
 			OpCode = 0x100E;
 		}
-		else if (cmdString == "getinterior") // aka IsInInterior
+		else if (cmdString == "getinterior" || cmdString == "isininterior") // aka IsInInterior
 		{
 			OpCode = 0x112C;
 		}
@@ -922,6 +919,10 @@ namespace ESM
 		else if (cmdString == "setangle") 
 		{
 			OpCode = 0x1009;
+		}
+		else if (cmdString == "getangle")
+		{
+			OpCode = 0x1008;
 		}
 		else if (cmdString == "startquest")
 		{
@@ -963,34 +964,156 @@ namespace ESM
 		{
 			OpCode = 0x10F8;
 		}
-		else if (cmdString == "setstrength")
+		else if (cmdString == "getpcexpelled")
 		{
-			OpCode = 0;
+			OpCode = 0x10C1;
 		}
-		else if (cmdString == "modreputation")
+		else if (cmdString == "setpcexpelled")
 		{
-			OpCode = 0;
+			OpCode = 0x10C2;
 		}
-		else if (cmdString == "sethealth")
+		else if (cmdString == "lock")
 		{
-			OpCode = 0;
+			OpCode = 0x1072;
 		}
-		else if (cmdString == "startscript")
+		else if (cmdString == "unlock")
 		{
-			OpCode = 0;
+			OpCode = 0x1073;
 		}
-		else if (cmdString == "setfight")
+		else if (cmdString == "additem")
 		{
-			OpCode = 0;
+			OpCode = 0x1002;
 		}
-		else if (cmdString == "modpcfacrep")
+		else if (cmdString == "removeitem")
 		{
-			OpCode = 0;
+			OpCode = 0x1052;
 		}
-		else if (cmdString == "pcraiserank")
+		else if (cmdString == "drop")
 		{
-			OpCode = 0;
+			OpCode = 0x1057;
 		}
+		else if (cmdString == "getdisease")
+		{
+			OpCode = 0x1027;
+		}
+		else if (cmdString == "startconversation")
+		{
+			OpCode = 0x1056;
+		}
+		else if (cmdString == "showmap")
+		{
+			OpCode = 0x1055;
+		}
+		else if (cmdString == "setpos")
+		{
+			OpCode = 0x1007;
+		}
+		else if (cmdString == "refreshtopiclist")
+		{
+			OpCode = 0x1145;
+		}
+		else if (cmdString == "getlocked")
+		{
+			OpCode = 0x1005;
+		}
+		else if (cmdString == "advancepclevel")
+		{
+			OpCode = 0x10D5;
+		}
+		else if (cmdString == "advancepcskill")
+		{
+			OpCode = 0x10D4;
+		}
+		else if (cmdString == "autosave")
+		{
+			OpCode = 0x115E;
+		}
+		else if (cmdString == "canpaycrimegold")
+		{
+			OpCode = 0x107F;
+		}
+		else if (cmdString == "disableplayercontrols")
+		{
+			OpCode = 0x1061;
+		}
+		else if (cmdString == "dispellallspells")
+		{
+			OpCode = 0x1148;
+		}
+		else if (cmdString == "dropme")
+		{
+			OpCode = 0x10A6;
+		}
+		else if (cmdString == "enableplayercontrols")
+		{
+			OpCode = 0x1060;
+		}
+		else if (cmdString == "getalarmed")
+		{
+			OpCode = 0x103D;
+		}
+		else if (cmdString == "getarmorrating")
+		{
+			OpCode = 0x1051;
+		}
+		else if (cmdString == "getattacked")
+		{
+			OpCode = 0x103F;
+		}
+		else if (cmdString == "getbartergold")
+		{
+			OpCode = 0x1108;
+		}
+		else if (cmdString == "getclothingvalue")
+		{
+			OpCode = 0x1029;
+		}
+		else if (cmdString == "getcrimegold")
+		{
+			OpCode = 0x1074;
+		}
+		else if (cmdString == "setcrimegold")
+		{
+			OpCode = 0x1075;
+		}
+		else if (cmdString == "getdisposition")
+		{
+			OpCode = 0x104C;
+		}
+		else if (cmdString == "setatstart")
+		{
+			OpCode = 0x104C;
+		}
+		else if (cmdString == "placeatme" || cmdString == "placeatpc")
+		{
+			OpCode = 0x1025;
+		}
+		else if (cmdString == "getscale")
+		{
+			OpCode = 0x1018;
+		}
+		else if (cmdString == "setscale")
+		{
+			OpCode = 0x113C;
+		}
+		else if (cmdString == "getfactionrank")
+		{
+			OpCode = 0x1049;
+		}
+		else if (cmdString == "getparentcellwaterheight")
+		{
+			OpCode = 0x15CC;
+		}
+		else if (cmdString == "hasspell")
+		{
+			OpCode = 0x1462;
+		}
+		else if (cmdString == "getcellchanged")
+		{
+			OpCode = 0x1952;
+		}
+
+
 
 		return OpCode;
 	}
@@ -1000,8 +1123,15 @@ namespace ESM
 		// output translated script text
 		std::string cmdString = tokenItem->str;
 
+		if (Misc::StringUtils::lowerCase(cmdString) == "placeatpc")
+		{
+			cmdString = "PlaceAtMe";
+			bUseCommandReference = true;
+			mCommandRef_EDID = "player";
+		}
+
 		// record 4 float args
-		std::string strX="", strY="", strZ="", strR="";
+		std::string strCount="", strDist="", strDir="";
 		std::string argString, argSIG;
 		bool bEvalArgString, bNeedsDialogHelper;
 
@@ -1016,28 +1146,21 @@ namespace ESM
 		// Check for EOL
 		if (tokenItem->type != TokenType::endlineT)
 		{
-			if (sub_parse_arg(tokenItem, strX, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			if (sub_parse_arg(tokenItem, strCount, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
 			{
 				abort("parse_positionCW():: sub_parse_arg() failed - ");
 				return;
 			}
 
 			tokenItem++;
-			if (sub_parse_arg(tokenItem, strY, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			if (sub_parse_arg(tokenItem, strDist, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
 			{
 				abort("parse_positionCW():: sub_parse_arg() failed - ");
 				return;
 			}
 
 			tokenItem++;
-			if (sub_parse_arg(tokenItem, strZ, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
-			{
-				abort("parse_positionCW():: sub_parse_arg() failed - ");
-				return;
-			}
-
-			tokenItem++;
-			if (sub_parse_arg(tokenItem, strR, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
+			if (sub_parse_arg(tokenItem, strDir, bEvalArgString, bNeedsDialogHelper, argSIG) == false)
 			{
 				abort("parse_positionCW():: sub_parse_arg() failed - ");
 				return;
@@ -1055,13 +1178,13 @@ namespace ESM
 		if (bNeedsDialogHelper)
 			argPrefix = "mwDialogHelper.";
 
-		std::string argCoords="";
-		if (strX != "")
+		std::string arglist="";
+		if (strCount != "")
 		{
-			argCoords = " " + strX + " " + strY + " " + strZ + " " + strR;
+			arglist = " " + strCount + " " + strDist + " " + strDir;
 		}
 
-		convertedStatement << cmdPrefix << cmdString << " " << argPrefix << argString << argCoords;
+		convertedStatement << cmdPrefix << cmdString << " " << argPrefix << argString << arglist;
 		if (mParseMode == 0)
 		{
 			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -1077,41 +1200,32 @@ namespace ESM
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
 		uint16_t sizeParams = 2;
-		sizeParams += 3; // 1 + 2 bytes (ref param)
-		if (argCoords != "")
-			sizeParams += (1 + 8) * 4; // (1 + 8 bytes) * 4 (64bit floats)
-		uint16_t countParams = 5;
+		uint16_t countParams = 1; 
 
 		OpCode = getOpCode(cmdString);
 		if (OpCode == 0)
 		{
 			std::stringstream errorMesg;
-			errorMesg << "parse_positionCW(): unhandled command=" << cmdString << std::endl;
+			errorMesg << "Parse_PlaceAtMe(): unhandled command=" << cmdString << std::endl;
 			abort(errorMesg.str());
 			return;
 		}
 
-		std::vector<uint8_t> argXdata, argYdata, argZdata, argRdata, argDestData;
-		if (argCoords != "")
+		std::vector<uint8_t> arg1data, arg2data, arg3data, argObjData;
+		if (arglist != "")
 		{
-			argXdata = compile_param_float(atof(strX.c_str()));
-			argYdata = compile_param_float(atof(strY.c_str()));
-			argZdata = compile_param_float(atof(strZ.c_str()));
-			argRdata = compile_param_float(atof(strR.c_str()));
+			countParams += 3;
+			arg1data = compile_param_long(atof(strCount.c_str()));
+			arg2data = compile_param_long(atof(strDist.c_str()));
+			arg3data = compile_param_long(atof(strDir.c_str()));
 			// combine all above into one block
-			argXdata.insert(argXdata.end(), argYdata.begin(), argYdata.end());
-			argXdata.insert(argXdata.end(), argZdata.begin(), argZdata.end());
-			argXdata.insert(argXdata.end(), argRdata.begin(), argRdata.end());
+			arg1data.insert(arg1data.end(), arg2data.begin(), arg2data.end());
+			arg1data.insert(arg1data.end(), arg3data.begin(), arg3data.end());
 		}
+		argObjData = compile_param_varname(argString, argSIG, 4);
 
-		argDestData = compile_param_varname(argString, argSIG, 4);
-
-		if (sizeParams != (2 + argXdata.size() + argDestData.size()))
-		{
-			abort("Parse_PositionCW: error, unexpected data size.");
-			return;
-		}
-		compile_command(OpCode, sizeParams, countParams, argDestData, argXdata);
+		sizeParams += arg1data.size() + argObjData.size();
+		compile_command(OpCode, sizeParams, countParams, argObjData, arg1data);
 
 		return;
 
@@ -1549,6 +1663,7 @@ namespace ESM
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "random")
 		{
+			// TODO: replace with OBSE Rand command...
 			cmdString = "GetRandomPercent";
 			tokenItem++;
 			struct Token newToken(TokenType::operatorT, "*");
@@ -1569,20 +1684,42 @@ namespace ESM
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "cellchanged")
 		{
+			cmdString = "GetCellChanged";
+/*
 			bSkipCompile = true;
 			bUseCommandReference = true;
 			mCommandRef_EDID = "mwScriptHelper";
 			auto varData = compile_external_localvar(mCommandRef_EDID, cmdString);
 			mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), varData.begin(), varData.end());
+*/
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getcommondisease")
+		{
+			cmdString = "GetDisease";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "clearinfoactor")
+		{
+			cmdString = "refreshtopiclist";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getpccrimelevel")
+		{
+			cmdString = "GetCrimeGold";
+			bUseCommandReference = true;
+			mCommandRef_EDID = "player";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getwaterlevel")
+		{
+			cmdString = "GetParentCellWaterHeight";
 		}
 
+		std::string cmdLine = cmdString;
 		//----------------------------------------------
 		if (bUseCommandReference)
 		{
-			cmdString = mCommandRef_EDID + "." + cmdString;
+			cmdLine = mCommandRef_EDID + "." + cmdString;
 		}
 
-		convertedStatement << cmdString;
+		convertedStatement << cmdLine;
 		if (mParseMode == 0)
 		{
 			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
@@ -1604,7 +1741,7 @@ namespace ESM
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
 
-		OpCode = getOpCode(tokenItem->str);
+		OpCode = getOpCode(cmdString);
 
 		if (OpCode != 0)
 		{
@@ -1623,6 +1760,14 @@ namespace ESM
 	{
 		bEvalArgString = false;
 		bNeedsDialogHelper = false;
+
+		if (tokenItem->type == TokenType::endlineT)
+		{
+			std::stringstream errorMesg;
+			errorMesg << "sub_parse_arg(): unexpected end-of-line" << std::endl;
+			error_mesg(errorMesg.str());
+			return false;
+		}
 
 		if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
 		{
@@ -1745,23 +1890,25 @@ namespace ESM
 		bool bSkipArgParse = false;
 		bool bReturnBase = false;
 
+		int getAVresult = -1;
+
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 2;
+		uint16_t countParams = 1;
+
 		cmdString = tokenItem->str;
 
 		if (Misc::StringUtils::lowerCase(cmdString) == "equip")
 		{
 			cmdString = "EquipItem";
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "pcexpelled")
+		{
+			cmdString = "GetPCExpelled";
+		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "modreputation")
 		{
 			cmdString = "ModPCFame";
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getintelligence")
-		{
-			cmdString = "GetActorValue";
-			argString = "Intelligence";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getresistdisease")
 		{
@@ -1771,6 +1918,19 @@ namespace ESM
 			uint16_t actorvalue = 63; // hardcoded with TES4 AV for ResistDisease
 			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
+
+		else if ( (getAVresult=check_get_set_mod_AV_command(cmdString)) >= 0)
+		{
+			if (sub_parse_get_set_mod_AV_command(tokenItem, getAVresult, cmdString, argString, argdata) == false)
+			{
+				abort("error processing Set/Mod AV command");
+				return;
+			}
+			bSkipArgParse = true;
+			bUseBinaryData = true;
+		}
+
+/*
 		else if (Misc::StringUtils::lowerCase(cmdString) == "gethealth")
 		{
 			cmdString = "GetActorValue";
@@ -1779,7 +1939,264 @@ namespace ESM
 			uint16_t actorvalue = 8; // hardcoded with TES4 Actorvalue for health
 			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getpos")
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getfatigue")
+		{
+			cmdString = "GetActorValue";
+			argString = "Fatigue";
+			bSkipArgParse = true;
+			uint16_t actorvalue = 10; // hardcoded with TES4 Actorvalue for fatigue
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getmagicka")
+		{
+			cmdString = "GetActorValue";
+			argString = "Magicka";
+			bSkipArgParse = true;
+			uint16_t actorvalue = 9; // hardcoded with TES4 Actorvalue for magicka
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getluck")
+		{
+			cmdString = "GetActorValue";
+			argString = "Luck";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Luck);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getstrength")
+		{
+			cmdString = "GetActorValue";
+			argString = "Strength";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Strength);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getintelligence")
+		{
+			cmdString = "GetActorValue";
+			argString = "Intelligence";
+			bSkipArgParse = true;
+			bUseBinaryData = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getwillpower")
+		{
+			cmdString = "GetActorValue";
+			argString = "Willpower";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Willpower);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getagility")
+		{
+			cmdString = "GetActorValue";
+			argString = "Agility";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Agility);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getspeed")
+		{
+			cmdString = "GetActorValue";
+			argString = "Speed";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Speed);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getendurance")
+		{
+			cmdString = "GetActorValue";
+			argString = "Endurance";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Endurance);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getpersonality")
+		{
+			cmdString = "GetActorValue";
+			argString = "Personality";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Personality);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getarmorer")
+		{
+			cmdString = "GetActorValue";
+			argString = "Armorer";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Armorer);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getathletics")
+		{
+			cmdString = "GetActorValue";
+			argString = "Athletics";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Athletics);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getshortblade")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getlongblade") )
+		{
+			cmdString = "GetActorValue";
+			argString = "Blade";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::ShortBlade);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getblock")
+		{
+			cmdString = "GetActorValue";
+			argString = "Block";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Block);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getblunt")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getaxe")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getspear"))
+		{
+			cmdString = "GetActorValue";
+			argString = "Blunt";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::BluntWeapon);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "gethandtohand")
+		{
+			cmdString = "GetActorValue";
+			argString = "HandToHand";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::HandToHand);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getheavyarmor")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getmediumarmor") )
+		{
+			cmdString = "GetActorValue";
+			argString = "HeavyArmor";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::HeavyArmor);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getalchemy")
+		{
+			cmdString = "GetActorValue";
+			argString = "Alchemy";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Alchemy);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getalteration")
+		{
+			cmdString = "GetActorValue";
+			argString = "Alteration";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Alteration);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getconjuration")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getenchant") )
+		{
+			cmdString = "GetActorValue";
+			argString = "Conjuration";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Conjuration);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getdestruction")
+		{
+			cmdString = "GetActorValue";
+			argString = "Destruction";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Destruction);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getillusion")
+		{
+			cmdString = "GetActorValue";
+			argString = "Illusion";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Illusion);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getmysticism")
+		{
+			cmdString = "GetActorValue";
+			argString = "Mysticism";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Mysticism);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getrestoration")
+		{
+			cmdString = "GetActorValue";
+			argString = "Restoration";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Restoration);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getacrobatics")
+		{
+			cmdString = "GetActorValue";
+			argString = "Acrobatics";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Acrobatics);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getlightarmor")
+		{
+			cmdString = "GetActorValue";
+			argString = "LightArmor";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::LightArmor);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getmarksman")
+		{
+			cmdString = "GetActorValue";
+			argString = "Marksman";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Marksman);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getmercantile")
+		{
+			cmdString = "GetActorValue";
+			argString = "Mercantile";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Mercantile);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getsecurity")
+		{
+			cmdString = "GetActorValue";
+			argString = "Security";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Security);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getsneak")
+		{
+			cmdString = "GetActorValue";
+			argString = "Sneak";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Sneak);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getspeechcraft")
+		{
+			cmdString = "GetActorValue";
+			argString = "Speechcraft";
+			bSkipArgParse = true;
+			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Speechcraft);
+			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+*/
+
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getpos")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "getangle") )
 		{
 			bSkipArgParse = true;
 			bUseBinaryData = true;
@@ -1839,6 +2256,8 @@ namespace ESM
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getpccell")
 		{
 			cmdString = "GetInCell";
+			bUseCommandReference = true;
+			mCommandRef_EDID = "player";
 			argSIG = "CELL";
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "startscript")
@@ -1913,15 +2332,15 @@ namespace ESM
 			}
 			else if (wanderRange <= 512)
 			{
-				argString = "aaaDefaultExploreCurrentLoc512";
+				argString = "aaaDefaultExploreEditorLoc512"; // todo: make currentloc512
 			}
 			else if (wanderRange <= 1000)
 			{
-				argString = "aaaDefaultExploreEditorLoc1024";
+				argString = "aaaDefaultExploreEditorLoc1024"; // todo: make currentloc1024
 			}
 			else if (wanderRange > 1000)
 			{
-				argString = "aaaDefaultExploreEditorLoc3000";
+				argString = "aaaDefaultExploreCurrentLoc3000";
 			}
 			// hardcode
 			// cmdline: AddScriptPackage ref:FollowPlayer
@@ -1935,10 +2354,105 @@ namespace ESM
 		{
 			bReturnBase = true;
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "unlock")
+		{
+			argString = "1";
+			bSkipArgParse = true;
+			bEvalArgString = false;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getpcrank")
+		{
+			cmdString = "GetFactionRank";
+			tokenItem++;
+			if (tokenItem->type == TokenType::string_literalT ||
+				tokenItem->type == TokenType::identifierT)
+			{
+				// set player faction rank....
+				if (bUseCommandReference == false)
+				{
+					bUseCommandReference = true;
+					mCommandRef_EDID = "player";
+					std::string refSIG="";
+					prepare_reference(mCommandRef_EDID, refSIG, 100);
+				}
+				// reset token and continue
+				tokenItem--;
+			}
+			else
+			{
+				// get NPC factionrank...
+				// lookup NPC's faction-->
+				// 1. lookup npc
+				if (bUseCommandReference)
+				{
+					// retrieve original NPC mID
+					tokenItem--; //cmd
+					tokenItem--; // reference operator '>'
+					tokenItem--; // reference operator '-'
+					tokenItem--; // reference id
+					std::string npcID = tokenItem->str;
+					// 2. lookup npc->factionID
+					int index = mDoc.getData().getReferenceables().getIndex(npcID);
+					auto npcRec = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(index);
+					// argString = npc->factionID
+					argString = npcRec.get().mFaction;
+					bSkipArgParse = true;
+				}
+				else
+				{
+					abort("no reference for <GetFactionRank>");
+				}
+			}
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "forcegreeting")
+		{
+			cmdString = "StartConversation";
+			argString = "player";
+			bSkipArgParse = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setpccrimelevel")
+		{
+			cmdString = "SetCrimeGold";
+			bUseCommandReference = true;
+			mCommandRef_EDID = "player";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getdisposition")
+		{
+			argString = "player";
+			bSkipArgParse = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setscale")
+		{
+			// compile arg as float
+			tokenItem++;
+			argString = tokenItem->str;
+			float fArgNumber = atof(argString.c_str());;
+			argdata = compile_param_float(fArgNumber);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+			bSkipArgParse = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getspell")
+		{
+			cmdString = "HasSpell";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "activate")
+		{
+			tokenItem++;
+			if (tokenItem->type != TokenType::identifierT && tokenItem->type != TokenType::string_literalT)
+			{
+				// no arg, skip processing
+				tokenItem--;
+				bSkipArgParse = true;
+				countParams = 0;
+				bUseBinaryData = true;
+				argdata.clear();
+			}
+		}
 
 
 		//-------------------------------------------------
-		if (bSkipArgParse == false)
+		if (bSkipArgParse == false && argString == "")
 		{
 			tokenItem++;
 			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG, bReturnBase) == false)
@@ -1992,9 +2506,6 @@ namespace ESM
 			int nArgNumber = atoi(argString.c_str());;
 			argdata = compile_param_long(nArgNumber);
 		}
-		uint16_t OpCode = 0; 
-		uint16_t sizeParams = 2 + argdata.size();
-		uint16_t countParams = 1;
 
 		OpCode = getOpCode(cmdString);
 		if (OpCode == 0)
@@ -2010,6 +2521,7 @@ namespace ESM
 			return;
 		}
 
+		sizeParams = 2 + argdata.size();
 		compile_command(OpCode, sizeParams, countParams, argdata);
 
 		return;
@@ -2032,9 +2544,16 @@ namespace ESM
 			arg1String = "player";
 			bEvalArg1 = true;
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setdisposition")
+		{
+			// todo: replace with getdisposition + moddisposition...
+			abort("Unhandled command: SetDisposition\n");
+			return;
+		}
 		else if ( (Misc::StringUtils::lowerCase(cmdString) == "rotateworld")
 			|| (Misc::StringUtils::lowerCase(cmdString) == "rotate") 
-			|| (Misc::StringUtils::lowerCase(cmdString) == "setangle") 
+			|| (Misc::StringUtils::lowerCase(cmdString) == "setangle")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "setpos")
 			)
 		{
 			bEvalArg1 = false;
@@ -2106,13 +2625,143 @@ namespace ESM
 			newString << confidenceVal;
 			arg2String = newString.str();
 		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "sethealth")
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "sethealth")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "modhealth") )
 		{
-			cmdString = "SetActorValue";
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
 			arg1String = "Health";
 			bUseBinaryData1 = true;
-			uint16_t actorvalue = 8; // hardcoded with TES4 AV for Aggression
+			uint16_t actorvalue = 8; // hardcoded with TES4 AV
 			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "setfatigue")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "modfatigue") )
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Fatigue";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 10; // hardcoded with TES4 AV
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "setmagicka")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "modmagicka") )
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Magicka";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 9; // hardcoded with TES4 AV
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("SetStrength") || IS_CMD("ModStrength"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Strength";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Strength);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setintelligence") || IS_CMD("ModIntelligence"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Intelligence";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setwillpower") || IS_CMD("modwillpower"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Willpower";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Willpower);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setagility") || IS_CMD("modagility"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Agility";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Agility);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setspeed") || IS_CMD("ModSpeed"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Speed";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Speed);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setendurance") || IS_CMD("ModEndurance"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Endurance";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Endurance);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setpersonality") || IS_CMD("ModPersonality"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Personality";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Personality);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setluck") || IS_CMD("ModLuck"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Luck";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Luck);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (IS_CMD("setluck") || IS_CMD("ModLuck"))
+		{
+			cmdString = IS_SUBCMD("set") ? "SetActorValue" : "ModActorValue";
+			arg1String = "Luck";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Luck);
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+		}
+		else if (int avresult = check_get_set_mod_AV_command(cmdString) > 0)
+		{
+			if (sub_parse_get_set_mod_AV_command(tokenItem, avresult, cmdString, arg1String, arg1data) == false)
+			{
+				abort("error processing Set/Mod AV command");
+				return;
+			}
+			bUseBinaryData1 = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "pcclearexpelled")
+		{
+			cmdString = "SetPCExpelled";
+			arg2String = "0";
+			bEvalArg2 = false;
+			tokenItem++;
+			if (tokenItem->type != TokenType::identifierT || tokenItem->type != TokenType::string_literalT)
+			{
+				// todo: lookup factionID...
+				abort("SetPCExpelled/PCClearExpelled: no faction specified\n");
+				return;
+			}
+			else
+			{
+				tokenItem--;
+			}
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "lock")
+		{
+			bEvalArg1 = false;
+			arg2String = "1";
+			bEvalArg2 = false;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "showmap")
+		{
+			tokenItem++;
+			arg1String = "mw" + mESM.generateEDIDTES4(tokenItem->str, 2) + "MapMarker";
+			arg2String = "0";
+			bEvalArg2 = false;
 		}
 
 		if (arg1String == "")
@@ -2241,7 +2890,7 @@ namespace ESM
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
-		uint16_t sizeParams = 8;
+		uint16_t sizeParams = 6;
 		sizeParams += argList.str().size();
 		uint16_t countParams = 0x01;
 
@@ -2334,7 +2983,8 @@ namespace ESM
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpchitme") ||
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "onpcsoulgemuse") ||
 				(Misc::StringUtils::lowerCase(tokenItem->str) == "onrepair") ||
-				(Misc::StringUtils::lowerCase(tokenItem->str) == "menumode") )
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "menumode") ||
+				(Misc::StringUtils::lowerCase(tokenItem->str) == "getaipackagedone") )
 			{
 				std::string tempCallbackName = tokenItem->str;
 				// EXCEPTION CHECK for On<Event> == 0 reverse events... for now issue error and skip those events
@@ -2342,15 +2992,36 @@ namespace ESM
 				if (tokenItem->str != "==" && tokenItem->str != ")")
 				{
 					// unhandled On<Event> condition
-					abort("[" + tempCallbackName + "] unhandled callback condition: '" + tokenItem->str + "'");
+					abort("[" + tempCallbackName + "] unhandled callback condition: '" + tokenItem->str + "'\n");
 				}
 				else if (tokenItem->str == "==")
 				{
 					tokenItem++;
 					if (tokenItem->str != "1")
 					{
-						abort("[" + tempCallbackName + "] unhandled callback condition: =='" + tokenItem->str + "'");
+						abort("[" + tempCallbackName + "] unhandled callback condition: =='" + tokenItem->str + "'\n");
 					}
+				}
+
+				if (Misc::StringUtils::lowerCase(tempCallbackName) == "getaipackagedone")
+				{
+					tempCallbackName = "OnPackageDone";
+				}
+				else if (Misc::StringUtils::lowerCase(tempCallbackName) == "onpcequip")
+				{
+					tempCallbackName = "OnEquip";
+				}
+				else if (Misc::StringUtils::lowerCase(tempCallbackName) == "onpchitme")
+				{
+					tempCallbackName = "OnHit";
+				}
+				else if (Misc::StringUtils::lowerCase(tempCallbackName) == "onpcadd")
+				{
+					tempCallbackName = "OnAdd";
+				}
+				else if (Misc::StringUtils::lowerCase(tempCallbackName) == "onpcdrop")
+				{
+					tempCallbackName = "OnDrop";
 				}
 
 				// reset expression
@@ -2381,28 +3052,47 @@ namespace ESM
 				uint32_t BlockLen = 0;
 				if (Misc::StringUtils::lowerCase(mCallBackName) == "onactivate")
 				{
-					ParamSize = 0x08;
 					CallbackType = 0x02;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "ondeath")
 				{
-					ParamSize = 0x08;
 					CallbackType = 0x0A;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onequip")
 				{
-					ParamSize = 0x08;
 					CallbackType = 0x04;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onunequip")
 				{
-					ParamSize = 0x08;
 					CallbackType = 0x05;
 				}
 				else if (Misc::StringUtils::lowerCase(mCallBackName) == "menumode")
 				{
-					ParamSize = 0x08;
 					CallbackType = 0x01;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onpackagedone")
+				{
+					CallbackType = 0x10;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onmurder")
+				{
+					CallbackType = 0x0B;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onhit")
+				{
+					CallbackType = 0x08;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onknockout")
+				{
+					CallbackType = 0x0C;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "onadd")
+				{
+					CallbackType = 0x03;
+				}
+				else if (Misc::StringUtils::lowerCase(mCallBackName) == "ondrop")
+				{
+					CallbackType = 0x06;
 				}
 				else
 				{
@@ -2612,6 +3302,50 @@ namespace ESM
 		return;
 	}
 
+	int ScriptConverter::check_get_set_mod_AV_command(const std::string & commandString)
+	{
+		std::string compareString = Misc::StringUtils::lowerCase(commandString);
+
+		if (compareString.size() < 3)
+			return -1;
+
+		std::string commandStem = compareString.substr(0, 3);
+		if (commandStem != "get" && commandStem != "set" && commandStem != "mod")
+			return -1;
+
+		compareString = compareString.substr(3);
+
+		for (int i = 0; i < 39; i++)
+		{
+//			if (compareString.compare(actorvalueStrings[i]) == 0)
+			if (compareString == actorvalueStrings[i])
+				return i;
+		}
+
+		return -1;
+	}
+
+	bool ScriptConverter::sub_parse_get_set_mod_AV_command(std::vector<struct Token>::iterator &tokenItem, int actorValue, std::string &cmdString, std::string &arg1String, std::vector<uint8_t> &arg1data)
+	{
+		cmdString = tokenItem->str;
+		arg1String = cmdString.substr(3);
+
+		if (IS_SUBCMD("get")) 
+			cmdString = "GetActorValue";
+		else if (IS_SUBCMD("set")) 
+			cmdString = "SetActorValue";
+		else if (IS_SUBCMD("mod")) 
+			cmdString = "ModActorValue";
+
+		if (actorValue > 32)
+			return false;
+
+		uint16_t byte_actorvalue = actorValue;
+		for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&byte_actorvalue)[i]);
+
+		return true;
+	}
+
 	void ScriptConverter::parse_endif(std::vector<struct Token>::iterator & tokenItem)
 	{
 		std::string endCmdString = tokenItem->str;
@@ -2779,133 +3513,196 @@ namespace ESM
 
 	void ScriptConverter::parse_keyword(std::vector<struct Token>::iterator & tokenItem)
 	{
-		if (Misc::StringUtils::lowerCase(tokenItem->str) == "choice")
+		std::string tokenString = Misc::StringUtils::lowerCase(tokenItem->str);
+
+		if (tokenString == "choice")
 		{
 			parse_choice(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "positioncell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "positionworld") )
+		else if ((tokenString == "positioncell")
+			|| (tokenString == "positionworld"))
 		{
 			parse_positionCW(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "placeatme")
+		else if ((tokenString == "placeatme")
+			|| (tokenString == "placeatpc"))
 		{
 			parse_placeatme(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "modpcfacrep")
+		else if (tokenString == "modpcfacrep")
 		{
 			parse_modfactionrep(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "messagebox")
+		else if (tokenString == "messagebox")
 		{
 			parse_messagebox(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "journal")
+		else if (tokenString == "journal")
 		{
 			parse_journal(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "goodbye")
+		else if (tokenString == "goodbye")
 		{
 			bGoodbye = true;
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "additem")
+		else if (tokenString == "additem")
 		{
 			parse_addremoveitem(tokenItem, false);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "removeitem")
+		else if (tokenString == "removeitem")
 		{
 			parse_addremoveitem(tokenItem, true);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "begin")
+		else if (tokenString == "drop")
+		{
+			parse_addremoveitem(tokenItem, true);
+		}
+		else if (tokenString == "begin")
 		{
 			parse_begin(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "end")
+		else if (tokenString == "end")
 		{
 			parse_end(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "if")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "elseif") )
+		else if ((tokenString == "if")
+			|| (tokenString == "elseif"))
 		{
 			parse_if(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "else")
+		else if (tokenString == "else")
 		{
 			parse_else(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "endif")
+		else if (tokenString == "endif")
 		{
 			parse_endif(tokenItem);
 		}
-		else if (Misc::StringUtils::lowerCase(tokenItem->str) == "set")
+		else if (tokenString == "set")
 		{
 			parse_set(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "short")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "long") 
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "float") 
+		else if ((tokenString == "short")
+			|| (tokenString == "long")
+			|| (tokenString == "float")
 			)
 		{
 			parse_localvar(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "disable")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "enable")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "return")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "activate")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "random100")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "random")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdisabled")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getsecondspassed")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getlevel")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getcurrentweather")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getinterior")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cellchanged")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getbuttonpressed")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopcombat")
+		else if ((tokenString == "disable")
+			|| (tokenString == "enable")
+			|| (tokenString == "return")
+			|| (tokenString == "random100")
+			|| (tokenString == "random")
+			|| (tokenString == "getdisabled")
+			|| (tokenString == "getsecondspassed")
+			|| (tokenString == "getlevel")
+			|| (tokenString == "getcurrentweather")
+			|| (tokenString == "getinterior")
+			|| (tokenString == "cellchanged")
+			|| (tokenString == "getbuttonpressed")
+			|| (tokenString == "stopcombat")
+			|| (tokenString == "getcommondisease")
+			|| (tokenString == "clearinfoactor")
+			|| (tokenString == "getlocked")
+			|| (tokenString == "advancepcskill")
+			|| (tokenString == "advancepclevel")
+			|| (tokenString == "autosave")
+			|| (tokenString == "canpaycrimegold")
+			|| (tokenString == "dispellallspells")
+			|| (tokenString == "dropme")
+			|| (tokenString == "enableplayercontrols")
+			|| (tokenString == "disableplayercontrols")
+			|| (tokenString == "getalarmed")
+			|| (tokenString == "getarmorrating")
+			|| (tokenString == "getattacked")
+			|| (tokenString == "getbartergold")
+			|| (tokenString == "getclothingvalue")
+			|| (tokenString == "getpccrimelevel") // getcrimegold
+			|| (tokenString == "setatstart")
+			|| (tokenString == "getwaterlevel")
+			|| (tokenString == "getscale")
 			)
 		{
 			parse_0arg(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "moddisposition") 
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "cast")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotate")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "rotateworld")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setangle")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modfight")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setfight")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setflee")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "sethealth")
+		else if ((tokenString == "moddisposition")
+			|| (tokenString == "setdisposition")
+			|| (tokenString == "cast")
+			|| (tokenString == "rotate")
+			|| (tokenString == "rotateworld")
+			|| (tokenString == "setangle")
+			|| (tokenString == "modfight")
+			|| (tokenString == "setfight")
+			|| (tokenString == "setflee")
+//			|| (tokenString == "sethealth")
+			|| (tokenString == "pcclearexpelled")
+			|| (tokenString == "lock")
+			|| (tokenString == "showmap")
+			|| (tokenString == "setpos")
+//			|| (tokenString == "setstrength")
+//			|| (tokenString == "modstrength")
+			|| (tokenString == "sethealth") || (tokenString == "setfatigue") || (tokenString == "setmagicka")
+			|| (tokenString == "setstrength") || (tokenString == "setintelligence") || (tokenString == "setwillpower") || (tokenString == "setagility") || (tokenString == "setspeed") || (tokenString == "setendurance") || (tokenString == "setpersonality") || (tokenString == "setluck")
+			|| (tokenString == "setarmorer") || (tokenString == "setathletics") || (tokenString == "setshortblade") || (tokenString == "setlongblade") || (tokenString == "setblock")
+			|| (tokenString == "setblunt") || (tokenString == "setaxe") || (tokenString == "setspear") || (tokenString == "sethandtohand")
+			|| (tokenString == "setheavyarmor") || (tokenString == "setmediumarmor") || (tokenString == "setlightarmor")
+			|| (tokenString == "setalchemy") || (tokenString == "setalteration") || (tokenString == "setconjuration") || (tokenString == "setenchantment")
+			|| (tokenString == "setdestruction") || (tokenString == "setillusion") || (tokenString == "setmysticism") || (tokenString == "setrestoration")
+			|| (tokenString == "setacrobatics") || (tokenString == "setmarksman") || (tokenString == "setmercantile") || (tokenString == "setsecurity") || (tokenString == "setsneak") || (tokenString == "setspeechcraft")
+			|| (tokenString == "modhealth") || (tokenString == "modfatigue") || (tokenString == "modmagicka")
+			|| (tokenString == "modstrength") || (tokenString == "modintelligence") || (tokenString == "modwillpower") || (tokenString == "modagility") || (tokenString == "modspeed") || (tokenString == "modendurance") || (tokenString == "modpersonality") || (tokenString == "modluck")
+			|| (tokenString == "modarmorer") || (tokenString == "modathletics") || (tokenString == "modshortblade") || (tokenString == "modlongblade") || (tokenString == "modblock")
+			|| (tokenString == "modblunt") || (tokenString == "modaxe") || (tokenString == "modspear") || (tokenString == "modhandtohand")
+			|| (tokenString == "modheavyarmor") || (tokenString == "modmediumarmor") || (tokenString == "modlightarmor")
+			|| (tokenString == "modalchemy") || (tokenString == "modalteration") || (tokenString == "modconjuration") || (tokenString == "modenchantment")
+			|| (tokenString == "moddestruction") || (tokenString == "modillusion") || (tokenString == "modmysticism") || (tokenString == "modrestoration")
+			|| (tokenString == "modacrobatics") || (tokenString == "modmarksman") || (tokenString == "modmercantile") || (tokenString == "modsecurity") || (tokenString == "modsneak") || (tokenString == "modspeechcraft")
 			)
 		{
 			parse_2arg(tokenItem);
 		}
-		else if ( (Misc::StringUtils::lowerCase(tokenItem->str) == "addtopic")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startcombat")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "addspell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "removespell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getspell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "setdisposition")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modpccrimelevel")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "modreputation")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getitemcount")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "playsound")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "playsound3d")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "playsoundvp")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "playsound3dvp")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "centeroncell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "equip")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getjournalindex")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdistance")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getpos")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "gethealth")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getintelligence")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getresistdisease")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "startscript")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "stopscript")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getpccell")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "aifollow")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "aiwander")
-			|| (Misc::StringUtils::lowerCase(tokenItem->str) == "getdeadcount")
+		else if ((tokenString == "addtopic")
+			|| (tokenString == "startcombat")
+			|| (tokenString == "addspell")
+			|| (tokenString == "removespell")
+			|| (tokenString == "getspell")
+			|| (tokenString == "modpccrimelevel")
+			|| (tokenString == "modreputation")
+			|| (tokenString == "getitemcount")
+			|| (tokenString == "playsound")
+			|| (tokenString == "playsound3d")
+			|| (tokenString == "playsoundvp")
+			|| (tokenString == "playsound3dvp")
+			|| (tokenString == "centeroncell")
+			|| (tokenString == "equip")
+			|| (tokenString == "getjournalindex")
+			|| (tokenString == "getdistance")
+			|| (tokenString == "getpos")
+			|| (tokenString == "getresistdisease")
+			|| (tokenString == "startscript")
+			|| (tokenString == "stopscript")
+			|| (tokenString == "getpccell")
+			|| (tokenString == "aifollow")
+			|| (tokenString == "aiwander")
+			|| (tokenString == "getdeadcount")
+			|| (tokenString == "pcexpelled")
+			|| (tokenString == "unlock")
+			|| (tokenString == "getangle")
+			|| (tokenString == "getpcrank")
+			|| (tokenString == "forcegreeting")
+			|| (tokenString == "getdisposition")
+			|| (tokenString == "setpccrimelevel")
+			|| (tokenString == "gethealth") || (tokenString == "getfatigue") || (tokenString == "getmagicka")
+			|| (tokenString == "getstrength") || (tokenString == "getintelligence") || (tokenString == "getwillpower") || (tokenString == "getagility") || (tokenString == "getspeed") || (tokenString == "getendurance") || (tokenString == "getpersonality") || (tokenString == "getluck")
+			|| (tokenString == "getarmorer") || (tokenString == "getathletics") || (tokenString == "getshortblade") || (tokenString == "getlongblade") || (tokenString == "getblock")
+			|| (tokenString == "getblunt") || (tokenString == "getaxe") || (tokenString == "getspear") || (tokenString == "gethandtohand")
+			|| (tokenString == "getheavyarmor") || (tokenString == "getmediumarmor") || (tokenString == "getlightarmor")
+			|| (tokenString == "getalchemy") || (tokenString == "getalteration") || (tokenString == "getconjuration") || (tokenString == "getenchantment")
+			|| (tokenString == "getdestruction") || (tokenString == "getillusion") || (tokenString == "getmysticism") || (tokenString == "getrestoration")
+			|| (tokenString == "getacrobatics") || (tokenString == "getmarksman") || (tokenString == "getmercantile") || (tokenString == "getsecurity") || (tokenString == "getsneak") || (tokenString == "getspeechcraft")
+			|| (tokenString == "setscale")
+			|| (tokenString == "activate")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -2936,6 +3733,7 @@ namespace ESM
 
 	void ScriptConverter::parse_addremoveitem(std::vector<struct Token>::iterator& tokenItem, bool bRemove)
 	{
+		std::string cmdString = tokenItem->str;
 		std::string itemCountString="";
 		bool bEvalItemCountVar=false;
 
@@ -2986,9 +3784,12 @@ namespace ESM
 		// translate statement
 		std::stringstream convertedStatement;
 		std::string command, cmdPrefix="";
-		command = "AddItem";
-		if (bRemove)
-			command = "RemoveItem";
+
+		command = cmdString;
+//		command = "AddItem";
+//		if (bRemove)
+//			command = "RemoveItem";
+
 		if (bUseCommandReference)
 		{
 			cmdPrefix = mCommandRef_EDID + ".";
@@ -2998,9 +3799,11 @@ namespace ESM
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
-		uint16_t OpCode = 0x1002; // Additem
-		if (bRemove)
-			OpCode = 0x1052;
+//		uint16_t OpCode = 0x1002; // Additem
+//		if (bRemove)
+//			OpCode = 0x1052;
+		uint16_t OpCode = getOpCode(cmdString);
+
 		uint16_t sizeParams = 10;
 		uint16_t countParams = 2;
 		uint32_t nItemCount;
@@ -3439,9 +4242,9 @@ namespace ESM
 		{
 			// do not abort, just issue error and return 0 so scriptconverter can continue
 			if (mode == 100)
-				error_mesg("could not resolve reference BaseObj EDID (" + refSIG + ") " + refEDID + "\n");
+				error_mesg("WARNING: could not resolve reference BaseObj EDID (" + refSIG + ") " + refEDID + "\n");
 			else
-				error_mesg("could not resolve reference BaseObj stringID=" + baseName + "\n");
+				error_mesg("WARNING: could not resolve reference BaseObj stringID=" + baseName + "\n");
 		}
 
 		return RefData;
@@ -3798,8 +4601,6 @@ namespace ESM
 		mKeywords.push_back("goodbye");
 		mKeywords.push_back("additem");
 		mKeywords.push_back("removeitem");
-		mKeywords.push_back("moddisposition");
-		mKeywords.push_back("getdisposition");
 		mKeywords.push_back("modpcfacrep");
 		mKeywords.push_back("pcraiserank");
 		mKeywords.push_back("messagebox");
@@ -3818,15 +4619,24 @@ namespace ESM
 		mKeywords.push_back("onpcsoulgemuse");
 		mKeywords.push_back("onrepair");
 		mKeywords.push_back("menumode");
+		mKeywords.push_back("getaipackagedone");
 
 		mKeywords.push_back("getlevel");
 		mKeywords.push_back("getpos");
 		mKeywords.push_back("getinterior");
 		mKeywords.push_back("getpccell");
+		mKeywords.push_back("getangle");
+		mKeywords.push_back("getcommondisease");
+		mKeywords.push_back("getblightdisease");
 
 		mKeywords.push_back("getbuttonpressed");
 		mKeywords.push_back("getresistdisease");
 		mKeywords.push_back("getdeadcount");
+
+		// getactorvalues
+		mKeywords.push_back("gethealth");
+		mKeywords.push_back("getmagicka");
+		mKeywords.push_back("getfatigue");
 
 		mKeywords.push_back("getstrength");
 		mKeywords.push_back("getendurance");
@@ -3846,7 +4656,6 @@ namespace ESM
 		mKeywords.push_back("gethandtohand");
 		mKeywords.push_back("getshortblade");
 		mKeywords.push_back("getlightarmor");
-
 		mKeywords.push_back("getlongblade");
 		mKeywords.push_back("getaxe");
 		mKeywords.push_back("getbluntweapon");
@@ -3856,7 +4665,6 @@ namespace ESM
 		mKeywords.push_back("getheavyarmor");
 		mKeywords.push_back("getmediumarmor");
 		mKeywords.push_back("getspear");
-
 		mKeywords.push_back("getrestoration");
 		mKeywords.push_back("getdestruction");
 		mKeywords.push_back("getconjuration");
@@ -3867,6 +4675,7 @@ namespace ESM
 		mKeywords.push_back("getalchemy");
 		mKeywords.push_back("getunarmored");
 
+		// setactorvalues
 		mKeywords.push_back("sethealth");
 		mKeywords.push_back("setmagicka");
 		mKeywords.push_back("setfatigue");
@@ -3889,7 +4698,6 @@ namespace ESM
 		mKeywords.push_back("sethandtohand");
 		mKeywords.push_back("setshortblade");
 		mKeywords.push_back("setlightarmor");
-
 		mKeywords.push_back("setlongblade");
 		mKeywords.push_back("setaxe");
 		mKeywords.push_back("setbluntweapon");
@@ -3899,7 +4707,6 @@ namespace ESM
 		mKeywords.push_back("setheavyarmor");
 		mKeywords.push_back("setmediumarmor");
 		mKeywords.push_back("setspear");
-
 		mKeywords.push_back("setrestoration");
 		mKeywords.push_back("setdestruction");
 		mKeywords.push_back("setconjuration");
@@ -3910,7 +4717,51 @@ namespace ESM
 		mKeywords.push_back("setalchemy");
 		mKeywords.push_back("setunarmored");
 
+		// modactorvalues
+		mKeywords.push_back("modhealth");
+		mKeywords.push_back("modmagicka");
+		mKeywords.push_back("modfatigue");
+
+		mKeywords.push_back("modstrength");
+		mKeywords.push_back("modendurance");
+		mKeywords.push_back("modagility");
+		mKeywords.push_back("modspeed");
+		mKeywords.push_back("modpersonality");
+		mKeywords.push_back("modintelligence");
+		mKeywords.push_back("modwillpower");
+		mKeywords.push_back("modluck");
+
+		mKeywords.push_back("modspeechcraft");
+		mKeywords.push_back("modmercantile");
+		mKeywords.push_back("modsneak");
+		mKeywords.push_back("modsecurity");
+		mKeywords.push_back("modacrobatics");
+		mKeywords.push_back("modmarksman");
+		mKeywords.push_back("modhandtohand");
+		mKeywords.push_back("modshortblade");
+		mKeywords.push_back("modlightarmor");
+		mKeywords.push_back("modlongblade");
+		mKeywords.push_back("modaxe");
+		mKeywords.push_back("modbluntweapon");
+		mKeywords.push_back("modblock");
+		mKeywords.push_back("modarmorer");
+		mKeywords.push_back("modathletics");
+		mKeywords.push_back("modheavyarmor");
+		mKeywords.push_back("modmediumarmor");
+		mKeywords.push_back("modspear");
+		mKeywords.push_back("modrestoration");
+		mKeywords.push_back("moddestruction");
+		mKeywords.push_back("modconjuration");
+		mKeywords.push_back("modmysticism");
+		mKeywords.push_back("modalteration");
+		mKeywords.push_back("modillusion");
+		mKeywords.push_back("modenchant");
+		mKeywords.push_back("modalchemy");
+		mKeywords.push_back("modunarmored");
+
+		mKeywords.push_back("getdisposition");
 		mKeywords.push_back("setdisposition");
+		mKeywords.push_back("moddisposition");
 		mKeywords.push_back("setfight");
 		mKeywords.push_back("setflee");
 
@@ -3943,6 +4794,7 @@ namespace ESM
 		mKeywords.push_back("aiwander");
 		mKeywords.push_back("pclowerrank");
 		mKeywords.push_back("lock");
+		mKeywords.push_back("unlock");
 		mKeywords.push_back("drop");
 		mKeywords.push_back("modfight");
 		mKeywords.push_back("modpccrimelevel");
@@ -3953,7 +4805,6 @@ namespace ESM
 		mKeywords.push_back("playsound3d");
 		mKeywords.push_back("placeatpc");
 		mKeywords.push_back("modrestoration");
-		mKeywords.push_back("unlock");
 		mKeywords.push_back("removespell");
 		mKeywords.push_back("playgroup");
 		mKeywords.push_back("placeatme");
@@ -3964,7 +4815,7 @@ namespace ESM
 		mKeywords.push_back("dontsaveobject");
 		mKeywords.push_back("stopsound");
 		mKeywords.push_back("playloopsound3dvp");
-
+		mKeywords.push_back("forcegreeting");
 
 		mKeywords.push_back("random");
 		mKeywords.push_back("random100");
@@ -3972,7 +4823,6 @@ namespace ESM
 		mKeywords.push_back("cellchanged");
 		mKeywords.push_back("getspell");
 		mKeywords.push_back("getitemcount");
-		mKeywords.push_back("gethealth");
 		mKeywords.push_back("getpccell");
 		mKeywords.push_back("getcurrentaipackage");
 		mKeywords.push_back("getjournalindex");
@@ -3990,6 +4840,18 @@ namespace ESM
 		mKeywords.push_back("getspellreadied");
 		mKeywords.push_back("getpcrunning");
 		mKeywords.push_back("pcexpelled");
+		mKeywords.push_back("pcclearexpelled");
+		mKeywords.push_back("getpccrimelevel"); // getcrimegold
+//		mKeywords.push_back("getclothingvalue");
+//		mKeywords.push_back("getbartergold");
+		mKeywords.push_back("getattacked");
+//		mKeywords.push_back("getarmorrating");
+//		mKeywords.push_back("getalarmed");
+		mKeywords.push_back("enableplayercontrols");
+		mKeywords.push_back("disableplayercontrols");
+		mKeywords.push_back("setatstart");
+		mKeywords.push_back("setpccrimelevel"); // setcrimegold
+		mKeywords.push_back("getwaterlevel");
 
 	}
 
