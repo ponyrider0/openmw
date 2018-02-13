@@ -1915,6 +1915,7 @@ namespace ESM
 			cmdString = "GetActorValue";
 			argString = "ResistDisease";
 			bSkipArgParse = true;
+			bUseBinaryData = true;
 			uint16_t actorvalue = 63; // hardcoded with TES4 AV for ResistDisease
 			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
@@ -1929,272 +1930,6 @@ namespace ESM
 			bSkipArgParse = true;
 			bUseBinaryData = true;
 		}
-
-/*
-		else if (Misc::StringUtils::lowerCase(cmdString) == "gethealth")
-		{
-			cmdString = "GetActorValue";
-			argString = "Health";
-			bSkipArgParse = true;
-			uint16_t actorvalue = 8; // hardcoded with TES4 Actorvalue for health
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getfatigue")
-		{
-			cmdString = "GetActorValue";
-			argString = "Fatigue";
-			bSkipArgParse = true;
-			uint16_t actorvalue = 10; // hardcoded with TES4 Actorvalue for fatigue
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getmagicka")
-		{
-			cmdString = "GetActorValue";
-			argString = "Magicka";
-			bSkipArgParse = true;
-			uint16_t actorvalue = 9; // hardcoded with TES4 Actorvalue for magicka
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getluck")
-		{
-			cmdString = "GetActorValue";
-			argString = "Luck";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Luck);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getstrength")
-		{
-			cmdString = "GetActorValue";
-			argString = "Strength";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Strength);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getintelligence")
-		{
-			cmdString = "GetActorValue";
-			argString = "Intelligence";
-			bSkipArgParse = true;
-			bUseBinaryData = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Intelligence);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getwillpower")
-		{
-			cmdString = "GetActorValue";
-			argString = "Willpower";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Willpower);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getagility")
-		{
-			cmdString = "GetActorValue";
-			argString = "Agility";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Agility);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getspeed")
-		{
-			cmdString = "GetActorValue";
-			argString = "Speed";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Speed);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getendurance")
-		{
-			cmdString = "GetActorValue";
-			argString = "Endurance";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Endurance);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getpersonality")
-		{
-			cmdString = "GetActorValue";
-			argString = "Personality";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Personality);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getarmorer")
-		{
-			cmdString = "GetActorValue";
-			argString = "Armorer";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Armorer);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getathletics")
-		{
-			cmdString = "GetActorValue";
-			argString = "Athletics";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Athletics);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getshortblade")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "getlongblade") )
-		{
-			cmdString = "GetActorValue";
-			argString = "Blade";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::ShortBlade);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getblock")
-		{
-			cmdString = "GetActorValue";
-			argString = "Block";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Block);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getblunt")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "getaxe")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "getspear"))
-		{
-			cmdString = "GetActorValue";
-			argString = "Blunt";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::BluntWeapon);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "gethandtohand")
-		{
-			cmdString = "GetActorValue";
-			argString = "HandToHand";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::HandToHand);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getheavyarmor")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "getmediumarmor") )
-		{
-			cmdString = "GetActorValue";
-			argString = "HeavyArmor";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::HeavyArmor);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getalchemy")
-		{
-			cmdString = "GetActorValue";
-			argString = "Alchemy";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Alchemy);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getalteration")
-		{
-			cmdString = "GetActorValue";
-			argString = "Alteration";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Alteration);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getconjuration")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "getenchant") )
-		{
-			cmdString = "GetActorValue";
-			argString = "Conjuration";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Conjuration);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getdestruction")
-		{
-			cmdString = "GetActorValue";
-			argString = "Destruction";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Destruction);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getillusion")
-		{
-			cmdString = "GetActorValue";
-			argString = "Illusion";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Illusion);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getmysticism")
-		{
-			cmdString = "GetActorValue";
-			argString = "Mysticism";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Mysticism);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getrestoration")
-		{
-			cmdString = "GetActorValue";
-			argString = "Restoration";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Restoration);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getacrobatics")
-		{
-			cmdString = "GetActorValue";
-			argString = "Acrobatics";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Acrobatics);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getlightarmor")
-		{
-			cmdString = "GetActorValue";
-			argString = "LightArmor";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::LightArmor);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getmarksman")
-		{
-			cmdString = "GetActorValue";
-			argString = "Marksman";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Marksman);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getmercantile")
-		{
-			cmdString = "GetActorValue";
-			argString = "Mercantile";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Mercantile);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getsecurity")
-		{
-			cmdString = "GetActorValue";
-			argString = "Security";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Security);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getsneak")
-		{
-			cmdString = "GetActorValue";
-			argString = "Sneak";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Sneak);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "getspeechcraft")
-		{
-			cmdString = "GetActorValue";
-			argString = "Speechcraft";
-			bSkipArgParse = true;
-			uint16_t actorvalue = mESM.skillToActorValTES4(ESM::Skill::SkillEnum::Speechcraft);
-			for (int i = 0; i < 2; i++) argdata.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
-		}
-*/
-
 		else if ( (Misc::StringUtils::lowerCase(cmdString) == "getpos")
 			|| (Misc::StringUtils::lowerCase(cmdString) == "getangle") )
 		{
@@ -2421,17 +2156,25 @@ namespace ESM
 			argString = "player";
 			bSkipArgParse = true;
 		}
+/*
 		else if (Misc::StringUtils::lowerCase(cmdString) == "setscale")
 		{
 			// compile arg as float
 			tokenItem++;
 			argString = tokenItem->str;
-			float fArgNumber = atof(argString.c_str());;
-			argdata = compile_param_float(fArgNumber);
-			bUseBinaryData = true;
-			bEvalArgString = false;
-			bSkipArgParse = true;
+			if (tokenItem->type == TokenType::number_literalT)
+			{
+				double fArgNumber = atof(argString.c_str());;
+				argdata = compile_param_float(fArgNumber);
+				bSkipArgParse = true;
+				bUseBinaryData = true;
+			}
+			else
+			{
+				tokenItem--;
+			}
 		}
+*/
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getspell")
 		{
 			cmdString = "HasSpell";
@@ -2444,8 +2187,8 @@ namespace ESM
 				// no arg, skip processing
 				tokenItem--;
 				bSkipArgParse = true;
-				countParams = 0;
 				bUseBinaryData = true;
+				countParams = 0;
 				argdata.clear();
 			}
 		}
@@ -2503,8 +2246,10 @@ namespace ESM
 		}
 		else if (bUseBinaryData == false)
 		{
-			int nArgNumber = atoi(argString.c_str());;
-			argdata = compile_param_long(nArgNumber);
+			if (argString.find(".") == std::string::npos)
+				argdata = compile_param_long(atoi(argString.c_str()));
+			else
+				argdata = compile_param_float(atof(argString.c_str()));
 		}
 
 		OpCode = getOpCode(cmdString);
@@ -2569,6 +2314,9 @@ namespace ESM
 				arg1String = "Y";
 			if (Misc::StringUtils::lowerCase(tokenItem->str) == "z")
 				arg1String = "Z";
+			uint8_t rawchar = arg1String[0];
+			arg1data.push_back(rawchar);
+
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "setfight")
 		{
@@ -2625,6 +2373,7 @@ namespace ESM
 			newString << confidenceVal;
 			arg2String = newString.str();
 		}
+/*
 		else if ( (Misc::StringUtils::lowerCase(cmdString) == "sethealth")
 			|| (Misc::StringUtils::lowerCase(cmdString) == "modhealth") )
 		{
@@ -2724,6 +2473,7 @@ namespace ESM
 			uint16_t actorvalue = mESM.attributeToActorValTES4(ESM::Attribute::AttributeID::Luck);
 			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
 		}
+*/
 		else if (int avresult = check_get_set_mod_AV_command(cmdString) > 0)
 		{
 			if (sub_parse_get_set_mod_AV_command(tokenItem, avresult, cmdString, arg1String, arg1data) == false)
@@ -2826,14 +2576,28 @@ namespace ESM
 		}
 
 		if (bEvalArg1)
+		{
 			arg1data = compile_param_varname(arg1String, arg1SIG, 4);
+		}
 		else if (bUseBinaryData1 == false)
-			arg1data = compile_param_long( atoi(arg1String.c_str()) );
+		{
+			if (arg1String.find(".") == std::string::npos)
+				arg1data = compile_param_long(atoi(arg1String.c_str()));
+			else
+				arg1data = compile_param_float(atof(arg1String.c_str()));
+		}
 
 		if (bEvalArg2)
+		{
 			arg2data = compile_param_varname(arg2String, arg2SIG, 4);
+		}
 		else if (bUseBinaryData2 == false)
-			arg2data = compile_param_long( atoi(arg2String.c_str()) );
+		{
+			if (arg1String.find(".") == std::string::npos)
+				arg2data = compile_param_long(atoi(arg2String.c_str()));
+			else
+				arg2data = compile_param_float(atof(arg2String.c_str()));
+		}
 
 		sizeParams += arg1data.size() + arg2data.size();
 		compile_command(OpCode, sizeParams, countParams, arg1data, arg2data);
@@ -2846,30 +2610,66 @@ namespace ESM
 	{
 		// parse variable count strings arglist
 		std::string cmdString = tokenItem->str;
-		std::stringstream argList;
+		std::vector<std::string> argList;
+//		std::stringstream argList;
+		int messageBoxMode = 0; // 0=single string, 1=multi-string/buttons, 2=variables
+
+		// must have at least argSIG, argREFString ??? for each reference???
+
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 4;
+		uint16_t countParams = 0;
 
 //		tokenItem++;
 //		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper) == false)
 //			return;
 
 		tokenItem++;
-		std::string rawText = tokenItem->str;
+//		std::string rawText = tokenItem->str;
 		if (tokenItem->type == TokenType::string_literalT)
 		{
-			argList << "\"" << tokenItem->str << "\"";
+			argList.push_back(tokenItem->str);
+			sizeParams += (4 + tokenItem->str.size());
+			// first text string not part of countParams
 		}
 		else
 		{
-			argList << tokenItem->str;
+			// through error, as first arg must be string literal...?
+//			argList.push_back(tokenItem->str);
+			abort("MessageBox Error: first argument is not string literal: '" + tokenItem->str + "'\n");
+			return;
 		}
 		tokenItem++;
 		while (tokenItem->type != TokenType::endlineT)
 		{
-			argList << ",";
 			if (tokenItem->type == TokenType::string_literalT)
-				argList << "\"" << tokenItem->str << "\"";
+			{
+				messageBoxMode = 1; // multi-string buttons
+				argList.push_back(tokenItem->str);
+				sizeParams += (4 + tokenItem->str.size());
+				countParams++;
+			}
 			else
-				argList << tokenItem->str ;
+			{
+				messageBoxMode = 2; // variables (references)
+				sizeParams += 3;
+				countParams++;
+
+				// if mode == 2, resolve into references
+				std::string argString;
+				bool bEvalString, bNeedsDialogHelper;
+				if (sub_parse_arg(tokenItem, argString, bEvalString, bNeedsDialogHelper) == false)
+				{
+					abort("parse_messagebox: could not resolve variable='" + tokenItem->str + "'\n");
+					return;
+				}
+				if (bEvalString != true || bNeedsDialogHelper == true)
+				{
+					abort("parse_messagebox: unhandlded variable type='" + tokenItem->str + "'\n");
+					return;
+				}
+				argList.push_back(argString);
+			}
 			tokenItem++;
 		}
 
@@ -2881,19 +2681,25 @@ namespace ESM
 			OutputDebugString(debugstr.c_str());
 		}
 */
+
 		// translate statement
 		std::stringstream convertedStatement;
+		auto arg_item = argList.begin();
+		convertedStatement << cmdString << " " << "\"" << *arg_item << "\"";
+		arg_item++;
+		while (arg_item != argList.end())
+		{
+			if (messageBoxMode == 1)
+				convertedStatement << ", " << "\"" << *arg_item << "\"";
+			else
+				convertedStatement << ", " << *arg_item;
+			arg_item++;
+		}
 
-		convertedStatement << cmdString << " " << argList.str();
 		mCurrentContext.convertedStatements.push_back(convertedStatement.str());
 
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
-		uint16_t OpCode = 0;
-		uint16_t sizeParams = 6;
-		sizeParams += argList.str().size();
-		uint16_t countParams = 0x01;
-
 		OpCode = getOpCode(cmdString);
 		if (OpCode == 0)
 		{
@@ -2902,19 +2708,53 @@ namespace ESM
 			abort(errorMesg.str());
 			return;
 		}
-
 		compile_command(OpCode, sizeParams);
-		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
 
-//		std::string argText = argList.str();
-		std::string argText = rawText;
-		uint16_t argTextLen = argText.size();
+		// message box text / first string literal
+		arg_item = argList.begin();
+		uint16_t argTextLen = arg_item->size();
+		uint16_t stringSeparator = 0x01;
+		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&stringSeparator)[i]);
 		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&argTextLen)[i]);
-		for (auto byte_it = argText.begin(); byte_it != argText.end(); byte_it++)
+		for (auto byte_it = arg_item->begin(); byte_it != arg_item->end(); byte_it++)
+			mCurrentContext.compiledCode.push_back((uint8_t)*byte_it);
+
+		arg_item++;
+		// extra arguments
+		if (messageBoxMode == 0)
 		{
-			mCurrentContext.compiledCode.push_back((uint8_t) *byte_it);
+			for (int i = 0; i < 4; ++i) mCurrentContext.compiledCode.push_back(0);
 		}
-		for (int i = 0; i<4; ++i) mCurrentContext.compiledCode.push_back(0);
+		else if (messageBoxMode == 1)
+		{
+			for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(0);
+			for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
+			while (arg_item != argList.end())
+			{
+				argTextLen = arg_item->size();
+				for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&stringSeparator)[i]);
+				for (int i = 0; i < 2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&argTextLen)[i]);
+				for (auto byte_it = arg_item->begin(); byte_it != arg_item->end(); byte_it++)
+					mCurrentContext.compiledCode.push_back((uint8_t)*byte_it);
+				arg_item++;
+			}
+		}
+		else if (messageBoxMode == 2)
+		{
+			for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
+			while (arg_item != argList.end())
+			{
+				std::vector<uint8_t> argdata;
+				std::string argSIG="";
+				argdata = compile_param_varname(*arg_item, argSIG, 4);
+				uint16_t dataSize = argdata.size();
+				for (int i = 0; i < 2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&dataSize)[i]);
+				// compile into var references...
+				mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), argdata.begin(), argdata.end());
+				arg_item++;
+			}			
+			for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(0);
+		}
 
 		return;
 
@@ -4006,7 +3846,7 @@ namespace ESM
 
 	std::vector<uint8_t> ScriptConverter::compile_param_float(double float_val)
 	{
-		uint8_t RefCode = 0x6E;
+		uint8_t RefCode = 0x7A;
 		uint64_t RefData = reinterpret_cast<uint64_t *>(&float_val)[0];
 		std::vector<uint8_t> resultData;
 
