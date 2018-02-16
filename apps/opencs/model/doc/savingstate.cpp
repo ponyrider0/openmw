@@ -769,7 +769,9 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				}
 				else
 				{
-//					reserveResult = mWriter.reserveFormID(formID, strRefEDID, strRecordType, true);
+//					uint32_t reserveResult = mWriter.reserveFormID(formID, strRefEDID, strRecordType, true);
+					mWriter.mStringIDMap.insert(std::make_pair(Misc::StringUtils::lowerCase(strRefEDID), formID));
+//					mWriter.mStringTypeMap.insert(std::make_pair(Misc::StringUtils::lowerCase(strRefEDID), strRecordType));
 				}
 			}
 		}
@@ -1038,6 +1040,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
     std::string csvRoot = getenv("HOME");
     csvRoot += "/";
 #endif
+	loadESMMastersMap(csvRoot + "ESMMastersMap.csv");
 
 	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
 	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
@@ -1053,29 +1056,40 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
 
-	if (esmName.find("Tamriel_Data") != std::string::npos)
+	if (mWriter.mESMMastersmap.find(esmName) != mWriter.mESMMastersmap.end())
 	{
-		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+		std::vector<std::string> masterList = mWriter.mESMMastersmap[esmName];
+		for (auto masterItem = masterList.begin(); masterItem != masterList.end(); masterItem++)
+		{
+//			getWriter().addMaster(*masterItem, 0);
+			std::string masterName = masterItem->substr(0, masterItem->size()-4);
+			loadEDIDmap3(csvRoot + masterName + "_EDIDList.csv");
+		}
 	}
-	if (esmName.find("TR_Mainland") != std::string::npos) 
-	{
-		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
-		loadEDIDmap3(csvRoot + "TRMainlandEDIDlist.csv");
+	loadEDIDmap3(csvRoot + esmName + "_EDIDList.csv");
+
+//	if (esmName.find("Tamriel_Data") != std::string::npos)
+//	{
+//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+//	}
+//	if (esmName.find("TR_Mainland") != std::string::npos) 
+//	{
+//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+//		loadEDIDmap3(csvRoot + "TRMainlandEDIDlist.csv");
 
 //		loadPNAMINFOSubstitutionMap("TRMainlandGreetingPNAMINFOmap.csv");
-		loadPNAMINFOSubstitutionMap(csvRoot + "TRMainland_Dialog_PNAMINFO.csv");
-	}
-	if (esmName.find("TR_Preview") != std::string::npos)
-	{
-		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
-		loadEDIDmap3(csvRoot + "TRPreviewEDIDlist.csv");
-	}
+//		loadPNAMINFOSubstitutionMap(csvRoot + "TRMainland_Dialog_PNAMINFO.csv");
+//	}
+//	if (esmName.find("TR_Preview") != std::string::npos)
+//	{
+//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
+//		loadEDIDmap3(csvRoot + "TRPreviewEDIDlist.csv");
+//	}
 
 	loadEDIDmap3(csvRoot + "OverridesEDIDList.csv");
 	loadEDIDmap3(csvRoot + "Overrides_" + esmName + ".csv");
 	loadLocalVarIndexmap(csvRoot + "LocalVarMap.csv");
 	loadScriptHelperVarMap(csvRoot + "ScriptHelperVarMap.csv");
-	loadESMMastersMap(csvRoot + "ESMMastersMap.csv");
 
 	std::cout << "Loading CSV files complete." << std::endl;
 

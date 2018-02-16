@@ -241,7 +241,6 @@ if ((esmName.find("TR_Mainland") != std::string::npos) ||
 		esmName = Misc::StringUtils::lowerCase(esmName);
 		if (mState.getWriter().mESMMastersmap.find(esmName) != mState.getWriter().mESMMastersmap.end())
 		{
-
 			std::vector<std::string> masterList = mState.getWriter().mESMMastersmap[esmName];
 			for (auto masterItem = masterList.begin(); masterItem != masterList.end(); masterItem++)
 			{
@@ -3097,6 +3096,11 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 	// first, create dummycells derived from exterior cell names
 	for (auto cellName = mState.mDummyCellNames.begin(); cellName != mState.mDummyCellNames.end(); cellName++)
 	{
+		if (cellName->find("#") != std::string::npos)
+		{
+			std::cout << "ERROR!!! Exterior Cell Record Name Address found in mDummyCellNames: " << *cellName << "\n";
+			continue;
+		}
 		std::string cellEDID = writer.generateEDIDTES4(*cellName, 0, "CELL");
 		uint32_t formID = writer.crossRefStringID(cellEDID, "CELL", false, true);
 		if (formID == 0)
@@ -3126,6 +3130,11 @@ int CSMDoc::ExportInteriorCellCollectionTES4Stage::setup()
 		{	
 			// add to one of 100 subblocks
 			std::string cellEDID = writer.generateEDIDTES4(cellRecordPtr->get().mId, 1);
+			if (cellEDID.find("#") != std::string::npos)
+			{
+				std::cout << "ERROR!!! Exterior Cell Record Name Address is being added to interior cell export list: " << cellEDID << "\n";
+				continue;
+			}
 			uint32_t formID = writer.crossRefStringID(cellEDID, "CELL", false, true);
 			if (formID == 0)
 			{
@@ -3489,6 +3498,10 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 				}
 				if (nameFound == false)
 				{
+					if (cellName.find("#") != std::string::npos)
+					{
+						std::cout << "ERROR!!!!!! Exterior Cell Address Name being added to DummyCellNames list: " << cellName << "\n";
+					}
 					mState.mDummyCellNames.push_back(cellName);
 				}
 			}
@@ -3988,6 +4001,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						}
 					}
 				}
+
+
+/**************** STOP! THIS IS BREAKING STUFF!!!!!!!!!!!!!!!!!*********************
 				// add EDID:formID association in StringMap for named exterior city cells
 				if (cellRecordPtr->get().mName != "")
 				{
@@ -3995,6 +4011,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					writer.mStringIDMap.insert(std::make_pair(namedCellEDID, cellFormID));
 					writer.mStringTypeMap.insert(std::make_pair(namedCellEDID, "CELL"));
 				}
+***********************************************************************************/
+
+
 				// ********************EXPORT SUBCELL HERE **********************
 				flags = 0;
 				if (cellRecordPtr->mState == CSMWorld::RecordBase::State_Deleted)
