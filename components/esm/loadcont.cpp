@@ -172,7 +172,7 @@ namespace ESM
 
 		// DATA, float (item weight)
 		uint8_t flags=0;
-		if (mFlags == Container::Respawn)
+		if (mFlags & Container::Respawn)
 			flags = 0x02;
 		esm.startSubRecordTES4("DATA");
 		esm.writeT<uint8_t>(flags); // flags
