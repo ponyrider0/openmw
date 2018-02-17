@@ -773,6 +773,7 @@ namespace ESM
 				debugstream.str("");
 				debugstream << "WARNING: reserveID: [" << stringID << "] duplicate reserve request for " << std::hex << formID << ", ignoring duplicate." << std::endl;
 				OutputDebugString(debugstream.str().c_str());
+				std::cout << debugstream.str();
 				return formID;
 			}
 			if (setup_phase == false)
@@ -785,9 +786,9 @@ namespace ESM
 			}
 			else
 			{
-				debugstream.str("");
-				debugstream << "SETUP PHASE WARNING: reserveID: [" << stringID << "]=" << std::hex << formID << " already used by [" << currentFormIDreserve->second << "], allowing additional EDID assignment without over-write." << std::endl;
-				OutputDebugString(debugstream.str().c_str());
+//				debugstream.str("");
+//				debugstream << "SETUP PHASE WARNING: reserveID: [" << stringID << "]=" << std::hex << formID << " already used by [" << currentFormIDreserve->second << "], allowing additional EDID assignment without over-write." << std::endl;
+//				OutputDebugString(debugstream.str().c_str());
 			}
 		}
 		else
