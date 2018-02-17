@@ -858,11 +858,11 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 		mWriter.reserveFormID(formID, generatedCellID.str(), "CELL", true);
 		if (landFormID != 0)
 		{
-			mWriter.reserveFormID(formID, generatedCellID.str() + "-landscape", "LAND", true);
+			mWriter.reserveFormID(landFormID, generatedCellID.str() + "-landscape", "LAND", true);
 		}
 		if (pathgridID != 0)
 		{
-			mWriter.reserveFormID(formID, generatedCellID.str() + "-pathgrid", "PGRD", true);
+			mWriter.reserveFormID(pathgridID, generatedCellID.str() + "-pathgrid", "PGRD", true);
 		}
 
 	} // while getline(inputFile, inputLine)
@@ -1056,12 +1056,11 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
 
-	if (mWriter.mESMMastersmap.find(esmName) != mWriter.mESMMastersmap.end())
+	if (mWriter.mESMMastersmap.find(Misc::StringUtils::lowerCase(esmName)) != mWriter.mESMMastersmap.end())
 	{
-		std::vector<std::string> masterList = mWriter.mESMMastersmap[esmName];
+		std::vector<std::string> masterList = mWriter.mESMMastersmap[Misc::StringUtils::lowerCase(esmName)];
 		for (auto masterItem = masterList.begin(); masterItem != masterList.end(); masterItem++)
 		{
-//			getWriter().addMaster(*masterItem, 0);
 			std::string masterName = masterItem->substr(0, masterItem->size()-4);
 			loadEDIDmap3(csvRoot + masterName + "_EDIDList.csv");
 		}

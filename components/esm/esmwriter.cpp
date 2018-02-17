@@ -746,38 +746,56 @@ namespace ESM
 		}
 
 		// make sure formID is not already used
-		if ( mFormIDMap.find(formID) != mFormIDMap.end() || formID == 0)
+		if (formID == 0)
+		{
+			if (setup_phase == false)
+			{
+				formID = getNextAvailableFormID();
+			}
+			else
+			{
+				debugstream.str("");
+				debugstream << "ERROR: reserveID Setup: [" << stringID << "] requested formID is 0." << std::endl;
+				OutputDebugString(debugstream.str().c_str());
+				return 0;
+			}
+
+		}
+
+		auto currentFormIDreserve = mFormIDMap.find(formID);
+		if (currentFormIDreserve != mFormIDMap.end())
 		{
 			// if requested formID:stringID pair == stored formID:stringID,
 			// then just issue warning and return formID
 			auto matchedPair = mStringIDMap.find(Misc::StringUtils::lowerCase(stringID));
 			if (matchedPair != mStringIDMap.end() && formID == matchedPair->second)
 			{
-				std::cout << "WARNING: reserveID: [" << stringID << "] duplicate reserve request for " << std::hex << formID << ", ignoring duplicate." << std::endl;
+				debugstream.str("");
+				debugstream << "WARNING: reserveID: [" << stringID << "] duplicate reserve request for " << std::hex << formID << ", ignoring duplicate." << std::endl;
+				OutputDebugString(debugstream.str().c_str());
 				return formID;
 			}
-
 			if (setup_phase == false)
 			{
-				if (formID != 0)
-				{
-					// formID already used so issue warning and get a new formID
-					std::cout << "WARNING: reserveID: [" << stringID << "] requested formID (" << std::hex << formID << ") already used, will reserve new ID. " << std::endl;
-				}
-				formID = getNextAvailableFormID();
+				debugstream.str("");
+				debugstream << "ERROR!: reserveID: [" << stringID << "]=" << std::hex << formID << " conflicts with existing reserveID: [" << currentFormIDreserve->second << "], ignoring attempted over-write." << std::endl;
+				OutputDebugString(debugstream.str().c_str());
+				std::cout << debugstream.str();
+				return 0;
 			}
 			else
 			{
-				if (formID == 0)
-				{
-					std::cout << "ERROR: reserveID Setup: [" << stringID << "] requested formID is 0." << std::endl;
-					return 0;
-				}
+				debugstream.str("");
+				debugstream << "SETUP PHASE WARNING: reserveID: [" << stringID << "]=" << std::hex << formID << " already used by [" << currentFormIDreserve->second << "], allowing additional EDID assignment without over-write." << std::endl;
+				OutputDebugString(debugstream.str().c_str());
 			}
 		}
-		// this step important mainly for keeping track of reserved formIDs,
-		// but also for formID to stringID crossreferencing
-		mFormIDMap.insert( std::make_pair(formID, stringID) );
+		else
+		{
+			// this step important mainly for keeping track of reserved formIDs,
+			// but also for formID to stringID crossreferencing
+			mFormIDMap.insert(std::make_pair(formID, stringID));
+		}
 
 		// create entry for the stringID to formID crossreference
 		mStringIDMap.insert( std::make_pair(Misc::StringUtils::lowerCase(stringID), formID) );

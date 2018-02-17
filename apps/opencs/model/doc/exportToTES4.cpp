@@ -5597,6 +5597,8 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		questScriptEDIDLookup[Misc::StringUtils::lowerCase(scriptEDID)] = startscript;
 	}
 
+
+/*
 	for (auto exportItem = esm.mStringIDMap.begin();
 		exportItem != esm.mStringIDMap.end();
 		exportItem++)
@@ -5639,6 +5641,50 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 		}
 	}
 	exportedEDIDCSVFile.close();
+*/
+	for (auto exportItem = esm.mFormIDMap.begin();
+		exportItem != esm.mFormIDMap.end();
+		exportItem++)
+	{
+		// skip items which have a different ESM index
+		if ((exportItem->first & esm.mESMoffset) == esm.mESMoffset)
+		{
+			// get sSIG from record
+			// if refEDID contains ref#, then check baseRecord for scriptedRef
+			std::string sSIG = "";
+			std::string sTAGS = "";
+			auto recordType = esm.mStringTypeMap.find(Misc::StringUtils::lowerCase(exportItem->second));
+			if (recordType != esm.mStringTypeMap.end() && recordType->second != "")
+				sSIG = recordType->second;
+			if (exportItem->second.find("ref#") != std::string::npos)
+			{
+				int tempIndex = mDocument.getData().getReferences().searchId(exportItem->second);
+				auto record = mDocument.getData().getReferences().getRecord(tempIndex).get();
+				std::string baseRecordID = Misc::StringUtils::lowerCase(record.mRefID);
+				if (esm.mBaseObjToScriptedREFList.find(baseRecordID) != esm.mBaseObjToScriptedREFList.end())
+				{
+					if (sTAGS != "") sTAGS += " ";
+					sTAGS = "#PREF" + esm.generateEDIDTES4(record.mRefID, 0, "PREF");
+				}
+			}
+			if (Misc::StringUtils::lowerCase(sSIG) == "scpt")
+			{
+				if (questScriptEDIDLookup.find(Misc::StringUtils::lowerCase(exportItem->second)) != questScriptEDIDLookup.end())
+				{
+					if (sTAGS != "") sTAGS += " ";
+					sTAGS += "#QUEST";
+					if (questScriptEDIDLookup[exportItem->second] == 1)
+					{
+						sTAGS += " #START";
+					}
+				}
+			}
+			sTAGS = "\"" + sTAGS + "\"";
+			exportedEDIDCSVFile << sSIG << "," << mDocument.getSavePath().filename().stem().string() << ",\"" << exportItem->second << "\"," << "" << "," << "0x" << std::hex << exportItem->first << "," << std::dec << index++ << "," << "," << "," << "," << sTAGS << std::endl;
+		}
+	}
+	exportedEDIDCSVFile.close();
+
 
 	// write unresolved local vars
 	std::ofstream unresolvedLocalVarStream;
