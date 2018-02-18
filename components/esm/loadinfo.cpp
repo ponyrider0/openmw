@@ -374,6 +374,10 @@ namespace ESM
 			if (mActor != "")
 			{
 				uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
+				if (actorFormID == 0)
+				{
+					std::cout << "ERROR: actorFormID resolved to null: [" << mActor << "]\n";
+				}
 				uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
 				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
 			}
@@ -654,6 +658,10 @@ namespace ESM
 					compareFunction = 0x48; // GetIsID (int 72)
 					varName = selectWrapper.getVariableName();
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
+					if (compareArg1 == 0)
+					{
+						std::cout << "ERROR: GetIsID: actorID resolved to NULL: " << varName << "\n";
+					}
 					break;
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcGender:

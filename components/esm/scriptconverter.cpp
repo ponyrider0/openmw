@@ -1130,7 +1130,10 @@ namespace ESM
 		{
 			OpCode = 0x1952;
 		}
-
+		else if (cmdString == "rand")
+		{
+			OpCode = 0x1417;
+		}
 
 
 		return OpCode;
@@ -1673,15 +1676,6 @@ namespace ESM
 		if (Misc::StringUtils::lowerCase(cmdString) == "random100")
 		{
 			cmdString = "GetRandomPercent";
-		}
-		else if (Misc::StringUtils::lowerCase(cmdString) == "random")
-		{
-			// TODO: replace with OBSE Rand command...
-			cmdString = "GetRandomPercent";
-			tokenItem++;
-			struct Token newToken(TokenType::operatorT, "*");
-			tokenItem = mTokenList.insert(tokenItem, newToken);
-			tokenItem--;
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getcurrentweather")
 		{
@@ -2291,6 +2285,8 @@ namespace ESM
 		bool bNeedsDialogHelper1 = false, bNeedsDialogHelper2 = false;
 		std::string arg1SIG = "", arg2SIG = "";
 		std::vector<uint8_t> arg1data, arg2data;
+		uint16_t sizeParams = 2;
+		uint16_t countParams = 2;
 
 		int getAVresult = -1;
 		bool arg1forceFloat = false;
@@ -2435,6 +2431,45 @@ namespace ESM
 			arg2String = "0";
 			bEvalArg2 = false;
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "random")
+		{
+			cmdString = "Rand";
+			arg1String = "0";
+			bEvalArg1 = false;
+			arg1forceFloat = true;
+			// read next argument, change to int, subtract one, switch back to ascii for text translation
+			tokenItem++;
+			if (tokenItem->type != number_literalT)
+			{
+				abort("ERROR: invalid Rand argument: " + tokenItem->str + "\n");
+				return;
+			}
+			int tempRand = atoi(tokenItem->str.c_str());
+			if (tempRand == 100)
+			{
+				// replace Rand command with GetRandomPercet
+				cmdString = "GetRandomPercent";
+				sizeParams = 0;
+				countParams = 0;
+				arg1String = " ";
+				arg2String = " ";
+				arg1data.clear();
+				arg2data.clear();
+				bEvalArg1 = false;
+				bEvalArg2 = false;
+				bUseBinaryData1 = true;
+				bUseBinaryData2 = true;
+			}
+			else
+			{
+				tempRand--;
+				std::stringstream randArg;
+				randArg << tempRand;
+				arg2String = randArg.str();
+				arg2forceFloat = true;
+				bEvalArg2 = false;
+			}
+		}
 
 		if (arg1String == "")
 		{
@@ -2485,8 +2520,6 @@ namespace ESM
 		// bytecompiled statement:
 		// OpCode, ParamBytes, ParamCount, Parameters
 		uint16_t OpCode = 0;
-		uint16_t sizeParams = 2;
-		uint16_t countParams = 2;
 
 		OpCode = getOpCode(cmdString);
 		if (OpCode == 0)
@@ -3363,7 +3396,6 @@ namespace ESM
 			|| (tokenString == "enable")
 			|| (tokenString == "return")
 			|| (tokenString == "random100")
-			|| (tokenString == "random")
 			|| (tokenString == "getdisabled")
 			|| (tokenString == "getsecondspassed")
 			|| (tokenString == "getlevel")
@@ -3428,6 +3460,7 @@ namespace ESM
 			|| (tokenString == "modalchemy") || (tokenString == "modalteration") || (tokenString == "modconjuration") || (tokenString == "modenchantment")
 			|| (tokenString == "moddestruction") || (tokenString == "modillusion") || (tokenString == "modmysticism") || (tokenString == "modrestoration")
 			|| (tokenString == "modacrobatics") || (tokenString == "modmarksman") || (tokenString == "modmercantile") || (tokenString == "modsecurity") || (tokenString == "modsneak") || (tokenString == "modspeechcraft")
+			|| (tokenString == "random")
 			)
 		{
 			parse_2arg(tokenItem);
@@ -3747,6 +3780,8 @@ namespace ESM
 	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, std::vector<uint8_t> param1data)
 	{
 		compile_command(OpCode, sizeParams);
+		if (sizeParams == 0)
+			return;
 		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&countParams)[i]);
 		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), param1data.begin(), param1data.end());
 	}
@@ -3754,6 +3789,8 @@ namespace ESM
 	void ScriptConverter::compile_command(uint16_t OpCode, uint16_t sizeParams, uint16_t countParams, std::vector<uint8_t> param1data, std::vector<uint8_t> param2data)
 	{
 		compile_command(OpCode, sizeParams, countParams, param1data);
+		if (sizeParams == 0)
+			return;
 		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), param2data.begin(), param2data.end());
 	}
 
@@ -3766,7 +3803,7 @@ namespace ESM
 		if (mParseMode == 1)
 		{
 			uint8_t OpCode_Push = 0x20;
-			resultData.push_back(OpCode_Push);
+//			resultData.push_back(OpCode_Push);
 		}
 		resultData.push_back(RefCode);
 		for (int i = 0; i<4; ++i) resultData.push_back(reinterpret_cast<uint8_t *> (&RefData)[i]);
@@ -3783,7 +3820,7 @@ namespace ESM
 		if (mParseMode == 1)
 		{
 			uint8_t OpCode_Push = 0x20;
-			resultData.push_back(OpCode_Push);
+//			resultData.push_back(OpCode_Push);
 		}
 		resultData.push_back(RefCode);
 		for (int i = 0; i<8; ++i) resultData.push_back(reinterpret_cast<uint8_t *> (&RefData)[i]);
