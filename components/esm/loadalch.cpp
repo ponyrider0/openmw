@@ -104,10 +104,13 @@ namespace ESM
 		esm.endSubRecordTES4("MODB");
 
 		// ICON, mIcon
-		tempStr = esm.generateEDIDTES4(mIcon, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
 		tempPath.str(""); tempPath.clear();
-		tempPath << "clutter\\potions\\morro\\" << tempStr;
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".dds");
+			tempPath << "clutter\\potions\\morro\\" << tempStr;
+		}
 		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());

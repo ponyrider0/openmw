@@ -108,10 +108,13 @@ namespace ESM
 		esm.endSubRecordTES4("MODB");
 		// MODT
 		// ICON, mIcon
-		tempStr = esm.generateEDIDTES4(mIcon, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".dds");
 		tempPath.str(""); tempPath.clear();
-		tempPath << "clutter\\morro\\" << tempStr;
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".dds");
+			tempPath << "clutter\\morro\\" << tempStr;
+		}
 //		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 1);
 		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
 		esm.startSubRecordTES4("ICON");
