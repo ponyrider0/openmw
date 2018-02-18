@@ -2327,7 +2327,6 @@ CSMDoc::ExportClimateCollectionTES4Stage::ExportClimateCollectionTES4Stage (Docu
 }
 int CSMDoc::ExportClimateCollectionTES4Stage::setup()
 {
-//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getBooks().getSize();
 	mActiveRefCount = mDocument.getData().getRegions().getSize();
 	return mActiveRefCount;
 }
@@ -2342,7 +2341,6 @@ void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& mes
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
 	std::string strEDID = writer.generateEDIDTES4(region.mId) + "Clmt";
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
@@ -2366,8 +2364,37 @@ CSMDoc::ExportBookCollectionTES4Stage::ExportBookCollectionTES4Stage (Document& 
 }
 int CSMDoc::ExportBookCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getBooks().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "BOOK";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Book>& record = mDocument.getData().getReferenceables().getDataSet().getBooks().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getBooks().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportBookCollectionTES4Stage::perform (int stage, Messages& messages)
 {
@@ -2380,9 +2407,10 @@ void CSMDoc::ExportBookCollectionTES4Stage::perform (int stage, Messages& messag
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	int recordIndex = mActiveRecords.at(stage);
+	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
@@ -2396,8 +2424,57 @@ CSMDoc::ExportArmorCollectionTES4Stage::ExportArmorCollectionTES4Stage (Document
 }
 int CSMDoc::ExportArmorCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getArmors().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "ARMO";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getArmors().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		bool exportOrSkip = false;
+		const CSMWorld::Record<ESM::Armor> record = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(i);
+		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+
+		if (mSkipMasterRecords == true)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			switch (record.get().mData.mType)
+			{
+			case ESM::Armor::Type::Helmet:
+			case ESM::Armor::Type::Cuirass:
+			case ESM::Armor::Type::Greaves:
+			case ESM::Armor::Type::Boots:
+			case ESM::Armor::Type::Shield:
+			case ESM::Armor::Type::RGauntlet:
+				exportOrSkip = true;
+				break;
+			default:
+				exportOrSkip = false;
+			}
+		}
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+
+	}
+
+	return mActiveRecords.size();
+
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getArmors().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messages)
 {
@@ -2410,58 +2487,16 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	mDocument.getData().getReferenceables().getDataSet().getArmors().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
-	bool exportOrSkip=false;
-	const CSMWorld::Record<ESM::Armor> armorRecord = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(stage);
-	std::string strEDID = writer.generateEDIDTES4(armorRecord.get().mId);
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Armor> record = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(recordIndex);
+	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	if (mSkipMasterRecords == true)
-	{
-		// check for modified / deleted state, otherwise skip
-		exportOrSkip = armorRecord.isModified() || armorRecord.isDeleted();
-/*
-		exportOrSkip = armorRecord.isModified() || armorRecord.isDeleted() ||
-			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-	}
-	else {
-		// no skipping, export all
-		exportOrSkip=true;
-	}
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
-	if (exportOrSkip)
-	{
-		switch (armorRecord.get().mData.mType)
-		{
-		case ESM::Armor::Type::Helmet:
-		case ESM::Armor::Type::Cuirass:
-		case ESM::Armor::Type::Greaves:
-		case ESM::Armor::Type::Boots:
-		case ESM::Armor::Type::Shield:
-		case ESM::Armor::Type::RGauntlet:
-			exportOrSkip = true;
-			break;
-		default:
-			exportOrSkip = false;
-		}
-	}
-
-	if (exportOrSkip)
-	{
-/*
-		uint32_t formID = writer.crossRefStringID(armorRecord.get().mId);
-		uint32_t flags=0;
-		if (armorRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, armorRecord.get().mId);
-*/
-		StartModRecord(sSIG, armorRecord.get().mId, writer, armorRecord.mState);
-		armorRecord.get().exportTESx(mDocument, writer, 4);
-		writer.endRecordTES4(sSIG);
-	}
-
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4(sSIG);
 	}
@@ -2596,8 +2631,58 @@ CSMDoc::ExportActivatorCollectionTES4Stage::ExportActivatorCollectionTES4Stage (
 }
 int CSMDoc::ExportActivatorCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getActivators().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "ACTI";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Activator>& record = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
+			std::string tempStr;
+			if (record.get().mName.size() > 0)
+				tempStr = Misc::StringUtils::lowerCase(record.get().mName);
+			else
+				tempStr = Misc::StringUtils::lowerCase(record.get().mId);
+
+			if ((tempStr.find("bed", 0) != tempStr.npos) ||
+				(tempStr.find("chair", 0) != tempStr.npos) ||
+				(tempStr.find("bench", 0) != tempStr.npos) ||
+				(tempStr.find("hammock", 0) != tempStr.npos) ||
+				(tempStr.find("stool", 0) != tempStr.npos)
+				)
+			{
+				exportOrSkip = false;
+				mState.mFurnitureFromActivatorList.push_back(i);
+			}
+		}
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getActivators().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& messages)
 {
@@ -2611,64 +2696,16 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
-	bool exportOrSkip=false;
-	const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(stage);
-	std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Activator> record = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(recordIndex);
+	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	if (mSkipMasterRecords == true)
-	{
-		// check for modified / deleted state, otherwise skip
-		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
-/*
-		exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || 
-			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-	}
-	else {
-		// no skipping, export all
-		exportOrSkip=true;
-	}
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(writer, 4);
+	writer.endRecordTES4(sSIG);
 
-	if (exportOrSkip)
-	{
-		// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
-		std::string tempStr ;
-		if (activatorRec.get().mName.size() > 0)
-			tempStr = Misc::StringUtils::lowerCase(activatorRec.get().mName);
-		else
-			tempStr = Misc::StringUtils::lowerCase(activatorRec.get().mId);
-
-		if ( (tempStr.find("bed",0) != tempStr.npos) ||
-			(tempStr.find("chair", 0) != tempStr.npos) ||
-			(tempStr.find("bench", 0) != tempStr.npos) ||
-			(tempStr.find("hammock", 0) != tempStr.npos) ||
-			(tempStr.find("stool", 0) != tempStr.npos) 
-			)
-		{
-			exportOrSkip = false;
-			mState.mFurnitureFromActivatorList.push_back(stage);
-			debugstream << "Moving activator(" << stage << ") [" << tempStr << "] to furn collection (size=" << mState.mFurnitureFromActivatorList.size() << ")" << std::endl;
-//			OutputDebugString(debugstream.str().c_str());
-		}
-	}
-
-	if (exportOrSkip)
-	{
-/*
-		uint32_t formID = writer.crossRefStringID(activatorRec.get().mId);
-		uint32_t flags=0;
-		if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, activatorRec.get().mId);
-*/
-		StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
-		activatorRec.get().exportTESx(writer, 4);
-		writer.endRecordTES4(sSIG);
-	}
-
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4(sSIG);
 	}

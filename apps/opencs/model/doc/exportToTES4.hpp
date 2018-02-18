@@ -539,7 +539,8 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
+//		int mActiveRefCount;
 		bool mSkipMasterRecords;
 	public:
 		ExportBookCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -553,7 +554,8 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
+//		int mActiveRefCount;
 		bool mSkipMasterRecords;
 	public:
 		ExportArmorCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
@@ -595,7 +597,8 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount;
+		std::vector<int> mActiveRecords;
+//		int mActiveRefCount;
 		bool mSkipMasterRecords;
 	public:
 		ExportActivatorCollectionTES4Stage (Document& document, SavingState& state, bool skipMasters=true);
