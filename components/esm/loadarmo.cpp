@@ -220,14 +220,6 @@ namespace ESM
 			std::stringstream cmdlineM, cmdlineF;
 			for (auto part_it = mParts.mParts.begin(); part_it != mParts.mParts.end(); part_it++)
 			{
-				if (part_it->mPart == ESM::PartReferenceType::PRT_Shield)
-				{
-					int index = doc.getData().getBodyParts().getIndex(part_it->mMale);
-					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
-					std::string partmodel = bodypartRecord.get().mModel;
-					cmdlineM << " " << partmodel;
-					break;
-				}
 				if (part_it->mMale != "")
 				{
 					// resolve part_it->mMale to body part record
@@ -235,6 +227,11 @@ namespace ESM
 					// hardcoded workarounds
 					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
 					std::string partmodel = bodypartRecord.get().mModel;
+					if (part_it->mPart == ESM::PartReferenceType::PRT_Shield)
+					{
+						cmdlineM << " " << partmodel;
+						break;
+					}
 					cmdlineM << " -bp " << (int) part_it->mPart << " " << partmodel;
 					if (part_it->mPart == ESM::PartReferenceType::PRT_RHand)
 						cmdlineM << " -bp " << (int)ESM::PartReferenceType::PRT_LHand << " " << partmodel;
