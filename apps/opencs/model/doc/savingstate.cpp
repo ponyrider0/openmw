@@ -745,10 +745,10 @@ int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 				int startscript = 0;
 				if (strTAGS.find("#start") != std::string::npos)
 				{
-					mWriter.mAutoStartScriptEDID[Misc::StringUtils::lowerCase(strEDID)] = 1;
+					mWriter.mAutoStartScriptEDID[strEDID] = 1;
 					startscript = 1;
 				}
-				mWriter.mScriptToQuestList[Misc::StringUtils::lowerCase(strEDID)] = std::make_pair("", startscript);
+				mWriter.mScriptToQuestList[strEDID] = std::make_pair("", startscript);
 //				mWriter.RegisterScriptToQuest(strEDID, startscript);
 			}
 			if (strEDID.find("ref#") != std::string::npos)
@@ -1055,6 +1055,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
+	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmap.csv");
 
 	if (mWriter.mESMMastersmap.find(Misc::StringUtils::lowerCase(esmName)) != mWriter.mESMMastersmap.end())
 	{
