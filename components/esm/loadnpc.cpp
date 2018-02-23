@@ -410,16 +410,22 @@ namespace ESM
 		int pkgcount=0;
 		std::string pkgEDID;
 		uint32_t pkgFormID=0;
+		// Commenting out EAT packages until we can figure out a safe system
+		// to allow eating behavior while ensuring no one steals food / starts fighting
+/*
 		pkgEDID = "aaaEatCurrent6x2";
 		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
+*/
+/*
 		pkgEDID = "aaaEatCurrent19x2";
 		pkgFormID = esm.crossRefStringID(pkgEDID, "PACK", false);
 		esm.startSubRecordTES4("PKID");
 		esm.writeT<uint32_t>(pkgFormID);
 		esm.endSubRecordTES4("PKID");
+*/
 		tempStr = esm.generateEDIDTES4(mId);
 		if (flags != 0)
 		{
