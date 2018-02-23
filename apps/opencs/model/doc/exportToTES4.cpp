@@ -146,10 +146,10 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	appendStage (new ExportExteriorCellCollectionTES4Stage (currentDoc, currentSave));
 	appendStage (new ExportInteriorCellCollectionTES4Stage (currentDoc, currentSave));
 
-	// dialogs
-	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, false, skipMasterRecords));
 	// quests
 	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, true, skipMasterRecords));
+	// dialogs
+	appendStage(new ExportDialogueCollectionTES4Stage(currentDoc, currentSave, false, skipMasterRecords));
 
 	// close file and clean up
 	appendStage (new CloseExportTES4Stage (currentSave));
@@ -341,13 +341,9 @@ std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTop
 	for (auto keyphrase = mKeyPhraseList.begin(); keyphrase != mKeyPhraseList.end(); keyphrase++)
 	{
 		int searchResult;
-		int keyphrase_length = keyphrase->length();
 		if ( (searchResult = searchText.find(*keyphrase)) != searchText.npos)
 		{
-			if (
-				(searchResult == 0 || (searchText[searchResult - 1] < 'a' || searchText[searchResult - 1] > 'z'))
-//				&&	(searchText.length() == keyphrase_length || (searchText[keyphrase_length] < 'a' || searchText[keyphrase_length] > 'z' || searchText[keyphrase_length] == 's') )
-				)
+			if (searchResult == 0 || (searchText[searchResult - 1] < 'a' || searchText[searchResult - 1] > 'z'))
 			{
 				addTopicList.push_back(mState.getWriter().generateEDIDTES4(*keyphrase, 4));
 			}
@@ -469,12 +465,19 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		// QUEST MODE == true
 		for (auto questItem = writer.mScriptToQuestList.begin(); questItem != writer.mScriptToQuestList.end(); questItem++)
 		{
+			std::string scriptEDID = "";
+			std::string questEDID = "";
 			if (questItem->second.first == "")
-				continue;
+			{
+				scriptEDID = questItem->first;
+				questEDID = "mw" + scriptEDID + "quest";
+			}
+			else
+			{
+				scriptEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SCPT");
+				questEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SQUST");
+			}
 
-			std::string scriptEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SCPT");
-			//			std::string questEDID = questItem->second.first;
-			std::string questEDID = writer.generateEDIDTES4(questItem->second.first, 0, "SQUST");
 			uint32_t questFormID = writer.crossRefStringID(questEDID, "QUST", false, true);
 			if (questFormID == 0)
 			{
@@ -909,12 +912,10 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 						infoChoiceList[choiceTopicKey.str()].push_back(info);
 						bSkipInfo = true;
 
-//						std::stringstream choiceTopicStr;
-//						choiceTopicStr << topicEDID << "Choice" << choiceNum;
-						uint32_t formID = writer.crossRefStringID(choiceTopicKey.str(), "DIAL", false, true);
-						if (formID == 0)
+						uint32_t choiceformID = writer.crossRefStringID(choiceTopicKey.str(), "DIAL", false, true);
+						if (choiceformID == 0)
 						{
-							formID = writer.reserveFormID(formID, choiceTopicKey.str(), "DIAL");
+							choiceformID = writer.reserveFormID(choiceformID, choiceTopicKey.str(), "DIAL");
 						}
 						break;
 					}
@@ -1040,13 +1041,13 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				OutputDebugString(errorMesg.c_str());
 			}
 
-			uint32_t formID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
-			if (formID == 0)
+			uint32_t choiceformID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
+			if (choiceformID == 0)
 			{
-				formID = writer.reserveFormID(formID, choiceTopicStr.str(), "DIAL");
+				choiceformID = writer.reserveFormID(choiceformID, choiceTopicStr.str(), "DIAL");
 			}
 			uint32_t flags = 0;
-			writer.startRecordTES4("DIAL", flags, formID, choiceTopicStr.str());
+			writer.startRecordTES4("DIAL", flags, choiceformID, choiceTopicStr.str());
 			writer.startSubRecordTES4("EDID");
 			writer.writeHCString(choiceTopicStr.str());
 			writer.endSubRecordTES4("EDID");
@@ -1058,7 +1059,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			writer.endSubRecordTES4("DATA");
 			writer.endRecordTES4("DIAL");
 
-			writer.startGroupTES4(formID, 7);
+			writer.startGroupTES4(choiceformID, 7);
 			for (auto infoChoiceItem = choiceNumPair->second.begin(); infoChoiceItem != choiceNumPair->second.end(); infoChoiceItem++)
 			{
 				std::string infoEDID = "info#" + infoChoiceItem->mId;
@@ -1077,7 +1078,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
 				}
 			}
-			writer.endGroupTES4(formID);
+			writer.endGroupTES4(choiceformID);
 		}
 	}
 
@@ -1352,8 +1353,8 @@ void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 	const CSMWorld::Record<ESM::Region> regionRec = mDocument.getData().getRegions().getNthRecord(index);
 	auto region = regionRec.get();
 
-	std::string strEDID = writer.generateEDIDTES4(region.mId, 0, sSIG);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(region.mId, 0, sSIG);
+	//uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, region.mId, writer, regionRec.mState);
 	regionRec.get().exportTESx(writer, 4); // initial output...
@@ -1366,10 +1367,21 @@ void CSMDoc::ExportRegionDataTES4Stage::perform(int stage, Messages& messages)
 	// Region Areas - array of region areas
 	// one region area: RPLI + array of RPLD(X,Y)
 	std::vector<std::pair<int,MinMaxPair>> &cellList = mRegionIDToCellList[region.mId];
-	auto current_cell = cellList.begin();
-	while (current_cell != cellList.end())
+	if (cellList.empty())
 	{
-		current_cell = traceBoundaryForward(current_cell, cellList.end());
+		writer.startSubRecordTES4("RPLI");
+		writer.writeT<uint32_t>(1024); // RPLI aka edge-falloff
+		writer.endSubRecordTES4("RPLI");
+		writer.startSubRecordTES4("RPLD");
+		writer.endSubRecordTES4("RPLD");
+	}
+	else
+	{
+		auto current_cell = cellList.begin();
+		while (current_cell != cellList.end())
+		{
+			current_cell = traceBoundaryForward(current_cell, cellList.end());
+		}
 	}
 
 	// Region Data Entries?
@@ -1428,8 +1440,8 @@ void CSMDoc::ExportAmmoCollectionTES4Stage::perform (int stage, Messages& messag
 
 	int ammoIndex = mState.mAmmoFromWeaponList.at(stage);
 	const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(ammoIndex);
-	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, "AMMO", false, true);
+//	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, "AMMO", false, true);
 
 	StartModRecord(sSIG, weaponRec.get().mId, writer, weaponRec.mState);
 	weaponRec.get().exportAmmoTESx(writer, 4);
@@ -1506,8 +1518,8 @@ void CSMDoc::ExportWeaponCollectionTES4Stage::perform (int stage, Messages& mess
 //	mDocument.getData().getReferenceables().getDataSet().getWeapons().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Weapon> weaponRec = mDocument.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(recordIndex);
-	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(weaponRec.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
@@ -1551,7 +1563,13 @@ CSMDoc::ExportFurnitureCollectionTES4Stage::ExportFurnitureCollectionTES4Stage (
 }
 int CSMDoc::ExportFurnitureCollectionTES4Stage::setup()
 {
-	mActiveRefCount=1;
+	int collectionSize = mState.mFurnitureFromActivatorList.size() + mState.mFurnitureFromStaticList.size();
+
+	if (collectionSize > 0)
+		mActiveRefCount=1;
+	else
+		mActiveRefCount=0;
+
 	return mActiveRefCount;
 }
 void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& messages)
@@ -1563,104 +1581,41 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 	// GRUP
 	if (stage == 0)
 	{
-		debugstream << "Exporting furniture: size=" << mActiveRefCount << "... ";
-//		OutputDebugString(debugstream.str().c_str());
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	for (auto furnIndex = mState.mFurnitureFromActivatorList.begin(); furnIndex != mState.mFurnitureFromActivatorList.end(); furnIndex++)
 	{
-		//	mDocument.getData().getReferenceables().getDataSet().getActivators().exportTESx (index, mState.getWriter(), 4);
 		const CSMWorld::Record<ESM::Activator> activatorRec = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(*furnIndex);
-		std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//		std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
+//		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-		bool exportOrSkip=false;
-		if (mSkipMasterRecords)
-		{
-			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted();
-/*
-			exportOrSkip = activatorRec.isModified() || activatorRec.isDeleted() || 
-				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-		}
-		else
-		{
-			exportOrSkip = true;
-		}
-
-		if (exportOrSkip)
-		{
-/*
-			std::string strEDID = writer.generateEDIDTES4(activatorRec.get().mId);
-			uint32_t formID = writer.crossRefStringID(strEDID);
-			uint32_t flags=0;
-			if (activatorRec.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, strEDID);
-*/
-			StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
-			activatorRec.get().exportTESx(writer, 4);
-			// MNAM
-			writer.startSubRecordTES4("MNAM");
-			writer.writeT<uint32_t>(0);
-			writer.endSubRecordTES4("MNAM");
-			writer.endRecordTES4(sSIG);
-//			debugstream.str(""); debugstream.clear();
-//			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
-//			OutputDebugString(debugstream.str().c_str());
-		}
+		StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
+		activatorRec.get().exportTESx(writer, 4);
+		// MNAM
+		writer.startSubRecordTES4("MNAM");
+		writer.writeT<uint32_t>(0);
+		writer.endSubRecordTES4("MNAM");
+		writer.endRecordTES4(sSIG);
 	}
 
 	for (auto furnIndex = mState.mFurnitureFromStaticList.begin(); furnIndex != mState.mFurnitureFromStaticList.end(); furnIndex++)
 	{
 		const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(*furnIndex);
-		std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//		std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
+//		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-		bool exportOrSkip=false;
-		if (mSkipMasterRecords)
-		{
-			exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
-/*
-			exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || 
-				(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-		}
-		else
-		{
-			exportOrSkip = true;
-		}
-
-		if (exportOrSkip)
-		{
-/*
-			std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
-			uint32_t formID = writer.crossRefStringID(strEDID);
-			uint32_t flags=0;
-			if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
-				flags |= 0x800; // DISABLED
-			writer.startRecordTES4(sSIG, flags, formID, strEDID);
-*/
-			StartModRecord(sSIG, staticRec.get().mId, writer, staticRec.mState);
-			staticRec.get().exportTESx(writer, 4);
-			// MNAM
-			writer.startSubRecordTES4("MNAM");
-			writer.writeT<uint32_t>(0);
-			writer.endSubRecordTES4("MNAM");
-			writer.endRecordTES4(sSIG);
-			debugstream.str(""); debugstream.clear();
-//			debugstream << "(" << *furnIndex << ")[" << formID << "] ";
-//			OutputDebugString(debugstream.str().c_str());
-		}
+		StartModRecord(sSIG, staticRec.get().mId, writer, staticRec.mState);
+		staticRec.get().exportTESx(writer, 4);
+		// MNAM
+		writer.startSubRecordTES4("MNAM");
+		writer.writeT<uint32_t>(0);
+		writer.endSubRecordTES4("MNAM");
+		writer.endRecordTES4(sSIG);
 	}
-
 
 	if (stage == mActiveRefCount-1)
 	{
-		debugstream.str(""); debugstream.clear();
-		debugstream << "complete." << std::endl;
-//		OutputDebugString(debugstream.str().c_str());
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -1863,8 +1818,8 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Miscellaneous> miscRecord = mDocument.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(recordIndex);
 
-	std::string strEDID = writer.generateEDIDTES4(miscRecord.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(miscRecord.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	bool exportOrSkip=false;
 	if (mSkipMasterRecords)
@@ -2186,7 +2141,7 @@ int CSMDoc::ExportContainerCollectionTES4Stage::setup()
 	{
 		const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(i);
 		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 		bool isFlora = false;
 		bool exportOrSkip = false;
@@ -2240,8 +2195,8 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(recordIndex);
-	std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, containerRecord.get().mId, writer, containerRecord.mState);
 	containerRecord.get().exportTESx(writer, 4);
@@ -2260,8 +2215,47 @@ CSMDoc::ExportClothingCollectionTES4Stage::ExportClothingCollectionTES4Stage (Do
 }
 int CSMDoc::ExportClothingCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getClothing().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "CLOT";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getClothing().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		bool exportOrSkip = false;
+		const CSMWorld::Record<ESM::Clothing> record = mDocument.getData().getReferenceables().getDataSet().getClothing().mContainer.at(i);
+//		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+//		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+
+		if (mSkipMasterRecords == true)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		// filter out left glove
+		if (exportOrSkip)
+		{
+			if (record.get().mData.mType == ESM::Clothing::Type::LGlove)
+				exportOrSkip = false;
+		}
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+
+	}
+
+	return mActiveRecords.size();
+
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getClothing().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& messages)
 {
@@ -2274,47 +2268,16 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	mDocument.getData().getReferenceables().getDataSet().getClothing().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
-	bool exportOrSkip=false;
-	const CSMWorld::Record<ESM::Clothing> clothingRecord = mDocument.getData().getReferenceables().getDataSet().getClothing().mContainer.at(stage);
-	std::string strEDID = writer.generateEDIDTES4(clothingRecord.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Clothing> clothingRecord = mDocument.getData().getReferenceables().getDataSet().getClothing().mContainer.at(recordIndex);
+//	std::string strEDID = writer.generateEDIDTES4(clothingRecord.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	if (mSkipMasterRecords == true)
-	{
-		// check for modified / deleted state, otherwise skip
-		exportOrSkip = clothingRecord.isModified() || clothingRecord.isDeleted();
-/*
-		exportOrSkip = clothingRecord.isModified() || clothingRecord.isDeleted() ||
-			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-	}
-	else 
-	{
-		// no skipping, export all
-		exportOrSkip=true;
-	}
+	StartModRecord(sSIG, clothingRecord.get().mId, writer, clothingRecord.mState);
+	clothingRecord.get().exportTESx(writer, 4);
+	writer.endRecordTES4(sSIG);
 
-	// filter out left glove
-	if ((exportOrSkip) && (clothingRecord.get().mData.mType == ESM::Clothing::Type::LGlove))
-		exportOrSkip = false;
-
-	if (exportOrSkip)
-	{
-/*
-		std::string strEDID = writer.generateEDIDTES4(clothingRecord.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID);
-		uint32_t flags=0;
-		if (clothingRecord.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, strEDID);
-*/
-		StartModRecord(sSIG, clothingRecord.get().mId, writer, clothingRecord.mState);
-		clothingRecord.get().exportTESx(writer, 4);
-		writer.endRecordTES4(sSIG);
-	}
-
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4(sSIG);
 	}
@@ -2366,7 +2329,7 @@ int CSMDoc::ExportBookCollectionTES4Stage::setup()
 {
 	std::string sSIG = "BOOK";
 	ESM::ESMWriter& writer = mState.getWriter();
-	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getBooks().getSize();
 
 	for (int i = 0; i < collectionSize; i++)
 	{
@@ -2432,8 +2395,8 @@ int CSMDoc::ExportArmorCollectionTES4Stage::setup()
 	{
 		bool exportOrSkip = false;
 		const CSMWorld::Record<ESM::Armor> record = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//		std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+//		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 		if (mSkipMasterRecords == true)
 			exportOrSkip = record.isModified() || record.isDeleted();
@@ -2489,8 +2452,8 @@ void CSMDoc::ExportArmorCollectionTES4Stage::perform (int stage, Messages& messa
 
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Armor> record = mDocument.getData().getReferenceables().getDataSet().getArmors().mContainer.at(recordIndex);
-	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, record.get().mId, writer, record.mState);
 	record.get().exportTESx(mDocument, writer, 4);
@@ -2633,7 +2596,7 @@ int CSMDoc::ExportActivatorCollectionTES4Stage::setup()
 {
 	std::string sSIG = "ACTI";
 	ESM::ESMWriter& writer = mState.getWriter();
-	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getCreatureLevelledLists().getSize();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getActivators().getSize();
 
 	for (int i = 0; i < collectionSize; i++)
 	{
@@ -2698,8 +2661,8 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 
 	int recordIndex = mActiveRecords.at(stage);
 	const CSMWorld::Record<ESM::Activator> record = mDocument.getData().getReferenceables().getDataSet().getActivators().mContainer.at(recordIndex);
-	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+//	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, record.get().mId, writer, record.mState);
 	record.get().exportTESx(writer, 4);
@@ -2778,24 +2741,55 @@ CSMDoc::ExportCreatureCollectionTES4Stage::ExportCreatureCollectionTES4Stage (Do
 }
 int CSMDoc::ExportCreatureCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "CREA";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Creature>& record = mDocument.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getCreatures().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportCreatureCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::string sSIG = "CREA";
+
 	// CREA GRUP
 	if (stage == 0)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.startGroupTES4("CREA", 0);
+		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	int recordIndex = mActiveRecords.at(stage);
+	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.endGroupTES4("CREA");
+		writer.endGroupTES4(sSIG);
 	}
 }
 
@@ -2806,25 +2800,55 @@ CSMDoc::ExportDoorCollectionTES4Stage::ExportDoorCollectionTES4Stage (Document& 
 }
 int CSMDoc::ExportDoorCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getDoors().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "DOOR";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getDoors().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Door>& record = mDocument.getData().getReferenceables().getDataSet().getDoors().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getDoors().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportDoorCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::string sSIG = "DOOR";
+
 	// DOOR GRUP
 	if (stage == 0)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.startGroupTES4("DOOR", 0);
+		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	std::cout << "Door [" << stage << "]" << std::endl;
-	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	int recordIndex = mActiveRecords.at(stage);
+	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.endGroupTES4("DOOR");
+		writer.endGroupTES4(sSIG);
 	}
 }
 
@@ -2835,8 +2859,54 @@ CSMDoc::ExportSTATCollectionTES4Stage::ExportSTATCollectionTES4Stage (Document& 
 }
 int CSMDoc::ExportSTATCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getStatics().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "STAT";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getStatics().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::Static>& record = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
+			std::string tempStr;
+			tempStr = Misc::StringUtils::lowerCase(record.get().mId);
+
+			if ((tempStr.find("bed", 0) != tempStr.npos) ||
+				(tempStr.find("chair", 0) != tempStr.npos) ||
+				(tempStr.find("bench", 0) != tempStr.npos) ||
+				(tempStr.find("hammock", 0) != tempStr.npos) ||
+				(tempStr.find("stool", 0) != tempStr.npos)
+				)
+			{
+				exportOrSkip = false;
+				mState.mFurnitureFromStaticList.push_back(i);
+			}
+		}
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getStatics().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messages)
 {
@@ -2850,61 +2920,16 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-//	mDocument.getData().getReferenceables().getDataSet().getStatics().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
-	bool exportOrSkip=false;
-	const CSMWorld::Record<ESM::Static> staticRec = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(stage);
-	std::string strEDID = writer.generateEDIDTES4(staticRec.get().mId);
-	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<ESM::Static> record = mDocument.getData().getReferenceables().getDataSet().getStatics().mContainer.at(recordIndex);
+//	std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+//	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	if (mSkipMasterRecords == true)
-	{
-		// check for modified / deleted state, otherwise skip
-		exportOrSkip = staticRec.isModified() || staticRec.isDeleted();
-/*
-		exportOrSkip = staticRec.isModified() || staticRec.isDeleted() || 
-			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-*/
-	}
-	else {
-		// no skipping, export all
-		exportOrSkip=true;
-	}
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(writer, 4);
+	writer.endRecordTES4(sSIG);
 
-	if (exportOrSkip)
-	{
-		// if mName contains Bed, Chair, Bench, Hammock then add to furnList and skip
-		std::string tempStr;
-		tempStr = Misc::StringUtils::lowerCase(staticRec.get().mId);
-
-		if ((tempStr.find("bed", 0) != tempStr.npos) ||
-			(tempStr.find("chair", 0) != tempStr.npos) ||
-			(tempStr.find("bench", 0) != tempStr.npos) ||
-			(tempStr.find("hammock", 0) != tempStr.npos) ||
-			(tempStr.find("stool", 0) != tempStr.npos)
-			)
-		{
-			exportOrSkip = false;
-			mState.mFurnitureFromStaticList.push_back(stage);
-			debugstream << "Moving static(" << stage << ") [" << tempStr << "] to furn collection (size=" << mState.mFurnitureFromStaticList.size() << ")" << std::endl;
-//			OutputDebugString(debugstream.str().c_str());
-		}
-	}
-
-	if (exportOrSkip)
-	{
-/*
-		uint32_t formID = writer.crossRefStringID(staticRec.get().mId);
-		uint32_t flags=0;
-		if (staticRec.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x800; // DISABLED
-		writer.startRecordTES4(sSIG, flags, formID, staticRec.get().mId);
-*/
-		StartModRecord(sSIG, staticRec.get().mId, writer, staticRec.mState);
-		staticRec.get().exportTESx(writer, 4);
-		writer.endRecordTES4(sSIG);
-	}
-
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4(sSIG);
 	}
@@ -2917,24 +2942,55 @@ CSMDoc::ExportNPCCollectionTES4Stage::ExportNPCCollectionTES4Stage (Document& do
 }
 int CSMDoc::ExportNPCCollectionTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getNPCs().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "NPC_";
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getReferenceables().getDataSet().getNPCs().getSize();
+
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<ESM::NPC>& record = mDocument.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(i);
+
+		bool exportOrSkip = false;
+		if (mSkipMasterRecords)
+			exportOrSkip = record.isModified() || record.isDeleted();
+		else
+			exportOrSkip = true;
+
+		if (exportOrSkip)
+		{
+			mActiveRecords.push_back(i);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+			if (formID == 0)
+			{
+				formID = writer.getNextAvailableFormID();
+				writer.reserveFormID(formID, strEDID, sSIG);
+			}
+		}
+	}
+
+	return mActiveRecords.size();
+//	mActiveRefCount = mDocument.getData().getReferenceables().getDataSet().getNPCs().getSize();
+//	return mActiveRefCount;
 }
 void CSMDoc::ExportNPCCollectionTES4Stage::perform (int stage, Messages& messages)
 {
+	std::string sSIG = "NPC_";
+
 	// CREA GRUP
 	if (stage == 0)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.startGroupTES4("NPC_", 0);
+		writer.startGroupTES4(sSIG, 0);
 	}
 
-	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (stage, mState.getWriter(), mSkipMasterRecords, 4);
+	int recordIndex = mActiveRecords.at(stage);
+	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		ESM::ESMWriter& writer = mState.getWriter();
-		writer.endGroupTES4("NPC_");
+		writer.endGroupTES4(sSIG);
 	}
 }
 
@@ -4442,7 +4498,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::createPreBlendMap(ESM::ESMWr
 		drawBottomLeftCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
 		drawBottomRightCorner(origX, origY, subCX, subCY, quadX, quadY, plugindex, landData);
 
-	} // if (getLandDataFromXY(origX, origY, plugindex, landData) == true)
+	}
 	else
 	{
 		debugstream.str(""); debugstream.clear();
@@ -4826,22 +4882,25 @@ bool CSMDoc::ExportExteriorCellCollectionTES4Stage::getLandDataFromXY(int origX,
 	if (mDocument.getData().getLand().searchId(landID.str()) != -1)
 	{
 		landIndex = mDocument.getData().getLand().getIndex(landID.str());
-		plugindex = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
+		int plugtemp = mDocument.getData().getLand().getRecord(landIndex).get().mPlugin;
+//		if (plugtemp == 0)
+//			plugtemp = mDocument.getData().getLand().getRecord(landIndex).getBase().mPlugin;
+		plugindex = plugtemp;
 		landData = mDocument.getData().getLand().getRecord(landIndex).get().getLandData(ESM::Land::DATA_VTEX);
 		if (landData != 0)
 			return true;
 		else
 		{
-			debugstream << "ERROR: getLandDataFromXY - no vtex data" << std::endl;
+			debugstream << "WARNING: getLandDataFromXY[" << origX << "," << origY << "] - no vtex data" << std::endl;
 //			OutputDebugString(debugstream.str().c_str());
 //			throw std::runtime_error("ERROR: getLandDataFromXY - no vtex data");
 		}
 	}
 	else
 	{
-		debugstream << "ERROR: getLandDataFromXY - couldn't find landID" << std::endl;
+		// This is an expected outcome to detect border regions.. not necessarily an error
+		debugstream << "WARNING: getLandDataFromXY[" << origX << "," << origY << "] - couldn't find landID" << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
-//		throw std::runtime_error("ERROR: getLandDataFromXY - couldn't find landID");
 	}
 
 	return false;
@@ -4857,7 +4916,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM:
 	if (landData == 0)
 	{
 		debugstream << "ERROR: drawPreBlendMapXY - landData is null!" << std::endl;
-		OutputDebugString(debugstream.str().c_str());
+//		OutputDebugString(debugstream.str().c_str());
 		throw std::runtime_error(debugstream.str().c_str());
 	}
 	int texindex = landData->mTextures[(yoffset*16)+xoffset]-1;
@@ -4867,20 +4926,50 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM:
 		mPreBlendMap[outputX][outputY] = defaultTex;
 		return; 
 	}
+	int current_plugindex = plugindex;
 	auto lookup = mState.mLandTexLookup_Plugin_Index[plugindex].find(texindex);
 	if (lookup == mState.mLandTexLookup_Plugin_Index[plugindex].end())
 	{
-		// try again with plugindex==0
-		lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
-		if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
+//		mPreBlendMap[outputX][outputY] = defaultTex;
+//		return;
+		debugstream.str("");
+		debugstream << "WARNING: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << ", (plugin=" << plugindex << "), attempting to search other plugins..." << "\n";
+//		OutputDebugString(debugstream.str().c_str());
+		auto pluginMap_it = mState.mLandTexLookup_Plugin_Index.begin();
+		current_plugindex = pluginMap_it->first;
+		lookup = pluginMap_it->second.find(texindex);
+		while (lookup == pluginMap_it->second.end())
 		{
-			debugstream << "ERROR: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << ", using defaultTexture." << std::endl;
-			OutputDebugString(debugstream.str().c_str());
-			// just use defaultTex to continue gracefully instead of crashing
-			mPreBlendMap[outputX][outputY] = defaultTex;
-			return;
-//			throw std::runtime_error("ERROR: drawPreBlendMapXY - couldn't resolve texindex");
+			if (pluginMap_it != mState.mLandTexLookup_Plugin_Index.end())
+			{
+				pluginMap_it++;
+				current_plugindex = pluginMap_it->first;
+				lookup = pluginMap_it->second.find(texindex);
+			}
+			else
+			{
+				debugstream.str("");
+				debugstream << "ERROR: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << ", (plugin=" << plugindex << "), using defaultTexture." << std::endl;
+//				OutputDebugString(debugstream.str().c_str());
+				// just use defaultTex to continue gracefully instead of crashing
+				mPreBlendMap[outputX][outputY] = defaultTex;
+				return;
+			}
 		}
+	}
+	if (plugindex != current_plugindex)
+	{
+		debugstream.str("");
+		debugstream << "DEBUG: drawPreBlendMapXY - couldn't resolve texindex=" << texindex << " (plugin=" << plugindex << "), using plugin=" << current_plugindex << " instead.\n";
+//		OutputDebugString(debugstream.str().c_str());
+//		std::cout << "X";
+	}
+	else
+	{
+		debugstream.str("");
+		debugstream << "DEBUG: drawPreBlendMapXY - successfully resolved texindex=" << texindex << ", (plugin=" << plugindex << "), using plugin=" << current_plugindex << ".\n";
+//		OutputDebugString(debugstream.str().c_str());
+//		std::cout << "+";
 	}
 	uint32_t texformID = lookup->second;
 	mPreBlendMap[outputX][outputY] = texformID;
@@ -4923,6 +5012,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::gatherSubCellQuadrantLTEX(in
 					OutputDebugString(debugstream.str().c_str());
 					throw std::runtime_error("ERROR: gatherSubCellQuadrantLTEX - couldn't resolve texindex");
 				}
+				std::stringstream err;
+				err << "WARNING: gatherSubCellQuadrantLTEX(): could not resolve texindex=" << texindex << " (plugin=" << plugindex << "), using plugin=0\n";
+				OutputDebugString(err.str().c_str());
 			}
 
 			formID = lookup->second;
@@ -4977,7 +5069,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::calculateTexLayerOpacityMap(
 			{
 				lookup = mState.mLandTexLookup_Plugin_Index[0].find(texindex);
 				if (lookup == mState.mLandTexLookup_Plugin_Index[0].end())
+				{
 					throw std::runtime_error("ERROR: calculateTexLayerOpacityMap - couldn't resolve texindex");
+				}
+				else
+				{
+					std::stringstream err;
+					err << "WARNING: calculateTexLayerOpacityMap(): could not resolve texindex=" << texindex << " (plugin=" << plugindex << "), using plugin=0\n";
+					OutputDebugString(err.str().c_str());
+				}
 			}
 
 			formID = lookup->second;
@@ -5067,23 +5167,74 @@ CSMDoc::ExportLandTextureCollectionTES4Stage::ExportLandTextureCollectionTES4Sta
 
 int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 {
-	mActiveRefCount =  mDocument.getData().getLandTextures().getSize();
+	ESM::ESMWriter& writer = mState.getWriter();
+	int collectionSize = mDocument.getData().getLandTextures().getSize();
 
-	return mActiveRefCount;
+	for (int i = 0; i < collectionSize; i++)
+	{
+		const CSMWorld::Record<CSMWorld::LandTexture>& landTexture = mDocument.getData().getLandTextures().getRecord(i);
+		CSMWorld::LandTexture record = landTexture.get();
+
+		bool bExportRecord = false;
+		if (mSkipMasterRecords)
+			bExportRecord = landTexture.isModified() || landTexture.isDeleted();
+		else
+			bExportRecord = true;
+
+		// create separate lookup tables for each plugin loaded
+		std::string strEDID = writer.generateEDIDTES4(record.mId);
+		strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
+		uint32_t formID = writer.crossRefStringID(strEDID, "LTEX", false, true);
+		if (formID == 0)
+		{
+			formID = writer.getNextAvailableFormID();
+			formID = writer.reserveFormID(formID, strEDID, "LTEX");
+			if (formID == 0)
+			{
+				std::cout << "SETUP PHASE: LandTexture Collection ERROR! unable to allocate formID for texture: " << strEDID << "\n";
+				continue;
+			}
+		}
+		int plugindex = landTexture.get().mPluginIndex;
+//		if (plugindex == 0)
+//			plugindex = landTexture.getBase().mPluginIndex;
+		mState.mLandTexLookup_Plugin_Index[plugindex][record.mIndex] = formID;
+		//	debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
+		//	OutputDebugString(debugstream.str().c_str());
+
+		if (writer.mUniqueIDcheck.find(formID) != writer.mUniqueIDcheck.end())
+		{
+			// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
+			// just go ahead and skip to mapping index
+			bExportRecord = false;
+		}
+		bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
+
+		if (bExportRecord)
+		{
+			mActiveRecords.push_back(i);
+		}
+
+	}
+
+	return mActiveRecords.size();
+//	mActiveRefCount =  mDocument.getData().getLandTextures().getSize();
+//	return mActiveRefCount;
 }
 
 void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::ostringstream debugstream;
 	ESM::ESMWriter& writer = mState.getWriter();
-	const CSMWorld::Record<CSMWorld::LandTexture>& landTexture =
-		mDocument.getData().getLandTextures().getRecord (stage);
 
 	// LTEX GRUP
 	if (stage == 0)
 	{
 		writer.startGroupTES4("LTEX", 0);
 	}
+
+	int recordIndex = mActiveRecords.at(stage);
+	const CSMWorld::Record<CSMWorld::LandTexture>& landTexture = mDocument.getData().getLandTextures().getRecord(recordIndex);
 
 	CSMWorld::LandTexture record = landTexture.get();
 
@@ -5092,57 +5243,15 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	// TODO: substitute Morroblivion EDID
 	strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
 	uint32_t formID = writer.crossRefStringID(strEDID, "LTEX", false, true);
-	if (formID == 0)
-	{
-		// reserve new formID
-		formID = writer.getNextAvailableFormID();
-		formID = writer.reserveFormID(formID, strEDID, "LTEX");
-	}
 
-	bool bExportRecord = false;
-	if (mSkipMasterRecords)
-	{
-//		bExportRecord = landTexture.isModified() || landTexture.isDeleted() ||
-//			(formID == 0) || ((formID & 0xFF000000) > 0x01000000);
-		bExportRecord = false;
-		bExportRecord |= landTexture.isModified();
-		bExportRecord |= landTexture.isDeleted();
-//		bExportRecord |= (formID == 0);
-		bExportRecord &= ( (formID & 0xFF000000) > 0x01000000 );
-//		std::cout << "LTEX:" << strEDID << "[" << std::hex << formID << "] bExportRecord=" << std::boolalpha << bExportRecord << std::endl;
-	}
-	else
-	{
-		bExportRecord = true;
-	}
+	uint32_t flags=0;
+	if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
+		flags |= 0x800; // DO NOT USE DELETED, USE DISABLED
+	writer.startRecordTES4("LTEX", flags, formID, strEDID);
+	record.exportTESx (writer, true, 4);
+	writer.endRecordTES4 ("LTEX");
 
-	if (formID != 0 && writer.mUniqueIDcheck.find(formID) != writer.mUniqueIDcheck.end())
-	{
-		// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
-		// just go ahead and skip to mapping index
-		bExportRecord = false;
-//		std::cout << "record already written, skipping ahead." << std::endl;
-	}
-
-	if (bExportRecord)
-	{
-		uint32_t flags=0;
-		if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
-			flags |= 0x800; // DO NOT USE DELETED, USE DISABLED
-		writer.startRecordTES4("LTEX", flags, formID, strEDID);
-		record.exportTESx (writer, true, 4);
-		writer.endRecordTES4 ("LTEX");
-	}
-
-	if (formID != 0)
-	{
-		// create lookup table for TextureIndex
-		mState.mLandTexLookup_Plugin_Index[record.mPluginIndex][record.mIndex] = formID;
-		debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
-		//		OutputDebugString(debugstream.str().c_str());
-	}
-
-	if (stage == mActiveRefCount-1)
+	if (stage == mActiveRecords.size()-1)
 	{
 		writer.endGroupTES4("LTEX");
 	}
@@ -5204,7 +5313,7 @@ void CSMDoc::ExportScriptTES4Stage::perform(int stage, Messages& messages)
 
 	if (stage == mActiveRefCount - 1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
+//		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -5448,20 +5557,20 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
 
 			osgDB::ReaderWriter* imageReader = osgDB::Registry::instance()->getReaderWriterForExtension(inputFilepath.substr(inputFilepath.find_last_of(".")+1));
-			osgDB::ReaderWriter* tgaWriter = osgDB::Registry::instance()->getReaderWriterForExtension("tga");
+//			osgDB::ReaderWriter* tgaWriter = osgDB::Registry::instance()->getReaderWriterForExtension("tga");
 			osgDB::ReaderWriter* ddsWriter = osgDB::Registry::instance()->getReaderWriterForExtension("dds");
 			auto result = imageReader->readImage(*fileStream);
-			osg::Image *icon = result.getImage();
-			if (icon != NULL)
+			osg::Image *tempImage = result.getImage();
+			if (tempImage != NULL)
 			{
 				if (mode == 1)
 				{
 //					std::cout << "(" << p.filename().string() << ") ImageReader=[" << imageReader->getCompoundClassName();
 //					std::cout << "] format=0x" << std::hex << icon->getInternalTextureFormat();
-					if (icon->getInternalTextureFormat() == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
-						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ||
-						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
-						icon->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
+					if (tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ||
+						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 					{
 //						std::cout << " - S3TC detected.";
 //						char pixels[32*32*32];
@@ -5481,7 +5590,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 					}
 //					std::cout << "\n";
 				}
-				ddsWriter->writeImage(*icon, newDDSFile);
+				ddsWriter->writeImage(*tempImage, newDDSFile);
 			}
 			else
 			{
@@ -5505,19 +5614,19 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 
 				// open image from first file
 
-				osg::Image *icon = osgDB::readImageFile(p.string());
-				if (icon != NULL)
+				osg::Image *tempIcon = osgDB::readImageFile(p.string());
+				if (tempIcon != NULL)
 				{
-					if (icon->s() == 64)
+					if (tempIcon->s() == 64)
 					{
 						std::string errorMesg = "[" + p.string() + "]: icon width already 64";
 						throw (std::runtime_error(errorMesg.c_str()));
 					}
-					icon->scaleImage(64, 64, 1);
-					if (icon->s() == 64)
+					tempIcon->scaleImage(64, 64, 1);
+					if (tempIcon->s() == 64)
 					{
 						// write out final file
-						if (osgDB::writeImageFile((*icon), p.string()) == true)
+						if (osgDB::writeImageFile((*tempIcon), p.string()) == true)
 						{
 							std::cout << "scaling success: " << p.string() << "\n";
 						}
