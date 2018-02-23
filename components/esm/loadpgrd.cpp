@@ -332,6 +332,13 @@ namespace ESM
 			esm.endSubRecordTES4("PGRP");
 		}
 
+		// write PGAG
+		int pgagSize = (numNodes + 7) / 8;
+		esm.startSubRecordTES4("PGAG");
+		for (int i=0; i < pgagSize; i++)
+			esm.writeT<uint8_t>(0);
+		esm.endSubRecordTES4("PGAG");
+
 		// write interior connection list
 		if (nodeConnectionsMap.size() > 0)
 		{
