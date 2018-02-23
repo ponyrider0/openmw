@@ -358,7 +358,7 @@ namespace ESM
 			esm.writeT<uint32_t>(mAmbi.mSunlight); // direction color
 			esm.writeT<uint32_t>(mAmbi.mFog); // fog color
 			//	TODO: figure out how to convert mAmbi.mFogDensity to Oblivion fog system
-			esm.writeT<float>(0); // fog near
+			esm.writeT<float>(0.000100); // fog near
 			esm.writeT<float>(0);  // fog far
 			esm.writeT<uint32_t>(0); // rotation xy
 			esm.writeT<uint32_t>(0); // rotation z
