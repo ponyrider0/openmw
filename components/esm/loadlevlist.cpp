@@ -130,6 +130,13 @@ namespace ESM
 		if (it_LVLO == mList.end())
 		{
 			errStream << "WARNING, Leveled List contains no items: " << newEDID << std::endl;
+			esm.startSubRecordTES4("LVLO");
+			esm.writeT<uint16_t>(0); // level
+			esm.writeT<uint16_t>(0); // unknown?
+			esm.writeT<uint32_t>(0x19116); //formID=Fork
+			esm.writeT<uint16_t>(0); //count
+			esm.writeT<uint16_t>(0); //unknown
+			esm.endSubRecordTES4("LVLO");
 		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
@@ -199,6 +206,13 @@ namespace ESM
 		{
 //			std::cout << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
 			errStream << "WARNING, Leveled Creature List contains no creatures: " << newEDID << std::endl;
+			esm.startSubRecordTES4("LVLO");
+			esm.writeT<uint16_t>(0); // level
+			esm.writeT<uint16_t>(0); // unknown?
+			esm.writeT<uint32_t>(0x1D0B6); //formID=TestBear
+			esm.writeT<uint16_t>(0); //count
+			esm.writeT<uint16_t>(0); //unknown
+			esm.endSubRecordTES4("LVLO");
 		}
 		for (it_LVLO=mList.begin(); it_LVLO != mList.end(); it_LVLO++)
 		{
