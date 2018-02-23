@@ -1134,6 +1134,23 @@ namespace ESM
 		{
 			OpCode = 0x1417;
 		}
+		else if (cmdString == "set")
+		{
+			OpCode = 0x0015;
+		}
+		else if (cmdString == "gotojail")
+		{
+			OpCode = 0x107E;
+		}
+		else if (cmdString == "getcurrentaipackage")
+		{
+			OpCode = 0x106E;
+		}
+		else if (cmdString == "call")
+		{
+			OpCode = 0x1883;
+		}
+
 
 
 		return OpCode;
@@ -2016,10 +2033,39 @@ namespace ESM
 			tokenItem++;
 			if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
 			{
+				// process exceptions
 				std::string scriptID = tokenItem->str;
-				argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
-				mESM.RegisterScriptToQuest(scriptID);
-				bEvalArgString = true;
+				if (Misc::StringUtils::lowerCase(scriptID) == "mhtransportscript")
+				{
+					// change to: set MWDestinationCode to 70
+					// ...
+					cmdString = "Set";
+					argString = "MWDestinationCode to 70";
+					argdata = compile_param_varname("MWDestinationCode", "GLOB", 4);
+					argdata.push_back(0x03);
+					argdata.push_back(0x00);
+					argdata.push_back(0x20);
+					argdata.push_back('7');
+					argdata.push_back('0');
+					bUseBinaryData = true;
+				}
+				else if (Misc::StringUtils::lowerCase(scriptID) == "gotojailwhendone")
+				{
+					// change to gotojail equivalent
+					//...
+					cmdString = "GoToJail";
+					argString = "";
+					countParams = 0;
+					sizeParams = 0;
+					argdata.clear();
+					bUseBinaryData = true;
+				}
+				else
+				{
+					argString = mESM.generateEDIDTES4(scriptID, 0, "SQUST");
+					mESM.RegisterScriptToQuest(scriptID);
+					bEvalArgString = true;
+				}
 			}
 			else
 			{
@@ -2196,6 +2242,143 @@ namespace ESM
 			// force baserecord lookup
 			bReturnBase = true;
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getcurrentaipackage")
+		{
+			tokenItem++;
+			if (tokenItem->type == TokenType::endlineT)
+			{
+				tokenItem--;
+			}
+			else if (tokenItem->str != "==")
+			{
+				std::stringstream errmesg;
+				errmesg << "ERROR: Unsupported operation/argument with GetCurrentAIPackage: [" << tokenItem->str << "]\n";
+				abort(errmesg.str());
+				tokenItem--;
+				return;
+			}
+			else
+			{
+				tokenItem++;
+				if (tokenItem->type == TokenType::number_literalT)
+				{
+					std::string numberString = tokenItem->str;
+					int numberVal = atoi(numberString.c_str());
+					int newVal = -1;
+					switch (numberVal)
+					{
+					case -1: // none
+						newVal = numberVal;
+						break;
+					case 0: // wander
+						newVal = 13;
+						break;
+					case 1: // travel
+						newVal = 14;
+						break;
+					case 2: // escort
+						newVal = 2;
+						break;
+					case 3: // follow
+						newVal = 1;
+						break;
+					case 4: // activate
+						newVal = 7;
+						break;
+					case 5: // pursue
+						newVal = 5; // combat
+						break;
+					default:
+						// error message
+						std::stringstream errmesg;
+						errmesg << "ERROR: Unsupported number comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+						abort(errmesg.str());
+						tokenItem--; tokenItem--;
+						return;
+					}
+					std::stringstream strconversion;
+					strconversion << newVal;
+					// modify argument
+					tokenItem->str = strconversion.str();
+					tokenItem--; tokenItem--;
+					bSkipArgParse = true;
+					bUseBinaryData = true;
+					argdata.clear();
+					sizeParams = 0;
+					countParams = 0;
+				}
+				else if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
+				{
+					std::stringstream errmesg;
+					errmesg << "ERROR: Unsupported variable comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+					abort(errmesg.str());
+					tokenItem--; tokenItem--;
+					return;
+				}
+				else
+				{
+					std::stringstream errmesg;
+					errmesg << "ERROR: Unexpected argument type with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+					abort(errmesg.str());
+					tokenItem--; tokenItem--;
+					return;
+				}
+			}
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setdisposition")
+		{
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG, bReturnBase) == false)
+			{
+				if (bUseCommandReference)
+				{
+					bUseCommandReference = false;
+					mCommandRef_EDID = "";
+				}
+				abort("parse_1arg():: sub_parse_arg() failed - ");
+				return;
+			}
+			std::string dispoString = argString;
+			int dispoVal;
+			if (bEvalArgString == false)
+			{
+				dispoVal = atoi(dispoString.c_str());
+			}
+			else
+			{
+				std::stringstream errmesg;
+				errmesg << "ERROR: Unsupported variable argument with SetDisposition [" << dispoString << "]\n";
+				abort(errmesg.str());
+				return;
+			}
+			cmdString = "Call";
+			std::string scriptFuncName = "mwSetDispositionFunction";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName + " " + dispoString;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+//			argdata.push_back(0x01);
+//			argdata.push_back(0x05);
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x01);
+			// argument header: 04 00 42 +(byte value)
+			argdata.push_back(0x04);
+			argdata.push_back(0x00);
+			argdata.push_back(0x42);
+			uint8_t byteval = dispoVal;
+			argdata.push_back(byteval);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+
+		}
+
 
 		//-------------------------------------------------
 		if (bSkipArgParse == false && argString == "")
@@ -2270,7 +2453,7 @@ namespace ESM
 			return;
 		}
 
-		sizeParams = 2 + argdata.size();
+		sizeParams += argdata.size();
 		compile_command(OpCode, sizeParams, countParams, argdata);
 
 		return;
@@ -2396,7 +2579,7 @@ namespace ESM
 		{
 			if (sub_parse_get_set_mod_AV_command(tokenItem, getAVresult, cmdString, arg1String, arg1data) == false)
 			{
-				abort("error processing Set/Mod AV command");
+				abort("error processing Set/Mod AV command\n");
 				return;
 			}
 			bUseBinaryData1 = true;
@@ -3429,7 +3612,6 @@ namespace ESM
 			parse_0arg(tokenItem);
 		}
 		else if ((tokenString == "moddisposition")
-			|| (tokenString == "setdisposition")
 			|| (tokenString == "cast")
 			|| (tokenString == "rotate")
 			|| (tokenString == "rotateworld")
@@ -3506,6 +3688,8 @@ namespace ESM
 			|| (tokenString == "getacrobatics") || (tokenString == "getmarksman") || (tokenString == "getmercantile") || (tokenString == "getsecurity") || (tokenString == "getsneak") || (tokenString == "getspeechcraft")
 			|| (tokenString == "setscale")
 			|| (tokenString == "activate")
+			|| (tokenString == "getcurrentaipackage")
+			|| (tokenString == "setdisposition")
 			)
 		{
 			parse_1arg(tokenItem);
