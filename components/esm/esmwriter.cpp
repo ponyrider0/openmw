@@ -17,6 +17,41 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <components/to_utf8/to_utf8.hpp>
 #include <apps/opencs/model/doc/document.hpp>
 
+int compress_stream ( Bytef *dest, uLongf *destLen, std::ifstream *sourceStream, uLong sourceLen, int level)
+{
+	uint8_t *sourceBuffer = new uint8_t[sourceLen];
+	sourceStream->read((char*)sourceBuffer, sourceLen);
+
+	z_stream stream;
+	int err;
+
+	stream.next_in = (z_const Bytef *)sourceBuffer;
+	stream.avail_in = (uInt)sourceLen;
+	stream.next_out = dest;
+	stream.avail_out = (uInt)*destLen;
+
+	if ((uLong)stream.avail_out != *destLen) return Z_BUF_ERROR;
+
+	stream.zalloc = (alloc_func)0;
+	stream.zfree = (free_func)0;
+	stream.opaque = (voidpf)0;
+
+	err = deflateInit(&stream, level);
+	if (err != Z_OK) return err;
+
+	err = deflate(&stream, Z_FINISH);
+	if (err != Z_STREAM_END) {
+		deflateEnd(&stream);
+		return err == Z_OK ? Z_BUF_ERROR : err;
+	}
+	*destLen = stream.total_out;
+	err = deflateEnd(&stream);
+
+	delete sourceBuffer;
+
+	return err;
+}
+
 namespace ESM
 {
 	// static class member
@@ -30,6 +65,9 @@ namespace ESM
         , mRecordCount(0)
         , mCounting(true)
         , mHeader()
+		, mEnableCompressionWriteRedirect(false)
+		, mCompressNextRecord(false)
+		, mCompressionStream(NULL)
     {}
 
     unsigned int ESMWriter::getVersion() const
@@ -105,8 +143,16 @@ namespace ESM
 
 		mRecordCount = 0;
 		mRecords.clear();
+		mSubrecords.clear();
 		mCounting = true;
 		mStream = &file;
+
+//		assert (std::tmpnam(mTempfilename) != NULL);
+//		std::string tempName="";
+//		tempName = std::tmpnam(mTempfilename);
+		std::tmpnam(mTempfilename);
+		assert(strlen(mTempfilename) != 0);
+		mCompressionStream = new std::ofstream();
 
 		uint32_t flags=0;
 		startRecordTES4("TES4", flags, 0);
@@ -215,6 +261,10 @@ namespace ESM
 		rec.position = mStream->tellp();
 		rec.size = 0;
 
+		if (mCompressNextRecord == true)
+		{
+			flags |= 0x00040000;
+		}
 		writeT<uint32_t>(0); // Size goes here (must convert 32bit to 64bit)
 		writeT<uint32_t>(flags);
 		writeT<uint32_t>(activeID);
@@ -224,6 +274,23 @@ namespace ESM
 
 		mRecords.push_back(rec);
 		assert(mRecords.back().size == 0);
+
+		if (mCompressNextRecord == true)
+		{
+			// set up compression buffer
+			if (mCompressionStream->is_open() == true)
+			{
+				mCompressionStream->close();
+			}
+			mCompressionStream->open(mTempfilename, std::ios_base::binary | std::ios_base::trunc);
+			mEnableCompressionWriteRedirect = true;
+		}
+		else
+		{
+			mEnableCompressionWriteRedirect = false;
+		}
+		// reset variable for next record
+		mCompressNextRecord = false;
 
 		return bSuccess;
 	}
@@ -298,12 +365,19 @@ namespace ESM
 		writeName(name);
 		RecordData rec;
 		rec.name = name;
-		rec.position = mStream->tellp();
+
+		std::ostream *stream_ptr;
+		if (mEnableCompressionWriteRedirect == false)
+			stream_ptr = mStream;
+		else
+			stream_ptr = mCompressionStream;
+
+		rec.position = stream_ptr->tellp();
 		rec.size = 0;
 		writeT<uint16_t>(0); // Size goes here
-		mRecords.push_back(rec);
+		mSubrecords.push_back(rec);
 
-		assert(mRecords.back().size == 0);
+		assert(mSubrecords.back().size == 0);
 	}
 
     void ESMWriter::endRecord(const std::string& name)
@@ -324,17 +398,37 @@ namespace ESM
 
 	void ESMWriter::endRecordTES4(const std::string& name)
 	{
+		if (mEnableCompressionWriteRedirect == true)
+		{
+			// prep buffers for compression
+			mCompressionStream->close();
+			std::ifstream sourceStream(mTempfilename, std::ios_base::binary|std::ios_base::ate|std::ios_base::in);
+			uint32_t source_len = sourceStream.tellg();
+			sourceStream.seekg(0, std::ios_base::beg);
+			unsigned long dest_len = (source_len * 1.1) + 12;
+			uint8_t *dest_buffer_ptr = new uint8_t[dest_len];
+
+			// compress temp buffer
+			compress_stream(dest_buffer_ptr, &dest_len, &sourceStream, source_len, 6);
+			sourceStream.close();
+
+			// turn-off compression write redirection
+			mEnableCompressionWriteRedirect = false;
+			// copy to mStream
+			writeT<uint32_t>(source_len);
+			write((char*)dest_buffer_ptr, dest_len);
+			delete dest_buffer_ptr;
+		}
+
 		RecordData rec = mRecords.back();
 		assert(rec.name == name);
 		mRecords.pop_back();
 
 		mStream->seekp(rec.position);
-
 		mCounting = false;
 		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint32_t)); // rec.size is only 32bit
 		mCounting = true;
-
-		mStream->seekp(0, std::ios::end);
+		mStream->seekp(0, std::ios_base::end);
 
 	}
 
@@ -362,7 +456,7 @@ namespace ESM
 		write (reinterpret_cast<const char*> (&groupSize), sizeof(uint32_t)); 
 		mCounting = true;
 
-		mStream->seekp(0, std::ios::end);
+		mStream->seekp(0, std::ios_base::end);
 
 	}
 
@@ -378,17 +472,23 @@ namespace ESM
 
 	void ESMWriter::endSubRecordTES4(const std::string& name)
 	{
-		RecordData rec = mRecords.back();
+		RecordData rec = mSubrecords.back();
 		assert(rec.name == name);
-		mRecords.pop_back();
+		mSubrecords.pop_back();
 
-		mStream->seekp(rec.position);
+		std::ostream *stream_ptr;
+		if (mEnableCompressionWriteRedirect == false)
+			stream_ptr = mStream;
+		else
+			stream_ptr = mCompressionStream;
+
+		stream_ptr->seekp(rec.position);
 
 		mCounting = false;
 		write (reinterpret_cast<const char*> (&rec.size), sizeof(uint16_t));
 		mCounting = true;
 
-		mStream->seekp(0, std::ios::end);
+		stream_ptr->seekp(0, std::ios_base::end);
 
 	}
 
@@ -461,13 +561,28 @@ namespace ESM
 
     void ESMWriter::write(const char* data, size_t size)
     {
-        if (mCounting && !mRecords.empty())
-        {
-            for (std::list<RecordData>::iterator it = mRecords.begin(); it != mRecords.end(); ++it)
-                it->size += size;
-        }
+		// always update subrecords
+		if (mCounting && !mSubrecords.empty())
+		{
+			for (std::list<RecordData>::iterator it = mSubrecords.begin(); it != mSubrecords.end(); ++it)
+				it->size += size;
+		}
 
-        mStream->write(data, size);
+		// if writing a compressed record, avoid updating sizes until endrecord()/buffer is compressed
+		if (mEnableCompressionWriteRedirect == false)
+		{
+			if (mCounting && !mRecords.empty())
+			{
+				for (std::list<RecordData>::iterator it = mRecords.begin(); it != mRecords.end(); ++it)
+					it->size += size;
+			}
+			mStream->write(data, size);
+		}
+		else
+		{
+			mCompressionStream->write(data, size);
+		}
+
     }
 
     void ESMWriter::setEncoder(ToUTF8::Utf8Encoder* encoder)
@@ -3342,6 +3457,13 @@ namespace ESM
 
 
 		return result;
+	}
+
+	bool ESMWriter::CompressNextRecord()
+	{
+		mCompressNextRecord=true;
+
+		return true;
 	}
 
 

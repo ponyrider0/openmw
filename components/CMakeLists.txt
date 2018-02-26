@@ -213,6 +213,10 @@ target_link_libraries(components
     ${MyGUI_LIBRARIES}
     )
 
+#ZLIB
+include_directories(${ZLIB_INCLUDE_DIRS})
+target_link_libraries(components ${ZLIB_LIBRARIES})
+
 if (WIN32)
     target_link_libraries(components
     ${Boost_LOCALE_LIBRARY})

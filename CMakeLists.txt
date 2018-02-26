@@ -260,6 +260,8 @@ find_package(MyGUI 3.2.1 REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(OpenAL REQUIRED)
 find_package(Bullet ${REQUIRED_BULLET_VERSION} REQUIRED COMPONENTS BulletCollision LinearMath)
+#ZLIB additions
+find_package( ZLIB REQUIRED )
 
 include_directories("."
     SYSTEM
@@ -268,6 +270,7 @@ include_directories("."
     ${MyGUI_INCLUDE_DIRS}
     ${OPENAL_INCLUDE_DIR}
     ${Bullet_INCLUDE_DIRS}
+    ${ZLIB_INCLUDE_DIRS}
 )
 
 link_directories(${SDL2_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})

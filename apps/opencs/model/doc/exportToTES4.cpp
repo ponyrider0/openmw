@@ -2976,20 +2976,20 @@ int CSMDoc::ExportNPCCollectionTES4Stage::setup()
 void CSMDoc::ExportNPCCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "NPC_";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// CREA GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
+	writer.CompressNextRecord();
 	mDocument.getData().getReferenceables().getDataSet().getNPCs().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 
 	if (stage == mActiveRecords.size()-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -3482,10 +3482,10 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 						std::string pathgridStringID = cellRecordPtr->get().mId + "-pathgrid";
 						uint32_t pathgridFormID = writer.crossRefStringID(pathgridStringID, "PGRD", false, false);
 	//					std::cout << "DEBUG: crossRef (interior) found " << pathgridStringID << " [" << std::hex << pathgridFormID << "]" << std::endl;
-
+						writer.CompressNextRecord();
 						writer.startRecordTES4("PGRD", 0, pathgridFormID, pathgridStringID);
 						pathgrid.get().exportSubCellTES4(writer, 0, 0, true);
-						writer.endSubRecordTES4("PGRD");
+						writer.endRecordTES4("PGRD");
 					}
 
 
@@ -4145,6 +4145,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						landFormID = writer.crossRefStringID(ssLandscapeEDID.str(), "LAND", false, false);
 //						std::cout << "DEBUG: crossRef found " << ssLandscapeEDID.str() << " [" << std::hex << landFormID << "]" << std::endl;
 					}
+					writer.CompressNextRecord();
 					writer.startRecordTES4("LAND", 0, landFormID, ssLandscapeEDID.str());
 					mDocument.getData().getLand().getRecord(landIndex).get().exportSubCellTES4(writer, x, y);
 
@@ -4195,9 +4196,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 						pathgridFormID = writer.crossRefStringID(ssPathgridEDID.str(), "PGRD", false, false);
 //						std::cout << "DEBUG: crossRef found " << ssPathgridEDID.str() << " [" << std::hex << pathgridFormID << "]" << std::endl;
 					}
+					writer.CompressNextRecord();
 					writer.startRecordTES4("PGRD", 0, pathgridFormID, ssPathgridEDID.str());
 					pathgrid.get().exportSubCellTES4(writer, baseX+x, baseY+y);
-					writer.endSubRecordTES4("PGRD");
+					writer.endRecordTES4("PGRD");
 				}
 
 				// export Refs (ACRE, REFR)
@@ -5198,7 +5200,11 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 		int plugindex = landTexture.get().mPluginIndex;
 //		if (plugindex == 0)
 //			plugindex = landTexture.getBase().mPluginIndex;
+
+//		if (mState.mLandTexLookup_Plugin_Index.empty())
+//			mState.mLandTexLookup_Plugin_Index.insert(std::make_pair(plugindex, std::map<int, uint32_t>()));
 		mState.mLandTexLookup_Plugin_Index[plugindex][record.mIndex] = formID;
+
 		//	debugstream << "INDEXED: (plugin=" << record.mPluginIndex << ") texindex=" << record.mIndex << " formid=[" << formID << "] mID=" << record.mId << std::endl;
 		//	OutputDebugString(debugstream.str().c_str());
 

@@ -1,6 +1,12 @@
 #ifndef OPENMW_ESM_WRITER_H
 #define OPENMW_ESM_WRITER_H
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+#include <zlib.h>
+
 #include <iosfwd>
 #include <list>
 #include <map>
@@ -243,13 +249,20 @@ public:
 
 		bool lookup_reference(const CSMDoc::Document &doc, const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 
+		bool CompressNextRecord();
+
     private:
         std::list<RecordData> mRecords;
-        std::ostream* mStream;
+		std::list<RecordData> mSubrecords;
+		std::ostream* mStream;
         std::streampos mHeaderPos;
         ToUTF8::Utf8Encoder* mEncoder;
         int mRecordCount;
         bool mCounting;
+		bool mCompressNextRecord;
+		bool mEnableCompressionWriteRedirect;
+		std::ofstream* mCompressionStream;
+		char mTempfilename[MAX_PATH];
 
         Header mHeader;
     };
