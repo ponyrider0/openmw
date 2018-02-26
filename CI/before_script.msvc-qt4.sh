@@ -648,7 +648,7 @@ echo "Setting up OpenMW build..."
 add_cmake_opts -DBUILD_BSATOOL=no \
 	-DBUILD_ESMTOOL=no \
 	-DBUILD_MYGUI_PLUGIN=no \
-	-DOPENMW_MP_BUILD=on 
+	-DOPENMW_MP_BUILD=on
 
 if [ ! -z $CI ]; then
 	case $STEP in
