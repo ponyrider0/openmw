@@ -466,7 +466,7 @@ int CSMDoc::SavingState::loadCellIDmap2(std::string filename)
 
 int CSMDoc::SavingState::loadPNAMINFOSubstitutionMap(std::string filename)
 {
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 
@@ -514,7 +514,7 @@ int CSMDoc::SavingState::loadPNAMINFOSubstitutionMap(std::string filename)
 
 int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 {
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 
@@ -791,7 +791,7 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 {
 	// display a period for progress feedback
 //	std::cout << ".";
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 
@@ -878,7 +878,7 @@ int CSMDoc::SavingState::loadCellIDmap3(std::string filename)
 
 int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 {
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 
@@ -930,7 +930,7 @@ int CSMDoc::SavingState::loadLocalVarIndexmap(std::string filename)
 
 int CSMDoc::SavingState::loadScriptHelperVarMap(std::string filename)
 {
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 
@@ -982,7 +982,7 @@ int CSMDoc::SavingState::loadScriptHelperVarMap(std::string filename)
 
 int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
 {
-	std::cout << "Importing '" << filename << "'" << std::flush;
+	std::cout << "Importing '" << filename << "'" << std::endl;
 
 	int errorcode = 0;
 

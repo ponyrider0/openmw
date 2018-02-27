@@ -127,7 +127,7 @@ namespace ESM
 		std::ostringstream tempStream, debugstream;
 
 		// export EDID
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "FACT");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -139,9 +139,8 @@ namespace ESM
 		// XNAMs, Relations: { faction/race formID, int32 modifier }
 		for (auto reaction = mReactions.begin(); reaction != mReactions.end(); reaction++)
 		{
-			tempStr = esm.generateEDIDTES4(reaction->first);
+			tempStr = esm.generateEDIDTES4(reaction->first, 0, "FACT");
 			// TODO: substitute generic EDID for hardcoded Morroblivion EDID
-			tempStr = esm.substituteMorroblivionEDID(tempStr, ESM::REC_FACT);
 			tempFormID = esm.crossRefStringID(tempStr, "FACT", false);
 			if (tempFormID != 0)
 			{
@@ -154,7 +153,7 @@ namespace ESM
 			{
 				debugstream.str(""); debugstream.clear();
 				debugstream << "Export FACT ERROR: could not resolve Faction name relation: FACT[ " <<
-					esm.generateEDIDTES4(mId) << "] " << "relation: " << esm.generateEDIDTES4(reaction->first) << std::endl;
+					esm.generateEDIDTES4(mId, 0, "FACT") << "] " << "relation: " << esm.generateEDIDTES4(reaction->first, 0, "FACT") << std::endl;
 //				std::cout << debugstream.str();
 				OutputDebugString(debugstream.str().c_str());
 			}

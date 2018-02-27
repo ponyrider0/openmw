@@ -954,7 +954,7 @@ namespace ESM
 				uint32_t raceID = substituteRaceID(stringID);
 				if (raceID != 0)
 					return raceID;
-				tempString = generateEDIDTES4(stringID);
+				tempString = generateEDIDTES4(stringID, 0, sSIG);
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "clas")
 			{
@@ -962,7 +962,7 @@ namespace ESM
 				uint32_t classID = crossRefStringID(tempString, sSIG, false, true);
 				if (classID != 0)
 					return classID;
-				tempString = generateEDIDTES4(stringID, 0);
+				tempString = generateEDIDTES4(stringID, 0, sSIG);
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "cell")
 			{
@@ -3111,6 +3111,15 @@ namespace ESM
 
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, const std::string & recordSIG)
 	{
+		std::string morroblivionEDID = genericEDID;
+		if (mMorroblivionEDIDmap.find(genericEDID) != mMorroblivionEDIDmap.end())
+		{
+			morroblivionEDID = mMorroblivionEDIDmap[genericEDID];
+			if (morroblivionEDID == "")
+				throw std::runtime_error("ERROR: empty EDID substituted for: " + genericEDID);
+			return morroblivionEDID;
+		}
+
 		if (recordSIG.size() != 4)
 			return genericEDID;
 
@@ -3129,14 +3138,6 @@ namespace ESM
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, ESM::RecNameInts recordType)
 	{
 		std::string morroblivionEDID = genericEDID;
-
-		if (mMorroblivionEDIDmap.find(genericEDID) != mMorroblivionEDIDmap.end())
-		{
-			morroblivionEDID = mMorroblivionEDIDmap[genericEDID];
-			if (morroblivionEDID == "")
-				throw std::runtime_error("ERROR: Creature - empty EDID substituted for: " + genericEDID);
-			return morroblivionEDID;
-		}
 
 		switch (recordType)
 		{

@@ -276,8 +276,7 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, const CSMDoc::Document &doc, cons
 
 	if (baseFormID == 0)
 	{
-		baseEDID = esm.generateEDIDTES4(mRefID);
-		baseEDID = esm.substituteMorroblivionEDID(baseEDID, (ESM::RecNameInts)0);
+		baseEDID = esm.generateEDIDTES4(mRefID, 0, "");
 //		std::string refSIG="", refVal="";
 //		esm.lookup_reference(doc, mRefID, baseEDID, refSIG, refVal);
 

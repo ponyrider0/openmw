@@ -611,7 +611,7 @@ namespace ESM
 			if (bLookupFailed)
 			{
 				std::stringstream errMesg;
-				errMesg << "identifier not found: (" << refSIG << ") " << varString << " or " << mESM.generateEDIDTES4(tokenItem->str) << std::endl;
+				errMesg << "identifier not found: (" << refSIG << ") " << varString << " or " << mESM.generateEDIDTES4(tokenItem->str, 0) << std::endl;
 				abort(errMesg.str());
 				return;
 			}

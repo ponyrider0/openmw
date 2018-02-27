@@ -156,8 +156,7 @@ namespace ESM {
 		bool canFly=false;
 
 		// export EDID
-		strEDID = esm.generateEDIDTES4(mId);
-		strEDID = esm.substituteMorroblivionEDID(strEDID, (ESM::RecNameInts)sRecordId);
+		strEDID = esm.generateEDIDTES4(mId, 0, "CREA");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
@@ -314,7 +313,7 @@ namespace ESM {
 		esm.endSubRecordTES4("AIDT");
 
 		// PKID, ai packages (formID)
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "PACK");
 		std::string pkgEDID;
 		int pkgcount = 0;
 		uint32_t pkgFormID;
@@ -393,7 +392,7 @@ namespace ESM {
 					esm.startSubRecordTES4("PKID");
 					esm.writeT<uint32_t>(pkgFormID);
 					esm.endSubRecordTES4("PKID");
-					ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data());
+					ai_debugstream << "Substituting Wander Package for: Activate target:" << esm.generateEDIDTES4(it_aipackage->mActivate.mName.ro_data(), 0, "PACK");
 					ai_debugstream << std::endl;
 //					std::cout << ai_debugstream.str();
 					OutputDebugString(ai_debugstream.str().c_str());
@@ -407,7 +406,7 @@ namespace ESM {
 					esm.startSubRecordTES4("PKID");
 					esm.writeT<uint32_t>(pkgFormID);
 					esm.endSubRecordTES4("PKID");
-					ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+					ai_debugstream << "Substituting Wander Package for: Follow target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data(), 0, "PACK");
 					ai_debugstream << std::endl;
 //					std::cout << ai_debugstream.str();
 					OutputDebugString(ai_debugstream.str().c_str());
@@ -421,7 +420,7 @@ namespace ESM {
 					esm.startSubRecordTES4("PKID");
 					esm.writeT<uint32_t>(pkgFormID);
 					esm.endSubRecordTES4("PKID");
-					ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data());
+					ai_debugstream << "Substituting Wander Package for: Escort target:" << esm.generateEDIDTES4(it_aipackage->mTarget.mId.ro_data(), 0, "PACK");
 					ai_debugstream << std::endl;
 //					std::cout << ai_debugstream.str();
 					OutputDebugString(ai_debugstream.str().c_str());

@@ -106,7 +106,7 @@ namespace ESM
 	{
 		std::stringstream errStream;
 
-		std::string newEDID = esm.generateEDIDTES4(mId);
+		std::string newEDID = esm.generateEDIDTES4(mId, 0, "LVLI");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(newEDID);
 		esm.endSubRecordTES4("EDID");
@@ -143,8 +143,7 @@ namespace ESM
 			esm.startSubRecordTES4("LVLO");
 			esm.writeT<short>(it_LVLO->mLevel); // level
 			esm.writeT<uint16_t>(0); // unknown?
-			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
-			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts) sRecordId);
+			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId, 0);
 			uint32_t refID = esm.crossRefStringID(itemEDID, "LVLI", false);
 			if (refID != 0)
 			{
@@ -181,7 +180,7 @@ namespace ESM
 		std::stringstream errStream;
 
 		// export LVC
-		std::string newEDID = esm.generateEDIDTES4(mId);
+		std::string newEDID = esm.generateEDIDTES4(mId, 0, "LVLC");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(newEDID);
 		esm.endSubRecordTES4("EDID");
@@ -220,8 +219,7 @@ namespace ESM
 			esm.writeT<short>(it_LVLO->mLevel); // level
 			esm.writeT<uint16_t>(0); // unknown?
 			// creature reference ID
-			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId);
-			itemEDID = esm.substituteMorroblivionEDID(itemEDID, (ESM::RecNameInts)sRecordId);
+			std::string itemEDID = esm.generateEDIDTES4(it_LVLO->mId, 0, "CREA");
 			uint32_t refID = esm.crossRefStringID(itemEDID, "LVLC", false);
 			if (refID != 0)
 			{

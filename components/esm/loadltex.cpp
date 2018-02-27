@@ -71,7 +71,7 @@ namespace ESM
 		std::ostringstream debugstream, iconpath;
 
 		// EDID
-		strEDID = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId, 0, "LTEX");
 		debugstream << "LTEX: EDID=[" << strEDID << "]; ";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);

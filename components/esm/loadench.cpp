@@ -68,7 +68,7 @@ namespace ESM
 		std::ostringstream tempStream;
 
 		// export EDID
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "ENCH");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");

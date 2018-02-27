@@ -87,7 +87,7 @@ namespace ESM
 		std::string strEDID, tempStr;
 		std::ostringstream tempPath;
 
-		strEDID = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId, 0, "WEAP");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
@@ -230,7 +230,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempPath;
 
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "AMMO");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");

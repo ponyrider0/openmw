@@ -76,7 +76,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempPath;
 
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "APPA");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");

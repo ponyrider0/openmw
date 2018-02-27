@@ -97,7 +97,7 @@ namespace ESM
 		std::string strEDID, tempStr;
 		std::ostringstream tempPath;
 
-		strEDID = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId, 0, "CLOT");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");

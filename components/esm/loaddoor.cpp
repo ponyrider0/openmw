@@ -73,7 +73,7 @@ namespace ESM
 		std::ostringstream modelPath;
 
 		// EDID
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "DOOR");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");

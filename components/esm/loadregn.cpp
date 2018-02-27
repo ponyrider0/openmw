@@ -158,7 +158,7 @@ namespace ESM
 	{
 		std::ostringstream tempStream;
 		std::string tempStr;
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "CLMT");
 		tempStream << tempStr << "Clmt";
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStream.str());

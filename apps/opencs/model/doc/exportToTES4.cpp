@@ -1492,7 +1492,7 @@ int CSMDoc::ExportWeaponCollectionTES4Stage::setup()
 			}
 
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, "WEAP");
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -1790,7 +1790,7 @@ int CSMDoc::ExportMiscCollectionTES4Stage::setup()
 			}
 
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, "MISC");
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -1886,7 +1886,7 @@ int CSMDoc::ExportLightCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, "LIGH");
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -1947,7 +1947,7 @@ int CSMDoc::ExportLeveledItemCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, "LVLI");
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2007,7 +2007,7 @@ int CSMDoc::ExportIngredientCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, "INGR");
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2076,14 +2076,14 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 	{
 		// get itemName, resolve itemType
 		std::string itemName = inventoryItem->mItem.toString();
-		std::string itemEDID = writer.generateEDIDTES4(itemName);
+		std::string itemEDID = writer.generateEDIDTES4(itemName, 0, "");
 		auto typeResult = writer.mStringTypeMap.find(Misc::StringUtils::lowerCase(itemEDID));
 		if (typeResult == writer.mStringTypeMap.end())
 			continue;
 
 		if (Misc::StringUtils::lowerCase(typeResult->second) == "ingr")
 		{
-			ingredientEDID = writer.generateEDIDTES4(typeResult->second);
+			ingredientEDID = writer.generateEDIDTES4(itemName, 0, "INGR");
 			break;
 		}
 		else if (Misc::StringUtils::lowerCase(typeResult->second) == "lvli")
@@ -2097,7 +2097,7 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 			{
 				// check lvli items for an ingredient
 				std::string lvli_itemname = itemLVLI->mId;
-				std::string lvli_itemEDID = writer.generateEDIDTES4(lvli_itemname);
+				std::string lvli_itemEDID = writer.generateEDIDTES4(lvli_itemname, 0, "");
 				// check type
 				auto lvli_typeResult = writer.mStringTypeMap.find(Misc::StringUtils::lowerCase(lvli_itemEDID));
 				if (lvli_typeResult == writer.mStringTypeMap.end())
@@ -2140,7 +2140,7 @@ int CSMDoc::ExportContainerCollectionTES4Stage::setup()
 	for (int i = 0; i < collectionSize; i++)
 	{
 		const CSMWorld::Record<ESM::Container> containerRecord = mDocument.getData().getReferenceables().getDataSet().getContainers().mContainer.at(i);
-		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId);
+		std::string strEDID = writer.generateEDIDTES4(containerRecord.get().mId, 0, sSIG);
 //		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 		bool isFlora = false;
@@ -2241,7 +2241,7 @@ int CSMDoc::ExportClothingCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2305,7 +2305,7 @@ void CSMDoc::ExportClimateCollectionTES4Stage::perform (int stage, Messages& mes
 	}
 
 	ESM::Region region = mDocument.getData().getRegions().getNthRecord(stage).get();
-	std::string strEDID = writer.generateEDIDTES4(region.mId) + "Clmt";
+	std::string strEDID = writer.generateEDIDTES4(region.mId, 0, "CLMT") + "Clmt";
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 	if ((formID & 0xFF000000) > 0x01000000 || formID == 0)
 	{
@@ -2344,7 +2344,7 @@ int CSMDoc::ExportBookCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2423,7 +2423,7 @@ int CSMDoc::ExportArmorCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2493,7 +2493,7 @@ int CSMDoc::ExportApparatusCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2554,7 +2554,7 @@ int CSMDoc::ExportPotionCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2632,7 +2632,7 @@ int CSMDoc::ExportActivatorCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2703,7 +2703,7 @@ int CSMDoc::ExportLeveledCreatureCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2758,7 +2758,7 @@ int CSMDoc::ExportCreatureCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2817,7 +2817,7 @@ int CSMDoc::ExportDoorCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2894,7 +2894,7 @@ int CSMDoc::ExportSTATCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -2959,7 +2959,7 @@ int CSMDoc::ExportNPCCollectionTES4Stage::setup()
 		if (exportOrSkip)
 		{
 			mActiveRecords.push_back(i);
-			std::string strEDID = writer.generateEDIDTES4(record.get().mId);
+			std::string strEDID = writer.generateEDIDTES4(record.get().mId, 0, sSIG);
 			uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 			if (formID == 0)
 			{
@@ -4942,9 +4942,9 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::drawPreBlendMapXY(const ESM:
 		lookup = pluginMap_it->second.find(texindex);
 		while (lookup == pluginMap_it->second.end())
 		{
+			pluginMap_it++;
 			if (pluginMap_it != mState.mLandTexLookup_Plugin_Index.end())
 			{
-				pluginMap_it++;
 				current_plugindex = pluginMap_it->first;
 				lookup = pluginMap_it->second.find(texindex);
 			}
@@ -5184,8 +5184,7 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 			bExportRecord = true;
 
 		// create separate lookup tables for each plugin loaded
-		std::string strEDID = writer.generateEDIDTES4(record.mId);
-		strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
+		std::string strEDID = writer.generateEDIDTES4(record.mId, 0, "LTEX");
 		uint32_t formID = writer.crossRefStringID(strEDID, "LTEX", false, true);
 		if (formID == 0)
 		{
@@ -5245,9 +5244,7 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	CSMWorld::LandTexture record = landTexture.get();
 
 	// create separate lookup tables for each plugin loaded
-	std::string strEDID = writer.generateEDIDTES4(record.mId);
-	// TODO: substitute Morroblivion EDID
-	strEDID = writer.substituteMorroblivionEDID(strEDID, ESM::REC_LTEX);
+	std::string strEDID = writer.generateEDIDTES4(record.mId, 0, "LTEX");
 	uint32_t formID = writer.crossRefStringID(strEDID, "LTEX", false, true);
 
 	uint32_t flags=0;

@@ -123,7 +123,7 @@ namespace ESM
 			isTakeOnly = true;
 		}
 
-		tempStr = esm.generateEDIDTES4(mId);
+		tempStr = esm.generateEDIDTES4(mId, 0, "CONT");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
@@ -197,7 +197,7 @@ namespace ESM
 			isTakeOnly = true;
 		}
 
-		strEDID = esm.generateEDIDTES4(mId);
+		strEDID = esm.generateEDIDTES4(mId, 0, "FLOR");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
