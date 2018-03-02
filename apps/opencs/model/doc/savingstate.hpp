@@ -91,7 +91,7 @@ namespace CSMDoc
 			std::vector<std::string> mDummyCellNames;
 
 			int loadPNAMINFOSubstitutionMap(std::string filename);
-			int loadESMMastersMap(std::string filename);
+			int loadESMMastersMap(std::string filename, std::string esmName);
 	};
 
 

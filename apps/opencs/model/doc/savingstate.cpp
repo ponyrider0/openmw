@@ -546,7 +546,7 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 		if (strMwEDID == "" || strGenEDID == "")
 			continue;
 
-		mWriter.mMorroblivionEDIDmap[strGenEDID] = strMwEDID;
+		mWriter.mMorroblivionEDIDmap[Misc::StringUtils::lowerCase(strGenEDID)] = strMwEDID;
 
 	}
 	inputFile.close();
@@ -980,7 +980,7 @@ int CSMDoc::SavingState::loadScriptHelperVarMap(std::string filename)
 }
 
 
-int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
+int CSMDoc::SavingState::loadESMMastersMap(std::string filename, std::string esmName)
 {
 	std::cout << "Importing '" << filename << "'" << std::endl;
 
@@ -992,6 +992,7 @@ int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
 	// skip header line
 	std::getline(inputFile, inputLine_noN);
 
+	// read ESM masters
 	while (std::getline(inputFile, inputLine_noN, '\n'))
 	{
 		std::istringstream inputLine_Str(inputLine_noN);
@@ -1000,6 +1001,7 @@ int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
         while (std::getline(inputLine_Str, inputLine_noR, '\r'))
         {
             std::istringstream parserStream(inputLine_noR);
+			std::string strConversionOptions;
             std::string strESMName;
 
             std::string token;
@@ -1007,6 +1009,14 @@ int CSMDoc::SavingState::loadESMMastersMap(std::string filename)
 
             std::getline(parserStream, token, ',');
             strESMName = token;
+
+			std::getline(parserStream, token, ',');
+			strConversionOptions = token;
+
+			if (Misc::StringUtils::lowerCase(strESMName) == Misc::StringUtils::lowerCase(esmName))
+			{
+				mWriter.mConversionOptions = Misc::StringUtils::lowerCase(strConversionOptions);
+			}
 
             std::vector<std::string> ESMmasterList;
             while (std::getline(parserStream, token, ',') )
@@ -1047,7 +1057,7 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
     std::string csvRoot = getenv("HOME");
     csvRoot += "/";
 #endif
-	loadESMMastersMap(csvRoot + "ESMMastersMap.csv");
+	loadESMMastersMap(csvRoot + "ESMMastersMap.csv", esmName);
 
 	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
 	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
