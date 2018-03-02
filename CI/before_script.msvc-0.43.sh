@@ -75,7 +75,7 @@ Options:
 		Set the build platform, can also be set with environment variable PLATFORM.
 	-u
 		Configure for unity builds.
-	-v <2013/2015>
+	-v <2013/2015/2017>
 		Choose the Visual Studio version to use.
 	-V
 		Run verbosely
@@ -213,20 +213,28 @@ if [ -z $VS_VERSION ]; then
 fi
 
 case $VS_VERSION in
-	14|14.0|2015 )
-		GENERATOR="Visual Studio 14 2015"
-		XP_TOOLSET="v140_xp"
-		TOOLSET="v140"
+	15|15.0|2017 )
+		GENERATOR="Visual Studio 15 2017"
+		TOOLSET="vc140"
 		MSVC_VER="14"
 		MSVC_YEAR="2015"
+		MSVC_DISPLAY_YEAR="2017"
+		;;
+
+	14|14.0|2015 )
+		GENERATOR="Visual Studio 14 2015"
+		TOOLSET="vc140"
+		MSVC_VER="14"
+		MSVC_YEAR="2015"
+		MSVC_DISPLAY_YEAR="2015"
 		;;
 
 	12|12.0|2013 )
 		GENERATOR="Visual Studio 12 2013"
-		XP_TOOLSET="v120_xp"
-		TOOLSET="v120"
+		TOOLSET="vc120"
 		MSVC_VER="12"
 		MSVC_YEAR="2013"
+		MSVC_DISPLAY_YEAR="2013"
 		;;
 esac
 
@@ -278,7 +286,7 @@ fi
 
 echo
 echo "==================================="
-echo "Starting prebuild on MSVC${MSVC_YEAR} WIN${BITS}"
+echo "Starting prebuild on MSVC${MSVC_DISPLAY_YEAR} WIN${BITS}"
 echo "==================================="
 echo
 
@@ -312,9 +320,9 @@ if [ -z $SKIP_DOWNLOAD ]; then
 		"ffmpeg-3.2.4-dev-win${BITS}.zip"
 
 	# MyGUI
-	download "MyGUI 3.2.3-git" \
-		"http://www.lysator.liu.se/~ace/OpenMW/deps/MyGUI-3.2.3-git-msvc${MSVC_YEAR}-win${BITS}.7z" \
-		"MyGUI-3.2.3-git-msvc${MSVC_YEAR}-win${BITS}.7z"
+	download "MyGUI 3.2.2" \
+		"http://www.lysator.liu.se/~ace/OpenMW/deps/MyGUI-3.2.2-msvc${MSVC_YEAR}-win${BITS}.7z" \
+		"MyGUI-3.2.2-msvc${MSVC_YEAR}-win${BITS}.7z"
 
 	# OpenAL
 	download "OpenAL-Soft 1.17.2" \
@@ -322,9 +330,9 @@ if [ -z $SKIP_DOWNLOAD ]; then
 		"OpenAL-Soft-1.17.2.zip"
 
 	# OSG
-	download "OpenSceneGraph 3.4.0-scrawl" \
-		"http://www.lysator.liu.se/~ace/OpenMW/deps/OSG-3.4.0-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" \
-		"OSG-3.4.0-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z"
+	download "OpenSceneGraph 3.4.1-scrawl" \
+		"http://www.lysator.liu.se/~ace/OpenMW/deps/OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" \
+		"OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z"
 
 	# Qt
 	if [ -z $APPVEYOR ]; then
@@ -342,15 +350,15 @@ if [ -z $SKIP_DOWNLOAD ]; then
 	fi
 
 	# SDL2
-	download "SDL 2.0.4" \
-		"https://www.libsdl.org/release/SDL2-devel-2.0.4-VC.zip" \
-		"SDL2-2.0.4.zip"
+	download "SDL 2.0.7" \
+		"https://www.libsdl.org/release/SDL2-devel-2.0.7-VC.zip" \
+		"SDL2-2.0.7.zip"
 fi
 
 cd .. #/..
 
 # Set up dependencies
-BUILD_DIR="MSVC${MSVC_YEAR}_${BITS}"
+BUILD_DIR="MSVC${MSVC_DISPLAY_YEAR}_${BITS}"
 if [ -z $KEEP ]; then
 	echo
 	echo "(Re)Creating build directory."
@@ -395,6 +403,7 @@ fi
 
 		add_cmake_opts -DBOOST_ROOT="$BOOST_SDK" \
 			-DBOOST_LIBRARYDIR="${BOOST_SDK}/lib${BITS}-msvc-${MSVC_VER}.0"
+		add_cmake_opts -DBoost_COMPILER="-${TOOLSET}"
 
 		echo Done.
 	else
@@ -406,6 +415,7 @@ fi
 		fi
 		add_cmake_opts -DBOOST_ROOT="$BOOST_SDK" \
 			-DBOOST_LIBRARYDIR="${BOOST_SDK}/lib${BITS}-msvc-${MSVC_VER}.0"
+		add_cmake_opts -DBoost_COMPILER="-${TOOLSET}"
 
 		echo Done.
 	fi
@@ -464,20 +474,20 @@ cd $DEPS
 echo
 
 # MyGUI
-printf "MyGUI 3.2.3-git... "
+printf "MyGUI 3.2.2... "
 {
 	cd $DEPS_INSTALL
 
 	if [ -d MyGUI ] && \
 		grep "MYGUI_VERSION_MAJOR 3" MyGUI/include/MYGUI/MyGUI_Prerequest.h > /dev/null && \
 		grep "MYGUI_VERSION_MINOR 2" MyGUI/include/MYGUI/MyGUI_Prerequest.h > /dev/null && \
-		grep "MYGUI_VERSION_PATCH 3" MyGUI/include/MYGUI/MyGUI_Prerequest.h > /dev/null
+		grep "MYGUI_VERSION_PATCH 2" MyGUI/include/MYGUI/MyGUI_Prerequest.h > /dev/null
 	then
 		printf "Exists. "
 	elif [ -z $SKIP_EXTRACT ]; then
 		rm -rf MyGUI
-		eval 7z x -y "${DEPS}/MyGUI-3.2.3-git-msvc${MSVC_YEAR}-win${BITS}.7z" $STRIP
-		mv "MyGUI-3.2.3-git-msvc${MSVC_YEAR}-win${BITS}" MyGUI
+		eval 7z x -y "${DEPS}/MyGUI-3.2.2-msvc${MSVC_YEAR}-win${BITS}.7z" $STRIP
+		mv "MyGUI-3.2.2-msvc${MSVC_YEAR}-win${BITS}" MyGUI
 	fi
 
 	export MYGUI_HOME="$(real_pwd)/MyGUI"
@@ -517,20 +527,20 @@ cd $DEPS
 echo
 
 # OSG
-printf "OSG 3.4.0-scrawl... "
+printf "OSG 3.4.1-scrawl... "
 {
 	cd $DEPS_INSTALL
 
 	if [ -d OSG ] && \
 		grep "OPENSCENEGRAPH_MAJOR_VERSION    3" OSG/include/osg/Version > /dev/null && \
 		grep "OPENSCENEGRAPH_MINOR_VERSION    4" OSG/include/osg/Version > /dev/null && \
-		grep "OPENSCENEGRAPH_PATCH_VERSION    0" OSG/include/osg/Version > /dev/null
+		grep "OPENSCENEGRAPH_PATCH_VERSION    1" OSG/include/osg/Version > /dev/null
 	then
 		printf "Exists. "
 	elif [ -z $SKIP_EXTRACT ]; then
 		rm -rf OSG
-		eval 7z x -y "${DEPS}/OSG-3.4.0-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" $STRIP
-		mv "OSG-3.4.0-scrawl-msvc${MSVC_YEAR}-win${BITS}" OSG
+		eval 7z x -y "${DEPS}/OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}.7z" $STRIP
+		mv "OSG-3.4.1-scrawl-msvc${MSVC_YEAR}-win${BITS}" OSG
 	fi
 
 	OSG_SDK="$(real_pwd)/OSG"
@@ -546,8 +556,8 @@ printf "OSG 3.4.0-scrawl... "
 	add_runtime_dlls "$(pwd)/OSG/bin/"{OpenThreads,zlib,libpng*}${SUFFIX}.dll \
 		"$(pwd)/OSG/bin/osg"{,Animation,DB,FX,GA,Particle,Text,Util,Viewer}${SUFFIX}.dll
 
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.0/osgdb_"{bmp,dds,jpeg,osg,png,tga}${SUFFIX}.dll
-	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.0/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.1/osgdb_"{bmp,dds,jpeg,osg,png,tga}${SUFFIX}.dll
+	add_osg_dlls "$(pwd)/OSG/bin/osgPlugins-3.4.1/osgdb_serializers_osg"{,animation,fx,ga,particle,text,util,viewer}${SUFFIX}.dll
 
 	echo Done.
 }
@@ -622,18 +632,18 @@ cd $DEPS
 echo
 
 # SDL2
-printf "SDL 2.0.4... "
+printf "SDL 2.0.7... "
 {
-	if [ -d SDL2-2.0.4 ]; then
+	if [ -d SDL2-2.0.7 ]; then
 		printf "Exists. "
 	elif [ -z $SKIP_EXTRACT ]; then
-		rm -rf SDL2-2.0.4
-		eval 7z x -y SDL2-2.0.4.zip $STRIP
+		rm -rf SDL2-2.0.7
+		eval 7z x -y SDL2-2.0.7.zip $STRIP
 	fi
 
-	export SDL2DIR="$(real_pwd)/SDL2-2.0.4"
+	export SDL2DIR="$(real_pwd)/SDL2-2.0.7"
 
-	add_runtime_dlls "$(pwd)/SDL2-2.0.4/lib/x${ARCHSUFFIX}/SDL2.dll"
+	add_runtime_dlls "$(pwd)/SDL2-2.0.7/lib/x${ARCHSUFFIX}/SDL2.dll"
 
 	echo Done.
 }
@@ -707,10 +717,10 @@ if [ -z $CI ]; then
 	echo
 
 	echo "- OSG Plugin DLLs..."
-	mkdir -p $BUILD_CONFIG/osgPlugins-3.4.0
+	mkdir -p $BUILD_CONFIG/osgPlugins-3.4.1
 	for DLL in $OSG_PLUGINS; do
 		echo "    $(basename $DLL)."
-		cp "$DLL" $BUILD_CONFIG/osgPlugins-3.4.0
+		cp "$DLL" $BUILD_CONFIG/osgPlugins-3.4.1
 	done
 	echo
 
@@ -738,21 +748,6 @@ if [ -z $VERBOSE ]; then
 	else
 		echo Failed.
 	fi
-fi
-
-if [ -z $CI ]; then
-	echo "- Copying Runtime Resources/Config Files"
-	echo "    gamecontrollerdb.txt"
-	cp gamecontrollerdb.txt $BUILD_CONFIG/gamecontrollerdb.txt
-	echo "    openmw.cfg"
-	cp openmw.cfg.install $BUILD_CONFIG/openmw.cfg
-	echo "    openmw-cs.cfg"
-	cp openmw-cs.cfg $BUILD_CONFIG/openmw-cs.cfg
-	echo "    settings-default.cfg"
-	cp settings-default.cfg $BUILD_CONFIG/settings-default.cfg
-	echo "    resources/"
-	cp -r resources $BUILD_CONFIG/resources
-	echo
 fi
 
 exit $RET
