@@ -377,7 +377,11 @@ namespace ESM
 			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
 			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
 		}
-		bool bConvertArmor = true; 
+
+		bool bConvertArmor = false; 
+		if (esm.mConversionOptions.find("#armor") != std::string::npos)
+			bConvertArmor = true;
+
 		if (bConvertArmor)
 		{
 //			esm.exportBipedModelTES4("armor\\morro\\", postFixStream.str(), maleStr, femaleStr, modelStr, mIcon, ESMWriter::ExportBipedFlags::postfix_gnd | ESMWriter::ExportBipedFlags::postfixF);

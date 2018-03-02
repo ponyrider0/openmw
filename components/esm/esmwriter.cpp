@@ -3112,9 +3112,9 @@ namespace ESM
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, const std::string & recordSIG)
 	{
 		std::string morroblivionEDID = genericEDID;
-		if (mMorroblivionEDIDmap.find(genericEDID) != mMorroblivionEDIDmap.end())
+		if (mMorroblivionEDIDmap.find(Misc::StringUtils::lowerCase(genericEDID)) != mMorroblivionEDIDmap.end())
 		{
-			morroblivionEDID = mMorroblivionEDIDmap[genericEDID];
+			morroblivionEDID = mMorroblivionEDIDmap[Misc::StringUtils::lowerCase(genericEDID)];
 			if (morroblivionEDID == "")
 				throw std::runtime_error("ERROR: empty EDID substituted for: " + genericEDID);
 			return morroblivionEDID;
@@ -3123,16 +3123,14 @@ namespace ESM
 		if (recordSIG.size() != 4)
 			return genericEDID;
 
-		uint32_t recordType = 0;
-		uint8_t *byteptr;
-		byteptr = (uint8_t *) &recordType;
-
+		ESM::RecNameInts recordType;
+		std::string strSIG = recordSIG;
 		for (int i = 0; i < 4; i++)
 		{
-			byteptr[i] = recordSIG[i];
+			recordType = reinterpret_cast<ESM::RecNameInts *>(&strSIG)[0];
 		}
 
-		return substituteMorroblivionEDID(genericEDID, (ESM::RecNameInts) recordType);
+		return substituteMorroblivionEDID(genericEDID, recordType);
 	}
 
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, ESM::RecNameInts recordType)
@@ -3277,150 +3275,241 @@ namespace ESM
 		std::string refString = baseName;
 		std::string refScript = "";
 		std::string refFact = "";
+		std::pair<int, CSMWorld::UniversalId::Type> refRecord;
 
-		std::pair<int, CSMWorld::UniversalId::Type> refRecord = doc.getData().getReferenceables().getDataSet().searchId(refString);
-		if (refRecord.first == -1)
+		if (refSIG != "")
 		{
-			if (refRecord.first = doc.getData().getCells().searchId(refString) != -1)
+			ESM::RecNameInts esmSIG = reinterpret_cast<ESM::RecNameInts *>(&refSIG)[0];
+			switch (esmSIG)
 			{
-				refSIG = "CELL";
-			}
-			else if (refRecord.first = doc.getData().getJournals().searchId(refString) != -1)
-			{
-				refSIG = "QUST";
-			}
-			else if (refRecord.first = doc.getData().getFactions().searchId(refString) != -1)
-			{
-				refSIG = "FACT";
-			}
-			else if (refRecord.first = doc.getData().getGlobals().searchId(refString) != -1)
-			{
-				refSIG = "GLOB";
-			}
-			else if (refRecord.first = doc.getData().getScripts().searchId(refString) != -1)
-			{
+			case ESM::REC_NPC_:
+			case ESM::REC_BOOK:
+			case ESM::REC_ACTI:
+			case ESM::REC_ALCH:
+			case ESM::REC_APPA:
+			case ESM::REC_ARMO:
+			case ESM::REC_CLOT:
+			case ESM::REC_CONT:
+			case ESM::REC_CREA:
+			case ESM::REC_DOOR:
+			case ESM::REC_INGR:
+			case ESM::REC_LIGH:
+			case ESM::REC_MISC:
+			case ESM::REC_WEAP:
+			case ESM::REC_STAT:
+			case ESM::REC_LEVC:
+				refRecord = doc.getData().getReferenceables().getDataSet().searchId(refString);
+				break;
+
+			case ESM::REC_CELL:
+				refRecord.first = doc.getData().getCells().searchId(refString);
+				break;
+
+			case FourCC<'Q', 'U', 'S', 'T'>::value:
+				refRecord.first = doc.getData().getJournals().searchId(refString);
+				break;
+
+			case ESM::REC_FACT:
+				refRecord.first = doc.getData().getFactions().searchId(refString);
+				break;
+
+			case ESM::REC_GLOB:
+				refRecord.first = doc.getData().getGlobals().searchId(refString);
+				break;
+
+			case ESM::REC_SCPT:
+				refRecord.first = doc.getData().getScripts().searchId(refString);
 				refScript = refString;
-				refSIG = "SCPT";
-			}
-			else if (refRecord.first = doc.getData().getSpells().searchId(refString) != -1)
-			{
-				refSIG = "SPEL";
-			}
-			else if (doc.getData().getClasses().searchId(refString) != -1)
-			{
-				refSIG = "CLAS";
-			}
-			else if (doc.getData().getMagicEffects().searchId(refString) != -1)
-			{
-				//				refSIG = "CLAS";
-			}
-			else if (doc.getData().getPathgrids().searchId(refString) != -1)
-			{
-				refSIG = "PGRD";
-			}
-			else if (doc.getData().getRaces().searchId(refString) != -1)
-			{
-				refSIG = "RACE";
-			}
-			else if (doc.getData().getRegions().searchId(refString) != -1)
-			{
-				refSIG = "REGN";
-			}
-			else if (doc.getData().getSkills().searchId(refString) != -1)
-			{
-				refSIG = "SKIL";
-			}
-			else if (doc.getData().getSounds().searchId(refString) != -1)
-			{
-				refSIG = "SOUN";
-			}
-			else if (doc.getData().getTopics().searchId(refString) != -1)
-			{
-				//				refSIG = "TOPI";
-			}
-			else
-			{
-				result = false;
-			}
-		}
+				break;
 
-		switch (refRecord.second)
+			case ESM::REC_CLAS:
+				refRecord.first = doc.getData().getClasses().searchId(refString);
+				break;
+
+			case ESM::REC_PGRD:
+				refRecord.first = doc.getData().getPathgrids().searchId(refString);
+				break;
+
+			case ESM::REC_RACE:
+				refRecord.first = doc.getData().getRaces().searchId(refString);
+				break;
+
+			case ESM::REC_REGN:
+				refRecord.first = doc.getData().getRegions().searchId(refString);
+				break;
+
+			case ESM::REC_SKIL:
+				refRecord.first = doc.getData().getSkills().searchId(refString);
+				break;
+
+			case ESM::REC_SOUN:
+				refRecord.first = doc.getData().getSounds().searchId(refString);
+				break;
+
+			case ESM::REC_DIAL:
+				refRecord.first = doc.getData().getTopics().searchId(refString);
+				break;
+
+			case ESM::REC_INFO:
+				refRecord.first = doc.getData().getTopicInfos().searchId(refString);
+				break;
+
+			default:
+				std::stringstream errStream;
+				errStream << "ERROR: lookup_reference(): Directed reference search name not found: [" << refSIG << "]" << "\"" << baseName << "\"" << "\n";
+				OutputDebugString(errStream.str().c_str());
+				return false;
+			}
+			refRecord.second = CSMWorld::UniversalId::Type_None;
+		}
+		else
 		{
-		case CSMWorld::UniversalId::Type_Npc:
-			refScript = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mScript;
-			refFact = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mFaction;
-			refSIG = "NPC_";
-			break;
+			refRecord = doc.getData().getReferenceables().getDataSet().searchId(refString);
+			if (refRecord.first == -1)
+			{
+				if (refRecord.first = doc.getData().getCells().searchId(refString) != -1)
+				{
+					refSIG = "CELL";
+				}
+				else if (refRecord.first = doc.getData().getJournals().searchId(refString) != -1)
+				{
+					refSIG = "QUST";
+				}
+				else if (refRecord.first = doc.getData().getFactions().searchId(refString) != -1)
+				{
+					refSIG = "FACT";
+				}
+				else if (refRecord.first = doc.getData().getGlobals().searchId(refString) != -1)
+				{
+					refSIG = "GLOB";
+				}
+				else if (refRecord.first = doc.getData().getScripts().searchId(refString) != -1)
+				{
+					refScript = refString;
+					refSIG = "SCPT";
+				}
+				else if (refRecord.first = doc.getData().getSpells().searchId(refString) != -1)
+				{
+					refSIG = "SPEL";
+				}
+				else if (doc.getData().getClasses().searchId(refString) != -1)
+				{
+					refSIG = "CLAS";
+				}
+				else if (doc.getData().getMagicEffects().searchId(refString) != -1)
+				{
+//					refSIG = "CLAS";
+				}
+				else if (doc.getData().getPathgrids().searchId(refString) != -1)
+				{
+					refSIG = "PGRD";
+				}
+				else if (doc.getData().getRaces().searchId(refString) != -1)
+				{
+					refSIG = "RACE";
+				}
+				else if (doc.getData().getRegions().searchId(refString) != -1)
+				{
+					refSIG = "REGN";
+				}
+				else if (doc.getData().getSkills().searchId(refString) != -1)
+				{
+					refSIG = "SKIL";
+				}
+				else if (doc.getData().getSounds().searchId(refString) != -1)
+				{
+					refSIG = "SOUN";
+				}
+				else if (doc.getData().getTopics().searchId(refString) != -1)
+				{
+					refSIG = "DIAL";
+				}
+				else
+				{
+					result = false;
+				}
+			}
 
-		case CSMWorld::UniversalId::Type_Book:
-			refScript = doc.getData().getReferenceables().getDataSet().getBooks().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "BOOK";
-			break;
+			switch (refRecord.second)
+			{
+			case CSMWorld::UniversalId::Type_Npc:
+				refScript = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mScript;
+				refFact = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mFaction;
+				refSIG = "NPC_";
+				break;
 
-		case CSMWorld::UniversalId::Type_Activator:
-			refScript = doc.getData().getReferenceables().getDataSet().getActivators().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ACTI";
-			break;
+			case CSMWorld::UniversalId::Type_Book:
+				refScript = doc.getData().getReferenceables().getDataSet().getBooks().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "BOOK";
+				break;
 
-		case CSMWorld::UniversalId::Type_Potion:
-			refScript = doc.getData().getReferenceables().getDataSet().getPotions().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ALCH";
-			break;
+			case CSMWorld::UniversalId::Type_Activator:
+				refScript = doc.getData().getReferenceables().getDataSet().getActivators().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "ACTI";
+				break;
 
-		case CSMWorld::UniversalId::Type_Apparatus:
-			refScript = doc.getData().getReferenceables().getDataSet().getApparati().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "APPA";
-			break;
+			case CSMWorld::UniversalId::Type_Potion:
+				refScript = doc.getData().getReferenceables().getDataSet().getPotions().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "ALCH";
+				break;
 
-		case CSMWorld::UniversalId::Type_Armor:
-			refScript = doc.getData().getReferenceables().getDataSet().getArmors().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ARMO";
-			break;
+			case CSMWorld::UniversalId::Type_Apparatus:
+				refScript = doc.getData().getReferenceables().getDataSet().getApparati().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "APPA";
+				break;
 
-		case CSMWorld::UniversalId::Type_Clothing:
-			refScript = doc.getData().getReferenceables().getDataSet().getClothing().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CLOT";
-			break;
+			case CSMWorld::UniversalId::Type_Armor:
+				refScript = doc.getData().getReferenceables().getDataSet().getArmors().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "ARMO";
+				break;
 
-		case CSMWorld::UniversalId::Type_Container:
-			refScript = doc.getData().getReferenceables().getDataSet().getContainers().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CONT";
-			break;
+			case CSMWorld::UniversalId::Type_Clothing:
+				refScript = doc.getData().getReferenceables().getDataSet().getClothing().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "CLOT";
+				break;
 
-		case CSMWorld::UniversalId::Type_Creature:
-			refScript = doc.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CREA";
-			break;
+			case CSMWorld::UniversalId::Type_Container:
+				refScript = doc.getData().getReferenceables().getDataSet().getContainers().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "CONT";
+				break;
 
-		case CSMWorld::UniversalId::Type_Door:
-			refScript = doc.getData().getReferenceables().getDataSet().getDoors().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "DOOR";
-			break;
+			case CSMWorld::UniversalId::Type_Creature:
+				refScript = doc.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "CREA";
+				break;
 
-		case CSMWorld::UniversalId::Type_Ingredient:
-			refScript = doc.getData().getReferenceables().getDataSet().getIngredients().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "INGR";
-			break;
+			case CSMWorld::UniversalId::Type_Door:
+				refScript = doc.getData().getReferenceables().getDataSet().getDoors().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "DOOR";
+				break;
 
-		case CSMWorld::UniversalId::Type_Light:
-			refScript = doc.getData().getReferenceables().getDataSet().getLights().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "LIGH";
-			break;
+			case CSMWorld::UniversalId::Type_Ingredient:
+				refScript = doc.getData().getReferenceables().getDataSet().getIngredients().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "INGR";
+				break;
 
-		case CSMWorld::UniversalId::Type_Miscellaneous:
-			refScript = doc.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "MISC";
-			break;
+			case CSMWorld::UniversalId::Type_Light:
+				refScript = doc.getData().getReferenceables().getDataSet().getLights().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "LIGH";
+				break;
 
-		case CSMWorld::UniversalId::Type_Weapon:
-			refScript = doc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "WEAP";
-			break;
+			case CSMWorld::UniversalId::Type_Miscellaneous:
+				refScript = doc.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "MISC";
+				break;
 
-		default:
-			result = false;
-			break;
+			case CSMWorld::UniversalId::Type_Weapon:
+				refScript = doc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
+				refSIG = "WEAP";
+				break;
+
+			default:
+				result = false;
+				break;
+			}
+
 		}
+
 
 		// Generate Reference EDID to be used in TES4 Script
 		//  For scriptable world objects, this is usually a persistent reference.

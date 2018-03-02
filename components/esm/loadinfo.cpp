@@ -805,12 +805,6 @@ namespace ESM
 					compareFunction = 0x40; // GetIsCreature
 					break;
 
-				case CSMWorld::ConstInfoSelectWrapper::Function_Hello:
-					compareFunction = 0x0; // ?
-					varName = selectWrapper.getVariableName();
-					std::cout << "Unresolved Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-					break;
-
 				case CSMWorld::ConstInfoSelectWrapper::Function_NotRace:
 					compareOperator = flipCompareOperator(compareOperator);
 					compareFunction = 0x45; // GetIsRace
@@ -1099,6 +1093,32 @@ namespace ESM
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_SameRace:
 					compareFunction = 0x86; // SameRaceAsPC
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_Weather:
+					compareFunction = 0x4F; // GetQuestVariable (int 79)
+					varName = "getcurrentweathervar";
+					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+					compareArg2 = esm.mLocalVarIndexmap[varName];
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcHealthPercent:
+					compareFunction = 0x4F; // GetQuestVariable (int 79)
+					varName = "getpchealthpercent";
+					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+					compareArg2 = esm.mLocalVarIndexmap[varName];
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_Hello:
+					compareFunction = 0x4F; // GetQuestVariable (int 79)
+					varName = "gethello";
+					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
+					compareArg2 = esm.mLocalVarIndexmap[varName];
+					break;
+
+				case CSMWorld::ConstInfoSelectWrapper::Function_PcCorpus:
+					compareFunction = 0xDF; // IsSpellTarget (int 223)
+					compareArg1 = esm.crossRefStringID("0corprus", "SPEL", false);
 					break;
 
 				default:

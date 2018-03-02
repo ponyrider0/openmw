@@ -250,6 +250,7 @@ public:
 		bool lookup_reference(const CSMDoc::Document &doc, const std::string &baseName, std::string &refEDID, std::string &refSIG, std::string &refValString);
 
 		bool CompressNextRecord();
+		std::string mConversionOptions;
 
     private:
         std::list<RecordData> mRecords;

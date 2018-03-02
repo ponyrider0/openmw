@@ -431,34 +431,37 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		}
 		writer.endGroupTES4(greetingID);
 
-		/*
-		// write out HELLO info
-		uint32_t helloID = writer.crossRefStringID("HELLO", "DIAL", false, true);
-		flags = 0;
-		writer.startRecordTES4("DIAL", flags, helloID, "HELLO");
-		writer.startSubRecordTES4("EDID");
-		writer.writeHCString("HELLO");
-		writer.endSubRecordTES4("EDID");
-		writer.startSubRecordTES4("FULL");
-		writer.writeHCString("HELLO");
-		writer.endSubRecordTES4("FULL");
-		writer.startSubRecordTES4("DATA");
-		writer.writeT<uint8_t>(0);
-		writer.endSubRecordTES4("DATA");
-		writer.endRecordTES4("DIAL");
-		writer.startGroupTES4(helloID, 7);
-		for (auto helloItem = mHelloInfoList.begin(); helloItem != mHelloInfoList.end(); helloItem++)
+		if (mHelloInfoList.empty() != true)
 		{
-		std::string infoEDID = "info#" + helloItem->first.mId;
-		uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-		uint32_t infoFlags = 0;
-		if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
-		writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-		helloItem->first.exportTESx(writer, 4, 0, helloItem->second);
-		writer.endRecordTES4("INFO");
+			// write out HELLO info
+			uint32_t helloID = writer.crossRefStringID("HELLO", "DIAL", false, true);
+			flags = 0;
+			writer.startRecordTES4("DIAL", flags, helloID, "HELLO");
+			writer.startSubRecordTES4("EDID");
+			writer.writeHCString("HELLO");
+			writer.endSubRecordTES4("EDID");
+			writer.startSubRecordTES4("FULL");
+			writer.writeHCString("HELLO");
+			writer.endSubRecordTES4("FULL");
+			writer.startSubRecordTES4("DATA");
+			writer.writeT<uint8_t>(0);
+			writer.endSubRecordTES4("DATA");
+			writer.endRecordTES4("DIAL");
+			writer.startGroupTES4(helloID, 7);
+			for (auto helloItem = mHelloInfoList.begin(); helloItem != mHelloInfoList.end(); helloItem++)
+			{
+				std::string infoEDID = "info#" + helloItem->first.mId;
+				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
+				uint32_t infoFlags = 0;
+				//			if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
+				writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
+				//			helloItem->first.exportTESx(mDocument, writer, 4, 0, helloItem->second);
+				helloItem->first.exportTESx(mDocument, writer, 4, 0, helloItem->second, CreateAddTopicList(helloItem->first.mResponse));
+				writer.endRecordTES4("INFO");
+			}
+			writer.endGroupTES4(helloID);
 		}
-		writer.endGroupTES4(helloID);
-		*/
+		
 	}
 	else if (mQuestMode == true && writer.mScriptToQuestList.size() > 0)
 	{
@@ -960,9 +963,9 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 
 				if (bIsHello)
 				{
-					std::cout << "HELLO used by : [" << topicEDID << "] '" << info.mResponse <<"'" << std::endl;
-//					mHelloInfoList.push_back(std::make_pair(info, topicEDID));
-//					continue;
+//					std::cout << "HELLO used by : [" << topicEDID << "] '" << info.mResponse <<"'" << std::endl;
+					mHelloInfoList.push_back(std::make_pair(info, topicEDID));
+					continue;
 				}
 
 				if (bHasInfoGroup == false)
@@ -5559,6 +5562,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			}
 			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
 
+/*
 			osgDB::ReaderWriter* imageReader = osgDB::Registry::instance()->getReaderWriterForExtension(inputFilepath.substr(inputFilepath.find_last_of(".")+1));
 //			osgDB::ReaderWriter* tgaWriter = osgDB::Registry::instance()->getReaderWriterForExtension("tga");
 			osgDB::ReaderWriter* ddsWriter = osgDB::Registry::instance()->getReaderWriterForExtension("dds");
@@ -5568,38 +5572,26 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			{
 				if (mode == 1)
 				{
-//					std::cout << "(" << p.filename().string() << ") ImageReader=[" << imageReader->getCompoundClassName();
-//					std::cout << "] format=0x" << std::hex << icon->getInternalTextureFormat();
 					if (tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
 						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ||
 						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
 						tempImage->getInternalTextureFormat() == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 					{
-//						std::cout << " - S3TC detected.";
-//						char pixels[32*32*32];
-//						glTexImage2D(0, 0, 0, 32, 32, 0, 0, 0, pixels);
-//						glReadPixels(0, 0, 32, 32, 0, 0, (GLvoid *) pixels);
-						// copy image to texture
-						// create RGBA texture
-						// copy s3tc texture to rgba texture
-						// make rgba image
-						// scale rgba image
-						// create new s3tc icon
-						// copy rgba texture to s3tc texture to s3tc icon???
+//						std::cout << " - S3TC detected.\n";
 					}
 					else
 					{
 //						icon->scaleImage(64, 64, 1);
 					}
-//					std::cout << "\n";
 				}
-				ddsWriter->writeImage(*tempImage, newDDSFile);
+//				ddsWriter->writeImage(*tempImage, newDDSFile);
+//				imageReader->writeImage(*tempImage, newDDSFile);				
 			}
 			else
 			{
 				std::cout << "Failed to load: " << p.string() << "\n";
 			}
-/*
+*/
 			int len = 0;
 			char buffer[1024];
 			while (fileStream->eof() == false)
@@ -5608,9 +5600,10 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 				len = fileStream->gcount();
 				newDDSFile.write(buffer, len);
 			}
-*/
+
 			newDDSFile.close();
 
+/*
 			// if icon, scale x2
 			if (mode == -1)
 			{
@@ -5642,7 +5635,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 				}
 
 			}
-
+*/
 			logFileDDSConv << "export success\n";
 		}
 		catch (std::runtime_error e)

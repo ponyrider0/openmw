@@ -894,7 +894,7 @@ namespace ESM
 		{
 			OpCode = 0x102F;
 		}
-		else if (cmdString == "getrandompercent" || cmdString == "random" || cmdString == "random100") // aka random100
+		else if (cmdString == "getrandompercent" || cmdString == "random" ) // aka random100
 		{
 			OpCode = 0x104D;
 		}
@@ -1150,8 +1150,18 @@ namespace ESM
 		{
 			OpCode = 0x1883;
 		}
-
-
+		else if (cmdString == "hasmagiceffect")
+		{
+			OpCode = 0x10D6;
+		}
+		else if (cmdString == "isspelltarget")
+		{
+			OpCode = 0x10DF;
+		}
+		else if (cmdString == "modactorvalue2")
+		{
+			OpCode = 0x1468;
+		}
 
 		return OpCode;
 	}
@@ -1569,11 +1579,20 @@ namespace ESM
 				gotoEOL(tokenItem);
 				return;
 			}
+			else if (Misc::StringUtils::lowerCase(tokenItem->str) == "random100")
+			{
+				// issue error
+				std::stringstream errStr;
+				errStr << "WARNING: Random100 currently not supported as global var for set statement: [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+				error_mesg(errStr.str());
+				gotoEOL(tokenItem);
+				return;
+			}
 			else
 			{
 				// issue error
 				std::stringstream errStr;
-				errStr << "unexpected token type in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+				errStr << "unexpected keyword in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
 				abort(errStr.str());
 			}
 		} 
@@ -1689,6 +1708,7 @@ namespace ESM
 		std::stringstream convertedStatement;
 		std::string cmdString = tokenItem->str;
 		bool bSkipCompile = false;
+		bool bUseREF = false;
 
 		if (Misc::StringUtils::lowerCase(cmdString) == "random100")
 		{
@@ -1723,7 +1743,8 @@ namespace ESM
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "clearinfoactor")
 		{
-			cmdString = "refreshtopiclist";
+//			cmdString = "refreshtopiclist";
+			return;
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getpccrimelevel")
 		{
@@ -1734,6 +1755,10 @@ namespace ESM
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getwaterlevel")
 		{
 			cmdString = "GetParentCellWaterHeight";
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getdisabled")
+		{
+			bUseREF = true;
 		}
 
 		std::string cmdLine = cmdString;
@@ -2360,8 +2385,6 @@ namespace ESM
 			// compile argstring
 			// 01 05 ...
 			countParams = 0x0501;
-//			argdata.push_back(0x01);
-//			argdata.push_back(0x05);
 			// 00 52 +(global ref index)
 			argdata.push_back(0x00);
 			argdata.push_back(0x52);
@@ -2378,7 +2401,108 @@ namespace ESM
 			bEvalArgString = false;
 
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getspelleffects")
+		{
+//			cmdString = "HasMagicEffect";
+			cmdString = "IsSpellTarget";
+			argSIG = "SPEL";
+		}
+		else if ((Misc::StringUtils::lowerCase(cmdString) == "fadein") ||
+			(Misc::StringUtils::lowerCase(cmdString) == "fadeout"))
+		{
+			std::string scriptFuncName ="";
+			if (Misc::StringUtils::lowerCase(cmdString).find("in") != std::string::npos)
+				scriptFuncName = "mwFadeInFunction";
+			else
+				scriptFuncName = "mwFadeOutFunction";
+			cmdString = "Call";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x00);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "gethello")
+		{
+			std::string scriptFuncName = "mwGetHelloFunction";
+			cmdString = "Call";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x00);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "sethello")
+		{
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, argSIG, bReturnBase) == false)
+			{
+				if (bUseCommandReference)
+				{
+					bUseCommandReference = false;
+					mCommandRef_EDID = "";
+				}
+				abort("parse_1arg():: sub_parse_arg() failed - ");
+				return;
+			}
+			std::string helloString = argString;
+			int helloVal;
+			if (bEvalArgString == false)
+			{
+				helloVal = atoi(helloString.c_str());
+			}
+			else
+			{
+				std::stringstream errmesg;
+				errmesg << "ERROR: Unsupported variable argument with SetDisposition [" << helloString << "]\n";
+				abort(errmesg.str());
+				return;
+			}
+			cmdString = "Call";
+			std::string scriptFuncName = "mwSetHelloFunction";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName + " " + helloString;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x01);
+			// argument header: 04 00 42 +(byte value)
+			argdata.push_back(0x04);
+			argdata.push_back(0x00);
+			argdata.push_back(0x42);
+			uint8_t byteval = helloVal;
+			argdata.push_back(byteval);
+			bUseBinaryData = true;
+			bEvalArgString = false;
 
+		}
 
 		//-------------------------------------------------
 		if (bSkipArgParse == false && argString == "")
@@ -2582,6 +2706,36 @@ namespace ESM
 				abort("error processing Set/Mod AV command\n");
 				return;
 			}
+			bUseBinaryData1 = true;
+		}
+		else if ( (Misc::StringUtils::lowerCase(cmdString) == "modcurrenthealth")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "modcurrentfatigue")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "modcurrentmagicka") )
+		{
+			if (Misc::StringUtils::lowerCase(cmdString).find("health") != std::string::npos)
+			{
+				arg1String = "Health";
+			}
+			else if (Misc::StringUtils::lowerCase(cmdString).find("fatigue") != std::string::npos)
+			{
+				arg1String = "Fatigue";
+			}
+			else if (Misc::StringUtils::lowerCase(cmdString).find("magicka") != std::string::npos)
+			{
+				arg1String = "Magicka";
+			}
+			std::string compareString = Misc::StringUtils::lowerCase(arg1String);
+			uint16_t byte_actorvalue=0;
+			for (int i = 0; i < 39; i++)
+			{
+				if (compareString == actorvalueStrings[i])
+				{
+					byte_actorvalue = i;
+					break;
+				}
+			}
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&byte_actorvalue)[i]);
+			cmdString = "ModActorValue2";
 			bUseBinaryData1 = true;
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "pcclearexpelled")
@@ -3635,6 +3789,7 @@ namespace ESM
 			|| (tokenString == "setdestruction") || (tokenString == "setillusion") || (tokenString == "setmysticism") || (tokenString == "setrestoration")
 			|| (tokenString == "setacrobatics") || (tokenString == "setmarksman") || (tokenString == "setmercantile") || (tokenString == "setsecurity") || (tokenString == "setsneak") || (tokenString == "setspeechcraft")
 			|| (tokenString == "modhealth") || (tokenString == "modfatigue") || (tokenString == "modmagicka")
+			|| (tokenString == "modcurrenthealth") || (tokenString == "modcurrentfatigue") || (tokenString == "modcurrentmagicka")
 			|| (tokenString == "modstrength") || (tokenString == "modintelligence") || (tokenString == "modwillpower") || (tokenString == "modagility") || (tokenString == "modspeed") || (tokenString == "modendurance") || (tokenString == "modpersonality") || (tokenString == "modluck")
 			|| (tokenString == "modarmorer") || (tokenString == "modathletics") || (tokenString == "modshortblade") || (tokenString == "modlongblade") || (tokenString == "modblock")
 			|| (tokenString == "modblunt") || (tokenString == "modaxe") || (tokenString == "modspear") || (tokenString == "modhandtohand")
@@ -3690,6 +3845,11 @@ namespace ESM
 			|| (tokenString == "activate")
 			|| (tokenString == "getcurrentaipackage")
 			|| (tokenString == "setdisposition")
+			|| (tokenString == "getspelleffects")
+			|| (tokenString == "fadein")
+			|| (tokenString == "fadeout")
+			|| (tokenString == "gethello")
+			|| (tokenString == "sethello")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -4348,152 +4508,270 @@ namespace ESM
 		std::string refString = baseName;
 		std::string refScript = "";
 		std::string refFact = "";
+		std::pair<int, CSMWorld::UniversalId::Type> refRecord;
+		ESM::RecNameInts esmSIG = (ESM::RecNameInts) 0;
 
-		std::pair<int, CSMWorld::UniversalId::Type> refRecord = mDoc.getData().getReferenceables().getDataSet().searchId(refString);
-		if (refRecord.first == -1)
+		if (refSIG != "")
 		{
-			if (refRecord.first = mDoc.getData().getCells().searchId(refString) != -1)
+			esmSIG = reinterpret_cast<ESM::RecNameInts *>(&refSIG)[0];
+			switch (esmSIG)
 			{
-				refSIG = "CELL";
+			case ESM::REC_NPC_:
+			case ESM::REC_BOOK:
+			case ESM::REC_ACTI:
+			case ESM::REC_ALCH:
+			case ESM::REC_APPA:
+			case ESM::REC_ARMO:
+			case ESM::REC_CLOT:
+			case ESM::REC_CONT:
+			case ESM::REC_CREA:
+			case ESM::REC_DOOR:
+			case ESM::REC_INGR:
+			case ESM::REC_LIGH:
+			case ESM::REC_MISC:
+			case ESM::REC_WEAP:
+			case ESM::REC_STAT:
+			case ESM::REC_LEVC:
+				refRecord = mDoc.getData().getReferenceables().getDataSet().searchId(refString);
+				break;
+
+			case ESM::REC_CELL:
+				refRecord.first = mDoc.getData().getCells().searchId(refString);
+				break;
+
+			case FourCC<'Q', 'U', 'S', 'T'>::value:
+				refRecord.first = mDoc.getData().getJournals().searchId(refString);
+				break;
+
+			case ESM::REC_FACT:
+				refRecord.first = mDoc.getData().getFactions().searchId(refString);
+				break;
+
+			case ESM::REC_GLOB:
+				refRecord.first = mDoc.getData().getGlobals().searchId(refString);
+				break;
+
+			case ESM::REC_SCPT:
+				refRecord.first = mDoc.getData().getScripts().searchId(refString);
+				break;
+
+			case ESM::REC_CLAS:
+				refRecord.first = mDoc.getData().getClasses().searchId(refString);
+				break;
+
+			case ESM::REC_PGRD:
+				refRecord.first = mDoc.getData().getPathgrids().searchId(refString);
+				break;
+
+			case ESM::REC_RACE:
+				refRecord.first = mDoc.getData().getRaces().searchId(refString);
+				break;
+
+			case ESM::REC_REGN:
+				refRecord.first = mDoc.getData().getRegions().searchId(refString);
+				break;
+
+			case ESM::REC_SKIL:
+				refRecord.first = mDoc.getData().getSkills().searchId(refString);
+				break;
+
+			case ESM::REC_SOUN:
+				refRecord.first = mDoc.getData().getSounds().searchId(refString);
+				break;
+
+			case ESM::REC_DIAL:
+				refRecord.first = mDoc.getData().getTopics().searchId(refString);
+				break;
+
+			case ESM::REC_INFO:
+				refRecord.first = mDoc.getData().getTopicInfos().searchId(refString);
+				break;
+
+			case ESM::REC_SPEL:
+				refRecord.first = mDoc.getData().getSpells().searchId(refString);
+				break;
+
+			default:
+				std::stringstream errStream;
+				errStream << "ERROR: lookup_reference(): Directed reference search name not found: [" << refSIG << "]" << "\"" << baseName << "\"" << "\n";
+				abort(errStream.str());
+				return false;
 			}
-			else if (refRecord.first = mDoc.getData().getJournals().searchId(refString) != -1)
+			refRecord.second = CSMWorld::UniversalId::Type_None;
+		}
+		else
+		{
+			// Prioritized Blind Search
+			refRecord = mDoc.getData().getReferenceables().getDataSet().searchId(refString);
+			// convert refRecord.second to refSIG
+			if (refRecord.first != -1)
 			{
-				refSIG = "QUST";
-			}
-			else if (refRecord.first = mDoc.getData().getFactions().searchId(refString) != -1)
-			{
-				refSIG = "FACT";
-			}
-			else if (refRecord.first = mDoc.getData().getGlobals().searchId(refString) != -1)
-			{
-				refSIG = "GLOB";
-			}
-			else if (refRecord.first = mDoc.getData().getScripts().searchId(refString) != -1)
-			{
-				refScript = refString;
-				refSIG = "SCPT";
-			}
-			else if (refRecord.first = mDoc.getData().getSpells().searchId(refString) != -1)
-			{
-				refSIG = "SPEL";
-			}
-			else if (mDoc.getData().getClasses().searchId(refString) != -1)
-			{
-				refSIG = "CLAS";
-			}
-			else if (mDoc.getData().getPathgrids().searchId(refString) != -1)
-			{
-				refSIG = "PGRD";
-			}
-			else if (mDoc.getData().getRaces().searchId(refString) != -1)
-			{
-				refSIG = "RACE";
-			}
-			else if (mDoc.getData().getRegions().searchId(refString) != -1)
-			{
-				refSIG = "REGN";
-			}
-			else if (mDoc.getData().getSkills().searchId(refString) != -1)
-			{
-				refSIG = "SKIL";
-			}
-			else if (mDoc.getData().getSounds().searchId(refString) != -1)
-			{
-				refSIG = "SOUN";
+				for (int i = 0; i<4; i++)
+					refSIG[i] = reinterpret_cast<char *>(&refRecord.second)[i];
 			}
 			else
 			{
-				result = false;
+				if (refRecord.first = mDoc.getData().getCells().searchId(refString) != -1)
+				{
+					refSIG = "CELL";
+				}
+				else if (refRecord.first = mDoc.getData().getJournals().searchId(refString) != -1)
+				{
+					refSIG = "QUST";
+				}
+				else if (refRecord.first = mDoc.getData().getFactions().searchId(refString) != -1)
+				{
+					refSIG = "FACT";
+				}
+				else if (refRecord.first = mDoc.getData().getGlobals().searchId(refString) != -1)
+				{
+					refSIG = "GLOB";
+				}
+				else if (refRecord.first = mDoc.getData().getScripts().searchId(refString) != -1)
+				{
+					refSIG = "SCPT";
+				}
+				else if (refRecord.first = mDoc.getData().getSpells().searchId(refString) != -1)
+				{
+					refSIG = "SPEL";
+				}
+				else if (refRecord.first = mDoc.getData().getClasses().searchId(refString) != -1)
+				{
+					refSIG = "CLAS";
+				}
+				else if (refRecord.first = mDoc.getData().getPathgrids().searchId(refString) != -1)
+				{
+					refSIG = "PGRD";
+				}
+				else if (refRecord.first = mDoc.getData().getRaces().searchId(refString) != -1)
+				{
+					refSIG = "RACE";
+				}
+				else if (refRecord.first = mDoc.getData().getRegions().searchId(refString) != -1)
+				{
+					refSIG = "REGN";
+				}
+				else if (refRecord.first = mDoc.getData().getSkills().searchId(refString) != -1)
+				{
+					refSIG = "SKIL";
+				}
+				else if (refRecord.first = mDoc.getData().getSounds().searchId(refString) != -1)
+				{
+					refSIG = "SOUN";
+				}
+				else if (refRecord.first = mDoc.getData().getTopics().searchId(refString) != -1)
+				{
+					refSIG = "DIAL";
+				}
+				else if (refRecord.first = mDoc.getData().getTopicInfos().searchId(refString) != -1)
+				{
+					refSIG = "INFO";
+				}
+				else if (refRecord.first = mDoc.getData().getSpells().searchId(refString) != -1)
+				{
+					refSIG = "SPEL";
+				}
+				else
+				{
+					std::stringstream errStream;
+					errStream << "WARNING: lookup_reference(): Blind reference search name not found: " << "\"" << baseName << "\"" << "\n";
+//					error_mesg(errStream.str());
+					return false;
+				}
+
+				refRecord.second = CSMWorld::UniversalId::Type_None;
+				esmSIG = reinterpret_cast<ESM::RecNameInts *>(&refSIG)[0];
+
 			}
+
 		}
 
+		
 		switch (refRecord.second)
 		{
 		case CSMWorld::UniversalId::Type_Npc:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mScript;
 			refFact = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mFaction;
-			refSIG = "NPC_";
 			break;
 
 		case CSMWorld::UniversalId::Type_Book:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getBooks().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "BOOK";
 			break;
 
 		case CSMWorld::UniversalId::Type_Activator:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getActivators().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ACTI";
 			break;
 
 		case CSMWorld::UniversalId::Type_Potion:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getPotions().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ALCH";
 			break;
 
 		case CSMWorld::UniversalId::Type_Apparatus:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getApparati().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "APPA";
 			break;
 
 		case CSMWorld::UniversalId::Type_Armor:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getArmors().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "ARMO";
 			break;
 
 		case CSMWorld::UniversalId::Type_Clothing:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getClothing().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CLOT";
 			break;
 
 		case CSMWorld::UniversalId::Type_Container:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getContainers().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CONT";
 			break;
 
 		case CSMWorld::UniversalId::Type_Creature:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "CREA";
 			break;
 
 		case CSMWorld::UniversalId::Type_Door:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getDoors().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "DOOR";
 			break;
 
 		case CSMWorld::UniversalId::Type_Ingredient:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getIngredients().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "INGR";
 			break;
 
 		case CSMWorld::UniversalId::Type_Light:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getLights().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "LIGH";
 			break;
 
 		case CSMWorld::UniversalId::Type_Miscellaneous:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "MISC";
 			break;
 
 		case CSMWorld::UniversalId::Type_Weapon:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
-			refSIG = "WEAP";
 			break;
 
 		case CSMWorld::UniversalId::Type_Static:
-			refSIG = "STAT";
 			break;
 
 		case CSMWorld::UniversalId::Type_CreatureLevelledList:
-			refSIG = "LEVC";
+			break;
+
+		case CSMWorld::UniversalId::Type_None:
+			// check esmSIG
+			switch (esmSIG)
+			{
+			case ESM::REC_SCPT:
+				refScript = refString;
+				break;
+
+			default:
+				break;
+			}
 			break;
 
 		default:
-//			std::stringstream errStream;
-//			errStream << "WARNING: Reference type not handled: [" << refRecord.second << "]" << "\"" << baseName << "\"" << "\n";
-//			error_mesg(errStream.str());
+			std::stringstream errStream;
+			errStream << "WARNING: Reference type not handled: [" << refRecord.second << "]" << "\"" << baseName << "\"" << "\n";
+			error_mesg(errStream.str());
 			break;
 		}
+
 
 		bool bReturnBase = true;
 
@@ -4734,8 +5012,11 @@ namespace ESM
 
 		// modactorvalues
 		mKeywords.push_back("modhealth");
+		mKeywords.push_back("modcurrenthealth");
 		mKeywords.push_back("modmagicka");
+		mKeywords.push_back("modcurrentmagicka");
 		mKeywords.push_back("modfatigue");
+		mKeywords.push_back("modcurrentfatigue");
 
 		mKeywords.push_back("modstrength");
 		mKeywords.push_back("modendurance");
@@ -4867,6 +5148,9 @@ namespace ESM
 		mKeywords.push_back("setatstart");
 		mKeywords.push_back("setpccrimelevel"); // setcrimegold
 		mKeywords.push_back("getwaterlevel");
+		mKeywords.push_back("getspelleffects");
+		mKeywords.push_back("fadein");
+		mKeywords.push_back("fadeout");
 
 	}
 
@@ -4942,6 +5226,8 @@ namespace ESM
 			{
 				parse_choice(tokenItem);
 			}
+			if (tokenItem == mTokenList.end())
+				return;
 			gotoEOL(tokenItem); // goto EOL
 			tokenItem++; // skip EOL
 		}

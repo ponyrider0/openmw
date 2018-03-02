@@ -171,6 +171,12 @@ namespace ESM
 		esm.writeHCString(strEDID);
 		esm.endSubRecordTES4("EDID");
 
+		bool bCompileScripts = false;
+		if (esm.mConversionOptions.find("#compile") != std::string::npos)
+		{
+			bCompileScripts = true;
+		}
+
 		ESM::ScriptConverter scriptConverter(mScriptText, esm, doc);
 		scriptConverter.processScript();
 
@@ -180,6 +186,11 @@ namespace ESM
 		uint32_t compiledSize = scriptConverter.GetByteBufferSize();
 		uint32_t varCount = scriptConverter.mLocalVarList.size();
 		uint32_t scriptType = 0x0; // default = object script
+
+		if (bCompileScripts == false)
+		{
+			compiledSize = 0;
+		}
 
 //		std::string questEDID = esm.generateEDIDTES4(mId, 0, "SQUST");
 		// match script mID to scripttoquestlist
@@ -192,7 +203,6 @@ namespace ESM
 		// SCHD (unknown script header)
 
 		// SCHR data...
-
 		esm.startSubRecordTES4("SCHR");
 		esm.writeT<uint32_t>(0); // unused x4
 		esm.writeT<uint32_t>(refCount); // refcount (uint32)
@@ -202,10 +212,17 @@ namespace ESM
 		esm.writeT<uint32_t>(scriptType); // type (uint32) 0=object, 1=quest, $100 = magic effect
 		esm.endSubRecordTES4("SCHR");
 
+
 		// SCDA (compiled)
 		esm.startSubRecordTES4("SCDA");
-//		esm.write(0, 0);
-		esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+		if (bCompileScripts)
+		{
+			esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+		}
+		else
+		{
+			esm.write(0, 0);
+		}
 		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)
