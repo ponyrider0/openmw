@@ -45,7 +45,7 @@ namespace ESM
 		// must convert mID into a TES4 compatible EditorID
 		std::string sEditorID = esm.generateEDIDTES4(mId, 0, "GLOB");
 		esm.startSubRecordTES4("EDID");
-		esm.writeHString(sEditorID);
+		esm.writeHCString(sEditorID);
 		esm.endSubRecordTES4("EDID");
 
 		// FNAM
