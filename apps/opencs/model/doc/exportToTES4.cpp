@@ -3433,10 +3433,6 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 								{
 									refEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "PREF");
 								}
-								else
-								{
-									refEDID = refRecord.mId;
-								}
 								uint32_t refFormID = writer.crossRefStringID(refRecord.mId, sSIG, false, true);
 								if (refFormID == 0)
 								{
@@ -3537,9 +3533,8 @@ void CSMDoc::ExportInteriorCellCollectionTES4Stage::perform (int stage, Messages
 									sSIG = "ACHR";
 								}
 								// start record
-								writer.startRecordTES4(sSIG, refFlags, refFormID, refRecord.mId);
-//								refRecord.exportTES4(writer, mDocument, "");
-								refRecord.exportTES4 (writer, mDocument, refRecord.mId);
+								writer.startRecordTES4(sSIG, refFlags, refFormID, "");
+								refRecord.exportTES4 (writer, mDocument, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 							}
@@ -3845,10 +3840,6 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 				if (writer.mBaseObjToScriptedREFList.find(compString) != writer.mBaseObjToScriptedREFList.end())
 				{
 					strEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "PREF");
-				}
-				else
-				{
-					strEDID = refRecord.mId;
 				}
 				uint32_t refFormID = writer.crossRefStringID(refRecord.mId, sSIG, false, true);
 				if (refFormID == 0)
@@ -4275,8 +4266,7 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								}
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
-//								refRecord.exportTES4(writer, mDocument, "");
-								refRecord.exportTES4(writer, mDocument, refStringID);
+								refRecord.exportTES4 (writer, mDocument, "");
 								// end record
 								writer.endRecordTES4(sSIG);
 								debugstream << "(" << sSIG << ")[" << refFormID << "] ";
