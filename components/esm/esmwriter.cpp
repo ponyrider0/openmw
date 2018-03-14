@@ -977,6 +977,7 @@ namespace ESM
 			}
 			else if (Misc::StringUtils::lowerCase(sSIG) == "fact")
 			{
+/*
 				if (Misc::StringUtils::lowerCase(stringID) == "mages guild")
 				{
 					tempString = "fbmwMagesGuild";
@@ -989,6 +990,8 @@ namespace ESM
 				{
 					tempString = generateEDIDTES4(stringID, 0, sSIG);
 				}
+*/
+				tempString = generateEDIDTES4(stringID, 0, sSIG);
 			}
 			else
 			{
@@ -3130,9 +3133,11 @@ namespace ESM
 			recordType = reinterpret_cast<ESM::RecNameInts *>(&strSIG)[0];
 		}
 
-		return substituteMorroblivionEDID(genericEDID, recordType);
+		return morroblivionEDID;
+//		return substituteMorroblivionEDID(genericEDID, recordType);
 	}
 
+	// function disabled -- use substitution CSV files
 	std::string ESMWriter::substituteMorroblivionEDID(const std::string & genericEDID, ESM::RecNameInts recordType)
 	{
 		std::string morroblivionEDID = genericEDID;
