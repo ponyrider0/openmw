@@ -6,6 +6,8 @@ void inline OutputDebugString(char *c_string) { std::cout << c_string; };
 void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #endif
 
+#define SKIP_MASTER_RECORDS true
+
 #include <components/misc/stringops.hpp>
 #include <boost/filesystem.hpp>
 #include <QUndoStack>
@@ -59,7 +61,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	appendStage (new ExportHeaderTES4Stage (currentDoc, currentSave, false));
 
-	bool skipMasterRecords = true;
+	bool skipMasterRecords = SKIP_MASTER_RECORDS;
 
 //	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 //		(currentDoc.getData().getGmsts(), currentSave));
@@ -2277,7 +2279,7 @@ void CSMDoc::ExportClothingCollectionTES4Stage::perform (int stage, Messages& me
 //	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, clothingRecord.get().mId, writer, clothingRecord.mState);
-	clothingRecord.get().exportTESx(writer, 4);
+	clothingRecord.get().exportTESx(mDocument, writer, 4);
 	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)
@@ -3619,7 +3621,8 @@ int CSMDoc::ExportExteriorCellCollectionTES4Stage::setup()
 			debugstream << "X,Y[" << baseX << "," << baseY << "] ";
 
 			// assign formID
-			uint32_t formID = mState.crossRefCellXY(baseX, baseY);
+//			uint32_t formID = mState.crossRefCellXY(baseX, baseY);
+			uint32_t formID = 0;
 
 			// generate new EDID:formID pair based on ESM4 cell coords
 			int x, y;
@@ -4068,7 +4071,10 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 			if (mDocument.getData().getLand().searchId(landID.str()) != -1 )
 			{
 				debugstream << "landscape data found...";
-				bLandscapePresent = true;
+				int landIndex = mDocument.getData().getLand().getIndex(landID.str());
+				auto landRecord = mDocument.getData().getLand().getRecord(landIndex);
+				if (landRecord.isModified())
+					bLandscapePresent = true;
 			}
 			debugstream << std::endl;
 //			OutputDebugString(debugstream.str().c_str());
@@ -4093,7 +4099,8 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					}
 				}
 
-				if (subCell > 0)
+//				if (subCell > 0)
+				if (true) // debug testing for CellFormID crossRef Bug
 				{
 					cellFormID = mState.crossRefCellXY(baseX+x, baseY+y);
 					if (cellFormID == 0)
@@ -4145,13 +4152,13 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 //				debugstream << "retrieving landID=[" << landID.str() << "] ...";
 
 				//******************EXPORT LANDSCAPE*****************/
-				if (bLandscapePresent && cellRecordPtr->isModified())
+				if (bLandscapePresent)
 				{
 					int landIndex = mDocument.getData().getLand().getIndex(landID.str());
 //					debugstream << "ID retrieved.  exporting land ... ";
 					std::ostringstream ssLandscapeEDID;
-					ssLandscapeEDID << "#" << baseX+x << " " << baseY+y << "-landscape";
-					uint32_t landFormID = mState.crossRefLandXY(baseX+x, baseY+y);
+					ssLandscapeEDID << "#" << baseX + x << " " << baseY + y << "-landscape";
+					uint32_t landFormID = mState.crossRefLandXY(baseX + x, baseY + y);
 					if (landFormID == 0)
 					{
 						landFormID = writer.crossRefStringID(ssLandscapeEDID.str(), "LAND", false, false);
@@ -4167,12 +4174,12 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					if (landData != 0)
 					{
 						uint32_t texformID;
-						int i, j, u, v, quadVal=0;
-						for (v=0; v < 2; v++)
+						int i, j, u, v, quadVal = 0;
+						for (v = 0; v < 2; v++)
 						{
-							for (u=0; u < 2; u++)
+							for (u = 0; u < 2; u++)
 							{
-								createPreBlendMap(writer, (baseX/2), (baseY/2), x, y, u, v);
+								createPreBlendMap(writer, (baseX / 2), (baseY / 2), x, y, u, v);
 								gatherPreBlendTextureList();
 								if (mPreBlendTextureList.size() > 0)
 								{
@@ -5226,7 +5233,8 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 			// just go ahead and skip to mapping index
 			bExportRecord = false;
 		}
-		bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
+		if (mSkipMasterRecords)
+			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
 
 		if (bExportRecord)
 		{

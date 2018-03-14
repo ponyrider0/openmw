@@ -1061,13 +1061,8 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
 	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
-//	loadEDIDmap3("Morroblivion-UCWUSFormIDlist4.csv");
-//	loadEDIDmap3("Morroblivion-FixesFormIDlist4.csv");
+	loadEDIDmap3(csvRoot + "Morroblivion_References.csv");
 	loadEDIDmap3(csvRoot + "Morrowind_Compatibility_LayerEDIDlist.csv");
-
-//	loadCellIDmap2("MorroblivionCellIDmap.csv");
-//	loadEDIDmap2("TR_MainlandFormIDlist.csv");
-//	loadCellIDmap2("TR_MainlandCellIDmap.csv");
 	loadCellIDmap3(csvRoot + "MorroblivionCellmap4.csv");
 
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
@@ -1084,24 +1079,6 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 		}
 	}
 	loadEDIDmap3(csvRoot + esmName + "_EDIDList.csv");
-
-//	if (esmName.find("Tamriel_Data") != std::string::npos)
-//	{
-//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
-//	}
-//	if (esmName.find("TR_Mainland") != std::string::npos) 
-//	{
-//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
-//		loadEDIDmap3(csvRoot + "TRMainlandEDIDlist.csv");
-
-//		loadPNAMINFOSubstitutionMap("TRMainlandGreetingPNAMINFOmap.csv");
-//		loadPNAMINFOSubstitutionMap(csvRoot + "TRMainland_Dialog_PNAMINFO.csv");
-//	}
-//	if (esmName.find("TR_Preview") != std::string::npos)
-//	{
-//		loadEDIDmap3(csvRoot + "TamrielDataEDIDlist.csv");
-//		loadEDIDmap3(csvRoot + "TRPreviewEDIDlist.csv");
-//	}
 
 	loadEDIDmap3(csvRoot + "OverridesEDIDList.csv");
 	loadEDIDmap3(csvRoot + "Overrides_" + esmName + ".csv");

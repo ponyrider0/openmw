@@ -281,7 +281,13 @@ namespace ESM
 		std::ostringstream debugstream;
 
 		bool isValidCellname = false;
-		int nameOffset = offset;
+//		int nameOffset = offset;
+		int nameOffset = 0;
+		// morrowind compatible name offset [0,0; 1,0; 0,1; 1,1]
+		if (subX % 2 == 1)
+			nameOffset += 1;
+		if (subY % 2 == 1)
+			nameOffset += 2;
 
 		if (isExterior() == false)
 			isValidCellname = true;
