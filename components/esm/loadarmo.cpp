@@ -269,31 +269,59 @@ namespace ESM
 //					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RWrist << " " << "tr\\a\\tr_a_silver_bracer_W.nif";
 //					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LWrist << " " << "tr\\a\\tr_a_silver_bracer_W.nif";
 //					cmdlineM << " -bp 2 b\\B_N_Breton_F_Neck.nif";
+
 /*
-					cmdlineM << " -bp 8 b\\B_N_Breton_F_Wrist.nif";
-					cmdlineM << " -bp 9 b\\B_N_Breton_F_Wrist.nif";
-					cmdlineM << " -bp 11 b\\B_N_Breton_F_Forearm.nif";
-					cmdlineM << " -bp 12 b\\B_N_Breton_F_Forearm.nif";
-					cmdlineM << " -bp 13 \"b\\B_N_Breton_F_Upper Arm.nif\"";
-					cmdlineM << " -bp 14 \"b\\B_N_Breton_F_Upper Arm.nif\"";
+					cmdlineM << " -bp 8 b\\B_N_Breton_M_Wrist.nif";
+					cmdlineM << " -bp 9 b\\B_N_Breton_M_Wrist.nif";
+					cmdlineM << " -bp 11 b\\B_N_Breton_M_Forearm.nif";
+					cmdlineM << " -bp 12 b\\B_N_Breton_M_Forearm.nif";
+					cmdlineM << " -bp 13 \"b\\B_N_Breton_M_Upper Arm.nif\"";
+					cmdlineM << " -bp 14 \"b\\B_N_Breton_M_Upper Arm.nif\"";
 */
+// Better Clothes
+					cmdlineM << " -bp 8 bc\\BC_common_shirt_t.nif";
+					cmdlineM << " -bp 9 bc\\BC_common_shirt_t.nif";
+					cmdlineM << " -bp 11 bc\\BC_common_shirt_t.nif";
+					cmdlineM << " -bp 12 bc\\BC_common_shirt_t.nif";
+					cmdlineM << " -bp 13 bc\\BC_common_shirt_t.nif";
+					cmdlineM << " -bp 14 bc\\BC_common_shirt_t.nif";
+/*
+// TR ------------
 					cmdlineM << " -bp 8 TR\\c\\tr_c_shirt_com_001_w.nif";
 					cmdlineM << " -bp 9 TR\\c\\tr_c_shirt_com_001_w.nif";
 					cmdlineM << " -bp 11 TR\\c\\tr_c_shirt_com_001_fa.nif";
 					cmdlineM << " -bp 12 TR\\c\\tr_c_shirt_com_001_fa.nif";
 					cmdlineM << " -bp 13 TR\\c\\tr_c_shirt_com_001_ua.nif";
 					cmdlineM << " -bp 14 TR\\c\\tr_c_shirt_com_001_ua.nif";
+*/
 //					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_RPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
 //					cmdlineM << " -bp " << ESM::PartReferenceType::PRT_LPauldron << " " << "tr\\a\\tr_a_silver_pauld_CL.nif";
 				}
 				if (cmdlineF.str() != "")
 				{
+/*
+					cmdlineF << " -bp 8 b\\B_N_Breton_F_Wrist.nif";
+					cmdlineF << " -bp 9 b\\B_N_Breton_F_Wrist.nif";
+					cmdlineF << " -bp 11 b\\B_N_Breton_F_Forearm.nif";
+					cmdlineF << " -bp 12 b\\B_N_Breton_F_Forearm.nif";
+					cmdlineF << " -bp 13 \"b\\B_N_Breton_F_Upper Arm.nif\"";
+					cmdlineF << " -bp 14 \"b\\B_N_Breton_F_Upper Arm.nif\"";
+*/
+// Better Clothes
+					cmdlineF << " -bp 8 bc\\BC_common_shirt_t.nif";
+					cmdlineF << " -bp 9 bc\\BC_common_shirt_t.nif";
+					cmdlineF << " -bp 11 bc\\BC_common_shirt_t.nif";
+					cmdlineF << " -bp 12 bc\\BC_common_shirt_t.nif";
+					cmdlineF << " -bp 13 bc\\BC_common_shirt_t.nif";
+					cmdlineF << " -bp 14 bc\\BC_common_shirt_t.nif";
+/*
 					cmdlineF << " -bp 8 TR\\c\\tr_c_shirt_com_001_w.nif";
 					cmdlineF << " -bp 9 TR\\c\\tr_c_shirt_com_001_w.nif";
 					cmdlineF << " -bp 11 TR\\c\\tr_c_shirt_com_001_fa.nif";
 					cmdlineF << " -bp 12 TR\\c\\tr_c_shirt_com_001_fa.nif";
 					cmdlineF << " -bp 13 TR\\c\\tr_c_shirt_com_001_ua.nif";
 					cmdlineF << " -bp 14 TR\\c\\tr_c_shirt_com_001_ua.nif";
+*/
 				}
 				OblivionType = 2;
 				break;
@@ -301,17 +329,29 @@ namespace ESM
 			case ESM::Armor::Type::Greaves:
 				if (cmdlineM.str() != "")
 				{
+					cmdlineM << " -bp 17 b\\B_N_Breton_M_Ankle.nif";
+					cmdlineM << " -bp 18 b\\B_N_Breton_M_Ankle.nif";
+					cmdlineM << " -bp 19 b\\B_N_Breton_M_Knee.nif";
+					cmdlineM << " -bp 20 b\\B_N_Breton_M_Knee.nif";
+/*
 					cmdlineM << " -bp 17 TR\\c\\tr_c_pant_com_001_a.nif";
 					cmdlineM << " -bp 18 TR\\c\\tr_c_pant_com_001_a.nif";
 					cmdlineM << " -bp 19 TR\\c\\tr_c_pant_com_001_k.nif";
 					cmdlineM << " -bp 20 TR\\c\\tr_c_pant_com_001_k.nif";
+*/
 				}
 				if (cmdlineF.str() != "")
 				{
+					cmdlineF << " -bp 17 b\\B_N_Breton_F_Ankle.nif";
+					cmdlineF << " -bp 18 b\\B_N_Breton_F_Ankle.nif";
+					cmdlineF << " -bp 19 b\\B_N_Breton_F_Knee.nif";
+					cmdlineF << " -bp 20 b\\B_N_Breton_F_Knee.nif";
+/*
 					cmdlineF << " -bp 17 TR\\c\\tr_c_pant_com_001_a.nif";
 					cmdlineF << " -bp 18 TR\\c\\tr_c_pant_com_001_a.nif";
 					cmdlineF << " -bp 19 TR\\c\\tr_c_pant_com_001_k.nif";
 					cmdlineF << " -bp 20 TR\\c\\tr_c_pant_com_001_k.nif";
+*/
 				}
 				OblivionType = 3;
 				break;
