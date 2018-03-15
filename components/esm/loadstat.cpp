@@ -98,17 +98,18 @@ namespace ESM
 		outputRoot += "/";
 		std::string logRoot = outputRoot;
 #endif
-		boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes");
+		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+		boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
 		if (boost::filesystem::exists(rootDir) == false)
 		{
 			boost::filesystem::create_directories(rootDir);
 		}
 		try
 		{
-			auto fileStream = doc.getVFS()->get(mModel);
+			auto fileStream = doc.getVFS()->get(nifInputName);
 			std::ofstream newNIFFile;
 			// create output subdirectories
-			boost::filesystem::path p(outputRoot + "Oblivion.output/Data/" + modelPath.str());
+			boost::filesystem::path p(outputRoot + "Oblivion.output/Data/Meshes/" + modelPath.str());
 			if (boost::filesystem::exists(p.parent_path()) == false)
 			{
 				boost::filesystem::create_directories(p.parent_path());
@@ -126,7 +127,7 @@ namespace ESM
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: (" << mModel << ") " << e.what() << "\n";
+			std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
 		}
 		catch (...)
 		{
