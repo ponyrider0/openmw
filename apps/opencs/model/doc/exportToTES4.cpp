@@ -5561,6 +5561,11 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			inputFilepath = Misc::ResourceHelpers::correctBookartPath(mw_filename, mDocument.getVFS());
 			outputFilepath = "Textures/Menus/" + ob_filename;
 		}
+		else
+		{
+			inputFilepath = Misc::ResourceHelpers::correctTexturePath(mw_filename, mDocument.getVFS());
+			outputFilepath = "Textures/" + ob_filename;
+		}
 		if (mDocument.getVFS()->exists(inputFilepath) != true )
 		{
 			continue;

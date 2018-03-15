@@ -7,7 +7,8 @@
 #include "defs.hpp"
 
 #include <boost/filesystem.hpp>
-#include "../nif/nifstream.hpp"
+#include "../nif/niffile.hpp"
+#include "../nif/controlled.hpp"
 
 #include <apps/opencs/model/doc/document.hpp>
 #include <components/vfs/manager.hpp>
@@ -107,6 +108,38 @@ namespace ESM
 		try
 		{
 			auto fileStream = doc.getVFS()->get(nifInputName);
+			// read stream into NIF parser...
+			Nif::NIFFile nifFile(fileStream,nifInputName);
+			// for each texturesource node, change name
+			for (size_t i = 0; i < nifFile.numRecords(); i++)
+			{
+				if (nifFile.getRecord(i)->recType == Nif::RC_NiSourceTexture)
+				{
+					const Nif::NiSourceTexture *texture = dynamic_cast<const Nif::NiSourceTexture*>(nifFile.getRecord(i));
+					if (texture != NULL)
+					{
+						std::string resourceName = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
+						std::string texFilename = texture->filename;
+						if (Misc::StringUtils::lowerCase(texFilename).find("textures/") == 0 || 
+							Misc::StringUtils::lowerCase(texFilename).find("textures\\") == 0 )
+						{
+							// remove "textures/"
+							texFilename = texFilename.substr(strlen("textures/"));
+						}
+						// extract modelPath dir and paste onto texture
+						boost::filesystem::path modelP(modelPath.str());
+						std::stringstream tempPath;
+						std::string tempStr = esm.generateEDIDTES4(texFilename, 1);
+						tempStr.replace(tempStr.size() - 4, 4, ".dds");
+						tempPath << modelP.parent_path().string();
+						tempPath << "\\" << tempStr;
+						esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
+					}
+				}
+			}
+
+			// serialize modified NIF and output to newNIFFILe
+			fileStream.get()->seekg(std::ios_base::beg);
 			std::ofstream newNIFFile;
 			// create output subdirectories
 			boost::filesystem::path p(outputRoot + "Oblivion.output/Data/Meshes/" + modelPath.str());
