@@ -2931,7 +2931,7 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 //	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, record.get().mId, writer, record.mState);
-	record.get().exportTESx(writer, 4);
+	record.get().exportTESx(mDocument, writer, 4);
 	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)

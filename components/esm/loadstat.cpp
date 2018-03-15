@@ -6,7 +6,12 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <boost/filesystem.hpp>
 #include "../nif/nifstream.hpp"
+
+#include <apps/opencs/model/doc/document.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
 
 namespace ESM
 {
@@ -54,7 +59,11 @@ namespace ESM
             esm.writeHNCString("MODL", mModel);
         }
     }
-	bool Static::exportTESx(ESMWriter &esm, int export_format) const
+	bool Static::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		return false;
+	}
+	bool Static::exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format) const
 	{
 		std::ostringstream modelPath;
 		std::string tempStr;
@@ -81,7 +90,49 @@ namespace ESM
 
 		float modelBounds = 100.0f;
 		// ** Load NIF and get model's true Bound Radius
-		
+#ifdef _WIN32
+		std::string outputRoot = "C:/";
+		std::string logRoot = "";
+#else
+		std::string outputRoot = getenv("HOME");
+		outputRoot += "/";
+		std::string logRoot = outputRoot;
+#endif
+		boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes");
+		if (boost::filesystem::exists(rootDir) == false)
+		{
+			boost::filesystem::create_directories(rootDir);
+		}
+		try
+		{
+			auto fileStream = doc.getVFS()->get(mModel);
+			std::ofstream newNIFFile;
+			// create output subdirectories
+			boost::filesystem::path p(outputRoot + "Oblivion.output/Data/" + modelPath.str());
+			if (boost::filesystem::exists(p.parent_path()) == false)
+			{
+				boost::filesystem::create_directories(p.parent_path());
+			}
+			newNIFFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+			int len = 0;
+			char buffer[1024];
+			while (fileStream->eof() == false)
+			{
+				fileStream->read(buffer, sizeof(buffer));
+				len = fileStream->gcount();
+				newNIFFile.write(buffer, len);
+			}
+			newNIFFile.close();
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "Error: (" << mModel << ") " << e.what() << "\n";
+		}
+		catch (...)
+		{
+			std::cout << "ERROR: something else bad happened!\n";
+		}
+
 
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
