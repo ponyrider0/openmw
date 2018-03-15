@@ -6,6 +6,8 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include "../nif/nifstream.hpp"
+
 namespace ESM
 {
     unsigned int Static::sRecordId = REC_STAT;
@@ -77,9 +79,13 @@ namespace ESM
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
 
+		float modelBounds = 100.0f;
+		// ** Load NIF and get model's true Bound Radius
+		
+
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(100.0);
+		esm.writeT<float>(modelBounds);
 		esm.endSubRecordTES4("MODB");
 
 		// Optional: MODT == "Texture Files Hashes" (byte array)
