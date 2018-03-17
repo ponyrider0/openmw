@@ -60,7 +60,7 @@ namespace ESM
             esm.writeHNCString("MODL", mModel);
         }
     }
-	bool Static::exportTESx(ESMWriter & esm, int export_format) const
+	bool Static::exportTESx(ESMWriter &esm, int export_format) const
 	{
 		return false;
 	}
@@ -111,11 +111,11 @@ namespace ESM
 			// read stream into NIF parser...
 			Nif::NIFFile nifFile(fileStream,nifInputName);
 			// for each texturesource node, change name
-			for (size_t i = 0; i < nifFile.numRecords(); i++)
+			for (int i = 0; i < nifFile.numRecords(); i++)
 			{
 				if (nifFile.getRecord(i)->recType == Nif::RC_NiSourceTexture)
 				{
-					const Nif::NiSourceTexture *texture = dynamic_cast<const Nif::NiSourceTexture*>(nifFile.getRecord(i));
+					Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(nifFile.getRecord(i));
 					if (texture != NULL)
 					{
 						std::string resourceName = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
@@ -130,10 +130,11 @@ namespace ESM
 						boost::filesystem::path modelP(modelPath.str());
 						std::stringstream tempPath;
 						std::string tempStr = esm.generateEDIDTES4(texFilename, 1);
-						tempStr.replace(tempStr.size() - 4, 4, ".dds");
+						tempStr[texFilename.find_last_of(".")] = '.'; // restore '.' before filename extension
 						tempPath << modelP.parent_path().string();
 						tempPath << "\\" << tempStr;
 						esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
+						texture->filename = tempPath.str();
 					}
 				}
 			}
@@ -148,8 +149,205 @@ namespace ESM
 				boost::filesystem::create_directories(p.parent_path());
 			}
 			newNIFFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
-			int len = 0;
-			char buffer[1024];
+			size_t len = 0;
+			int intVal = 0;
+			uint16_t shortVal = 0;
+			uint32_t uintVal = 0;
+			uint8_t byteVal = 0;
+			char buffer[4096];
+			size_t readsize = nifFile.mHeaderSize;
+			// write header
+/*
+			// fake header
+			// getVersionString: Version String (eol terminated?)
+			char VersionString[] = "Gamebryo File Format, Version 20.0.0.5\n";
+//			char VersionString[] = "NetImmerse File Format, Version 4.0.0.2\n";
+			len = strlen(VersionString);
+			strncpy(buffer, VersionString, len);
+			newNIFFile.write(buffer, len);
+			// getUInt: BCD version
+//			uintVal = 0x04000002; 
+			uintVal = 0x14000005;
+			for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+			len = 4;
+			newNIFFile.write(buffer, len);
+			// NEW: Endian Type
+			byteVal = 1; // LITTLE ENDIAN
+			buffer[0] = byteVal;
+			len = 1;
+			newNIFFile.write(buffer, len);
+			// NEW: User Version
+			uintVal = 11;
+			for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+			len = 4;
+			newNIFFile.write(buffer, len);
+			// getInt: number of records
+			uintVal = nifFile.numRecords();
+			for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+			len = 4;
+			newNIFFile.write(buffer, len);
+			// NEW: User Version 2
+			uintVal = 11;
+			for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+			len = 4;
+			newNIFFile.write(buffer, len);
+			// NEW: ExportInfo
+			// --ExportInfo: 3 short strings (byte + string)
+			for (int i = 0; i < 3; i++)
+			{
+				byteVal = 1;
+				buffer[0] = byteVal;
+				len = 1;
+				newNIFFile.write(buffer, len);
+				len = 1;
+				strncpy(buffer, "\0", len);
+				newNIFFile.write(buffer, len);
+			}
+			// NEW: Number of Block Types (uint16)
+			shortVal = 8;
+			for (int j = 0; j < 3; j++) buffer[j] = reinterpret_cast<char *>(&shortVal)[j];
+			len = 2;
+			newNIFFile.write(buffer, len);
+			// NEW: Block Types (int32 + string)
+			std::string blockTypes[] = { "NiNode","NiTriShape","NiTexturingProperty","NiSourceTexture","NiAlphaProperty","NiStencilProperty","NiMaterialProperty","NiTriShapeData","","" };
+			for (int i = 0; i < shortVal; i++)
+			{
+				std::string blockType = blockTypes[i];
+				uintVal = blockType.size();
+				for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+				len = 4;
+				newNIFFile.write(buffer, len);
+				len = blockType.size();
+				strncpy(buffer, blockType.c_str(), len);
+				newNIFFile.write(buffer, len);
+			}
+			// NEW: Block Type Index (uint16) x Number of Records
+			int blockIndexes[] = {0,0,0,0,1,2, 3,4,5,6,7, 1,2,3,7,1, 2,3,7,1,2, 3,7,1,7,1, 2,3,7,1,2, 7};
+			for (int i = 0; i < nifFile.numRecords(); i++)
+			{
+				shortVal = blockIndexes[i];
+				for (int j = 0; j < 3; j++) buffer[j] = reinterpret_cast<char *>(&shortVal)[j];
+				len = 2;
+				newNIFFile.write(buffer, len);
+			}
+			// NEW: Unknown Int 2 (int32)
+			uintVal = 0;
+			for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+			len = 4;
+			newNIFFile.write(buffer, len);
+*/
+			// original header
+			while (readsize > sizeof(buffer))
+			{
+				fileStream->read(buffer, sizeof(buffer));
+				len = fileStream->gcount();
+				newNIFFile.write(buffer, len);
+				readsize -= len;
+			}
+			fileStream->read(buffer, readsize);
+			len = fileStream->gcount();
+			newNIFFile.write(buffer, len);
+
+			// write records
+			for (int i=0; i < nifFile.numRecords(); i++)
+			{
+				if (nifFile.getRecord(i)->recType == Nif::RC_NiSourceTexture)
+				{
+					Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(nifFile.getRecord(i));
+					if (texture != NULL && texture->external == true)
+					{
+						// 32bit strlen + recordtype
+						char recordName[] = "NiSourceTexture";
+						len = 15; // recordName is hardcoded without null terminator
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&len)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						len = 15; // recordName is hardcoded without null terminator
+						strncpy(buffer, recordName, len);
+						newNIFFile.write(buffer, len);
+
+						// 32bit strlen + recordname
+						len = texture->name.size();
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&len)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						len = texture->name.size();
+						strncpy(buffer, texture->name.c_str(), len);
+						newNIFFile.write(buffer, len);
+						// then read Extra.index then Controller.index
+						int index = (texture->extra.empty() == false) ? texture->extra->recIndex : -1;
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&index)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						index = (texture->controller.empty() == false) ? texture->controller->recIndex : -1;
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&index)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						// 8bit (bool external = true)
+						buffer[0] = true;
+						len = 1;
+						newNIFFile.write(buffer, len);
+						// 32bit strlen + filename
+						len = texture->filename.size();
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&len)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						len = texture->filename.size();
+						strncpy(buffer, texture->filename.c_str(), len);
+						newNIFFile.write(buffer, len);
+						// 32bit int (pixel)
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->pixel)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						// 32bit int (mipmap)
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->mipmap)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						// 32bit int (alpha)
+						for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->alpha)[j];
+						len = 4;
+						newNIFFile.write(buffer, len);
+						// byte (always 1)
+						buffer[0] = 1;
+						len = 1;
+						newNIFFile.write(buffer, len);
+
+						// move read pointer ahead
+						readsize = nifFile.mRecordSizes[i];
+						fileStream->seekg(readsize, std::ios_base::cur);
+/*
+						while (readsize > sizeof(buffer))
+						{
+							fileStream->read(buffer, sizeof(buffer));
+							len = fileStream->gcount();
+//							newNIFFile.write(buffer, len);
+							readsize -= len;
+						}
+						fileStream->read(buffer, readsize);
+						len = fileStream->gcount();
+//						newNIFFile.write(buffer, len);
+*/
+						continue;
+					}
+				}
+//				int strLen;
+//				fileStream->read(buffer, 4);
+//				strLen = (buffer[0] | buffer[1] << 8 | buffer[2] << 16 | buffer[3] << 24);
+//				fileStream->seekg(strLen, std::ios_base::cur);
+//				readsize = nifFile.mRecordSizes[i] - (strLen+4);
+				readsize = nifFile.mRecordSizes[i];
+				while (readsize > sizeof(buffer))
+				{
+					fileStream->read(buffer, sizeof(buffer));
+					len = fileStream->gcount();
+					newNIFFile.write(buffer, len);
+					readsize -= len;
+				}
+				fileStream->read(buffer, readsize);
+				len = fileStream->gcount();
+				newNIFFile.write(buffer, len);
+			}
+			// write tailing data
 			while (fileStream->eof() == false)
 			{
 				fileStream->read(buffer, sizeof(buffer));

@@ -91,6 +91,9 @@ public:
 
     /// Get the name of the file
     std::string getFilename() const { return filename; }
+
+	size_t mHeaderSize;
+	std::vector<size_t> mRecordSizes;
 };
 typedef std::shared_ptr<const Nif::NIFFile> NIFFilePtr;
 

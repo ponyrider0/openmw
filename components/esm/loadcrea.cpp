@@ -11,6 +11,15 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+
+#include <boost/filesystem.hpp>
+#include "../nif/niffile.hpp"
+#include "../nif/controlled.hpp"
+
+#include <apps/opencs/model/doc/document.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
+
 namespace ESM {
 
     unsigned int Creature::sRecordId = REC_CREA;
@@ -144,7 +153,12 @@ namespace ESM {
         mAiPackage.save(esm);
     }
 
-	bool Creature::exportTESx(ESMWriter &esm, int export_format) const
+	bool Creature::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		return exportTESx((CSMDoc::Document*)NULL, esm, export_format);
+	}
+
+	bool Creature::exportTESx(CSMDoc::Document *doc, ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
 		std::string strEDID;
@@ -177,6 +191,56 @@ namespace ESM {
 		// MODB?
 		// MODT?
 */
+
+#ifdef _WIN32
+		std::string outputRoot = "C:/";
+		std::string logRoot = "";
+#else
+		std::string outputRoot = getenv("HOME");
+		outputRoot += "/";
+		std::string logRoot = outputRoot;
+#endif
+		if (doc != NULL)
+		{
+			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc->getVFS());
+			boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
+			if (boost::filesystem::exists(rootDir) == false)
+			{
+				boost::filesystem::create_directories(rootDir);
+			}
+			try
+			{
+				auto fileStream = doc->getVFS()->get(nifInputName);
+				char buffer[2048];
+				int len = 0;
+				std::ofstream newNIFFile;
+				std::ostringstream modelPath;
+				tempStr = esm.generateEDIDTES4(mModel, 1);
+				tempStr.replace(tempStr.size() - 4, 4, ".nif");
+				modelPath << "morro\\" << tempStr;
+				// create output subdirectories
+				boost::filesystem::path p(outputRoot + "Oblivion.output/Data/Meshes/" + modelPath.str());
+				if (boost::filesystem::exists(p.parent_path()) == false)
+				{
+					boost::filesystem::create_directories(p.parent_path());
+				}
+				newNIFFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+
+				while (fileStream->eof() == false)
+				{
+					fileStream->read(buffer, sizeof(buffer));
+					len = fileStream->gcount();
+					newNIFFile.write(buffer, len);
+				}
+				newNIFFile.close();
+			}
+			catch (...)
+			{
+				std::cout << "ERROR: nope\n";
+			}
+
+		}
+
 		std::vector<std::string> skeletonString = esm.substituteCreatureModel(strEDID, 0);
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(skeletonString[0]);

@@ -81,6 +81,7 @@ namespace CSMDoc
 			int loadEDIDmap2(std::string filename);
 			int loadCellIDmap2(std::string filename);
 			int loadmwEDIDSubstitutionMap(std::string filename);
+			int loadmwEDIDSubstitutionMap2(std::string filename);
 
 			int loadEDIDmap3(std::string filename);
 			int loadCellIDmap3(std::string filename);

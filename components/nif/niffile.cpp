@@ -136,6 +136,8 @@ std::string NIFFile::printVersion(unsigned int version)
 void NIFFile::parse(Files::IStreamPtr stream)
 {
     NIFStream nif (this, stream);
+	size_t previousPos = stream->tellg();
+	size_t currentPos = stream->tellg();
 
     // Check the header string
     std::string head = nif.getVersionString();
@@ -159,6 +161,9 @@ void NIFFile::parse(Files::IStreamPtr stream)
      we do not support or plan to support other versions yet.
     */
 
+	previousPos = currentPos;
+	currentPos = stream->tellg();
+	mHeaderSize = currentPos - previousPos;
     for(size_t i = 0;i < recNum;i++)
     {
         Record *r = NULL;
@@ -187,6 +192,10 @@ void NIFFile::parse(Files::IStreamPtr stream)
         r->recIndex = i;
         records[i] = r;
         r->read(&nif);
+
+		previousPos = currentPos;
+		currentPos = stream->tellg();
+		mRecordSizes.push_back(currentPos - previousPos);
     }
 
     size_t rootNum = nif.getUInt();

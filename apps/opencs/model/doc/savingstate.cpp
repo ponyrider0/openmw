@@ -554,6 +554,52 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap(std::string filename)
 	return errorcode;
 }
 
+int CSMDoc::SavingState::loadmwEDIDSubstitutionMap2(std::string filename)
+{
+	std::cout << "Importing '" << filename << "'" << std::endl;
+
+	int errorcode = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string strNewEDID, strGenEDID;
+		uint32_t formID;
+
+		for (int i = 0; i < 2; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strGenEDID = token;
+				break;
+			case 1:
+				strNewEDID = token;
+				break;
+			}
+		}
+
+		if (strNewEDID == "" || strGenEDID == "")
+			continue;
+
+		mWriter.mMorroblivionEDIDmap[Misc::StringUtils::lowerCase(strGenEDID)] = strNewEDID;
+
+	}
+	inputFile.close();
+
+	return errorcode;
+}
+
 int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 {
 	std::cout << "Importing '" << filename << "'" << std::flush;
@@ -1067,7 +1113,8 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
 	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
-	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmap.csv");
+//	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmap.csv");
+	loadmwEDIDSubstitutionMap2(csvRoot + "GenericToMorroblivionEDIDmap2.csv");
 
 	if (mWriter.mESMMastersmap.find(Misc::StringUtils::lowerCase(esmName)) != mWriter.mESMMastersmap.end())
 	{

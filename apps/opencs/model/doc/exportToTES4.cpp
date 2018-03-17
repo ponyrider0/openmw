@@ -2789,7 +2789,9 @@ void CSMDoc::ExportCreatureCollectionTES4Stage::perform (int stage, Messages& me
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Creature>& record = mDocument.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(recordIndex);
+	record.get().exportTESx(&mDocument, mState.getWriter(), 4);
 
 	if (stage == mActiveRecords.size()-1)
 	{
@@ -5376,9 +5378,11 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 #ifdef _WIN32
     std::string outputRoot = "";
+	std::string oblivionOutput = "C:/Oblivion.output/";
 #else
     std::string outputRoot = getenv("HOME");
     outputRoot += "/";
+	std::string oblivionOutput = "/Oblivion.output/";
 #endif
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
@@ -5387,6 +5391,10 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::ofstream batchFileNIFConv_helper1;
 	//	std::ofstream batchFileNIFConv_helper2;
 	std::ofstream batchFileLODNIFConv;
+
+	// new Blender List
+	std::ofstream blenderOutList;
+	blenderOutList.open(oblivionOutput + "ModExporter_BlenderOutList" + ".txt");
 
 	batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
 	batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat");
@@ -5458,6 +5466,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
 			batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -f -c " << " -d " << lodFileName << "\n";
 		}
+
+		// create New BlenderOutList
+		blenderOutList << nifOutputName << "\n";
 	}
 	batchFileNIFConv << "echo ----------------------\n";
 	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
@@ -5481,6 +5492,8 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	batchFileNIFConv_helper1.close();
 	//	batchFileNIFConv_helper2.close();
 	batchFileLODNIFConv.close();
+
+	blenderOutList.close();
 
 	// ****************
 	// ARMOR conversion
