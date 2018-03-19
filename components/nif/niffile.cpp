@@ -3,6 +3,7 @@
 
 #include <map>
 #include <sstream>
+#include <iostream>
 
 namespace Nif
 {
@@ -219,6 +220,8 @@ void NIFFile::parse(Files::IStreamPtr stream)
     // Once parsing is done, do post-processing.
     for(size_t i=0; i<recNum; i++)
         records[i]->post(this);
+
+	calculateModelBounds();
 }
 
 void NIFFile::setUseSkinning(bool skinning)
@@ -229,6 +232,428 @@ void NIFFile::setUseSkinning(bool skinning)
 bool NIFFile::getUseSkinning() const
 {
     return mUseSkinning;
+}
+
+void NIFFile::exportHeader(Files::IStreamPtr inStream, std::ostream &outStream)
+{
+	size_t len = 0;
+	int intVal = 0;
+	uint16_t shortVal = 0;
+	uint32_t uintVal = 0;
+	uint8_t byteVal = 0;
+	char buffer[4096];
+	size_t readsize = mHeaderSize;
+
+	inStream->seekg(std::ios_base::beg);
+
+/*
+	// fake header
+	// getVersionString: Version String (eol terminated?)
+	char VersionString[] = "Gamebryo File Format, Version 20.0.0.5\n";
+	//			char VersionString[] = "NetImmerse File Format, Version 4.0.0.2\n";
+	len = strlen(VersionString);
+	strncpy(buffer, VersionString, len);
+	outStream.write(buffer, len);
+	// getUInt: BCD version
+	//			uintVal = 0x04000002; 
+	uintVal = 0x14000005;
+	for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+	len = 4;
+	outStream.write(buffer, len);
+	// NEW: Endian Type
+	byteVal = 1; // LITTLE ENDIAN
+	buffer[0] = byteVal;
+	len = 1;
+	outStream.write(buffer, len);
+	// NEW: User Version
+	uintVal = 11;
+	for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+	len = 4;
+	outStream.write(buffer, len);
+	// getInt: number of records
+	uintVal = nifFile.numRecords();
+	for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+	len = 4;
+	outStream.write(buffer, len);
+	// NEW: User Version 2
+	uintVal = 11;
+	for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+	len = 4;
+	outStream.write(buffer, len);
+	// NEW: ExportInfo
+	// --ExportInfo: 3 short strings (byte + string)
+	for (int i = 0; i < 3; i++)
+	{
+		byteVal = 1;
+		buffer[0] = byteVal;
+		len = 1;
+		outStream.write(buffer, len);
+		len = 1;
+		strncpy(buffer, "\0", len);
+		outStream.write(buffer, len);
+	}
+	// NEW: Number of Block Types (uint16)
+	shortVal = 8;
+	for (int j = 0; j < 3; j++) buffer[j] = reinterpret_cast<char *>(&shortVal)[j];
+	len = 2;
+	outStream.write(buffer, len);
+	// NEW: Block Types (int32 + string)
+	std::string blockTypes[] = { "NiNode","NiTriShape","NiTexturingProperty","NiSourceTexture","NiAlphaProperty","NiStencilProperty","NiMaterialProperty","NiTriShapeData","","" };
+	for (int i = 0; i < shortVal; i++)
+	{
+		std::string blockType = blockTypes[i];
+		uintVal = blockType.size();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		len = blockType.size();
+		strncpy(buffer, blockType.c_str(), len);
+		outStream.write(buffer, len);
+	}
+	// NEW: Block Type Index (uint16) x Number of Records
+	int blockIndexes[] = { 0,0,0,0,1,2, 3,4,5,6,7, 1,2,3,7,1, 2,3,7,1,2, 3,7,1,7,1, 2,3,7,1,2, 7 };
+	for (int i = 0; i < nifFile.numRecords(); i++)
+	{
+		shortVal = blockIndexes[i];
+		for (int j = 0; j < 3; j++) buffer[j] = reinterpret_cast<char *>(&shortVal)[j];
+		len = 2;
+		outStream.write(buffer, len);
+	}
+	// NEW: Unknown Int 2 (int32)
+	uintVal = 0;
+	for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+	len = 4;
+	outStream.write(buffer, len);
+*/
+
+	// original header
+	while (readsize > sizeof(buffer))
+	{
+		inStream->read(buffer, sizeof(buffer));
+		len = inStream->gcount();
+		outStream.write(buffer, len);
+		readsize -= len;
+	}
+	inStream->read(buffer, readsize);
+	len = inStream->gcount();
+	outStream.write(buffer, len);
+
+}
+
+void NIFFile::exportRecord(Files::IStreamPtr inStream, std::ostream & outStream, int recordIndex)
+{
+	size_t len = 0;
+	int intVal = 0;
+	uint16_t shortVal = 0;
+	uint32_t uintVal = 0;
+	uint8_t byteVal = 0;
+	char buffer[4096];
+	size_t readsize = mHeaderSize;
+
+	// sanity check: check bounds of index
+	if (recordIndex >= mRecordSizes.size())
+	{
+		std::stringstream errMesg;
+		// throw error message?
+		errMesg << "ERROR: NIFFile::exportRecord() recordIndex out of bounds: " << recordIndex << "\n";
+		throw(std::runtime_error(errMesg.str()));
+		return;
+	}
+//	std::cout << "DEBUG: recordIndex= " << recordIndex << ", recordSize=" << mRecordSizes[recordIndex] << "  ; mRecordSizes.size()=" << mRecordSizes.size() << "\n";
+
+	// move inStream pointer to beginning of relevant record
+	int recordmark = mHeaderSize;
+	for (int i = 0; i < recordIndex; i++)
+	{
+		recordmark += mRecordSizes[i];
+	}
+	inStream->seekg(recordmark, std::ios_base::beg);
+
+	// write record
+	if (records[recordIndex]->recType == Nif::RC_NiSourceTexture)
+	{
+		exportRecordSourceTexture(inStream, outStream, recordIndex, "");
+	}
+	else
+	{
+		// generic export of all other records
+		readsize = mRecordSizes[recordIndex];
+		while (readsize > sizeof(buffer))
+		{
+			inStream->read(buffer, sizeof(buffer));
+			len = inStream->gcount();
+			if (len == 0 || inStream->rdstate() != std::ios_base::goodbit)
+			{
+				// get stream state
+				bool isEOF = inStream->eof();
+				bool isFAIL = inStream->fail();
+				bool isBADio = inStream->bad();
+				std::stringstream errMesg;
+				// throw error message?
+				errMesg << "ERROR: NIFFile::exportRecord() read error occured at index=" << recordIndex << "STATE: Failed=" << isFAIL << " EOF=" << isEOF << " BAD i/o=" << isBADio << "\n";
+				throw(std::runtime_error(errMesg.str()));
+				return;
+			}
+			outStream.write(buffer, len);
+			if (len == 0)
+			{
+				std::stringstream errMesg;
+				// throw error message?
+				errMesg << "ERROR: NIFFile::exportRecord() write error occured at index=" << recordIndex << "\n";
+				throw(std::runtime_error(errMesg.str()));
+				return;
+			}
+			readsize -= len;
+		}
+		inStream->read(buffer, readsize);
+		len = inStream->gcount();
+		outStream.write(buffer, len);
+
+	}
+
+
+}
+
+void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream & outStream, int recordIndex, std::string pathPrefix)
+{
+	size_t len = 0;
+	int intVal = 0;
+	uint16_t shortVal = 0;
+	uint32_t uintVal = 0;
+	uint8_t byteVal = 0;
+	char buffer[4096];
+	size_t readsize = mHeaderSize;
+
+	// sanity check: check bounds of index
+	if (recordIndex > records.size())
+	{
+		std::stringstream errMesg;
+		// throw error message?
+		errMesg << "ERROR: NIFFile::exportRecord() recordIndex out of bounds: " << recordIndex << "\n";
+		throw(std::runtime_error(errMesg.str()));
+		return;
+	}
+
+	// sanity check: record type
+	if (records[recordIndex]->recType != Nif::RC_NiSourceTexture)
+	{
+		std::stringstream errMesg;
+		// throw error message?
+		errMesg << "ERROR: NIFFile::exportRecordSourceTexture() wrong record type " << std::hex << records[recordIndex]->recType << "\n";
+		throw(std::runtime_error(errMesg.str()));
+		return;
+	}
+
+	// move inStream pointer to beginning of relevant record
+	int recordmark = mHeaderSize;
+	for (int i = 0; i < recordIndex; i++)
+	{
+		recordmark += mRecordSizes[i];
+	}
+	inStream->seekg(recordmark, std::ios_base::beg);
+
+	// custom export with substitution of texture filenames
+	Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(records[recordIndex]);
+	if (texture != NULL && texture->external == true)
+	{
+		// 32bit strlen + recordtype
+		char recordName[] = "NiSourceTexture";
+		uintVal = 15; // recordName is hardcoded without null terminator
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		len = 15; // recordName is hardcoded without null terminator
+		strncpy(buffer, recordName, len);
+		outStream.write(buffer, len);
+
+		// 32bit strlen + recordname
+		uintVal = texture->name.size();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		len = texture->name.size();
+		strncpy(buffer, texture->name.c_str(), len);
+		outStream.write(buffer, len);
+		// then read Extra.index then Controller.index
+		intVal = (texture->extra.empty() == false) ? texture->extra->recIndex : -1;
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&intVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		intVal = (texture->controller.empty() == false) ? texture->controller->recIndex : -1;
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&intVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		// 8bit (bool external = true)
+		buffer[0] = true;
+		len = 1;
+		outStream.write(buffer, len);
+
+		//*********************filename replacement here*************************/
+		// 32bit strlen + filename
+		std::string exportFilename = pathPrefix + texture->filename;
+		uintVal = exportFilename.size();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		len = exportFilename.size();
+		strncpy(buffer, exportFilename.c_str(), len);
+		outStream.write(buffer, len);
+		//***********************************************************************/
+
+		// 32bit int (pixel)
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->pixel)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		// 32bit int (mipmap)
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->mipmap)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		// 32bit int (alpha)
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&texture->alpha)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		// byte (always 1)
+		buffer[0] = 1;
+		len = 1;
+		outStream.write(buffer, len);
+
+		// move read pointer to end of current record
+		readsize = mRecordSizes[recordIndex];
+		inStream->seekg(readsize, std::ios_base::cur);
+	}
+	else
+	{
+		// nothing to replace, export using generic code
+		// do NOT call back to generic function since it may have been the caller for this function (infinite loop)
+		readsize = mRecordSizes[recordIndex];
+		while (readsize > sizeof(buffer))
+		{
+			inStream->read(buffer, sizeof(buffer));
+			len = inStream->gcount();
+			outStream.write(buffer, len);
+			readsize -= len;
+		}
+		inStream->read(buffer, readsize);
+		len = inStream->gcount();
+		outStream.write(buffer, len);
+	}
+
+}
+
+void NIFFile::exportFooter(Files::IStreamPtr inStream, std::ostream & outStream)
+{
+	size_t len = 0;
+	char buffer[4096];
+
+	// move input-pointer to past last record
+	int footermark = mHeaderSize;
+	for (int i = 0; i < records.size(); i++)
+	{
+		footermark += mRecordSizes[i];
+	}
+	inStream->seekg(footermark, std::ios_base::beg);
+
+	while (inStream->eof() == false)
+	{
+		inStream->read(buffer, sizeof(buffer));
+		len = inStream->gcount();
+		if (len == 0)
+		{
+			std::stringstream errMesg;
+			// throw error message?
+			errMesg << "ERROR: NIFFile::exportFooter() read error occured.\n";
+			throw(std::runtime_error(errMesg.str()));
+			return;
+		}
+		outStream.write(buffer, len);
+	}
+}
+
+void NIFFile::calculateModelBounds()
+{
+	float modelBounds = mModelBounds;
+	bool init=false;
+	float maxx, maxy, maxz, minx, miny, minz;
+
+	for (int i = 0; i < records.size(); i++)
+	{
+		// for each mesh data record, calculate boundradius
+		if (records[i]->recType == Nif::RC_NiTriShape)
+		{
+			Nif::NiTriShape *triNode = dynamic_cast<Nif::NiTriShape*>(records[i]);
+			if (triNode == NULL) continue;
+
+			osg::Matrixf meshMatrix = triNode->trafo.toMatrix();
+			// code block to multiply from inside to out
+			Nif::NiNode *parent = triNode->parent;
+			while (parent != NULL)
+			{
+				meshMatrix *= parent->trafo.toMatrix();
+				parent = parent->parent;
+			}
+			/** This code block is to multiply matrix from outside to in 
+			std::vector<Nif::Node*> parentStack;
+			parentStack.push_back(triNode->parent);
+			// get TriShape, Trishape->parent(s) and Trishape->children/Data
+			while (parentStack.back()->parent != NULL)
+			{
+				parentStack.push_back(parentStack.back()->parent);
+			}
+			// build matrix by multiplying from top parent to bottom
+			while (parentStack.empty() != true)
+			{
+				meshMatrix *= parentStack.back()->trafo.toMatrix();
+				parentStack.pop_back();
+			}
+			*/
+
+			// NiTriShape only has one relevant child: NiTriShapeData
+			Nif::NiTriShapeData *meshdata = triNode->data.getPtr();
+			if (meshdata != NULL)
+			{
+				float shapeBounds = meshdata->radius * meshMatrix.getScale().x();
+				modelBounds = (modelBounds > shapeBounds) ? modelBounds : shapeBounds;
+/*
+				// compare xyz to minmax xyz
+				for (std::vector<osg::Vec3f>::iterator vert_it = meshdata->vertices.begin(); vert_it != meshdata->vertices.end(); vert_it++)
+				{
+					osg::Vec3f vert = (*vert_it) * meshMatrix;
+					float x = vert.x();
+					float y = vert.y();
+					float z = vert.z();
+					if (init == false)
+					{
+						init = true;
+						maxx = minx = x;
+						maxy = miny = y;
+						maxz = minz = z;
+						continue;
+					}
+					maxx = (maxx > x) ? maxx : x;
+					maxy = (maxy > y) ? maxy : y;
+					maxz = (maxz > z) ? maxz : z;
+					minx = (minx < x) ? minx : x;
+					miny = (miny < y) ? miny : y;
+					minz = (minz < z) ? minz : z;
+
+				}
+*/		
+			}
+		}
+	}
+	/*
+	float distance;
+	// after complete min/max calculated, determine greatest bound Size
+	distance = abs(maxx - minx)/2;
+	modelBounds = (distance > modelBounds) ? distance : modelBounds;
+	distance = abs(maxy - miny)/2;
+	modelBounds = (distance > modelBounds) ? distance : modelBounds;
+	distance = abs(maxz - minz)/2;
+	modelBounds = (distance > modelBounds) ? distance : modelBounds
+	*/
+
+	mModelBounds = modelBounds;
+
 }
 
 }

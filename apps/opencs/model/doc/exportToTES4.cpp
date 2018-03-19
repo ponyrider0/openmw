@@ -5394,6 +5394,12 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 	// new Blender List
 	std::ofstream blenderOutList;
+	std::ofstream blenderOutList_fullres;
+	std::ofstream blenderOutList_far;
+	blenderOutList_fullres.open(oblivionOutput + "ModExporter_BlenderOutList_fullres_collision" + ".txt");
+	blenderOutList_fullres.close();
+
+	blenderOutList_far.open(oblivionOutput + "ModExporter_BlenderOutList_far" + ".txt");
 	blenderOutList.open(oblivionOutput + "ModExporter_BlenderOutList" + ".txt");
 
 	batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
@@ -5465,6 +5471,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		{
 			std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
 			batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -f -c " << " -d " << lodFileName << "\n";
+
+			// create New BlenderOutList
+			blenderOutList_far << nifOutputName.substr(0, nifOutputName.length()-4) + "_far.nif" << "\n";
 		}
 
 		// create New BlenderOutList
@@ -5494,6 +5503,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	batchFileLODNIFConv.close();
 
 	blenderOutList.close();
+	blenderOutList_far.close();
 
 	// ****************
 	// ARMOR conversion

@@ -46,6 +46,8 @@ class NIFFile
     ///\overload
     void operator = (NIFFile const &);
 
+	void calculateModelBounds();
+
 public:
     /// Used if file parsing fails
     void fail(const std::string &msg) const
@@ -92,8 +94,14 @@ public:
     /// Get the name of the file
     std::string getFilename() const { return filename; }
 
+	void exportHeader(Files::IStreamPtr inStream, std::ostream &outStream);
+	void exportFooter(Files::IStreamPtr inStream, std::ostream &outStream);
+	void exportRecord(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex);
+	void exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex, std::string pathPrefix="");
+
 	size_t mHeaderSize;
 	std::vector<size_t> mRecordSizes;
+	float mModelBounds;
 };
 typedef std::shared_ptr<const Nif::NIFFile> NIFFilePtr;
 
