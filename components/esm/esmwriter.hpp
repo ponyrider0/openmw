@@ -234,7 +234,8 @@ public:
 		std::map<std::string, std::vector<std::string>> mESMMastersmap;
 
 		// DDS List for export
-		std::map<std::string, std::pair<std::string, int>> mDDSToExportList;
+//		std::map<std::string, std::pair<std::string, int>> mDDSToExportList;
+		std::vector<std::pair<std::string, std::pair<std::string, int>>> mDDSToExportList;
 		// SOUND List for export
 		std::map<std::string, std::pair<std::string, int>> mSOUNDToExportList;
 

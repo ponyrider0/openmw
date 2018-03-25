@@ -372,7 +372,8 @@ namespace ESM
 		{
 			std::string iconStr = mIcon.substr(0, mIcon.find_last_of("."));
 			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
-			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
+			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(newIconStr, 1)));
+//			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
 		}
 
 		bool bConvertArmor = false;

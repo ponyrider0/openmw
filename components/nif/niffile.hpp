@@ -5,11 +5,22 @@
 
 #include <stdexcept>
 #include <vector>
+#include <map>
 #include <iostream>
 
 #include <components/files/constrainedfilestream.hpp>
 
 #include "record.hpp"
+
+namespace CSMDoc
+{
+	class Document;
+}
+
+namespace ESM 
+{
+	class ESMWriter;
+}
 
 namespace Nif
 {
@@ -99,9 +110,19 @@ public:
 	void exportRecord(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex);
 	void exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex, std::string pathPrefix="");
 
+	void exportFileNif(Files::IStreamPtr inStream, std::string modelPath);
+	void exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
+	void prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath);
+
+	static std::string CreateResourcePaths(std::string modelPath);
+
 	size_t mHeaderSize;
 	std::vector<size_t> mRecordSizes;
-	float mModelBounds;
+	float mModelBounds=0;
+	bool mReadyToExport=false;
+	// map: record index to original resourceNames
+	std::map<int, std::string>mResourceNames;
+
 };
 typedef std::shared_ptr<const Nif::NIFFile> NIFFilePtr;
 

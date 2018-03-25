@@ -4,6 +4,13 @@
 #include <map>
 #include <sstream>
 #include <iostream>
+#include <fstream>
+#include <boost/filesystem.hpp>
+
+#include <apps/opencs/model/doc/document.hpp>
+#include <components/esm/esmwriter.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
 
 namespace Nif
 {
@@ -540,6 +547,140 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 
 }
 
+void NIFFile::exportFileNif(Files::IStreamPtr inStream, std::string filePath)
+{
+	// serialize modified NIF and output to newNIFFILe
+	inStream->clear();
+	inStream.get()->seekg(std::ios_base::beg);
+	std::ofstream outStream;
+
+	outStream.open(filePath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+	// write header
+	exportHeader(inStream, outStream);
+	// write records
+	for (int i = 0; i < records.size(); i++)
+	{
+		exportRecord(inStream, outStream, i);
+	}
+	// write footer data
+	exportFooter(inStream, outStream);
+	outStream.close();
+}
+
+void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
+{
+	// create _far.nif filePath
+	std::string path_farNIF = filePath.substr(0, filePath.size() - 4) + "_far.nif";
+	std::ofstream farNIFFile;
+
+	farNIFFile.open(path_farNIF, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+	inStream->clear(); // reset state
+	exportHeader(inStream, farNIFFile);
+	for (int i = 0; i < numRecords(); i++)
+	{
+		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
+		{
+			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
+			if (texture != NULL)
+			{
+				// rename texture filepath to /textures/lowres/...
+				std::string prefix = "lowres\\";
+				exportRecordSourceTexture(inStream, farNIFFile, i, prefix);
+				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(prefix + texture->filename, 3)));
+			}
+		}
+		else
+		{
+			exportRecord(inStream, farNIFFile, i);
+		}
+	}
+	// write footer data
+	exportFooter(inStream, farNIFFile);
+	farNIFFile.close();
+}
+
+void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath)
+{
+	// look through each record, process accordingly
+	for (int i = 0; i < numRecords(); i++)
+	{
+		// TODO: if collision node found, set properties?
+		// ...
+
+		// for each texturesource node, change name
+		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
+		{
+			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
+			if (texture != NULL)
+			{
+				mResourceNames[i] = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
+				std::string texFilename = texture->filename;
+				if (Misc::StringUtils::lowerCase(texFilename).find("textures/") == 0 ||
+					Misc::StringUtils::lowerCase(texFilename).find("textures\\") == 0)
+				{
+					// remove "textures/" path prefix
+					texFilename = texFilename.substr(strlen("textures/"));
+				}
+				// extract modelPath dir and paste onto texture
+				boost::filesystem::path modelP(modelPath);
+				std::stringstream tempPath;
+				std::string tempStr = esm.generateEDIDTES4(texFilename, 1);
+//				tempStr[texFilename.find_last_of(".")] = '.'; // restore '.' before filename extension
+				tempStr.replace(tempStr.size()-4, 4, ".dds"); // change to DDS extension
+				// TODO: lookup NIFRecord properties to identify bump maps and glow maps
+				// change Unrm to _n...
+				if (Misc::StringUtils::lowerCase(tempStr).find("unrm.dds") != std::string::npos)
+				{
+					tempStr.replace(tempStr.size()-8, 4, "_n");
+				}
+				if (Misc::StringUtils::lowerCase(tempStr).find("unm.dds") != std::string::npos)
+				{
+					tempStr.replace(tempStr.size()-7, 3, "_n");
+				}
+				if (Misc::StringUtils::lowerCase(tempStr).find("ug.dds") != std::string::npos)
+				{
+					tempStr.replace(tempStr.size()-6, 2, "_g");
+				}
+				if (Misc::StringUtils::lowerCase(tempStr).find("uglow.dds") != std::string::npos)
+				{
+					tempStr.replace(tempStr.size()-9, 2, "_g");
+				}
+				tempPath << modelP.parent_path().string();
+				tempPath << "\\" << tempStr;
+				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
+//				esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
+				texture->filename = tempPath.str();
+			}
+		}
+	}
+}
+
+std::string NIFFile::CreateResourcePaths(std::string modelPath)
+{
+#ifdef _WIN32
+	std::string outputRoot = "C:/";
+	std::string logRoot = "";
+#else
+	std::string outputRoot = getenv("HOME");
+	outputRoot += "/";
+	std::string logRoot = outputRoot;
+#endif
+
+	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
+	if (boost::filesystem::exists(rootDir) == false)
+	{
+		boost::filesystem::create_directories(rootDir);
+	}
+
+	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + modelPath);
+	if (boost::filesystem::exists(filePath.parent_path()) == false)
+	{
+		boost::filesystem::create_directories(filePath.parent_path());
+	}
+
+	return filePath.string();
+}
+
 void NIFFile::exportFooter(Files::IStreamPtr inStream, std::ostream & outStream)
 {
 	size_t len = 0;
@@ -611,9 +752,11 @@ void NIFFile::calculateModelBounds()
 			Nif::NiTriShapeData *meshdata = triNode->data.getPtr();
 			if (meshdata != NULL)
 			{
-				float shapeBounds = meshdata->radius * meshMatrix.getScale().x();
-				modelBounds = (modelBounds > shapeBounds) ? modelBounds : shapeBounds;
-/*
+				// These two commands are to use pre-existing radius measurements per mesh
+				// downside: ignores distance between mesh centers
+//				float shapeBounds = meshdata->radius * meshMatrix.getScale().x();
+//				modelBounds = (modelBounds > shapeBounds) ? modelBounds : shapeBounds;
+
 				// compare xyz to minmax xyz
 				for (std::vector<osg::Vec3f>::iterator vert_it = meshdata->vertices.begin(); vert_it != meshdata->vertices.end(); vert_it++)
 				{
@@ -637,20 +780,39 @@ void NIFFile::calculateModelBounds()
 					minz = (minz < z) ? minz : z;
 
 				}
-*/		
+		
 			}
 		}
 	}
-	/*
-	float distance;
 	// after complete min/max calculated, determine greatest bound Size
-	distance = abs(maxx - minx)/2;
-	modelBounds = (distance > modelBounds) ? distance : modelBounds;
-	distance = abs(maxy - miny)/2;
-	modelBounds = (distance > modelBounds) ? distance : modelBounds;
-	distance = abs(maxz - minz)/2;
-	modelBounds = (distance > modelBounds) ? distance : modelBounds
-	*/
+	float dX2 = abs(maxx - minx); dX2 *= dX2;
+	float dY2 = abs(maxy - miny); dY2 *= dY2;
+	float dZ2 = abs(maxz - minz); dZ2 *= dZ2;
+
+	float radXY = sqrt(dX2 + dY2);
+	float radXZ = sqrt(dX2 + dZ2);
+	float radYZ = sqrt(dY2 + dZ2);
+
+	float a, b;
+	if (radXY > radXZ)
+	{
+		a = radXY;
+		// XY is winner, so compare XZ and YZ to figure out #2
+		b = (radXZ > radYZ) ? radXZ : radYZ;
+	}
+	else
+	{
+		a = radXZ;
+		// XZ is winner, so compare XY and YZ to figure out #2
+		b = (radXY > radYZ) ? radXY : radYZ;
+	}
+
+	float radXYZ = sqrt(a*a + b*b);
+
+	modelBounds = (radXY > modelBounds) ? radXY : modelBounds;
+	modelBounds = (radXZ > modelBounds) ? radXZ : modelBounds;
+	modelBounds = (radYZ > modelBounds) ? radYZ : modelBounds;
+	modelBounds = (radXYZ > modelBounds) ? radXYZ : modelBounds;
 
 	mModelBounds = modelBounds;
 

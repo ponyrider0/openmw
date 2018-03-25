@@ -200,7 +200,11 @@ namespace ESM {
 		outputRoot += "/";
 		std::string logRoot = outputRoot;
 #endif
-		if (doc != NULL)
+		bool bConvertCreatures = false;
+		if (esm.mConversionOptions.find("#creature") != std::string::npos)
+			bConvertCreatures = true;
+
+		if (doc != NULL && bConvertCreatures == true)
 		{
 			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc->getVFS());
 			boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");

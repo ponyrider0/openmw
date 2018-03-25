@@ -4,6 +4,14 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <boost/filesystem.hpp>
+#include "../nif/niffile.hpp"
+#include "../nif/controlled.hpp"
+
+#include <apps/opencs/model/doc/document.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
+
 namespace ESM
 {
     unsigned int Activator::sRecordId = REC_ACTI;
@@ -58,7 +66,11 @@ namespace ESM
         esm.writeHNOCString("FNAM", mName);
         esm.writeHNOCString("SCRI", mScript);
     }
-	bool Activator::exportTESx(ESMWriter &esm, int export_format) const
+	bool Activator::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		return false;
+	}
+	bool Activator::exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format) const
 	{
 		std::string tempStr;
 		std::ostringstream modelPath;
@@ -76,14 +88,53 @@ namespace ESM
 		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
-		esm.QueueModelForExport(mModel, modelPath.str());
+//		esm.QueueModelForExport(mModel, modelPath.str());
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
 
+		bool bBlenderOutput = false;
+		if (esm.mConversionOptions.find("#blender") != std::string::npos)
+			bBlenderOutput = true;
+
+		float modelBounds = 0.0f;
+		// ** Load NIF and get model's true Bound Radius
+		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+		std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+		Files::IStreamPtr fileStream = NULL;
+		try
+		{
+			fileStream = doc.getVFS()->get(nifInputName);
+			// read stream into NIF parser...
+			Nif::NIFFile nifFile(fileStream, nifInputName);
+			modelBounds = nifFile.mModelBounds;
+
+			if (bBlenderOutput)
+			{
+				nifFile.prepareExport(doc, esm, modelPath.str());
+				nifFile.exportFileNif(fileStream, filePath);
+				if (modelBounds >= 200)
+				{
+					nifFile.exportFileNifFar(esm, fileStream, filePath);
+				}
+			}
+
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+		}
+
+		int recordType = 0;
+		if (modelBounds >= 200)
+		{
+			recordType = 4;
+		}
+		esm.QueueModelForExport(mModel, modelPath.str(), recordType);
+
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
-		esm.writeT<float>(50.0);
+		esm.writeT<float>(modelBounds);
 		esm.endSubRecordTES4("MODB");
 		// MODT
 

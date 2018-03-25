@@ -121,7 +121,8 @@ namespace ESM
 			tempPath.str(""); tempPath.clear();
 			tempPath << "weapons\\morro\\" << tempStr;
 //			tempPath << esm.substituteWeaponModel(mName, 1);
-			esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
+//			esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
 			esm.startSubRecordTES4("ICON");
 			esm.writeHCString(tempPath.str());
 			esm.endSubRecordTES4("ICON");

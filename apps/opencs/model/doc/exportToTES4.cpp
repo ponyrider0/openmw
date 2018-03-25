@@ -1596,7 +1596,7 @@ void CSMDoc::ExportFurnitureCollectionTES4Stage::perform (int stage, Messages& m
 //		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 		StartModRecord(sSIG, activatorRec.get().mId, writer, activatorRec.mState);
-		activatorRec.get().exportTESx(writer, 4);
+		activatorRec.get().exportTESx(mDocument, writer, 4);
 		// MNAM
 		writer.startSubRecordTES4("MNAM");
 		writer.writeT<uint32_t>(0);
@@ -2670,7 +2670,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 //	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, record.get().mId, writer, record.mState);
-	record.get().exportTESx(writer, 4);
+	record.get().exportTESx(mDocument, writer, 4);
 	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)
@@ -2841,20 +2841,24 @@ int CSMDoc::ExportDoorCollectionTES4Stage::setup()
 void CSMDoc::ExportDoorCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "DOOR";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// DOOR GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getDoors().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Door>& record = mDocument.getData().getReferenceables().getDataSet().getDoors().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -5396,11 +5400,34 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::ofstream blenderOutList;
 	std::ofstream blenderOutList_fullres;
 	std::ofstream blenderOutList_far;
-	blenderOutList_fullres.open(oblivionOutput + "ModExporter_BlenderOutList_fullres_collision" + ".txt");
-	blenderOutList_fullres.close();
+	int jobnumber=0, fullres_jobnumber=0, far_jobnumber=0;
+	char jobstring[6];
+	int stringlen=0;
 
-	blenderOutList_far.open(oblivionOutput + "ModExporter_BlenderOutList_far" + ".txt");
-	blenderOutList.open(oblivionOutput + "ModExporter_BlenderOutList" + ".txt");
+	if (boost::filesystem::exists(oblivionOutput + "jobs/") == false)
+	{
+		boost::filesystem::create_directories(oblivionOutput + "jobs/");
+	}
+
+	std::string jobstem = oblivionOutput + "jobs/ModExporter_blender_" + modStem;
+	std::string fullres_jobstem = jobstem + "_fullres_collision";
+	std::string far_jobstem = jobstem + "_far";
+
+	bool bFullResCollision = true;
+	if (esm.mConversionOptions.find("#qhull") != std::string::npos)
+		bFullResCollision = false;
+
+	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", fullres_jobnumber);
+	jobstring[stringlen] = '\0';
+	blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
+
+	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", far_jobnumber);
+	jobstring[stringlen] = '\0';
+	blenderOutList_far.open(far_jobstem + jobstring + ".job");
+
+	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", jobnumber);
+	jobstring[stringlen] = '\0';
+	blenderOutList.open(jobstem + jobstring + ".job");
 
 	batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
 	batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat");
@@ -5419,6 +5446,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	//	batchFileNIFConv_helper2 << "@echo off\n";
 	batchFileLODNIFConv << "@echo off\n";
 
+	int linecount = 0, far_linecount=0;
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin(); nifConvItem != esm.mModelsToExportList.end(); nifConvItem++)
 	{
@@ -5463,7 +5491,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		/*
 		else
 		{
-		batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifInputName << " -d " << nifConvItem->second << "\n";
+			batchFileNIFConv_helper2 << "NIF_Conv.exe " << nifInputName << " -d " << nifConvItem->second << "\n";
 		}
 		*/
 		// create LOD batch file
@@ -5474,10 +5502,45 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 			// create New BlenderOutList
 			blenderOutList_far << nifOutputName.substr(0, nifOutputName.length()-4) + "_far.nif" << "\n";
+			if (++far_linecount > 100)
+			{
+				far_linecount = 0;
+				blenderOutList_far.close();
+				stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++far_jobnumber);
+				jobstring[stringlen] = '\0';
+				blenderOutList_far.open(far_jobstem + jobstring + ".job");
+			}
 		}
 
 		// create New BlenderOutList
-		blenderOutList << nifOutputName << "\n";
+		if (nifConvItem->second.second == 0 ||
+			nifConvItem->second.second == 4 ||
+			nifConvItem->second.second == 1 )
+		{
+			if (bFullResCollision)
+				blenderOutList_fullres << nifOutputName << "\n";
+			else
+				blenderOutList << nifOutputName << "\n";
+			if (++linecount > 100)
+			{
+				linecount = 0;
+				if (bFullResCollision)
+				{
+					blenderOutList_fullres.close();
+					stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++fullres_jobnumber);
+					jobstring[stringlen] = '\0';
+					blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
+				}
+				else
+				{
+					blenderOutList.close();
+					stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++jobnumber);
+					jobstring[stringlen] = '\0';
+					blenderOutList.open(jobstem + jobstring + ".job");
+				}
+			}
+		}
+
 	}
 	batchFileNIFConv << "echo ----------------------\n";
 	batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
@@ -5502,6 +5565,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	//	batchFileNIFConv_helper2.close();
 	batchFileLODNIFConv.close();
 
+	blenderOutList_fullres.close();
 	blenderOutList.close();
 	blenderOutList_far.close();
 

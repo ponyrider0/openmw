@@ -87,7 +87,8 @@ namespace ESM
 		}
 		iconpath << "morro\\" << tempStr;
 		debugstream << "ICON=[" << iconpath.str() << "]; ";
-		esm.mDDSToExportList[mTexture] = std::make_pair(iconpath.str(), 0);
+		esm.mDDSToExportList.push_back(std::make_pair(mTexture, std::make_pair(iconpath.str(), 0)));
+//		esm.mDDSToExportList[mTexture] = std::make_pair(iconpath.str(), 0);
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(iconpath.str());
 		esm.endSubRecordTES4("ICON");
