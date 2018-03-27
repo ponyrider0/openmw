@@ -1107,14 +1107,14 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
 	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
-	loadEDIDmap3(csvRoot + "Morroblivion_References.csv");
+	loadEDIDmap3(csvRoot + "Morroblivion_References2b.csv");
 	loadEDIDmap3(csvRoot + "Morrowind_Compatibility_LayerEDIDlist.csv");
 	loadCellIDmap3(csvRoot + "MorroblivionCellmap4.csv");
 
-	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
-	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
+//	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapLTEX.csv");
+//	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
 //	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmap.csv");
-	loadmwEDIDSubstitutionMap2(csvRoot + "GenericToMorroblivionEDIDmap2.csv");
+	loadmwEDIDSubstitutionMap2(csvRoot + "GenericToMorroblivionEDIDmap2b.csv");
 
 	if (mWriter.mESMMastersmap.find(Misc::StringUtils::lowerCase(esmName)) != mWriter.mESMMastersmap.end())
 	{

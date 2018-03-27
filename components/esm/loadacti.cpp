@@ -100,10 +100,9 @@ namespace ESM
 		float modelBounds = 0.0f;
 		// ** Load NIF and get model's true Bound Radius
 		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-		Files::IStreamPtr fileStream = NULL;
 		try
 		{
+			Files::IStreamPtr fileStream = NULL;
 			fileStream = doc.getVFS()->get(nifInputName);
 			// read stream into NIF parser...
 			Nif::NIFFile nifFile(fileStream, nifInputName);
@@ -111,6 +110,7 @@ namespace ESM
 
 			if (bBlenderOutput)
 			{
+				std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
 				nifFile.prepareExport(doc, esm, modelPath.str());
 				nifFile.exportFileNif(fileStream, filePath);
 				if (modelBounds >= 200)

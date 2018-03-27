@@ -78,21 +78,16 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 //	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::MagicEffect> >
 //		(currentDoc.getData().getMagicEffects(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
-//	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::StartScript> >
-//		(currentDoc.getData().getStartScripts(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
+//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
+//		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
 	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Global> >
 		(currentDoc.getData().getGlobals(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
-//	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Script> >
-//		(currentDoc.getData().getScripts(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 	appendStage(new ExportScriptTES4Stage(currentDoc, currentSave, skipMasterRecords));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Spell> >
 		(currentDoc.getData().getSpells(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
-
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Skill> >
-//		(currentDoc.getData().getSkills(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
 	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Race> >
 		(currentDoc.getData().getRaces(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
@@ -108,14 +103,9 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		(currentDoc.getData().getEnchantments(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 
 	appendStage (new ExportRegionDataTES4Stage (currentDoc, currentSave, skipMasterRecords));
-//	appendStage (new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::Region> >
-//		(currentDoc.getData().getRegions(), currentSave, CSMWorld::Scope_Content, skipMasterRecords));
 //	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
 	appendStage (new ExportLandTextureCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
-
-// Separate Landscape export stage unneccessary -- now combined with export cell
-//	mExportOperation->appendStage (new ExportLandCollectionTES4Stage (mDocument, currentSave));
 
 	appendStage (new ExportWeaponCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 	appendStage (new ExportAmmoCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
@@ -276,7 +266,7 @@ int CSMDoc::ExportDialogueCollectionTES4Stage::setup()
 
 	if (mQuestMode)
 	{
-		// Loop through StartScript Collection and record scriptIDs to auto start
+		// Loop through StartScript Collection and record scriptIDs to auto start (via questscripts)
 		int numStartScripts = mDocument.getData().getStartScripts().getSize();
 		for (int i = 0; i < numStartScripts; i++)
 		{
@@ -862,7 +852,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		uint32_t prevRecordID = 0;
 		for (CSMWorld::InfoCollection::RecordConstIterator iter (range.first); iter!=range.second; ++iter)
 		{
-			if (iter->isModified() || iter->mState == CSMWorld::RecordBase::State_Deleted)
+			if (iter->isModified() || iter->isDeleted())
 			{
 				ESM::DialInfo info = iter->get();
 				info.mId = info.mId.substr (info.mId.find_last_of ('#')+1);
@@ -2780,22 +2770,24 @@ int CSMDoc::ExportCreatureCollectionTES4Stage::setup()
 void CSMDoc::ExportCreatureCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "CREA";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// CREA GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
 //	mDocument.getData().getReferenceables().getDataSet().getCreatures().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
 	const CSMWorld::Record<ESM::Creature>& record = mDocument.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
 	record.get().exportTESx(&mDocument, mState.getWriter(), 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }
@@ -5295,8 +5287,36 @@ CSMDoc::ExportScriptTES4Stage::ExportScriptTES4Stage(Document& document, SavingS
 }
 int CSMDoc::ExportScriptTES4Stage::setup()
 {
-	mActiveRefCount = mDocument.getData().getScripts().getSize();
-	return mActiveRefCount;
+	std::string sSIG = "SCPT";
+
+	ESM::ESMWriter& writer = mState.getWriter();
+	
+	for (int i = 0; i < mDocument.getData().getScripts().getSize(); i++)
+	{
+		auto record = mDocument.getData().getScripts().getRecord(i);
+		ESM::Script script = record.get();
+		std::string strEDID = writer.generateEDIDTES4(script.mId, 0, sSIG);
+		uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
+
+		bool bExportRecord = false;
+		if (mSkipMasterRecords)
+		{
+			bExportRecord = false;
+			bExportRecord |= record.isModified();
+			bExportRecord |= record.isDeleted();
+		}
+		else
+		{
+			bExportRecord = true;
+		}
+
+		if (bExportRecord)
+		{
+			mActiveRecords.push_back(i);
+		}
+	}
+
+	return mActiveRecords.size();
 }
 void CSMDoc::ExportScriptTES4Stage::perform(int stage, Messages& messages)
 {
@@ -5309,23 +5329,13 @@ void CSMDoc::ExportScriptTES4Stage::perform(int stage, Messages& messages)
 		writer.startGroupTES4(sSIG, 0);
 	}
 
-	auto record = mDocument.getData().getScripts().getRecord(stage);
+	int recordIndex = mActiveRecords[stage];
+	auto record = mDocument.getData().getScripts().getRecord(recordIndex);
 	ESM::Script script = record.get();
 	std::string strEDID = writer.generateEDIDTES4(script.mId, 0, sSIG);
 	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
-	bool bExportRecord = false;
-	if (mSkipMasterRecords)
-	{
-		bExportRecord = false;
-		bExportRecord |= record.isModified();
-		bExportRecord |= record.isDeleted();
-	}
-	else
-	{
-		bExportRecord = true;
-	}
-
+	bool bExportRecord = true;
 	if (formID != 0 && writer.mUniqueIDcheck.find(formID) != writer.mUniqueIDcheck.end())
 	{
 		// formID already used in another record, don't worry this may be a one(Morroblivion)-to-many(Morrowind) mapping
@@ -5341,9 +5351,8 @@ void CSMDoc::ExportScriptTES4Stage::perform(int stage, Messages& messages)
 		writer.endRecordTES4(sSIG);
 	}
 
-	if (stage == mActiveRefCount - 1)
+	if (stage == mActiveRecords.size()-1)
 	{
-//		ESM::ESMWriter& writer = mState.getWriter();
 		writer.endGroupTES4(sSIG);
 	}
 }

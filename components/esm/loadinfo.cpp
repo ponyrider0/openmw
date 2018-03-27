@@ -403,10 +403,11 @@ namespace ESM
 			if (mFaction != "")
 			{
 				uint32_t factionFormID = esm.crossRefStringID(mFaction, "FACT");
-// BREAK if factionFormID is null
 				if (factionFormID == 0)
 				{
-					std::cout << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
+					// TODO: find better way of detecting uninitialized mFaction string
+					if (mFaction.size() > 0)
+						std::cout << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
 				}
 				else
 				{
@@ -537,11 +538,12 @@ namespace ESM
 				case CSMWorld::ConstInfoSelectWrapper::Function_PcExpelled:
 					compareFunction = 0xC1; // GetPCExpelled (int 193)
 					// retrieve NPC's faction
-					if (mFaction != "")
+					compareArg1 = 0;
+					if (mFaction != "" && mFaction.size() > 0)
 					{
 						compareArg1 = esm.crossRefStringID(mFaction, "FACT");
 					}
-					else if (mActor != "")
+					if (compareArg1 == 0 && mActor != "")
 					{
 						auto npcIndexRecord = doc.getData().getReferenceables().getDataSet().searchId(mActor);
 						std::string actorFaction = doc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(npcIndexRecord.first).get().mFaction;
@@ -566,7 +568,7 @@ namespace ESM
 					{
 						compareFunction = 0x82; // GetPCIsRace
 						int tempRaceVal = compareVal;
-						uint32_t raceFormID;
+						uint32_t raceFormID = 0;
 						switch (tempRaceVal)
 						{
 						case 1: // argonian
@@ -598,6 +600,9 @@ namespace ESM
 							break;
 						case 10: // wood elf
 							raceFormID = esm.crossRefStringID("wood elf", "race");
+							break;
+						default:
+							std::cout << "ERROR! GetPCIsRace: RaceType not found: " << tempRaceVal << "\n";
 							break;
 						}
 						compareArg1 = raceFormID;
@@ -1108,6 +1113,8 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 					compareArg2 = esm.mLocalVarIndexmap[varName];
 					break;
+
+				// TODO: Function_Health_Percent, "Friend Hit", PC Health, Local sleeperOn=1, 
 
 				case CSMWorld::ConstInfoSelectWrapper::Function_Hello:
 					compareFunction = 0x4F; // GetQuestVariable (int 79)

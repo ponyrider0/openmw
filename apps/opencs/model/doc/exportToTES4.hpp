@@ -857,7 +857,8 @@ namespace CSMDoc
 	{
 		Document& mDocument;
 		SavingState& mState;
-		int mActiveRefCount = 0;
+		std::vector<int> mActiveRecords;
+//		int mActiveRefCount = 0;
 		bool mSkipMasterRecords = true;
 
 	public:
