@@ -5409,7 +5409,8 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::ofstream blenderOutList;
 	std::ofstream blenderOutList_fullres;
 	std::ofstream blenderOutList_far;
-	int jobnumber=0, fullres_jobnumber=0, far_jobnumber=0;
+	std::ofstream blenderOutList_clothing;
+	int jobnumber=0, fullres_jobnumber=0, far_jobnumber=0, clothing_jobnumber=0;
 	char jobstring[6];
 	int stringlen=0;
 
@@ -5421,10 +5422,15 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::string jobstem = oblivionOutput + "jobs/ModExporter_blender_" + modStem;
 	std::string fullres_jobstem = jobstem + "_fullres_collision";
 	std::string far_jobstem = jobstem + "_far";
+	std::string clothing_jobstem = jobstem + "_clothing";
 
 	bool bFullResCollision = true;
 	if (esm.mConversionOptions.find("#qhull") != std::string::npos)
 		bFullResCollision = false;
+
+	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", clothing_jobnumber);
+	jobstring[stringlen] = '\0';
+	blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
 
 	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", fullres_jobnumber);
 	jobstring[stringlen] = '\0';
@@ -5583,7 +5589,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	// ****************
 	std::ofstream batchFileArmorConv;
 	batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat");
+	batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat");
 	batchFileArmorConv << "@echo off\n";
+	linecount = 0;
 	for (auto nifConvItem = esm.mArmorToExportList.begin(); nifConvItem != esm.mArmorToExportList.end(); nifConvItem++)
 	{
 		std::string rawFilename = nifConvItem->first;
@@ -5598,7 +5606,19 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		batchFileArmorConv << "echo ----------------------\n";
 		batchFileArmorConv << "echo NIF_Conv.exe " << cmdFlags << " -d " << nifOutputName << "\n";
 		batchFileArmorConv << "NIF_Conv.exe " << cmdFlags << " -d " << nifOutputName << "\n";
+
+		blenderOutList_clothing << nifOutputName << "\n";
+		if (++linecount > 100)
+		{
+			linecount = 0;
+			blenderOutList_clothing.close();
+			stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++clothing_jobnumber);
+			jobstring[stringlen] = '\0';
+			blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
+		}
+
 	}
+	blenderOutList_clothing.close();
 	batchFileArmorConv << "echo ----------------------\n";
 	batchFileArmorConv << "echo Armor mesh generation complete.\n";
 	batchFileArmorConv << "pause\n";

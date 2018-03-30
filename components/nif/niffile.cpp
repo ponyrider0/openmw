@@ -599,6 +599,15 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 	farNIFFile.close();
 }
 
+static void SetNodeRotation(Matrix3 &m, float a, float x, float y, float z)
+{
+	osg::Matrixf r;
+	r.makeRotate(a, x, y, z);
+	for (int a = 0; a<3; a++)
+		for (int b = 0; b<3; b++)
+			m.mValues[a][b] = r(b, a);
+}
+
 void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath)
 {
 	// look through each record, process accordingly
@@ -606,6 +615,80 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 	{
 		// TODO: if collision node found, set properties?
 		// ...
+
+		// for each NiNode "Bip01" bone, repose for TES4 rigging
+		if (getRecord(i)->recType == Nif::RC_NiNode)
+		{
+			Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(getRecord(i));
+			if (ninode != NULL)
+			{
+				if (ninode->name == "Bip01")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 90, 0, 0, 1);
+				}
+				if (ninode->name == "Bip01 Pelvis")
+				{
+//					SetNodeRotation(ninode->trafo.rotation, 240, 0.57735, 0.57735, 0.57735);
+				}
+				if (ninode->name == "Bip01 L Thigh")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
+				}
+				if (ninode->name == "Bip01 L Calf")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+				}
+				if (ninode->name == "Bip01 L Foot")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
+				}
+				if (ninode->name == "Bip01 R Thigh")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
+				}
+				if (ninode->name == "Bip01 R Calf")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+				}
+				if (ninode->name == "Bip01 R Foot")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
+				}
+				if (ninode->name == "Bip01 L Clavicle")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
+				}
+				if (ninode->name == "Bip01 L UpperArm")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
+				}
+				if (ninode->name == "Bip01 L Forearem")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+				}
+				if (ninode->name == "Bip01 L Hand")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
+				}
+				if (ninode->name == "Bip01 R Clavicle")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
+				}
+				if (ninode->name == "Bip01 R UpperArm")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
+				}
+				if (ninode->name == "Bip01 R Forearem")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+				}
+				if (ninode->name == "Bip01 R Hand")
+				{
+					SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
+				}
+
+			}
+		}
 
 		// for each texturesource node, change name
 		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
@@ -620,6 +703,12 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 				{
 					// remove "textures/" path prefix
 					texFilename = texFilename.substr(strlen("textures/"));
+				}
+				bool bReplaceFullPath = true;
+				if (Misc::StringUtils::lowerCase(texFilename).find("\\") != std::string::npos ||
+					Misc::StringUtils::lowerCase(texFilename).find("/") != std::string::npos)
+				{
+					bReplaceFullPath = false;
 				}
 				// extract modelPath dir and paste onto texture
 				boost::filesystem::path modelP(modelPath);
@@ -645,7 +734,16 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 				{
 					tempStr.replace(tempStr.size()-9, 2, "_g");
 				}
-				tempPath << modelP.parent_path().string();
+				if (bReplaceFullPath)
+				{
+					tempPath << modelP.parent_path().string();
+				}
+				else
+				{
+					std::string morroPath = modelP.parent_path().string();
+					morroPath = morroPath.substr(0, Misc::StringUtils::lowerCase(morroPath).find("morro\\") + 5);
+					tempPath << morroPath;
+				}
 				tempPath << "\\" << tempStr;
 				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
 //				esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
