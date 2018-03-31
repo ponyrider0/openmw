@@ -596,27 +596,35 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 	{
 		int byteswritten = 0;
 		// 32bit strlen + recordtype
-		char recordName[] = "NiNode";
-		uintVal = 6; // recordName is hardcoded without null terminator
+		char recordType[] = "NiNode";
+		uintVal = 6; // recordType is hardcoded without null terminator
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
 		len = 4;
 		outStream.write(buffer, len);
 		byteswritten += len;
-		len = 6; // recordName is hardcoded without null terminator
-		strncpy(buffer, recordName, len);
+		len = 6; // recordType is hardcoded without null terminator
+		strncpy(buffer, recordType, len);
 		outStream.write(buffer, len);
 		byteswritten += len;
 		// 10 bytes
 
 		// 32bit strlen + recordname
-		uintVal = ninode->name.size();
+		std::string nameToWrite = ninode->name;
+		//if (ninode->name == "Bip01")
+		//{
+		//	nameToWrite = "Scene Root";
+		//}
+		uintVal = nameToWrite.size();
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
 		len = 4;
 		outStream.write(buffer, len);
 		byteswritten += len;
-		len = ninode->name.size();
-		strncpy(buffer, ninode->name.c_str(), len);
+		len = nameToWrite.size();
+		strncpy(buffer, nameToWrite.c_str(), len);
 		outStream.write(buffer, len);
+		// NB: Replace len with original ninode name rather than actual written name
+		//     this is so input stream can be maintained at correct distance
+		len = ninode->name.size();
 		byteswritten += len;
 		// variable bytes
 
