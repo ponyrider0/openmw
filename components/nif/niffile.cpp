@@ -12,6 +12,8 @@
 #include <components/vfs/manager.hpp>
 #include <components/misc/resourcehelpers.hpp>
 
+# define PI           3.14159265358979323846  /* pi */
+
 namespace Nif
 {
 
@@ -381,6 +383,10 @@ void NIFFile::exportRecord(Files::IStreamPtr inStream, std::ostream & outStream,
 	{
 		exportRecordSourceTexture(inStream, outStream, recordIndex, "");
 	}
+	else if (records[recordIndex]->recType == Nif::RC_NiNode)
+	{
+		exportRecordNiNode(inStream, outStream, recordIndex);
+	}
 	else
 	{
 		// generic export of all other records
@@ -547,6 +553,158 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 
 }
 
+void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outStream, int recordIndex)
+{
+	size_t len = 0;
+	int intVal = 0;
+	uint16_t shortVal = 0;
+	uint32_t uintVal = 0;
+	uint8_t byteVal = 0;
+	char buffer[4096];
+	size_t readsize = mHeaderSize;
+
+	// sanity check: check bounds of index
+	if (recordIndex > records.size())
+	{
+		std::stringstream errMesg;
+		// throw error message?
+		errMesg << "ERROR: NIFFile::exportRecord() recordIndex out of bounds: " << recordIndex << "\n";
+		throw(std::runtime_error(errMesg.str()));
+		return;
+	}
+
+	// sanity check: record type
+	if (records[recordIndex]->recType != Nif::RC_NiNode)
+	{
+		std::stringstream errMesg;
+		// throw error message?
+		errMesg << "ERROR: NIFFile::NiNode() wrong record type " << std::hex << records[recordIndex]->recType << "\n";
+		throw(std::runtime_error(errMesg.str()));
+		return;
+	}
+
+	// move inStream pointer to beginning of relevant record
+	int recordmark = mHeaderSize;
+	for (int i = 0; i < recordIndex; i++)
+	{
+		recordmark += mRecordSizes[i];
+	}
+	inStream->seekg(recordmark, std::ios_base::beg);
+
+	Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(records[recordIndex]);
+	if (ninode != NULL)
+	{
+		int byteswritten = 0;
+		// 32bit strlen + recordtype
+		char recordName[] = "NiNode";
+		uintVal = 6; // recordName is hardcoded without null terminator
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		len = 6; // recordName is hardcoded without null terminator
+		strncpy(buffer, recordName, len);
+		outStream.write(buffer, len);
+		byteswritten += len;
+		// 10 bytes
+
+		// 32bit strlen + recordname
+		uintVal = ninode->name.size();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		len = ninode->name.size();
+		strncpy(buffer, ninode->name.c_str(), len);
+		outStream.write(buffer, len);
+		byteswritten += len;
+		// variable bytes
+
+		// then read Extra.index then Controller.index
+		intVal = (ninode->extra.empty() == false) ? ninode->extra->recIndex : -1;
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&intVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		intVal = (ninode->controller.empty() == false) ? ninode->controller->recIndex : -1;
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&intVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		// 8 bytes
+
+		// short: Flags
+		shortVal = ninode->flags;
+		for (int j = 0; j < 2; j++) buffer[j] = reinterpret_cast<char *>(&shortVal)[j];
+		len = 2;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		// 2 bytes
+
+		// Translation
+		float floatVal = ninode->trafo.pos.x();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&floatVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		floatVal = ninode->trafo.pos.y();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&floatVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+		floatVal = ninode->trafo.pos.z();
+		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&floatVal)[j];
+		len = 4;
+		outStream.write(buffer, len);
+		byteswritten += len;
+
+		// Rotation
+		for (int a = 0; a < 3; a++)
+		{
+			for (int b = 0; b < 3; b++)
+			{
+				floatVal = ninode->trafo.rotation.mValues[a][b];
+				for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&floatVal)[j];
+				len = 4;
+				outStream.write(buffer, len);
+				byteswritten += len;
+			}
+		}
+
+		// move read pointer to next byte in record
+		inStream->seekg(byteswritten, std::ios_base::cur);
+		// subtract byteswritten from recordsize and write the rest out to disk...
+		readsize = mRecordSizes[recordIndex] - byteswritten;
+		while (readsize > sizeof(buffer))
+		{
+			inStream->read(buffer, sizeof(buffer));
+			len = inStream->gcount();
+			outStream.write(buffer, len);
+			readsize -= len;
+		}
+		inStream->read(buffer, readsize);
+		len = inStream->gcount();
+		outStream.write(buffer, len);
+
+	}
+	else
+	{
+		// nothing to replace, export using generic code
+		// do NOT call back to generic function since it may have been the caller for this function (infinite loop)
+		readsize = mRecordSizes[recordIndex];
+		while (readsize > sizeof(buffer))
+		{
+			inStream->read(buffer, sizeof(buffer));
+			len = inStream->gcount();
+			outStream.write(buffer, len);
+			readsize -= len;
+		}
+		inStream->read(buffer, readsize);
+		len = inStream->gcount();
+		outStream.write(buffer, len);
+	}
+}
+
 void NIFFile::exportFileNif(Files::IStreamPtr inStream, std::string filePath)
 {
 	// serialize modified NIF and output to newNIFFILe
@@ -599,13 +757,16 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 	farNIFFile.close();
 }
 
+// degrees + vector x, y, z
 static void SetNodeRotation(Matrix3 &m, float a, float x, float y, float z)
 {
+
 	osg::Matrixf r;
-	r.makeRotate(a, x, y, z);
-	for (int a = 0; a<3; a++)
-		for (int b = 0; b<3; b++)
+	r.makeRotate(a*PI/180, x, y, z);
+	for (int a = 0; a < 3; a++)
+		for (int b = 0; b < 3; b++)
 			m.mValues[a][b] = r(b, a);
+
 }
 
 void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath)
@@ -626,66 +787,63 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 				{
 					SetNodeRotation(ninode->trafo.rotation, 90, 0, 0, 1);
 				}
-				if (ninode->name == "Bip01 Pelvis")
-				{
-//					SetNodeRotation(ninode->trafo.rotation, 240, 0.57735, 0.57735, 0.57735);
-				}
-				if (ninode->name == "Bip01 L Thigh")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
-				}
-				if (ninode->name == "Bip01 L Calf")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-				}
-				if (ninode->name == "Bip01 L Foot")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
-				}
-				if (ninode->name == "Bip01 R Thigh")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
-				}
-				if (ninode->name == "Bip01 R Calf")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-				}
-				if (ninode->name == "Bip01 R Foot")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
-				}
-				if (ninode->name == "Bip01 L Clavicle")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
-				}
-				if (ninode->name == "Bip01 L UpperArm")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
-				}
-				if (ninode->name == "Bip01 L Forearem")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-				}
-				if (ninode->name == "Bip01 L Hand")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
-				}
-				if (ninode->name == "Bip01 R Clavicle")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
-				}
-				if (ninode->name == "Bip01 R UpperArm")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
-				}
-				if (ninode->name == "Bip01 R Forearem")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-				}
-				if (ninode->name == "Bip01 R Hand")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
-				}
+
+				//if (ninode->name == "Bip01 L Thigh")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
+				//}
+				//if (ninode->name == "Bip01 L Calf")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+				//}
+				//if (ninode->name == "Bip01 L Foot")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
+				//}
+				//if (ninode->name == "Bip01 R Thigh")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
+				//}
+				//if (ninode->name == "Bip01 R Calf")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+				//}
+				//if (ninode->name == "Bip01 R Foot")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
+				//}
+				//if (ninode->name == "Bip01 L Clavicle")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
+				//}
+				//if (ninode->name == "Bip01 L UpperArm")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
+				//}
+				//if (ninode->name == "Bip01 L Forearem")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+				//}
+				//if (ninode->name == "Bip01 L Hand")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
+				//}
+				//if (ninode->name == "Bip01 R Clavicle")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
+				//}
+				//if (ninode->name == "Bip01 R UpperArm")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
+				//}
+				//if (ninode->name == "Bip01 R Forearem")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+				//}
+				//if (ninode->name == "Bip01 R Hand")
+				//{
+				//	SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
+				//}
 
 			}
 		}

@@ -109,6 +109,7 @@ public:
 	void exportFooter(Files::IStreamPtr inStream, std::ostream &outStream);
 	void exportRecord(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex);
 	void exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex, std::string pathPrefix="");
+	void exportRecordNiNode(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex);
 
 	void exportFileNif(Files::IStreamPtr inStream, std::string modelPath);
 	void exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
