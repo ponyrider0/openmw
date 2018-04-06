@@ -261,8 +261,8 @@ find_package(SDL2 REQUIRED)
 find_package(OpenAL REQUIRED)
 find_package(Bullet ${REQUIRED_BULLET_VERSION} REQUIRED COMPONENTS BulletCollision LinearMath)
 #ZLIB additions
-set(ZLIB_ROOT c:/dev/zlib-1.2.11)
-set(ZLIB_LIBRARY c:/dev/zlib-1.2.11/msvc2015/release/zlib.lib)
+#set(ZLIB_ROOT c:/dev/zlib-1.2.11)
+#set(ZLIB_LIBRARY c:/dev/zlib-1.2.11/msvc2015/release/zlib.lib)
 find_package( ZLIB REQUIRED )
 
 include_directories("."
