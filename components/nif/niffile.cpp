@@ -713,7 +713,7 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 	}
 }
 
-void NIFFile::exportFileNif(Files::IStreamPtr inStream, std::string filePath)
+void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
 	// serialize modified NIF and output to newNIFFILe
 	inStream->clear();
@@ -726,6 +726,14 @@ void NIFFile::exportFileNif(Files::IStreamPtr inStream, std::string filePath)
 	// write records
 	for (int i = 0; i < records.size(); i++)
 	{
+		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
+		{
+			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
+			if (texture != NULL)
+			{
+				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(texture->filename, 3)));
+			}
+		}
 		exportRecord(inStream, outStream, i);
 	}
 	// write footer data
@@ -892,13 +900,13 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 				{
 					tempStr.replace(tempStr.size()-7, 3, "_n");
 				}
-				if (Misc::StringUtils::lowerCase(tempStr).find("ug.dds") != std::string::npos)
-				{
-					tempStr.replace(tempStr.size()-6, 2, "_g");
-				}
+				//if (Misc::StringUtils::lowerCase(tempStr).find("ug.dds") != std::string::npos)
+				//{
+				//	tempStr.replace(tempStr.size()-6, 2, "_g");
+				//}
 				if (Misc::StringUtils::lowerCase(tempStr).find("uglow.dds") != std::string::npos)
 				{
-					tempStr.replace(tempStr.size()-9, 2, "_g");
+					tempStr.replace(tempStr.size()-9, 5, "_g");
 				}
 				if (bReplaceFullPath)
 				{
@@ -911,7 +919,8 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 					tempPath << morroPath;
 				}
 				tempPath << "\\" << tempStr;
-				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
+				// moved DDS export call to exportFileNif
+//				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
 //				esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
 				texture->filename = tempPath.str();
 			}
@@ -1049,29 +1058,32 @@ void NIFFile::calculateModelBounds()
 		}
 	}
 	// after complete min/max calculated, determine greatest bound Size
+	// The following section calculates diagonal (diameter) length
 	float dX2 = abs(maxx - minx); dX2 *= dX2;
 	float dY2 = abs(maxy - miny); dY2 *= dY2;
 	float dZ2 = abs(maxz - minz); dZ2 *= dZ2;
-
-	float radXY = sqrt(dX2 + dY2);
-	float radXZ = sqrt(dX2 + dZ2);
-	float radYZ = sqrt(dY2 + dZ2);
-
+	float lenXY = sqrt(dX2 + dY2);
+	float lenXZ = sqrt(dX2 + dZ2);
+	float lenYZ = sqrt(dY2 + dZ2);
 	float a, b;
-	if (radXY > radXZ)
+	if (lenXY > lenXZ)
 	{
-		a = radXY;
+		a = lenXY;
 		// XY is winner, so compare XZ and YZ to figure out #2
-		b = (radXZ > radYZ) ? radXZ : radYZ;
+		b = (lenXZ > lenYZ) ? lenXZ : lenYZ;
 	}
 	else
 	{
-		a = radXZ;
+		a = lenXZ;
 		// XZ is winner, so compare XY and YZ to figure out #2
-		b = (radXY > radYZ) ? radXY : radYZ;
+		b = (lenXY > lenYZ) ? lenXY : lenYZ;
 	}
-
-	float radXYZ = sqrt(a*a + b*b);
+	float lenXYZ = sqrt(a*a + b*b);
+	// Now divide by two for radius
+	float radXY = lenXY / 2;
+	float radXZ = lenXZ / 2;
+	float radYZ = lenYZ / 2;
+	float radXYZ = lenXYZ / 2;
 
 	modelBounds = (radXY > modelBounds) ? radXY : modelBounds;
 	modelBounds = (radXZ > modelBounds) ? radXZ : modelBounds;

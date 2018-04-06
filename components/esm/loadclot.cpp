@@ -349,15 +349,16 @@ namespace ESM
 		std::string newMaleStr, newFemaleStr, newGndStr, newIconStr;
 		int queueType = (mData.mType == 0) ? -1 : -mData.mType;
 		std::string prefix = "clothes\\morro\\";
-		std::string postfix = postFixStream.str();
-		std::string modelStem;
+		std::string postfix = "";
+		if (postFixStream.str().length() > 0)
+			postfix = postFixStream.str();
+		std::string modelStem = "";
 		modelStr = mModel;
 		if (mIcon != "")
 		{
 			std::string iconStr = mIcon.substr(0, mIcon.find_last_of("."));
 			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
 			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(newIconStr, 1)));
-//			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
 		}
 		if (modelStr != "")
 		{
@@ -368,30 +369,29 @@ namespace ESM
 			// create new prefix for remainder of files
 			prefix = newGndStr.substr(0, newGndStr.find_last_of("\\")+1);
 		}
-		if (maleStr != "")
+		if (clothingPartModelM.size() > 0)
 		{
 			modelStem = mParts.mParts.begin()->mMale;
 			newMaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + ".nif";
 			esm.QueueModelForExport(maleStr, newMaleStr, queueType);
 		}
-		if (femaleStr != "")
+		if (clothingPartModelF.size() > 0)
 		{
 			modelStem = mParts.mParts.begin()->mFemale;
 			newFemaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "F.nif";
 			esm.QueueModelForExport(femaleStr, newFemaleStr, queueType);
 		}
 
+		bool bBlenderOutput = false;
+		if (esm.mConversionOptions.find("#blender") != std::string::npos)
+			bBlenderOutput = true;
+
 		bool bConvertArmor = false;
-		if (esm.mConversionOptions.find("#armor") != std::string::npos)
+		if (esm.mConversionOptions.find("#clothing") != std::string::npos)
 			bConvertArmor = true;
 
 		for (auto clothingpart = clothingPartModelM.begin(); clothingpart != clothingPartModelM.end(); clothingpart++)
 		{
-			//...export niffile
-			bool bBlenderOutput = false;
-			if (esm.mConversionOptions.find("#blender") != std::string::npos)
-				bBlenderOutput = true;
-
 			float modelBounds = 0.0f;
 			// ** Load NIF and get model's true Bound Radius
 			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(clothingpart->second, doc.getVFS());
@@ -407,7 +407,7 @@ namespace ESM
 				{
 					std::string filePath = Nif::NIFFile::CreateResourcePaths(newMaleStr);
 					nifFile.prepareExport(doc, esm, newMaleStr);
-					nifFile.exportFileNif(fileStream, filePath);
+					nifFile.exportFileNif(esm, fileStream, filePath);
 				}
 
 			}
@@ -422,11 +422,6 @@ namespace ESM
 
 		for (auto clothingpart = clothingPartModelF.begin(); clothingpart != clothingPartModelF.end(); clothingpart++)
 		{
-			//...export niffile
-			bool bBlenderOutput = false;
-			if (esm.mConversionOptions.find("#blender") != std::string::npos)
-				bBlenderOutput = true;
-
 			float modelBounds = 0.0f;
 			// ** Load NIF and get model's true Bound Radius
 			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(clothingpart->second, doc.getVFS());
@@ -442,7 +437,7 @@ namespace ESM
 				{
 					std::string filePath = Nif::NIFFile::CreateResourcePaths(newFemaleStr);
 					nifFile.prepareExport(doc, esm, newFemaleStr);
-					nifFile.exportFileNif(fileStream, filePath);
+					nifFile.exportFileNif(esm, fileStream, filePath);
 				}
 
 			}

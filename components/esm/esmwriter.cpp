@@ -3248,7 +3248,8 @@ namespace ESM
 		}
 		else
 		{
-			mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
+//			mModelsToExportList[origString] = std::make_pair(convertedString, recordType);
+			mModelsToExportList.push_back(std::make_pair(origString, std::make_pair(convertedString, recordType)));
 		}
 	}
 

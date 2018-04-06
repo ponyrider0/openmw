@@ -10,8 +10,14 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include "esmreader.hpp"
 #include "esmwriter.hpp"
 #include "defs.hpp"
+#include "../nif/niffile.hpp"
+#include "../nif/controlled.hpp"
+#include "../nif/data.hpp"
+#include "../nif/node.hpp"
 
 #include <apps/opencs/model/doc/document.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
 
 namespace ESM
 {
@@ -201,21 +207,13 @@ namespace ESM
 		esm.writeT<uint32_t>(flags);
 		esm.endSubRecordTES4("BMDT");
 
+		std::map<enum PartReferenceType, std::string> clothingPartModelM;
+		std::map<enum PartReferenceType, std::string> clothingPartModelF;
+
 		std::ostringstream postFixStream; 
 		std::string maleStr, femaleStr, modelStr, iconStr;
 		if (mParts.mParts.size() > 0)
 		{
-/*
-			if (mParts.mParts.begin()->mMale.size() > 0)
-				maleStr = mParts.mParts.begin()->mMale;
-			else
-				maleStr = mModel;
-			if (mParts.mParts.begin()->mFemale.size() > 0)
-				femaleStr = mParts.mParts.begin()->mFemale;
-//				femaleStr = maleStr;
-			else
-				femaleStr = "";
-*/
 			// each body part must be added to commandline
 			std::stringstream cmdlineM, cmdlineF;
 			for (auto part_it = mParts.mParts.begin(); part_it != mParts.mParts.end(); part_it++)
@@ -224,9 +222,10 @@ namespace ESM
 				{
 					// resolve part_it->mMale to body part record
 					int index = doc.getData().getBodyParts().getIndex(part_it->mMale);
-					// hardcoded workarounds
 					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
 					std::string partmodel = bodypartRecord.get().mModel;
+					clothingPartModelM[(ESM::PartReferenceType)part_it->mPart] = partmodel;
+					// hardcoded workarounds
 					if (part_it->mPart == ESM::PartReferenceType::PRT_Shield)
 					{
 						cmdlineM << " " << partmodel;
@@ -243,7 +242,7 @@ namespace ESM
 					int index = doc.getData().getBodyParts().getIndex(part_it->mFemale);
 					auto bodypartRecord = doc.getData().getBodyParts().getRecord(index);
 					std::string partmodel = bodypartRecord.get().mModel;
-					int partnum = 0;
+					clothingPartModelF[(ESM::PartReferenceType)part_it->mPart] = partmodel;
 					cmdlineF << " -bp " << (int)part_it->mPart << " " << partmodel;
 					if (part_it->mPart == ESM::PartReferenceType::PRT_RHand)
 						cmdlineF << " -bp " << (int)ESM::PartReferenceType::PRT_LHand << " " << partmodel;
@@ -386,42 +385,105 @@ namespace ESM
 		{
 			maleStr = modelStr;
 		}
+		std::string newMaleStr, newFemaleStr, newGndStr, newIconStr;
+		int queueType = (mData.mType == 0) ? -1 : -mData.mType;
 		std::string prefix = "armor\\morro\\";
 		std::string postfix = postFixStream.str();
 		std::string modelStem;
-		if (Misc::StringUtils::lowerCase(mModel).find("_gnd") != std::string::npos)
-			modelStem = mModel.substr(0, mModel.find_last_of("_"));
-		else
-			modelStem = mModel.substr(0, mModel.find_last_of("."));
 		modelStr = mModel;
-		std::string newMaleStr, newFemaleStr, newGndStr, newIconStr;
-		int queueType = (mData.mType == 0) ? -1 : -mData.mType;
-		if (maleStr != "")
-		{
-			newMaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + ".nif";
-			esm.QueueModelForExport(maleStr, newMaleStr, queueType);
-		}
-		if (femaleStr != "")
-		{
-			newFemaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "F.nif";
-			esm.QueueModelForExport(femaleStr, newFemaleStr, queueType);
-		}
-		if (modelStr != "")
-		{
-			newGndStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "_gnd.nif";
-			esm.QueueModelForExport(modelStr, newGndStr, queueType);
-		}
 		if (mIcon != "")
 		{
 			std::string iconStr = mIcon.substr(0, mIcon.find_last_of("."));
 			newIconStr = prefix + esm.generateEDIDTES4(iconStr, 1) + ".dds";
 			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(newIconStr, 1)));
-//			esm.mDDSToExportList[mIcon] = std::make_pair(newIconStr, 1);
+		}
+		if (modelStr != "")
+		{
+			modelStem = mModel;
+			newGndStr = prefix + esm.generateEDIDTES4(modelStem, 1);
+			newGndStr[newGndStr.length() - 4] = '.';
+			esm.QueueModelForExport(modelStr, newGndStr, queueType);
+			// create new prefix for remainder of files
+			prefix = newGndStr.substr(0, newGndStr.find_last_of("\\") + 1);
+		}
+		if (maleStr != "")
+		{
+			modelStem = mParts.mParts.begin()->mMale;
+			newMaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + ".nif";
+			esm.QueueModelForExport(maleStr, newMaleStr, queueType);
+		}
+		if (femaleStr != "")
+		{
+			modelStem = mParts.mParts.begin()->mFemale;
+			newFemaleStr = prefix + esm.generateEDIDTES4(modelStem, 1) + postfix + "F.nif";
+			esm.QueueModelForExport(femaleStr, newFemaleStr, queueType);
 		}
 
-		bool bConvertArmor = false; 
+		bool bBlenderOutput = false;
+		if (esm.mConversionOptions.find("#blender") != std::string::npos)
+			bBlenderOutput = true;
+
+		bool bConvertArmor = false;
 		if (esm.mConversionOptions.find("#armor") != std::string::npos)
 			bConvertArmor = true;
+
+		for (auto clothingpart = clothingPartModelM.begin(); clothingpart != clothingPartModelM.end(); clothingpart++)
+		{
+			float modelBounds = 0.0f;
+			// ** Load NIF and get model's true Bound Radius
+			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(clothingpart->second, doc.getVFS());
+			try
+			{
+				Files::IStreamPtr fileStream = NULL;
+				fileStream = doc.getVFS()->get(nifInputName);
+				// read stream into NIF parser...
+				Nif::NIFFile nifFile(fileStream, nifInputName);
+				modelBounds = nifFile.mModelBounds;
+
+				if (bBlenderOutput)
+				{
+					std::string filePath = Nif::NIFFile::CreateResourcePaths(newMaleStr);
+					nifFile.prepareExport(doc, esm, newMaleStr);
+					nifFile.exportFileNif(esm, fileStream, filePath);
+				}
+
+			}
+			catch (std::runtime_error e)
+			{
+				std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+			}
+			// only process the first record
+			// TODO: merge all records into one NIF
+			break;
+		}
+		for (auto clothingpart = clothingPartModelF.begin(); clothingpart != clothingPartModelF.end(); clothingpart++)
+		{
+			float modelBounds = 0.0f;
+			// ** Load NIF and get model's true Bound Radius
+			std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(clothingpart->second, doc.getVFS());
+			try
+			{
+				Files::IStreamPtr fileStream = NULL;
+				fileStream = doc.getVFS()->get(nifInputName);
+				// read stream into NIF parser...
+				Nif::NIFFile nifFile(fileStream, nifInputName);
+				modelBounds = nifFile.mModelBounds;
+
+				if (bBlenderOutput)
+				{
+					std::string filePath = Nif::NIFFile::CreateResourcePaths(newFemaleStr);
+					nifFile.prepareExport(doc, esm, newFemaleStr);
+					nifFile.exportFileNif(esm, fileStream, filePath);
+				}
+
+			}
+			catch (std::runtime_error e)
+			{
+				std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+			}
+			// TODO: merge all records into one NIF
+			break;
+		}
 
 		if (bConvertArmor)
 		{

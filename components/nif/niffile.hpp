@@ -3,6 +3,24 @@
 #ifndef OPENMW_COMPONENTS_NIF_NIFFILE_HPP
 #define OPENMW_COMPONENTS_NIF_NIFFILE_HPP
 
+// definitions for VWD/LOD mode and quality
+#define VWD_MODE_NORMAL_ONLY 0
+#define VWD_MODE_NORMAL_AND_LOD 1
+#define VWD_MODE_LOD_ONLY 2
+#define VWD_MODE_LOD_AND_LARGE_NORMAL 3
+
+#define VWD_QUAL_LOW 1200.0f
+#define VWD_QUAL_MEDIUM 800.0f
+#define VWD_QUAL_HIGH 400.0f
+#define VWD_QUAL_ULTRA 200.0f
+
+/*
+#define VWD_QUAL_LOW 800.0f
+#define VWD_QUAL_MEDIUM 400.0f
+#define VWD_QUAL_HIGH 200.0f
+#define VWD_QUAL_ULTRA 100.0f
+*/
+
 #include <stdexcept>
 #include <vector>
 #include <map>
@@ -111,7 +129,7 @@ public:
 	void exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex, std::string pathPrefix="");
 	void exportRecordNiNode(Files::IStreamPtr inStream, std::ostream &outStream, int recordIndex);
 
-	void exportFileNif(Files::IStreamPtr inStream, std::string modelPath);
+	void exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
 	void exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
 	void prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath);
 

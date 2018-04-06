@@ -78,7 +78,7 @@ namespace ESM
 
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempStr.replace(tempStr.size() - 4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
@@ -87,6 +87,30 @@ namespace ESM
 		bool bBlenderOutput = false;
 		if (esm.mConversionOptions.find("#blender") != std::string::npos)
 			bBlenderOutput = true;
+
+		int vwdMode = VWD_MODE_NORMAL_ONLY;
+		if (esm.mConversionOptions.find("#vwd") != std::string::npos)
+			vwdMode = VWD_MODE_NORMAL_AND_LOD; // normals + vwd
+		if (esm.mConversionOptions.find("#vwdonly") != std::string::npos)
+		{
+			vwdMode = VWD_MODE_LOD_ONLY; // no normal nifs
+			if (esm.mConversionOptions.find("#vwdonly++") != std::string::npos)
+				vwdMode = VWD_MODE_LOD_AND_LARGE_NORMAL; // vwds + large normals
+		}
+
+		float vwdThreshold = VWD_QUAL_MEDIUM;
+		if (esm.mConversionOptions.find("#vwdfast") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_LOW;
+		}
+		if (esm.mConversionOptions.find("#vwdhd") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_HIGH;
+		}
+		if (esm.mConversionOptions.find("#vwdultra") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_ULTRA;
+		}
 
 		float modelBounds = 0.0f;
 		// ** Load NIF and get model's true Bound Radius
@@ -101,11 +125,23 @@ namespace ESM
 
 			if (bBlenderOutput)
 			{
-				std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
 				nifFile.prepareExport(doc, esm, modelPath.str());
-				nifFile.exportFileNif(fileStream, filePath);
-				if (modelBounds >= 200)
+				if (vwdMode != VWD_MODE_LOD_ONLY)
 				{
+					if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
+					{
+						// skip
+					}
+					else
+					{
+						std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+						nifFile.exportFileNif(esm, fileStream, filePath);
+					}
+				}
+
+				if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
+				{
+					std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
 					nifFile.exportFileNifFar(esm, fileStream, filePath);
 				}
 			}
@@ -117,11 +153,16 @@ namespace ESM
 		}
 
 		int recordType = 0;
-		if (modelBounds >= 200)
+		if (vwdMode != VWD_MODE_LOD_ONLY)
+		{
+			esm.QueueModelForExport(mModel, modelPath.str(), recordType);
+		}
+		if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
 		{
 			recordType = 4;
+			esm.QueueModelForExport(mModel, modelPath.str(), recordType);
 		}
-		esm.QueueModelForExport(mModel, modelPath.str(), recordType);
+
 
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");

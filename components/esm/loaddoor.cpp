@@ -124,7 +124,7 @@ namespace ESM
 			{
 				std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
 				nifFile.prepareExport(doc, esm, modelPath.str());
-				nifFile.exportFileNif(fileStream, filePath);
+				nifFile.exportFileNif(esm, fileStream, filePath);
 				if (modelBounds >= 200)
 				{
 					nifFile.exportFileNifFar(esm, fileStream, filePath);

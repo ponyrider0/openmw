@@ -1035,6 +1035,10 @@ int CSMDoc::SavingState::loadESMMastersMap(std::string filename, std::string esm
 	std::ifstream inputFile(filename);
 	std::string inputLine_noN;
 
+	// Sanity ChecK: reset conversationoptions
+	if (mWriter.mConversionOptions != "")
+		mWriter.mConversionOptions = "";
+
 	// skip header line
 	std::getline(inputFile, inputLine_noN);
 
@@ -1103,7 +1107,8 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
     std::string csvRoot = getenv("HOME");
     csvRoot += "/";
 #endif
-	loadESMMastersMap(csvRoot + "ESMMastersMap.csv", esmName);
+	// ESMMasters and included Conversion Options are now loaded earlier in CSMDoc::ExportToTES4::defineExportOperation()
+//	loadESMMastersMap(csvRoot + "ESMMastersMap.csv", esmName);
 
 	loadEDIDmap3(csvRoot + "OblivionFormIDlist4.csv");
 	loadEDIDmap3(csvRoot + "MorroblivionFormIDlist4.csv");
