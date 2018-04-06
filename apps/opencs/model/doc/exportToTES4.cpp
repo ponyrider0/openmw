@@ -98,9 +98,18 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool bVWD_Only = false;
 	bool bStatics_Only = false;
 	bool skipMasterRecords = SKIP_MASTER_RECORDS;
-
+	bool bLTEX_Override = skipMasterRecords;
+	bool bMGSO_Override = false;
 
 	std::string esmName = currentDoc.getSavePath().filename().stem().string();
+	if (esmName == "Morrowind" ||
+		esmName == "Tribunal" ||
+		esmName == "Bloodmoon")
+	{
+		esmName = "MGSO";
+		bStatics_Only = true;
+		bMGSO_Override = true;
+	}
 
 #ifdef _WIN32
 	std::string csvRoot = "";
@@ -183,8 +192,13 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		bDoActivators = false;
 	}
 
-	bool bLTEX_Override = skipMasterRecords;
 	if (esm.mConversionOptions.find("#ltex") != std::string::npos)
+	{
+		bDoLandTextures = true;
+		bLTEX_Override = true;
+	}
+
+	if (bMGSO_Override)
 	{
 		bDoLandTextures = true;
 		bLTEX_Override = true;
