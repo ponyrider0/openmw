@@ -3,6 +3,12 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#else
+
+#ifndef MAX_PATH
+#define MAX_PATH 1024
+#endif
+
 #endif
 
 #include <zlib.h>
