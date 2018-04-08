@@ -715,12 +715,14 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 
 void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
+    std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
+
 	// serialize modified NIF and output to newNIFFILe
 	inStream->clear();
 	inStream.get()->seekg(std::ios_base::beg);
 	std::ofstream outStream;
 
-	outStream.open(filePath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+	outStream.open(normalizedFilePath, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
 	// write header
 	exportHeader(inStream, outStream);
 	// write records
@@ -743,8 +745,10 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 
 void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
+    std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
+
 	// create _far.nif filePath
-	std::string path_farNIF = filePath.substr(0, filePath.size() - 4) + "_far.nif";
+	std::string path_farNIF = normalizedFilePath.substr(0, normalizedFilePath.size() - 4) + "_far.nif";
 	std::ofstream farNIFFile;
 
 	farNIFFile.open(path_farNIF, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
@@ -885,47 +889,58 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 					bReplaceFullPath = false;
 				}
 				// extract modelPath dir and paste onto texture
-				boost::filesystem::path modelP(modelPath);
-				std::stringstream tempPath;
-				std::string tempStr = esm.generateEDIDTES4(texFilename, 1);
+				std::stringstream modelTexturePath;
+				std::string texturePath = esm.generateEDIDTES4(texFilename, 1);
+                if (texturePath.size() < 4)
+                {
+                    std::cout << "DEBUG: prepareExport(): textureName=[" << texturePath << "] has less than 4 chars!\n";
+                    continue;
+                }
 //				tempStr[texFilename.find_last_of(".")] = '.'; // restore '.' before filename extension
-				tempStr.replace(tempStr.size()-4, 4, ".dds"); // change to DDS extension
+				texturePath.replace(texturePath.size()-4, 4, ".dds"); // change to DDS extension
 				// TODO: lookup NIFRecord properties to identify bump maps and glow maps
 				// change Unrm to _n...
-				if (Misc::StringUtils::lowerCase(tempStr).find("unrm.dds") != std::string::npos)
+				if (Misc::StringUtils::lowerCase(texturePath).find("unrm.dds") != std::string::npos)
 				{
-					tempStr.replace(tempStr.size()-8, 4, "_n");
+					texturePath.replace(texturePath.size()-8, 4, "_n");
 				}
-				if (Misc::StringUtils::lowerCase(tempStr).find("unm.dds") != std::string::npos)
+				if (Misc::StringUtils::lowerCase(texturePath).find("unm.dds") != std::string::npos)
 				{
-					tempStr.replace(tempStr.size()-7, 3, "_n");
+					texturePath.replace(texturePath.size()-7, 3, "_n");
 				}
 				//if (Misc::StringUtils::lowerCase(tempStr).find("ug.dds") != std::string::npos)
 				//{
 				//	tempStr.replace(tempStr.size()-6, 2, "_g");
 				//}
-				if (Misc::StringUtils::lowerCase(tempStr).find("uglow.dds") != std::string::npos)
+				if (Misc::StringUtils::lowerCase(texturePath).find("uglow.dds") != std::string::npos)
 				{
-					tempStr.replace(tempStr.size()-9, 5, "_g");
+					texturePath.replace(texturePath.size()-9, 5, "_g");
 				}
+                std::string modelPrefix = "";
 				if (bReplaceFullPath)
 				{
-					tempPath << modelP.parent_path().string();
+                    if (modelPath.find("\\") != std::string::npos)
+                        modelPrefix = modelPath.substr(0, modelPath.find_last_of("\\"));
+                    else if (modelPath.find("/") != std::string::npos)
+                        modelPrefix = modelPath.substr(0, modelPath.find_last_of("/"));
 				}
 				else
 				{
-					std::string morroPath = modelP.parent_path().string();
-					morroPath = morroPath.substr(0, Misc::StringUtils::lowerCase(morroPath).find("morro\\") + 5);
-					tempPath << morroPath;
+                    if (Misc::StringUtils::lowerCase(modelPath).find("morro\\") != std::string::npos)
+                        modelPrefix = modelPath.substr(0, Misc::StringUtils::lowerCase(modelPath).find("morro\\") + 5);
+                    else if (Misc::StringUtils::lowerCase(modelPath).find("morro/") != std::string::npos)
+                        modelPrefix = modelPath.substr(0, Misc::StringUtils::lowerCase(modelPath).find("morro/") + 5);
 				}
-				tempPath << "\\" << tempStr;
+                modelTexturePath << modelPrefix;
+				modelTexturePath << "\\" << texturePath;
 				// moved DDS export call to exportFileNif
 //				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
 //				esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
-				texture->filename = tempPath.str();
+				texture->filename = modelTexturePath.str();
 			}
 		}
 	}
+
 }
 
 std::string NIFFile::CreateResourcePaths(std::string modelPath)
@@ -939,13 +954,15 @@ std::string NIFFile::CreateResourcePaths(std::string modelPath)
 	std::string logRoot = outputRoot;
 #endif
 
+    std::string normalizedModelPath = Misc::ResourceHelpers::getNormalizedPath(modelPath);
+
 	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
 	if (boost::filesystem::exists(rootDir) == false)
 	{
 		boost::filesystem::create_directories(rootDir);
 	}
 
-	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + modelPath);
+	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + normalizedModelPath);
 	if (boost::filesystem::exists(filePath.parent_path()) == false)
 	{
 		boost::filesystem::create_directories(filePath.parent_path());

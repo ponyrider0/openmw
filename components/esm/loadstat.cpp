@@ -149,7 +149,8 @@ namespace ESM
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+            std::string errString(e.what());
+			std::cout << "Error: (" << nifInputName << ") " << errString << "\n";
 		}
 
 		int recordType = 0;

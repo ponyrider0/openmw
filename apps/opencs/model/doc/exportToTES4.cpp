@@ -22,11 +22,17 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
+
 #include <components/esm/loadarmo.hpp>
 
 #include <components/nif/niffile.hpp>
 
+/*
 namespace
 {
 
@@ -48,6 +54,7 @@ namespace
     }
     
 }
+*/
 
 CSMDoc::ExportToTES4::ExportToTES4() : ExportToBase()
 {
@@ -2809,7 +2816,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 	}
 	catch (std::runtime_error e)
 	{
-		std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+		std::cout << "Error: (" << nifInputName << ") " << std::string(e.what()) << "\n";
 	}
 	int vwdMode = VWD_MODE_NORMAL_ONLY;
 	if (writer.mConversionOptions.find("#vwd") != std::string::npos)
@@ -3126,7 +3133,8 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 	}
 	catch (std::runtime_error e)
 	{
-		std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+        std::string errString(e.what());
+		std::cout << "Error: (" << nifInputName << ") " << errString << "\n";
 	}
 	int vwdMode = VWD_MODE_NORMAL_ONLY;
 	if (writer.mConversionOptions.find("#vwd") != std::string::npos)
@@ -5628,7 +5636,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 #else
     std::string outputRoot = getenv("HOME");
     outputRoot += "/";
-	std::string oblivionOutput = "/Oblivion.output/";
+	std::string oblivionOutput = outputRoot + "Oblivion.output/";
 #endif
 	outputRoot += "nifconv_bats/";
 
@@ -5789,7 +5797,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 			if (bBlenderOutput)
 			{
 				// create New BlenderOutList
-				blenderOutList_far << nifOutputName.substr(0, nifOutputName.length() - 4) + "_far.nif" << "\n";
+				blenderOutList_far << Misc::ResourceHelpers::getNormalizedPath(nifOutputName).substr(0, nifOutputName.length() - 4) + "_far.nif" << "\n";
 				if (++far_linecount > 100)
 				{
 					far_linecount = 0;
@@ -5808,9 +5816,9 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 				nifConvItem->second.second == 1)
 			{
 				if (bFullResCollision)
-					blenderOutList_fullres << nifOutputName << "\n";
+					blenderOutList_fullres << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
 				else
-					blenderOutList << nifOutputName << "\n";
+					blenderOutList << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
 				if (++linecount > 100)
 				{
 					linecount = 0;
@@ -5895,7 +5903,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 		if (bBlenderOutput)
 		{
-			blenderOutList_clothing << nifOutputName << "\n";
+			blenderOutList_clothing << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
 			if (++linecount > 100)
 			{
 				linecount = 0;
@@ -5937,6 +5945,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
     outputRoot += "/";
     std::string logRoot = outputRoot;
 #endif
+    logRoot += "modexporter_logs/";
 
 	logFileDDSConv.open(logRoot + logFileStem + ".csv");
 
@@ -5951,8 +5960,10 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	{
 		std::string mw_filename = "";
 		std::string ob_filename = "";
-		mw_filename = get_normalized_path(ddsConvItem->first);
-		ob_filename = get_normalized_path(ddsConvItem->second.first);
+//		mw_filename = get_normalized_path(ddsConvItem->first);
+//		ob_filename = get_normalized_path(ddsConvItem->second.first);
+        mw_filename = Misc::ResourceHelpers::getNormalizedPath(ddsConvItem->first);
+        ob_filename = Misc::ResourceHelpers::getNormalizedPath(ddsConvItem->second.first);
 
 		int mode = ddsConvItem->second.second;
 		std::string inputFilepath, outputFilepath;

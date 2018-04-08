@@ -27,6 +27,23 @@ namespace
             pathname.end() );
     }
 
+    char normalize_char(char ch)
+    {
+        return ( ch == '\\' ) ? '/' : ch;
+    }
+
+}
+
+std::string Misc::ResourceHelpers::getNormalizedPath(const std::string& path_orig)
+{
+    std::string path = "";
+
+    for (auto ci = path_orig.begin(); ci != path_orig.end(); ci++)
+    {
+        path += normalize_char(*ci);
+    }
+
+    return path;
 }
 
 bool Misc::ResourceHelpers::changeExtensionToDds(std::string &path)
