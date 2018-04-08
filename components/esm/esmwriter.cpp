@@ -25,7 +25,11 @@ int compress_stream ( Bytef *dest, uLongf *destLen, std::ifstream *sourceStream,
 	z_stream stream;
 	int err;
 
+#ifdef __APPLE__
+    stream.next_in = (Bytef *)sourceBuffer;
+#else
 	stream.next_in = (z_const Bytef *)sourceBuffer;
+#endif
 	stream.avail_in = (uInt)sourceLen;
 	stream.next_out = dest;
 	stream.avail_out = (uInt)*destLen;
