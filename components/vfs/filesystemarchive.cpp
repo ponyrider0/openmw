@@ -1,5 +1,6 @@
 #include "filesystemarchive.hpp"
 
+#include <components/misc/stringops.hpp>
 #include <boost/filesystem.hpp>
 
 namespace VFS
@@ -48,6 +49,29 @@ namespace VFS
         {
             out[it->first] = &it->second;
         }
+    }
+
+    bool FileSystemArchive::exists(const std::string &filename, char (*normalize_function) (char))
+    {
+        bool result = false;
+
+        typedef boost::filesystem::recursive_directory_iterator directory_iterator;
+        directory_iterator end;
+        for (directory_iterator i (mPath); i != end; ++i)
+        {
+            if(boost::filesystem::is_directory (*i))
+                continue;
+
+            std::string member_name = i->path().string();
+            std::transform(member_name.begin(), member_name.end(), member_name.begin(), normalize_function);
+
+            if (Misc::StringUtils::lowerCase(member_name) == Misc::StringUtils::lowerCase(filename))
+            {
+                result = true;
+            }
+        }
+
+        return result;
     }
 
     // ----------------------------------------------------------------------------------

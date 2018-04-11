@@ -715,6 +715,21 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 
 void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
+    // if NIF is from original BSA, just process any overrride textures and return
+    if (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "morrowind.bsa" ||
+        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "tribunal.bsa" ||
+        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "bloodmoon.bsa")
+    {
+        for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
+        {
+            exportDDS(it->first, it->second);
+        }
+        return;
+    }
+
+    if (mReadyToExport == false)
+        throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
+
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
 
 	// serialize modified NIF and output to newNIFFILe
@@ -733,7 +748,9 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
 			if (texture != NULL)
 			{
-				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(texture->filename, 3)));
+                if (mOldName2NewName.find(texture->filename) != mOldName2NewName.end())
+//                    esm.mDDSToExportList.push_back(std::make_pair(texture->filename, std::make_pair(mOldName2NewName[texture->filename], 3)));
+                    exportDDS(texture->filename, mOldName2NewName[texture->filename]);
 			}
 		}
 		exportRecord(inStream, outStream, i);
@@ -745,6 +762,24 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 
 void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
+// following code does not apply to _far.nifs
+/*
+    // if NIF is from original BSA, just process any overrride textures and return
+    if (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "morrowind.bsa" ||
+        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "tribunal.bsa" ||
+        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "bloodmoon.bsa")
+    {
+        for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
+        {
+            std::string prefix = "lowres/";
+            exportDDS(it->first, prefix + it->second);
+        }
+        return;
+    }
+*/
+    if (mReadyToExport == false)
+        throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
+
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
 
 	// create _far.nif filePath
@@ -762,9 +797,11 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 			if (texture != NULL)
 			{
 				// rename texture filepath to /textures/lowres/...
-				std::string prefix = "lowres\\";
+				std::string prefix = "lowres/";
 				exportRecordSourceTexture(inStream, farNIFFile, i, prefix);
-				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(prefix + texture->filename, 3)));
+                if (mOldName2NewName.find(texture->filename) != mOldName2NewName.end())
+//                    esm.mDDSToExportList.push_back(std::make_pair(texture->filename, std::make_pair(prefix + mOldName2NewName[texture->filename], 3)));
+                    exportDDS(texture->filename, prefix + mOldName2NewName[texture->filename]);
 			}
 		}
 		else
@@ -775,6 +812,66 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 	// write footer data
 	exportFooter(inStream, farNIFFile);
 	farNIFFile.close();
+}
+
+void NIFFile::exportDDS(const std::string &oldName, const std::string &exportName)
+{
+    if (mReadyToExport == false)
+        throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
+
+#ifdef _WIN32
+    std::string outputRoot = "C:/";
+    std::string logRoot = "";
+#else
+    std::string outputRoot = getenv("HOME");
+    outputRoot += "/";
+    std::string logRoot = outputRoot;
+#endif
+    logRoot += "modexporter_logs/";
+    std::string modStem = mDocument->getSavePath().filename().stem().string();
+    std::string logFileStem = "Exported_TextureList_" + modStem;
+    std::ofstream logFileDDSConv;
+    logRoot += "modexporter_logs/";
+    logFileDDSConv.open(logRoot + logFileStem + ".csv");
+    logFileDDSConv << "Original texture,Exported texture,Export result\n";
+
+    auto fileStream = mDocument->getVFS()->get(oldName);
+
+    try {
+
+        std::ofstream newDDSFile;
+        // create output subdirectories
+        boost::filesystem::path p(outputRoot + "Oblivion.output/Data/Textures/" + exportName);
+        if (boost::filesystem::exists(p.parent_path()) == false)
+        {
+            boost::filesystem::create_directories(p.parent_path());
+        }
+        newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+
+        int len = 0;
+        char buffer[1024];
+        while (fileStream->eof() == false)
+        {
+            fileStream->read(buffer, sizeof(buffer));
+            len = fileStream->gcount();
+            newDDSFile.write(buffer, len);
+        }
+
+        newDDSFile.close();
+        logFileDDSConv << "export success\n";
+    }
+    catch (std::runtime_error e)
+    {
+        std::cout << "Error: (" << oldName << ") " << e.what() << "\n";
+        logFileDDSConv << "export error\n";
+    }
+    catch (...)
+    {
+        std::cout << "ERROR: something else bad happened!\n";
+    }
+    
+    logFileDDSConv.close();
+
 }
 
 // degrees + vector x, y, z
@@ -789,157 +886,213 @@ static void SetNodeRotation(Matrix3 &m, float a, float x, float y, float z)
 
 }
 
+
+void NIFFile::prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string raw_modelPath, Nif::NiSourceTexture *texture, int texturetype)
+{
+    if (texture != NULL)
+    {
+        std::string oldName = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
+        std::string texFilename = texture->filename;
+        std::string modelPath = raw_modelPath;
+
+        // normalize to "/" separators
+        doc.getVFS()->normalizeFilename(oldName);
+        doc.getVFS()->normalizeFilename(texFilename);
+        doc.getVFS()->normalizeFilename(modelPath);
+
+        if (Misc::StringUtils::lowerCase(texFilename).find("textures/") == 0)
+        {
+            // remove "textures/" path prefix
+            texFilename = texFilename.substr(strlen("textures/"));
+        }
+        bool bReplaceFullPath = true;
+        if (Misc::StringUtils::lowerCase(texFilename).find("/") != std::string::npos)
+        {
+            bReplaceFullPath = false;
+        }
+        // extract modelPath dir and paste onto texture
+        std::stringstream modelTexturePath;
+        std::string texturePath = esm.generateEDIDTES4(texFilename, 1);
+        if (texturePath.size() < 4)
+        {
+            std::cout << "DEBUG: prepareExport(): textureName=[" << texturePath << "] has less than 4 chars!\n";
+            return;
+        }
+        //tempStr[texFilename.find_last_of(".")] = '.'; // restore '.' before filename extension
+        texturePath.replace(texturePath.size()-4, 4, ".dds"); // change to DDS extension
+
+        // TODO: lookup NIFRecord properties to identify bump maps and glow maps
+
+        switch (texturetype)
+        {
+            case Nif::NiTexturingProperty::TextureType::BaseTexture:
+                break;
+
+            case Nif::NiTexturingProperty::TextureType::DetailTexture:
+                break;
+
+            case Nif::NiTexturingProperty::TextureType::GlowTexture:
+                if (Misc::StringUtils::lowerCase(texturePath).find("ug.dds") != std::string::npos)
+                {
+                	texturePath.replace(texturePath.size()-6, 2, "_g");
+                }
+                else if (Misc::StringUtils::lowerCase(texturePath).find("uglow.dds") != std::string::npos)
+                {
+                    texturePath.replace(texturePath.size()-9, 5, "_g");
+                }
+                else
+                {
+                    texturePath.insert(texturePath.size()-4, "_g");
+                }
+                break;
+
+            case Nif::NiTexturingProperty::TextureType::BumpTexture:
+                // change Unrm to _n...
+                if (Misc::StringUtils::lowerCase(texturePath).find("unrm.dds") != std::string::npos)
+                {
+                    texturePath.replace(texturePath.size()-8, 4, "_n");
+                }
+                else if (Misc::StringUtils::lowerCase(texturePath).find("unm.dds") != std::string::npos)
+                {
+                    texturePath.replace(texturePath.size()-7, 3, "_n");
+                }
+                else
+                {
+                    texturePath.insert(texturePath.size()-4, "_n");
+                }
+                break;
+
+        }
+        std::string modelPrefix = "";
+        if (bReplaceFullPath)
+        {
+            if (modelPath.find("/") != std::string::npos)
+                modelPrefix = modelPath.substr(0, modelPath.find_last_of("/"));
+        }
+        else
+        {
+            if (Misc::StringUtils::lowerCase(modelPath).find("morro/") != std::string::npos)
+                modelPrefix = modelPath.substr(0, Misc::StringUtils::lowerCase(modelPath).find("morro/") + 5);
+        }
+        modelTexturePath << modelPrefix;
+        modelTexturePath << "/" << texturePath;
+
+        // skip original BSAs
+        if (Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "morrowind.bsa" ||
+            Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "tribunal.bsa" ||
+            Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "bloodmoon.bsa")
+        {
+            // moved DDS export call to exportFileNif
+            mOldName2NewName[oldName] = modelTexturePath.str();
+        }
+    }
+}
+
 void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath)
 {
-	// look through each record, process accordingly
-	for (int i = 0; i < numRecords(); i++)
-	{
-		// TODO: if collision node found, set properties?
-		// ...
+    mDocument = &doc;
 
-		// for each NiNode "Bip01" bone, repose for TES4 rigging
-		if (getRecord(i)->recType == Nif::RC_NiNode)
-		{
-			Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(getRecord(i));
-			if (ninode != NULL)
-			{
-				if (ninode->name == "Bip01")
-				{
-					SetNodeRotation(ninode->trafo.rotation, 90, 0, 0, 1);
-				}
+    // look through each record type and process accordingly
+    for (int i = 0; i < numRecords(); i++)
+    {
+        if (getRecord(i)->recType == Nif::RC_NiTexturingProperty)
+        {
+            Nif::NiTexturingProperty *tex_property = dynamic_cast<Nif::NiTexturingProperty*>(getRecord(i));
+            if (tex_property != NULL)
+            {
+                // base texture (export this in nif-file only? - ignore all other textures)
+                Nif::NiSourceTexture *base_tex = tex_property->textures[Nif::NiTexturingProperty::TextureType::BaseTexture].texture.getPtr();
+                prepareExport_TextureRename(doc, esm, modelPath, base_tex, Nif::NiTexturingProperty::TextureType::BaseTexture);
+                // leave the detail texture?
+                Nif::NiSourceTexture *detail_tex = tex_property->textures[Nif::NiTexturingProperty::TextureType::DetailTexture].texture.getPtr();
+                prepareExport_TextureRename(doc, esm, modelPath, detail_tex, Nif::NiTexturingProperty::TextureType::DetailTexture);
+                // bumpmap texture (rename this to base texturename + "_n.dds"
+                Nif::NiSourceTexture *bump_tex = tex_property->textures[Nif::NiTexturingProperty::TextureType::BumpTexture].texture.getPtr();
+                prepareExport_TextureRename(doc, esm, modelPath, bump_tex, Nif::NiTexturingProperty::TextureType::BumpTexture);
+                // glow texture (rename to base texturename + "_g.dds"
+                Nif::NiSourceTexture *glow_tex = tex_property->textures[Nif::NiTexturingProperty::TextureType::GlowTexture].texture.getPtr();
+                prepareExport_TextureRename(doc, esm, modelPath, glow_tex, Nif::NiTexturingProperty::TextureType::GlowTexture);
 
-				//if (ninode->name == "Bip01 L Thigh")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
-				//}
-				//if (ninode->name == "Bip01 L Calf")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-				//}
-				//if (ninode->name == "Bip01 L Foot")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
-				//}
-				//if (ninode->name == "Bip01 R Thigh")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
-				//}
-				//if (ninode->name == "Bip01 R Calf")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-				//}
-				//if (ninode->name == "Bip01 R Foot")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
-				//}
-				//if (ninode->name == "Bip01 L Clavicle")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
-				//}
-				//if (ninode->name == "Bip01 L UpperArm")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
-				//}
-				//if (ninode->name == "Bip01 L Forearem")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-				//}
-				//if (ninode->name == "Bip01 L Hand")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
-				//}
-				//if (ninode->name == "Bip01 R Clavicle")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
-				//}
-				//if (ninode->name == "Bip01 R UpperArm")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
-				//}
-				//if (ninode->name == "Bip01 R Forearem")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-				//}
-				//if (ninode->name == "Bip01 R Hand")
-				//{
-				//	SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
-				//}
+            }
+        }
 
-			}
-		}
+        // TODO: if collision node found, set properties?
+        // ...
 
-		// for each texturesource node, change name
-		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
-		{
-			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
-			if (texture != NULL)
-			{
-				mResourceNames[i] = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
-				std::string texFilename = texture->filename;
-				if (Misc::StringUtils::lowerCase(texFilename).find("textures/") == 0 ||
-					Misc::StringUtils::lowerCase(texFilename).find("textures\\") == 0)
-				{
-					// remove "textures/" path prefix
-					texFilename = texFilename.substr(strlen("textures/"));
-				}
-				bool bReplaceFullPath = true;
-				if (Misc::StringUtils::lowerCase(texFilename).find("\\") != std::string::npos ||
-					Misc::StringUtils::lowerCase(texFilename).find("/") != std::string::npos)
-				{
-					bReplaceFullPath = false;
-				}
-				// extract modelPath dir and paste onto texture
-				std::stringstream modelTexturePath;
-				std::string texturePath = esm.generateEDIDTES4(texFilename, 1);
-                if (texturePath.size() < 4)
+        // for each NiNode "Bip01" bone, repose for TES4 rigging
+        if (getRecord(i)->recType == Nif::RC_NiNode)
+        {
+            Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(getRecord(i));
+            if (ninode != NULL)
+            {
+                if (ninode->name == "Bip01")
                 {
-                    std::cout << "DEBUG: prepareExport(): textureName=[" << texturePath << "] has less than 4 chars!\n";
-                    continue;
+                    SetNodeRotation(ninode->trafo.rotation, 90, 0, 0, 1);
                 }
-//				tempStr[texFilename.find_last_of(".")] = '.'; // restore '.' before filename extension
-				texturePath.replace(texturePath.size()-4, 4, ".dds"); // change to DDS extension
-				// TODO: lookup NIFRecord properties to identify bump maps and glow maps
-				// change Unrm to _n...
-				if (Misc::StringUtils::lowerCase(texturePath).find("unrm.dds") != std::string::npos)
-				{
-					texturePath.replace(texturePath.size()-8, 4, "_n");
-				}
-				if (Misc::StringUtils::lowerCase(texturePath).find("unm.dds") != std::string::npos)
-				{
-					texturePath.replace(texturePath.size()-7, 3, "_n");
-				}
-				//if (Misc::StringUtils::lowerCase(tempStr).find("ug.dds") != std::string::npos)
-				//{
-				//	tempStr.replace(tempStr.size()-6, 2, "_g");
-				//}
-				if (Misc::StringUtils::lowerCase(texturePath).find("uglow.dds") != std::string::npos)
-				{
-					texturePath.replace(texturePath.size()-9, 5, "_g");
-				}
-                std::string modelPrefix = "";
-				if (bReplaceFullPath)
-				{
-                    if (modelPath.find("\\") != std::string::npos)
-                        modelPrefix = modelPath.substr(0, modelPath.find_last_of("\\"));
-                    else if (modelPath.find("/") != std::string::npos)
-                        modelPrefix = modelPath.substr(0, modelPath.find_last_of("/"));
-				}
-				else
-				{
-                    if (Misc::StringUtils::lowerCase(modelPath).find("morro\\") != std::string::npos)
-                        modelPrefix = modelPath.substr(0, Misc::StringUtils::lowerCase(modelPath).find("morro\\") + 5);
-                    else if (Misc::StringUtils::lowerCase(modelPath).find("morro/") != std::string::npos)
-                        modelPrefix = modelPath.substr(0, Misc::StringUtils::lowerCase(modelPath).find("morro/") + 5);
-				}
-                modelTexturePath << modelPrefix;
-				modelTexturePath << "\\" << texturePath;
-				// moved DDS export call to exportFileNif
-//				esm.mDDSToExportList.push_back(std::make_pair(mResourceNames[i], std::make_pair(tempPath.str(), 3)));
-//				esm.mDDSToExportList[resourceName] = std::make_pair(tempPath.str(), 3);
-				texture->filename = modelTexturePath.str();
-			}
-		}
-	}
+
+                //if (ninode->name == "Bip01 L Thigh")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
+                //}
+                //if (ninode->name == "Bip01 L Calf")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+                //}
+                //if (ninode->name == "Bip01 L Foot")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
+                //}
+                //if (ninode->name == "Bip01 R Thigh")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
+                //}
+                //if (ninode->name == "Bip01 R Calf")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
+                //}
+                //if (ninode->name == "Bip01 R Foot")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
+                //}
+                //if (ninode->name == "Bip01 L Clavicle")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
+                //}
+                //if (ninode->name == "Bip01 L UpperArm")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
+                //}
+                //if (ninode->name == "Bip01 L Forearem")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+                //}
+                //if (ninode->name == "Bip01 L Hand")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
+                //}
+                //if (ninode->name == "Bip01 R Clavicle")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
+                //}
+                //if (ninode->name == "Bip01 R UpperArm")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
+                //}
+                //if (ninode->name == "Bip01 R Forearem")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
+                //}
+                //if (ninode->name == "Bip01 R Hand")
+                //{
+                //	SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
+                //}
+                
+            }
+        }
+
+    }
+
+    mReadyToExport = true;
 
 }
 

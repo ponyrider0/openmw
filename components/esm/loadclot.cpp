@@ -403,7 +403,7 @@ namespace ESM
 				Nif::NIFFile nifFile(fileStream, nifInputName);
 				modelBounds = nifFile.mModelBounds;
 
-				if (bBlenderOutput)
+				if (bBlenderOutput && bConvertArmor)
 				{
 					std::string filePath = Nif::NIFFile::CreateResourcePaths(newMaleStr);
 					nifFile.prepareExport(doc, esm, newMaleStr);
@@ -433,7 +433,7 @@ namespace ESM
 				Nif::NIFFile nifFile(fileStream, nifInputName);
 				modelBounds = nifFile.mModelBounds;
 
-				if (bBlenderOutput)
+				if (bBlenderOutput && bConvertArmor)
 				{
 					std::string filePath = Nif::NIFFile::CreateResourcePaths(newFemaleStr);
 					nifFile.prepareExport(doc, esm, newFemaleStr);

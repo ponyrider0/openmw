@@ -23,11 +23,14 @@ namespace VFS
     {
     public:
         BsaArchive(const std::string& filename);
+        virtual std::string getArchiveName() { return mFilename; }
+        virtual bool exists(const std::string& filename, char (*normalize_function) (char));
 
         virtual void listResources(std::map<std::string, File*>& out, char (*normalize_function) (char));
 
     private:
         Bsa::BSAFile mFile;
+        std::string mFilename;
 
         std::vector<BsaArchiveFile> mResources;
     };

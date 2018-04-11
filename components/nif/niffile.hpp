@@ -9,10 +9,10 @@
 #define VWD_MODE_LOD_ONLY 2
 #define VWD_MODE_LOD_AND_LARGE_NORMAL 3
 
-#define VWD_QUAL_LOW 1200.0f
-#define VWD_QUAL_MEDIUM 800.0f
-#define VWD_QUAL_HIGH 400.0f
-#define VWD_QUAL_ULTRA 200.0f
+#define VWD_QUAL_LOW 3200.0f
+#define VWD_QUAL_MEDIUM 1600.0f
+#define VWD_QUAL_HIGH 800.0f
+#define VWD_QUAL_ULTRA 400.0f
 
 /*
 #define VWD_QUAL_LOW 800.0f
@@ -42,6 +42,7 @@ namespace ESM
 
 namespace Nif
 {
+class NiSourceTexture;
 
 class NIFFile
 {
@@ -132,6 +133,8 @@ public:
 	void exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
 	void exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
 	void prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath);
+    void prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath, Nif::NiSourceTexture *texture, int texturetype);
+    void exportDDS(const std::string &oldName, const std::string &exportName);
 
 	static std::string CreateResourcePaths(std::string modelPath);
 
@@ -140,7 +143,9 @@ public:
 	float mModelBounds=0;
 	bool mReadyToExport=false;
 	// map: record index to original resourceNames
-	std::map<int, std::string>mResourceNames;
+//	std::map<int, std::string> mResourceNames;
+    std::map<std::string, std::string> mOldName2NewName;
+    CSMDoc::Document *mDocument = 0;
 
 };
 typedef std::shared_ptr<const Nif::NIFFile> NIFFilePtr;

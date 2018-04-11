@@ -3,8 +3,9 @@
 export CXX=clang++
 export CC=clang
 
-DEPENDENCIES_ROOT="~/dev/openmw-deps"
-FFMPEG_HOME="/opt/local"
+export DEPENDENCIES_ROOT="${HOME}/dev/openmw-deps"
+export FFMPEG_HOME="/opt/local"
+export QT_PATH="/opt/local/libexec/qt4"
 
 mkdir build
 cd build
