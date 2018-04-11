@@ -202,13 +202,24 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	if (esm.mConversionOptions.find("#ltex") != std::string::npos)
 	{
 		bDoLandTextures = true;
-		bLTEX_Override = true;
+//		bLTEX_Override = true;
 	}
 
 	if (bMGSO_Override)
 	{
+		bDoDoors = true;
 		bDoLandTextures = true;
-		bLTEX_Override = true;
+//		bLTEX_Override = true;
+	}
+
+	if (esm.mConversionOptions.find("#clothing") != std::string::npos)
+	{
+		bDoClothing = true;
+	}
+
+	if (esm.mConversionOptions.find("#armor") != std::string::npos)
+	{
+		bDoArmor = true;
 	}
 
 	//	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
@@ -5472,8 +5483,8 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 			// just go ahead and skip to mapping index
 			bExportRecord = false;
 		}
-		if (mSkipMasterRecords)
-			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
+//		if (mSkipMasterRecords)
+//			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
 
 		if (bExportRecord)
 		{
@@ -5727,6 +5738,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin(); nifConvItem != esm.mModelsToExportList.end(); nifConvItem++)
 	{
+		std::cout << ".";
 		std::string rawFilename = nifConvItem->first;
 		std::string nifInputName = "";
 		std::string nifOutputName = "";
@@ -5885,6 +5897,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	linecount = 0;
 	for (auto nifConvItem = esm.mArmorToExportList.begin(); nifConvItem != esm.mArmorToExportList.end(); nifConvItem++)
 	{
+		std::cout << ".";
 		std::string rawFilename = nifConvItem->first;
 		std::string nifInputName = "";
 		std::string nifOutputName = "";
@@ -5925,13 +5938,13 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		batchFileArmorConv << "pause\n";
 		batchFileArmorConv.close();
 	}
-
+	std::cout << ". done.\n";
 
 }
 
 void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 {
-	std::cout << std::endl << "Exporting landscape and icon DDS textures...\n";
+	std::cout << std::endl << "Exporting DDS textures...";
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	std::string logFileStem = "Exported_TextureList_" + modStem;
@@ -5958,6 +5971,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
+		std::cout << ".";
 		std::string mw_filename = "";
 		std::string ob_filename = "";
 //		mw_filename = get_normalized_path(ddsConvItem->first);
@@ -6092,6 +6106,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			std::cout << "ERROR: something else bad happened!\n";
 		}
 	}
+	std::cout << ". done.\n";
 
 	logFileDDSConv.close();
 }
