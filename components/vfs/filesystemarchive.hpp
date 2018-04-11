@@ -22,6 +22,8 @@ namespace VFS
     {
     public:
         FileSystemArchive(const std::string& path);
+        virtual std::string getArchiveName() { return mPath; }
+        virtual bool exists(const std::string& filename, char (*normalize_function) (char));
 
         virtual void listResources(std::map<std::string, File*>& out, char (*normalize_function) (char));
 

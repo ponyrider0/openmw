@@ -91,4 +91,26 @@ namespace VFS
         normalize_path(name, mStrict);
     }
 
+    std::string Manager::lookupArchive(const std::string& name) const
+    {
+        std::string normalizedName = name;
+        normalizeFilename(normalizedName);
+
+        std::string archiveName = "";
+        for (std::vector<Archive*>::const_iterator it = mArchives.cbegin(); it != mArchives.cend(); it++)
+        {
+            // assign archive Name...
+            archiveName = (*it)->getArchiveName();
+            // search it and break if normalizedName found
+            if ((*it)->exists(normalizedName, mStrict ? &strict_normalize_char : &nonstrict_normalize_char))
+            {
+                return archiveName;
+            }
+        }
+
+        return archiveName;
+
+    }
+
+
 }

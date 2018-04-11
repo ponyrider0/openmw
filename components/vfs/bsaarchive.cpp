@@ -1,10 +1,13 @@
 #include "bsaarchive.hpp"
 
+#include <components/misc/stringops.hpp>
+
 namespace VFS
 {
 
 
 BsaArchive::BsaArchive(const std::string &filename)
+: mFilename(filename)
 {
     mFile.open(filename);
 
@@ -24,6 +27,24 @@ void BsaArchive::listResources(std::map<std::string, File *> &out, char (*normal
 
         out[ent] = &*it;
     }
+}
+
+bool BsaArchive::exists(const std::string &filename, char (*normalize_function) (char))
+{
+    bool result = false;
+
+    for (std::vector<BsaArchiveFile>::iterator it = mResources.begin(); it != mResources.end(); ++it)
+    {
+        std::string member_name = it->mInfo->name;
+        std::transform(member_name.begin(), member_name.end(), member_name.begin(), normalize_function);
+
+        if (Misc::StringUtils::lowerCase(member_name) == Misc::StringUtils::lowerCase(filename))
+        {
+            result = true;
+        }
+    }
+
+    return result;
 }
 
 // ------------------------------------------------------------------------------

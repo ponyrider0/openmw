@@ -50,6 +50,8 @@ namespace VFS
         /// @note May be called from any thread once the index has been built.
         Files::IStreamPtr get(const std::string& name) const;
 
+        std::string lookupArchive(const std::string& name) const;
+
         /// Retrieve a file by name (name is already normalized).
         /// @note Throws an exception if the file can not be found.
         /// @note May be called from any thread once the index has been built.
