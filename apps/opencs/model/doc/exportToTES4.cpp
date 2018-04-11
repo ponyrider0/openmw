@@ -106,16 +106,16 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool bStatics_Only = false;
 	bool skipMasterRecords = SKIP_MASTER_RECORDS;
 	bool bLTEX_Override = skipMasterRecords;
-	bool bMGSO_Override = false;
+	bool bPluginless_Override = false;
 
 	std::string esmName = currentDoc.getSavePath().filename().stem().string();
 	if (esmName == "Morrowind" ||
 		esmName == "Tribunal" ||
 		esmName == "Bloodmoon")
 	{
-		esmName = "MGSO";
+		esmName = "pluginless export";
 		bStatics_Only = true;
-		bMGSO_Override = true;
+		bPluginless_Override = true;
 	}
 
 #ifdef _WIN32
@@ -205,7 +205,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		bLTEX_Override = true;
 	}
 
-	if (bMGSO_Override)
+	if (bPluginless_Override)
 	{
 		bDoLandTextures = true;
 		bLTEX_Override = true;
@@ -5653,6 +5653,10 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	bool bBlenderOutput = false;
 	if (esm.mConversionOptions.find("#blender") != std::string::npos)
 		bBlenderOutput = true;
+    bool bDoClothing = false;
+    if (esm.mConversionOptions.find("#clothing") != std::string::npos ||
+        esm.mConversionOptions.find("#armor") != std::string::npos)
+        bDoClothing = true;
 
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	std::string batchFileStem = "ModExporter_NIFConv_" + modStem;
@@ -5901,7 +5905,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 			batchFileArmorConv << "NIF_Conv.exe " << cmdFlags << " -d " << nifOutputName << "\n";
 		}
 
-		if (bBlenderOutput)
+		if (bBlenderOutput && bDoClothing)
 		{
 			blenderOutList_clothing << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
 			if (++linecount > 100)
