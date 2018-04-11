@@ -715,22 +715,27 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 
 void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
+    if (mReadyToExport == false)
+        throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
+
+    for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
+    {
+        exportDDS(it->first, it->second);
+    }
     // if NIF is from original BSA, just process any overrride textures and return
     if (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "morrowind.bsa" ||
         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "tribunal.bsa" ||
         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "bloodmoon.bsa")
     {
-        for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
-        {
-            exportDDS(it->first, it->second);
-        }
         return;
     }
 
-    if (mReadyToExport == false)
-        throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
-
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
+    boost::filesystem::path p(normalizedFilePath);
+    if (boost::filesystem::exists(p.parent_path()) == false)
+    {
+        boost::filesystem::create_directories(p.parent_path());
+    }
 
 	// serialize modified NIF and output to newNIFFILe
 	inStream->clear();
@@ -743,16 +748,6 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 	// write records
 	for (int i = 0; i < records.size(); i++)
 	{
-		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
-		{
-			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
-			if (texture != NULL)
-			{
-                if (mOldName2NewName.find(texture->filename) != mOldName2NewName.end())
-//                    esm.mDDSToExportList.push_back(std::make_pair(texture->filename, std::make_pair(mOldName2NewName[texture->filename], 3)));
-                    exportDDS(texture->filename, mOldName2NewName[texture->filename]);
-			}
-		}
 		exportRecord(inStream, outStream, i);
 	}
 	// write footer data
@@ -762,25 +757,22 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 
 void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string filePath)
 {
-// following code does not apply to _far.nifs
-/*
-    // if NIF is from original BSA, just process any overrride textures and return
-    if (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "morrowind.bsa" ||
-        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "tribunal.bsa" ||
-        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "bloodmoon.bsa")
-    {
-        for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
-        {
-            std::string prefix = "lowres/";
-            exportDDS(it->first, prefix + it->second);
-        }
-        return;
-    }
-*/
     if (mReadyToExport == false)
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
 
+    // export lowres textures only if exporter _far.nif
+    for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
+    {
+        std::string prefix = "lowres/";
+        exportDDS(it->first, prefix + it->second);
+    }
+
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
+    boost::filesystem::path p(normalizedFilePath);
+    if (boost::filesystem::exists(p.parent_path()) == false)
+    {
+        boost::filesystem::create_directories(p.parent_path());
+    }
 
 	// create _far.nif filePath
 	std::string path_farNIF = normalizedFilePath.substr(0, normalizedFilePath.size() - 4) + "_far.nif";
@@ -799,10 +791,11 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 				// rename texture filepath to /textures/lowres/...
 				std::string prefix = "lowres/";
 				exportRecordSourceTexture(inStream, farNIFFile, i, prefix);
-                if (mOldName2NewName.find(texture->filename) != mOldName2NewName.end())
-//                    esm.mDDSToExportList.push_back(std::make_pair(texture->filename, std::make_pair(prefix + mOldName2NewName[texture->filename], 3)));
-                    exportDDS(texture->filename, prefix + mOldName2NewName[texture->filename]);
 			}
+            else
+            {
+                exportRecord(inStream, farNIFFile, i);
+            }
 		}
 		else
 		{
@@ -818,6 +811,15 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
 {
     if (mReadyToExport == false)
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
+
+    // skip original BSAs, if not lowres
+    if ((exportName.find("lowres/") == std::string::npos) &&
+        (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "morrowind.bsa" ||
+         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "tribunal.bsa" ||
+         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "bloodmoon.bsa"))
+    {
+        return;
+    }
 
 #ifdef _WIN32
     std::string outputRoot = "C:/";
@@ -862,12 +864,12 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
     }
     catch (std::runtime_error e)
     {
-        std::cout << "Error: (" << oldName << ") " << e.what() << "\n";
+        std::cout << "NIF Export (texture export) Error: (" << oldName << ") " << e.what() << "\n";
         logFileDDSConv << "export error\n";
     }
     catch (...)
     {
-        std::cout << "ERROR: something else bad happened!\n";
+        std::cout << "NIF Export ERROR: something else bad happened!\n";
     }
     
     logFileDDSConv.close();
@@ -977,14 +979,8 @@ void NIFFile::prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter 
         modelTexturePath << modelPrefix;
         modelTexturePath << "/" << texturePath;
 
-        // skip original BSAs
-        if (Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "morrowind.bsa" ||
-            Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "tribunal.bsa" ||
-            Misc::StringUtils::lowerCase( doc.getVFS()->lookupArchive(oldName) ) != "bloodmoon.bsa")
-        {
-            // moved DDS export call to exportFileNif
-            mOldName2NewName[oldName] = modelTexturePath.str();
-        }
+        // moved DDS export call to exportFileNif
+        mOldName2NewName[oldName] = modelTexturePath.str();
     }
 }
 
@@ -1112,13 +1108,13 @@ std::string NIFFile::CreateResourcePaths(std::string modelPath)
 	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
 	if (boost::filesystem::exists(rootDir) == false)
 	{
-		boost::filesystem::create_directories(rootDir);
+//		boost::filesystem::create_directories(rootDir);
 	}
 
 	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + normalizedModelPath);
 	if (boost::filesystem::exists(filePath.parent_path()) == false)
 	{
-		boost::filesystem::create_directories(filePath.parent_path());
+//		boost::filesystem::create_directories(filePath.parent_path());
 	}
 
 	return filePath.string();
