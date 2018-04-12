@@ -5835,14 +5835,16 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		{
 			if (bLegacyNifConv)
 			{
-				std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
+//				std::string lodFileName = nifConvItem->second.first.substr(0, nifConvItem->second.first.length() - 4) + "_far.nif";
+                std::string lodFileName = nifConvItem->second.first;
 				batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -f -c " << " -d " << lodFileName << "\n";
 			}
 
 			if (bBlenderOutput)
 			{
 				// create New BlenderOutList
-				blenderOutList_far << Misc::ResourceHelpers::getNormalizedPath(nifOutputName).substr(0, nifOutputName.length() - 4) + "_far.nif" << "\n";
+//				blenderOutList_far << Misc::ResourceHelpers::getNormalizedPath(nifOutputName).substr(0, nifOutputName.length() - 4) + "_far.nif" << "\n";
+                blenderOutList_far << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
 				if (++far_linecount > 100)
 				{
 					far_linecount = 0;

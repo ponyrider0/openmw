@@ -14,6 +14,7 @@ void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #include <stdexcept>
 
 #include <components/misc/stringops.hpp>
+#include <components/misc/resourcehelpers.hpp>
 #include <components/to_utf8/to_utf8.hpp>
 #include <apps/opencs/model/doc/document.hpp>
 
@@ -3243,8 +3244,26 @@ namespace ESM
 		endSubRecordTES4("CTDA");
 	}
 
-	void ESMWriter::QueueModelForExport(std::string origString, std::string convertedString, int recordType)
+	void ESMWriter::QueueModelForExport(const std::string &origString, const std::string &outputString, int recordType)
 	{
+        // Do NOT normalize convertedString, since it may include commandline switches in addition to filepath strings
+        std::string convertedString = outputString;
+        // convert name to LOD format as needed
+        if (recordType == 4)
+        {
+            // assume last 4 chars are ".nif"
+            convertedString.insert(outputString.size()-4, "_far");
+        }
+
+        // each convertedString should be unique, so cache these in a single map and skip if already present
+        std::string key = Misc::ResourceHelpers::getNormalizedPath(convertedString);
+        Misc::StringUtils::lowerCaseInPlace(key);
+        if (mModelOutputCache.find(key) != mModelOutputCache.end())
+        {
+            return;
+        }
+        mModelOutputCache[key] = 1;
+
 		if (recordType < 0)
 		{
 //			mArmorToExportList[origString] = std::make_pair(convertedString, -recordType);
