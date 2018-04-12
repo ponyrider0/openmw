@@ -14,8 +14,8 @@ CSMWorld::Resources::Resources (const VFS::Manager* vfs, const std::string& base
 {
     int baseSize = mBaseDirectory.size();
 
-    const std::map<std::string, VFS::File*>& index = vfs->getIndex();
-    for (std::map<std::string, VFS::File*>::const_iterator it = index.begin(); it != index.end(); ++it)
+    const std::map<std::string, std::pair<VFS::File*, std::string>>& index = vfs->getIndex();
+    for (std::map<std::string, std::pair<VFS::File*, std::string>>::const_iterator it = index.begin(); it != index.end(); ++it)
     {
         std::string filepath = it->first;
         if (static_cast<int> (filepath.size())<baseSize+1 ||

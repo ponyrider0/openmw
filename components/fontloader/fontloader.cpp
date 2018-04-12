@@ -165,12 +165,12 @@ namespace Gui
 
     void FontLoader::loadAllFonts(bool exportToFile)
     {
-        const std::map<std::string, VFS::File*>& index = mVFS->getIndex();
+        const std::map<std::string, std::pair<VFS::File*, std::string>>& index = mVFS->getIndex();
 
         std::string pattern = "Fonts/";
         mVFS->normalizeFilename(pattern);
 
-        std::map<std::string, VFS::File*>::const_iterator found = index.lower_bound(pattern);
+        std::map<std::string, std::pair<VFS::File*, std::string>>::const_iterator found = index.lower_bound(pattern);
         while (found != index.end())
         {
             const std::string& name = found->first;

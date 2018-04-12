@@ -13,7 +13,7 @@ namespace VFS
 
     }
 
-    void FileSystemArchive::listResources(std::map<std::string, File *> &out, char (*normalize_function)(char))
+    void FileSystemArchive::listResources(std::map<std::string, std::pair<File *, std::string>> &out, char (*normalize_function)(char))
     {
         if (!mBuiltIndex)
         {
@@ -47,31 +47,8 @@ namespace VFS
 
         for (index::iterator it = mIndex.begin(); it != mIndex.end(); ++it)
         {
-            out[it->first] = &it->second;
+            out[it->first] = std::make_pair(&it->second, mPath);
         }
-    }
-
-    bool FileSystemArchive::exists(const std::string &filename, char (*normalize_function) (char))
-    {
-        bool result = false;
-
-        typedef boost::filesystem::recursive_directory_iterator directory_iterator;
-        directory_iterator end;
-        for (directory_iterator i (mPath); i != end; ++i)
-        {
-            if(boost::filesystem::is_directory (*i))
-                continue;
-
-            std::string member_name = i->path().string();
-            std::transform(member_name.begin(), member_name.end(), member_name.begin(), normalize_function);
-
-            if (Misc::StringUtils::lowerCase(member_name) == Misc::StringUtils::lowerCase(filename))
-            {
-                result = true;
-            }
-        }
-
-        return result;
     }
 
     // ----------------------------------------------------------------------------------

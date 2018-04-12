@@ -39,7 +39,7 @@ namespace VFS
 
         /// Get a complete list of files from all archives
         /// @note May be called from any thread once the index has been built.
-        const std::map<std::string, File*>& getIndex() const;
+        const std::map<std::string, std::pair<File*, std::string>>& getIndex() const;
 
         /// Normalize the given filename, making slashes/backslashes consistent, and lower-casing if mStrict is false.
         /// @note May be called from any thread once the index has been built.
@@ -62,7 +62,7 @@ namespace VFS
 
         std::vector<Archive*> mArchives;
 
-        std::map<std::string, File*> mIndex;
+        std::map<std::string, std::pair<File*, std::string>> mIndex;
     };
 
 }

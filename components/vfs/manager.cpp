@@ -67,10 +67,10 @@ namespace VFS
 
     Files::IStreamPtr Manager::getNormalized(const std::string &normalizedName) const
     {
-        std::map<std::string, File*>::const_iterator found = mIndex.find(normalizedName);
+        std::map<std::string, std::pair<File*, std::string>>::const_iterator found = mIndex.find(normalizedName);
         if (found == mIndex.end())
             throw std::runtime_error("Resource '" + normalizedName + "' not found");
-        return found->second->open();
+        return (found->second).first->open();
     }
 
     bool Manager::exists(const std::string &name) const
@@ -81,7 +81,7 @@ namespace VFS
         return mIndex.find(normalized) != mIndex.end();
     }
 
-    const std::map<std::string, File*>& Manager::getIndex() const
+    const std::map<std::string, std::pair<File*, std::string>>& Manager::getIndex() const
     {
         return mIndex;
     }
@@ -91,25 +91,15 @@ namespace VFS
         normalize_path(name, mStrict);
     }
 
-    std::string Manager::lookupArchive(const std::string& name) const
+    std::string Manager::lookupArchive(const std::string& filename) const
     {
-        std::string normalizedName = name;
-        normalizeFilename(normalizedName);
+        std::string normalized = filename;
+        normalize_path(normalized, mStrict);
 
-        std::string archiveName = "";
-        for (std::vector<Archive*>::const_iterator it = mArchives.cbegin(); it != mArchives.cend(); it++)
-        {
-            // assign archive Name...
-            archiveName = (*it)->getArchiveName();
-            // search it and break if normalizedName found
-            if ((*it)->exists(normalizedName, mStrict ? &strict_normalize_char : &nonstrict_normalize_char))
-            {
-                return archiveName;
-            }
-        }
-
-        return archiveName;
-
+        std::map<std::string, std::pair<File*, std::string>>::const_iterator found = mIndex.find(normalized);
+        if (found == mIndex.end())
+            throw std::runtime_error("Resource '" + normalized + "' not found");
+        return (found->second).second;
     }
 
 

@@ -115,43 +115,44 @@ namespace ESM
 		float modelBounds = 0.0f;
 		// ** Load NIF and get model's true Bound Radius
 		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		try
-		{
-			Files::IStreamPtr fileStream = NULL;
-			fileStream = doc.getVFS()->get(nifInputName);
-			// read stream into NIF parser...
-			Nif::NIFFile nifFile(fileStream, nifInputName);
-			modelBounds = nifFile.mModelBounds;
+        doc.getVFS()->normalizeFilename(nifInputName);
+        try
+        {
+            Files::IStreamPtr fileStream = NULL;
+            fileStream = doc.getVFS()->get(nifInputName);
+            // read stream into NIF parser...
+            Nif::NIFFile nifFile(fileStream, nifInputName);
+            modelBounds = nifFile.mModelBounds;
 
-			if (bBlenderOutput)
-			{
-				nifFile.prepareExport(doc, esm, modelPath.str());
-				if (vwdMode != VWD_MODE_LOD_ONLY)
-				{
-					if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
-					{
-						// skip
-					}
-					else
-					{
-						std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-						nifFile.exportFileNif(esm, fileStream, filePath);
-					}
-				}
+            if (bBlenderOutput)
+            {
+                nifFile.prepareExport(doc, esm, modelPath.str());
+                if (vwdMode != VWD_MODE_LOD_ONLY)
+                {
+                    if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
+                    {
+                        // skip
+                    }
+                    else
+                    {
+                        std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+                        nifFile.exportFileNif(esm, fileStream, filePath);
+                    }
+                }
 
-				if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
-				{
-					std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-					nifFile.exportFileNifFar(esm, fileStream, filePath);
-				}
-			}
+                if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
+                {
+                    std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+                    nifFile.exportFileNifFar(esm, fileStream, filePath);
+                }
+            }
 
-		}
-		catch (std::runtime_error e)
-		{
+        }
+        catch (std::runtime_error e)
+        {
             std::string errString(e.what());
-			std::cout << "Error: (" << nifInputName << ") " << errString << "\n";
-		}
+            std::cout << "Static::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+        }
 
 		int recordType = 0;
 		if (vwdMode != VWD_MODE_LOD_ONLY)

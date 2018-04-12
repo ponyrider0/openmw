@@ -8,6 +8,11 @@ namespace CSMDoc
 	class Document;
 }
 
+namespace Nif
+{
+    class NIFFile;
+}
+
 namespace ESM {
 
 class ESMReader;

@@ -158,7 +158,7 @@ namespace ESM
 		}
 		catch (std::runtime_error e)
 		{
-			std::cout << "Error: (" << nifInputName << ") " << e.what() << "\n";
+			std::cout << "Activator::exportTESx() Error: (" << nifInputName << ") " << e.what() << "\n";
 		}
 
 		int recordType = 0;

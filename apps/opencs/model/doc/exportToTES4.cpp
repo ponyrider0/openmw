@@ -105,7 +105,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool bVWD_Only = false;
 	bool bStatics_Only = false;
 	bool skipMasterRecords = SKIP_MASTER_RECORDS;
-	bool bLTEX_Override = skipMasterRecords;
+//	bool bLTEX_Override = skipMasterRecords;
 	bool bPluginless_Override = false;
 
 	std::string esmName = currentDoc.getSavePath().filename().stem().string();
@@ -114,7 +114,22 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		esmName == "Bloodmoon")
 	{
 		esmName = "pluginless export";
-		bStatics_Only = true;
+        bDoGlobals = false;
+        bDoScripts = false;
+        bDoSpells = false;
+        bDoRaces = false;
+        bDoClasses = false;
+        bDoFactions = false;
+        bDoEnchantments = false;
+        bDoLeveledItems = false;
+        bDoLeveledCreatures = false;
+        bDoNPCs = false;
+        bDoReferences = false;
+        bDoExteriors = false;
+        bDoInteriors = false;
+        bDoRegions = false;
+        bDoDialog = false;
+        bDoQuests = false;
 		bPluginless_Override = true;
 	}
 
@@ -207,8 +222,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	if (bPluginless_Override)
 	{
-		bDoDoors = true;
-		bDoLandTextures = true;
+//		bDoDoors = true;
+//		bDoLandTextures = true;
 //		bLTEX_Override = true;
 	}
 
@@ -259,7 +274,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	if (bDoRegions) appendStage (new ExportRegionDataTES4Stage (currentDoc, currentSave, skipMasterRecords));
 //	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
-	if (bDoLandTextures) appendStage(new ExportLandTextureCollectionTES4Stage(currentDoc, currentSave, bLTEX_Override));
+	if (bDoLandTextures) appendStage(new ExportLandTextureCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
 
 	if (bDoWeapons) appendStage(new ExportWeaponCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
 	if (bDoAmmo) appendStage(new ExportAmmoCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
@@ -2816,6 +2831,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 
 // pre-load NIF and calc bounds
 	std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(record.get().mModel, mDocument.getVFS());
+    mDocument.getVFS()->normalizeFilename(nifInputName);
 	float modelBounds = 0.0f;
 	try
 	{
@@ -2827,7 +2843,7 @@ void CSMDoc::ExportActivatorCollectionTES4Stage::perform (int stage, Messages& m
 	}
 	catch (std::runtime_error e)
 	{
-		std::cout << "Error: (" << nifInputName << ") " << std::string(e.what()) << "\n";
+		std::cout << "ExportActivatorCollection: (" << nifInputName << ") " << std::string(e.what()) << "\n";
 	}
 	int vwdMode = VWD_MODE_NORMAL_ONLY;
 	if (writer.mConversionOptions.find("#vwd") != std::string::npos)
@@ -3133,6 +3149,7 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 
 	// pre-load NIF and calc bounds
 	std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(record.get().mModel, mDocument.getVFS());
+    mDocument.getVFS()->normalizeFilename(nifInputName);
 	float modelBounds = 0.0f;
 	try
 	{
@@ -3145,7 +3162,7 @@ void CSMDoc::ExportSTATCollectionTES4Stage::perform (int stage, Messages& messag
 	catch (std::runtime_error e)
 	{
         std::string errString(e.what());
-		std::cout << "Error: (" << nifInputName << ") " << errString << "\n";
+		std::cout << "ExportSTATCollection: Error: (" << nifInputName << ") " << errString << "\n";
 	}
 	int vwdMode = VWD_MODE_NORMAL_ONLY;
 	if (writer.mConversionOptions.find("#vwd") != std::string::npos)
@@ -5651,14 +5668,10 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 #endif
 	outputRoot += "nifconv_bats/";
 
-	bool bLegacyNifConv = false;
+	bool bLegacyNifConv = true;
 	if (esm.mConversionOptions.find("#oldnifconv") != std::string::npos)
 	{
 		bLegacyNifConv = true;
-		if (boost::filesystem::exists(outputRoot) == false)
-		{
-			boost::filesystem::create_directories(outputRoot);
-		}
 	}
 
 	bool bBlenderOutput = false;
@@ -5685,11 +5698,6 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	char jobstring[6];
 	int stringlen=0;
 
-	if (boost::filesystem::exists(oblivionOutput + "jobs/") == false)
-	{
-		boost::filesystem::create_directories(oblivionOutput + "jobs/");
-	}
-
 	std::string jobstem = oblivionOutput + "jobs/ModExporter_blender_" + modStem;
 	std::string fullres_jobstem = jobstem + "_fullres_collision";
 	std::string far_jobstem = jobstem + "_far";
@@ -5699,24 +5707,37 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	if (esm.mConversionOptions.find("#qhull") != std::string::npos)
 		bFullResCollision = false;
 
-	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", clothing_jobnumber);
-	jobstring[stringlen] = '\0';
-	blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
+    if (bBlenderOutput)
+    {
+        if (boost::filesystem::exists(oblivionOutput + "jobs/") == false)
+        {
+            boost::filesystem::create_directories(oblivionOutput + "jobs/");
+        }
 
-	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", fullres_jobnumber);
-	jobstring[stringlen] = '\0';
-	blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
+        stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", clothing_jobnumber);
+        jobstring[stringlen] = '\0';
+        blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
 
-	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", far_jobnumber);
-	jobstring[stringlen] = '\0';
-	blenderOutList_far.open(far_jobstem + jobstring + ".job");
+        stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", fullres_jobnumber);
+        jobstring[stringlen] = '\0';
+        blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
 
-	stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", jobnumber);
-	jobstring[stringlen] = '\0';
-	blenderOutList.open(jobstem + jobstring + ".job");
+        stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", far_jobnumber);
+        jobstring[stringlen] = '\0';
+        blenderOutList_far.open(far_jobstem + jobstring + ".job");
+
+        stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", jobnumber);
+        jobstring[stringlen] = '\0';
+        blenderOutList.open(jobstem + jobstring + ".job");
+    }
 
 	if (bLegacyNifConv)
 	{
+        if (boost::filesystem::exists(outputRoot) == false)
+        {
+            boost::filesystem::create_directories(outputRoot);
+        }
+
 		batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
 		batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat");
 		//	batchFileNIFConv_helper2.open(outputRoot + batchFileStem + "_helper2.dat");
@@ -5729,7 +5750,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.dat " << batchFileStem << "_helper2.bat\n";
 		batchFileNIFConv << "start cmd /c \"" << batchFileStem << "_helper.bat\"\n";
 		//	batchFileNIFConv << "start cmd /c " << batchFileStem << "_herlper2.bat\n";
-		batchFileNIFConv << "cd ..\n";
+        batchFileNIFConv << "cd ..\n";
 
 		batchFileNIFConv_helper1 << "@echo off\n";
 		batchFileNIFConv_helper1 << "cd ..\n";
@@ -5742,16 +5763,24 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	int nSpawnCount = 0;
 	for (auto nifConvItem = esm.mModelsToExportList.begin(); nifConvItem != esm.mModelsToExportList.end(); nifConvItem++)
 	{
-		std::cout << ".";
 		std::string rawFilename = nifConvItem->first;
 		std::string nifInputName = "";
 		std::string nifOutputName = "";
 		nifInputName = Misc::ResourceHelpers::correctActorModelPath(rawFilename, mDocument.getVFS());
 		nifOutputName = nifConvItem->second.first;
-//		if (mDocument.getVFS()->exists(nifInputName) != true)
-//		{
-//			continue;
-//		}
+		if (mDocument.getVFS()->exists("meshes/" + nifInputName) != true)
+		{
+			continue;
+		}
+        std::string archiveName = Misc::StringUtils::lowerCase( mDocument.getVFS()->lookupArchive("meshes/" + nifInputName) );
+        if (archiveName.find("morrowind.bsa") != std::string::npos ||
+            archiveName.find("tribunal.bsa") != std::string::npos  ||
+            archiveName.find("bloodmoon.bsa") != std::string::npos)
+        {
+            if (nifConvItem->second.second != 4)
+                continue;
+        }
+        std::cout << ".";
 
 		if (bLegacyNifConv)
 		{
@@ -5863,6 +5892,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		batchFileNIFConv << "echo ----------------------\n";
 		batchFileNIFConv << "echo Conversion of " << modStem << " is complete.  Press any key to close this window.\n";
 		batchFileNIFConv << "pause\n";
+        batchFileNIFConv << "cd nifconv_bats\n";
 		batchFileNIFConv << "rename \"" << batchFileStem << "_helper.bat\" \"" << batchFileStem << "_helper.dat\"\n";
 		//	batchFileNIFConv << "rename " << batchFileStem << "_helper2.bat " << batchFileStem << "_helper2.dat\n";
 
@@ -5884,9 +5914,12 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		batchFileLODNIFConv.close();
 	}
 
-	blenderOutList_fullres.close();
-	blenderOutList.close();
-	blenderOutList_far.close();
+    if (bBlenderOutput)
+    {
+        blenderOutList_fullres.close();
+        blenderOutList.close();
+        blenderOutList_far.close();
+    }
 
 	// ****************
 	// ARMOR conversion
@@ -5907,6 +5940,19 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		std::string nifOutputName = "";
 		nifInputName = Misc::ResourceHelpers::correctActorModelPath(rawFilename, mDocument.getVFS());
 		nifOutputName = nifConvItem->second.first;
+
+        if (mDocument.getVFS()->exists("meshes/" + nifInputName) != true)
+        {
+            continue;
+        }
+        std::string archiveName = Misc::StringUtils::lowerCase( mDocument.getVFS()->lookupArchive("meshes/" + nifInputName) );
+        if (archiveName.find("morrowind.bsa") != std::string::npos ||
+            archiveName.find("tribunal.bsa") != std::string::npos  ||
+            archiveName.find("bloodmoon.bsa") != std::string::npos)
+        {
+            continue;
+        }
+        std::cout << ".";
 
 		std::string cmdFlags = "";
 		cmdFlags = nifInputName;
@@ -5933,7 +5979,11 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		}
 
 	}
-	blenderOutList_clothing.close();
+
+    if (bBlenderOutput)
+    {
+        blenderOutList_clothing.close();
+    }
 
 	if (bLegacyNifConv)
 	{
@@ -5975,7 +6025,6 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	}
 	for (auto ddsConvItem = esm.mDDSToExportList.begin(); ddsConvItem != esm.mDDSToExportList.end(); ddsConvItem++)
 	{
-		std::cout << ".";
 		std::string mw_filename = "";
 		std::string ob_filename = "";
 //		mw_filename = get_normalized_path(ddsConvItem->first);
@@ -5988,6 +6037,7 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 		if (mode == 0) // landscape == 0
 		{
 			inputFilepath = Misc::ResourceHelpers::correctTexturePath(mw_filename, mDocument.getVFS());
+//            Misc::ResourceHelpers::getNormalizedPath(inputFilepath);
 			outputFilepath = "Textures/Landscape/" + ob_filename;
 		}
 		else if (mode == 1) // icons == 1
@@ -6009,6 +6059,14 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 		{
 			continue;
 		}
+        std::string archiveName = Misc::StringUtils::lowerCase( mDocument.getVFS()->lookupArchive(inputFilepath) );
+        if (archiveName.find("morrowind.bsa") != std::string::npos ||
+            archiveName.find("tribunal.bsa") != std::string::npos  ||
+            archiveName.find("bloodmoon.bsa") != std::string::npos)
+        {
+            continue;
+        }
+        std::cout << ".";
 
 		logFileDDSConv << inputFilepath << "," << outputFilepath << ",";
 

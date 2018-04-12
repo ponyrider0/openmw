@@ -469,6 +469,9 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 	Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(records[recordIndex]);
 	if (texture != NULL && texture->external == true)
 	{
+        std::string oldName = Misc::ResourceHelpers::correctTexturePath(texture->filename, mDocument->getVFS());
+        mDocument->getVFS()->normalizeFilename(oldName);
+
 		// 32bit strlen + recordtype
 		char recordName[] = "NiSourceTexture";
 		uintVal = 15; // recordName is hardcoded without null terminator
@@ -503,7 +506,7 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 
 		//*********************filename replacement here*************************/
 		// 32bit strlen + filename
-		std::string exportFilename = pathPrefix + texture->filename;
+		std::string exportFilename = pathPrefix + mOldName2NewName[oldName];
 		uintVal = exportFilename.size();
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
 		len = 4;
@@ -718,15 +721,31 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
     if (mReadyToExport == false)
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
 
+//    std::cout << "DEBUG: Begin NIFFile::exportFileNif(): [" << filePath << "]\n";
     for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
     {
         exportDDS(it->first, it->second);
     }
     // if NIF is from original BSA, just process any overrride textures and return
-    if (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "morrowind.bsa" ||
-        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "tribunal.bsa" ||
-        Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) ) != "bloodmoon.bsa")
+    try
     {
+        std::string archiveName = Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) );
+        if (archiveName.find("morrowind.bsa") != std::string::npos ||
+            archiveName.find("tribunal.bsa") != std::string::npos  ||
+            archiveName.find("bloodmoon.bsa") != std::string::npos)
+        {
+            return;
+        }
+//        std::cout << "NIFFile:: archive=[" << archiveName << "]" << " EXPORTING: " << filePath << "\n";
+    }
+    catch (std::runtime_error e)
+    {
+        std::cout << "NIFFile::exportFileNif(): archiveName lookup for (" << filename << "): " << e.what() << "\n";
+        return;
+    }
+    catch (...)
+    {
+        std::cout << "NIFFile::exportFileNif(): ERROR: Unknown Exception.\n";
         return;
     }
 
@@ -813,12 +832,16 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
 
     // skip original BSAs, if not lowres
-    if ((exportName.find("lowres/") == std::string::npos) &&
-        (Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "morrowind.bsa" ||
-         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "tribunal.bsa" ||
-         Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(oldName) ) == "bloodmoon.bsa"))
+    if (exportName.find("lowres/") == std::string::npos)
     {
-        return;
+        std::string archiveName = Misc::StringUtils::lowerCase(mDocument->getVFS()->lookupArchive(oldName));
+        if (archiveName.find("morrowind.bsa") != std::string::npos ||
+            archiveName.find("tribunal.bsa") != std::string::npos  ||
+            archiveName.find("bloodmoon.bsa") != std::string::npos)
+        {
+            return;
+        }
+//        std::cout << "NIFFile:: archive=[" << archiveName << "]" << " EXPORTING: " << exportName << "\n";
     }
 
 #ifdef _WIN32
@@ -1015,7 +1038,7 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
         // TODO: if collision node found, set properties?
         // ...
 
-        // for each NiNode "Bip01" bone, repose for TES4 rigging
+        // repose for TES4 rigging
         if (getRecord(i)->recType == Nif::RC_NiNode)
         {
             Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(getRecord(i));
@@ -1026,63 +1049,6 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
                     SetNodeRotation(ninode->trafo.rotation, 90, 0, 0, 1);
                 }
 
-                //if (ninode->name == "Bip01 L Thigh")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 181.02, -0.00310, 0.99989, -0.01472);
-                //}
-                //if (ninode->name == "Bip01 L Calf")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-                //}
-                //if (ninode->name == "Bip01 L Foot")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 9.89, -0.42654, -0.13563, 0.89424);
-                //}
-                //if (ninode->name == "Bip01 R Thigh")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 178.98, -0.00310, 0.99989, 0.01472);
-                //}
-                //if (ninode->name == "Bip01 R Calf")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 8.52, 0, 0, -1);
-                //}
-                //if (ninode->name == "Bip01 R Foot")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 9.89, 0.42654, 0.13563, 0.89424);
-                //}
-                //if (ninode->name == "Bip01 L Clavicle")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 187.01, 0.60044, -0.09847, 0.79358);
-                //}
-                //if (ninode->name == "Bip01 L UpperArm")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 16.88, 0.40576, -0.69868, -0.58924);
-                //}
-                //if (ninode->name == "Bip01 L Forearem")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-                //}
-                //if (ninode->name == "Bip01 L Hand")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 90.68, -0.99981, -0.01439, -0.01302);
-                //}
-                //if (ninode->name == "Bip01 R Clavicle")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 187.01, -0.60044, 0.09847, 0.79358);
-                //}
-                //if (ninode->name == "Bip01 R UpperArm")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 16.88, -0.40576, 0.69868, -0.58924);
-                //}
-                //if (ninode->name == "Bip01 R Forearem")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 14.47, 0, 0, -1);
-                //}
-                //if (ninode->name == "Bip01 R Hand")
-                //{
-                //	SetNodeRotation(ninode->trafo.rotation, 90.68, 0.99981, 0.01439, -0.01302);
-                //}
-                
             }
         }
 
