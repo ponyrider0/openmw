@@ -981,7 +981,11 @@ void NIFFile::prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter 
                 {
                     texturePath.replace(texturePath.size()-7, 3, "_n");
                 }
-                else
+				else if (Misc::StringUtils::lowerCase(texturePath).find("un.dds") != std::string::npos)
+				{
+					texturePath.replace(texturePath.size() - 6, 2, "_n");
+				}
+				else
                 {
                     texturePath.insert(texturePath.size()-4, "_n");
                 }
