@@ -5943,6 +5943,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		nifInputName = Misc::ResourceHelpers::correctActorModelPath(rawFilename, mDocument.getVFS());
 		nifOutputName = nifConvItem->second.first;
 
+/*
         if (mDocument.getVFS()->exists("meshes/" + nifInputName) != true)
         {
             continue;
@@ -5954,6 +5955,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
         {
             continue;
         }
+*/
         std::cout << ".";
 
 		std::string cmdFlags = "";
