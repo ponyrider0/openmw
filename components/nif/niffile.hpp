@@ -134,7 +134,7 @@ public:
 	void exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std::string modelPath);
 	void prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath);
     void prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::string modelPath, Nif::NiSourceTexture *texture, int texturetype);
-    void exportDDS(const std::string &oldName, const std::string &exportName);
+    void exportDDS(const std::string &oldName, const std::string &exportName, int texturetype);
 
 	static std::string CreateResourcePaths(std::string modelPath);
 
@@ -144,7 +144,7 @@ public:
 	bool mReadyToExport=false;
 	// map: record index to original resourceNames
 //	std::map<int, std::string> mResourceNames;
-    std::map<std::string, std::string> mOldName2NewName;
+    std::map<std::string, std::pair<std::string, int>> mOldName2NewName;
     CSMDoc::Document *mDocument = 0;
 
 };

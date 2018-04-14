@@ -506,7 +506,24 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 
 		//*********************filename replacement here*************************/
 		// 32bit strlen + filename
-		std::string exportFilename = pathPrefix + mOldName2NewName[oldName];
+		// Sanity check to make sure name is correct
+		std::string exportFilename = "";
+		if (mOldName2NewName.find(oldName) == mOldName2NewName.end())
+		{ 
+			exportFilename = "";
+		}
+		else if (mOldName2NewName[oldName].second != Nif::NiTexturingProperty::TextureType::BaseTexture)
+		{
+			exportFilename = "";
+		}
+		else if (mOldName2NewName[oldName].first == "")
+		{
+			exportFilename = "";
+		}
+		else
+		{
+			exportFilename = pathPrefix + mOldName2NewName[oldName].first;
+		}
 		uintVal = exportFilename.size();
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
 		len = 4;
@@ -724,7 +741,7 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
 //    std::cout << "DEBUG: Begin NIFFile::exportFileNif(): [" << filePath << "]\n";
     for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
     {
-        exportDDS(it->first, it->second);
+        exportDDS(it->first, it->second.first, it->second.second);
     }
     // if NIF is from original BSA, just process any overrride textures and return
     try
@@ -783,7 +800,7 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
     for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
     {
         std::string prefix = "lowres/";
-        exportDDS(it->first, prefix + it->second);
+        exportDDS(it->first, prefix + it->second.first, it->second.second);
     }
 
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
@@ -826,7 +843,8 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
 	farNIFFile.close();
 }
 
-void NIFFile::exportDDS(const std::string &oldName, const std::string &exportName)
+// Currently, texturetype is not used when exporting DDS
+void NIFFile::exportDDS(const std::string &oldName, const std::string &exportName, int texturetype)
 {
     if (mReadyToExport == false)
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
@@ -991,6 +1009,9 @@ void NIFFile::prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter 
                 }
                 break;
 
+			default:
+				break;
+
         }
         std::string modelPrefix = "";
         if (bReplaceFullPath)
@@ -1007,7 +1028,7 @@ void NIFFile::prepareExport_TextureRename(CSMDoc::Document &doc, ESM::ESMWriter 
         modelTexturePath << "/" << texturePath;
 
         // moved DDS export call to exportFileNif
-        mOldName2NewName[oldName] = modelTexturePath.str();
+        mOldName2NewName[oldName] = std::make_pair(modelTexturePath.str(), texturetype);
     }
 }
 
@@ -1075,19 +1096,10 @@ std::string NIFFile::CreateResourcePaths(std::string modelPath)
 
     std::string normalizedModelPath = Misc::ResourceHelpers::getNormalizedPath(modelPath);
 
-	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Meshes/");
-	if (boost::filesystem::exists(rootDir) == false)
-	{
-//		boost::filesystem::create_directories(rootDir);
-	}
+//	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + normalizedModelPath);
+	std::string filePath = outputRoot + "Oblivion.output/temp/Meshes/" + normalizedModelPath;
 
-	boost::filesystem::path filePath(outputRoot + "Oblivion.output/Data/Meshes/" + normalizedModelPath);
-	if (boost::filesystem::exists(filePath.parent_path()) == false)
-	{
-//		boost::filesystem::create_directories(filePath.parent_path());
-	}
-
-	return filePath.string();
+	return filePath;
 }
 
 void NIFFile::exportFooter(Files::IStreamPtr inStream, std::ostream & outStream)
