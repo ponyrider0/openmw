@@ -5716,19 +5716,19 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
         stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", clothing_jobnumber);
         jobstring[stringlen] = '\0';
-        blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
+        blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 
         stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", fullres_jobnumber);
         jobstring[stringlen] = '\0';
-        blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
+        blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 
         stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", far_jobnumber);
         jobstring[stringlen] = '\0';
-        blenderOutList_far.open(far_jobstem + jobstring + ".job");
+        blenderOutList_far.open(far_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 
         stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", jobnumber);
         jobstring[stringlen] = '\0';
-        blenderOutList.open(jobstem + jobstring + ".job");
+        blenderOutList.open(jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
     }
 
 	if (bLegacyNifConv)
@@ -5738,10 +5738,10 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
             boost::filesystem::create_directories(outputRoot);
         }
 
-		batchFileNIFConv.open(outputRoot + batchFileStem + ".bat");
-		batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat");
-		//	batchFileNIFConv_helper2.open(outputRoot + batchFileStem + "_helper2.dat");
-		batchFileLODNIFConv.open(outputRoot + batchFileStem + "_LOD.bat");
+		batchFileNIFConv.open(outputRoot + batchFileStem + ".bat", std::ios_base::out | std::ios_base::trunc);
+		batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat", std::ios_base::out | std::ios_base::trunc);
+		//	batchFileNIFConv_helper2.open(outputRoot + batchFileStem + "_helper2.dat", std::ios_base::out | std::ios_base::trunc);
+		batchFileLODNIFConv.open(outputRoot + batchFileStem + "_LOD.bat", std::ios_base::out | std::ios_base::trunc);
 
 		// set up header code for spawning
 		batchFileNIFConv << "@echo off\n";
@@ -5851,7 +5851,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 					blenderOutList_far.close();
 					stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++far_jobnumber);
 					jobstring[stringlen] = '\0';
-					blenderOutList_far.open(far_jobstem + jobstring + ".job");
+					blenderOutList_far.open(far_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 				}
 			}
 		}
@@ -5874,14 +5874,14 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 						blenderOutList_fullres.close();
 						stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++fullres_jobnumber);
 						jobstring[stringlen] = '\0';
-						blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job");
+						blenderOutList_fullres.open(fullres_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 					}
 					else
 					{
 						blenderOutList.close();
 						stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++jobnumber);
 						jobstring[stringlen] = '\0';
-						blenderOutList.open(jobstem + jobstring + ".job");
+						blenderOutList.open(jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 					}
 				}
 			}
@@ -5929,7 +5929,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::ofstream batchFileArmorConv;
 	if (bLegacyNifConv)
 	{
-		batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat");
+		batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat", std::ios_base::out | std::ios_base::trunc);
 		batchFileArmorConv << "@echo off\n";
 		batchFileArmorConv << "cd ..\n";
 	}
@@ -5977,7 +5977,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 				blenderOutList_clothing.close();
 				stringlen = snprintf(jobstring, sizeof(jobstring), "_%04d", ++clothing_jobnumber);
 				jobstring[stringlen] = '\0';
-				blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job");
+				blenderOutList_clothing.open(clothing_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 			}
 
 		}
@@ -6017,10 +6017,9 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
     std::string logRoot = outputRoot;
 #endif
     logRoot += "modexporter_logs/";
-
-	logFileDDSConv.open(logRoot + logFileStem + ".csv");
-
-	logFileDDSConv << "Original texture,Exported texture,Export result\n";
+	// Log File is initialized in savingstate.cpp::InitializeSubstitutions()
+	logFileDDSConv.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::app);
+//	logFileDDSConv << "Original texture,Exported texture,Export result\n";
 	boost::filesystem::path rootDir(outputRoot + "Oblivion.output/Data/Textures");
 
 	if (boost::filesystem::exists(rootDir) == false)
@@ -6084,7 +6083,12 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 			{
 				boost::filesystem::create_directories(p.parent_path());
 			}
-			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+			// DO NOT COPY IF FILE EXISTS
+			if (boost::filesystem::exists(p.string()) == true)
+			{
+				continue;
+			}
+			newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary );
 
 /*
 			osgDB::ReaderWriter* imageReader = osgDB::Registry::instance()->getReaderWriterForExtension(inputFilepath.substr(inputFilepath.find_last_of(".")+1));
@@ -6223,7 +6227,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::string modStem = mDocument.getSavePath().filename().stem().string();
 	// write unmatched EDIDs
 	std::ofstream unmatchedCSVFile;
-	unmatchedCSVFile.open(outputRoot + "UnresolvedEDIDlist_" + modStem + ".csv");
+	unmatchedCSVFile.open(outputRoot + "UnresolvedEDIDlist_" + modStem + ".csv", std::ios_base::out | std::ios_base::trunc);
 	// write header
 	unmatchedCSVFile << "Record Types" << "," << "Mod File" << "," << "EDID" << "," << "Ref Count" << "," << "Put FormID Here" << "," << "Put Comments Here" << "," << "Position Offset" << "," << "Rotation Offset" << ", " << "Scale" << std::endl;
 
@@ -6252,7 +6256,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// Write EDIDmap for exported records
 	std::ofstream exportedEDIDCSVFile;
-	exportedEDIDCSVFile.open(outputRoot + "ExportedEDIDlist_" + modStem + ".csv");
+	exportedEDIDCSVFile.open(outputRoot + "ExportedEDIDlist_" + modStem + ".csv", std::ios_base::out | std::ios_base::trunc);
 	// write header
 	int index=0;
 	exportedEDIDCSVFile << "Record Type" << "," << "Mod File" << "," << "EDID" << "," << "blank" << "," << "FormID" << "," << "Comments" << "," << "Position Offset" << "," << "Rotation Offset" << "," << "Scale" << "," << "Extra Tags" << std::endl;
@@ -6361,7 +6365,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 
 	// write unresolved local vars
 	std::ofstream unresolvedLocalVarStream;
-	unresolvedLocalVarStream.open(outputRoot + "UnresolvedLocalVars_" + modStem + ".csv");
+	unresolvedLocalVarStream.open(outputRoot + "UnresolvedLocalVars_" + modStem + ".csv", std::ios_base::out | std::ios_base::trunc);
 	unresolvedLocalVarStream << "Local Var" << "," << "QuestVar Index" << "," << "Occurences" << std::endl;
 	for (auto localVarItem = esm.mUnresolvedLocalVars.begin();
 		localVarItem != esm.mUnresolvedLocalVars.end();

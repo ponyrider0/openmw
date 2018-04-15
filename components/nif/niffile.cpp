@@ -512,7 +512,9 @@ void NIFFile::exportRecordSourceTexture(Files::IStreamPtr inStream, std::ostream
 		{ 
 			exportFilename = "";
 		}
-		else if (mOldName2NewName[oldName].second != Nif::NiTexturingProperty::TextureType::BaseTexture)
+		// following code may now be redundant in automated pipeline: skip bump/glow implemented in modified export_nif blender script
+		else if ( (mOldName2NewName[oldName].second == Nif::NiTexturingProperty::TextureType::BumpTexture)
+			|| (mOldName2NewName[oldName].second == Nif::NiTexturingProperty::TextureType::GlowTexture) )
 		{
 			exportFilename = "";
 		}
@@ -875,8 +877,9 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
     std::string logFileStem = "Exported_TextureList_" + modStem;
     std::ofstream logFileDDSConv;
     logRoot += "modexporter_logs/";
-    logFileDDSConv.open(logRoot + logFileStem + ".csv");
-    logFileDDSConv << "Original texture,Exported texture,Export result\n";
+	// Log File is initialized in savingstate.cpp::InitializeSubstitutions()
+	logFileDDSConv.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::app);
+//    logFileDDSConv << "Original texture,Exported texture,Export result\n";
 
     auto fileStream = mDocument->getVFS()->get(oldName);
 
@@ -889,7 +892,12 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
         {
             boost::filesystem::create_directories(p.parent_path());
         }
-        newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary | std::ofstream::trunc );
+		// DO NOT COPY IF FILE EXISTS
+		if (boost::filesystem::exists(p.string()) == true)
+		{
+			return;
+		}
+		newDDSFile.open(p.string(), std::ofstream::out | std::ofstream::binary );
 
         int len = 0;
         char buffer[1024];
@@ -1079,8 +1087,26 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 
     }
 
-    mReadyToExport = true;
+	// second pass through records to pick up any skipped textures
+	for (int i = 0; i < numRecords(); i++)
+	{
+		if (getRecord(i)->recType == Nif::RC_NiSourceTexture)
+		{
+			Nif::NiSourceTexture *texture = dynamic_cast<Nif::NiSourceTexture*>(getRecord(i));
+			if (texture != NULL)
+			{
+				std::string oldName = Misc::ResourceHelpers::correctTexturePath(texture->filename, doc.getVFS());
+				doc.getVFS()->normalizeFilename(oldName);
+				if (mOldName2NewName.find(oldName) == mOldName2NewName.end())
+				{
+					prepareExport_TextureRename(doc, esm, modelPath, texture, Nif::NiTexturingProperty::TextureType::BaseTexture);
+				}
+			}
+		}
 
+	}
+
+    mReadyToExport = true;
 }
 
 std::string NIFFile::CreateResourcePaths(std::string modelPath)

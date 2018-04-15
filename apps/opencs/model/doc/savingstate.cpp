@@ -1139,5 +1139,22 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	std::cout << "Loading CSV files complete." << std::endl;
 
+	// reset the ExportedTexturesList so that it doesn't grow huge
+#ifdef _WIN32
+	std::string outputRoot = "C:/";
+	std::string logRoot = "";
+#else
+	std::string outputRoot = getenv("HOME");
+	outputRoot += "/";
+	std::string logRoot = outputRoot;
+#endif
+	logRoot += "modexporter_logs/";
+	std::string logFileStem = "Exported_TextureList_" + esmName;
+	std::ofstream logFileDDSLog;
+	logRoot += "modexporter_logs/";
+	logFileDDSLog.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::trunc);
+	logFileDDSLog << "Original texture,Exported texture,Export result\n";
+	logFileDDSLog.close();
+
 	return 0;
 }
