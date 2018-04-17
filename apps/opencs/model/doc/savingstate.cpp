@@ -7,6 +7,7 @@ void inline OutputDebugString(char *c_string) { std::cout << c_string; };
 void inline OutputDebugString(const char *c_string) { std::cout << c_string; };
 #endif
 
+#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
 #include "operation.hpp"
@@ -1141,20 +1142,30 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 
 	// reset the ExportedTexturesList so that it doesn't grow huge
 #ifdef _WIN32
-	std::string outputRoot = "C:/";
 	std::string logRoot = "";
 #else
-	std::string outputRoot = getenv("HOME");
-	outputRoot += "/";
-	std::string logRoot = outputRoot;
+	std::string logRoot = getenv("HOME");
+	logRoot += "/";
 #endif
 	logRoot += "modexporter_logs/";
+	if (boost::filesystem::exists(logRoot) == false)
+	{
+		boost::filesystem::create_directories(logRoot);
+	}
 	std::string logFileStem = "Exported_TextureList_" + esmName;
 	std::ofstream logFileDDSLog;
-	logRoot += "modexporter_logs/";
 	logFileDDSLog.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::trunc);
 	logFileDDSLog << "Original texture,Exported texture,Export result\n";
 	logFileDDSLog.close();
+	std::cout << "DEBUG: " << logFileStem << ".csv is reset.\n";
+
+	// reset missing NIFs file
+	std::ofstream logFileDDSLog2;
+	std::string logFileStem2 = "Missing_NIFs_" + esmName;
+	logFileDDSLog2.open(logRoot + logFileStem2 + ".csv", std::ios_base::out | std::ios_base::trunc);
+	logFileDDSLog2 << "Missing NIF,Exported textures...,\n";
+	logFileDDSLog2.close();
+	std::cout << "DEBUG: " << logFileStem2 << ".csv is reset.\n";
 
 	return 0;
 }

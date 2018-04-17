@@ -746,27 +746,63 @@ void NIFFile::exportFileNif(ESM::ESMWriter &esm, Files::IStreamPtr inStream, std
         exportDDS(it->first, it->second.first, it->second.second);
     }
     // if NIF is from original BSA, just process any overrride textures and return
-    try
-    {
-        std::string archiveName = Misc::StringUtils::lowerCase( mDocument->getVFS()->lookupArchive(filename) );
-        if (archiveName.find("morrowind.bsa") != std::string::npos ||
-            archiveName.find("tribunal.bsa") != std::string::npos  ||
-            archiveName.find("bloodmoon.bsa") != std::string::npos)
-        {
-            return;
-        }
-//        std::cout << "NIFFile:: archive=[" << archiveName << "]" << " EXPORTING: " << filePath << "\n";
-    }
-    catch (std::runtime_error e)
-    {
-        std::cout << "NIFFile::exportFileNif(): archiveName lookup for (" << filename << "): " << e.what() << "\n";
-        return;
-    }
-    catch (...)
-    {
-        std::cout << "NIFFile::exportFileNif(): ERROR: Unknown Exception.\n";
-        return;
-    }
+	if (mDocument->getVFS()->exists(filename) == true)
+	{
+		try
+		{
+			std::string archiveName = Misc::StringUtils::lowerCase(mDocument->getVFS()->lookupArchive(filename));
+			if (archiveName.find("morrowind.bsa") != std::string::npos ||
+				archiveName.find("tribunal.bsa") != std::string::npos ||
+				archiveName.find("bloodmoon.bsa") != std::string::npos)
+			{
+				// log missing required NIF files
+				if (mOldName2NewName.empty() == false)
+				{
+#ifdef _WIN32
+					std::string logRoot = "";
+#else
+					std::string logRoot = getenv("HOME");
+					logRoot += "/";
+#endif
+					logRoot += "modexporter_logs/";
+					std::string modStem = mDocument->getSavePath().filename().stem().string();
+					std::string logFileStem = "Missing_NIFs_" + modStem;
+					std::ofstream logFileDDSConv;
+					// Log File is initialized in savingstate.cpp::InitializeSubstitutions()
+					logFileDDSConv.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::app);
+					// cleanup filePath before logging:
+					int cleanupOffset = Misc::StringUtils::lowerCase(filePath).find("/meshes/");
+					if (cleanupOffset == std::string::npos) cleanupOffset = 0;
+					std::string missingFilename = filePath.substr(cleanupOffset);
+					logFileDDSConv << missingFilename << ",";
+					auto it = mOldName2NewName.begin();
+					while (it != mOldName2NewName.end())
+					{
+						logFileDDSConv << it->second.first;
+						it++;
+						if (it != mOldName2NewName.end())
+						{
+							logFileDDSConv << ",";
+						}
+					}
+					logFileDDSConv << "\n";
+					logFileDDSConv.close();
+				}
+				return;
+			}
+			//        std::cout << "NIFFile:: archive=[" << archiveName << "]" << " EXPORTING: " << filePath << "\n";
+		}
+		catch (std::runtime_error e)
+		{
+			std::cout << "NIFFile::exportFileNif(): archiveName lookup for (" << filename << "): " << e.what() << "\n";
+			return;
+		}
+	}
+	else
+	{
+		// file does not exist, so don't continue
+		return;
+	}
 
     std::string normalizedFilePath = Misc::ResourceHelpers::getNormalizedPath(filePath);
     boost::filesystem::path p(normalizedFilePath);
@@ -876,7 +912,6 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
     std::string modStem = mDocument->getSavePath().filename().stem().string();
     std::string logFileStem = "Exported_TextureList_" + modStem;
     std::ofstream logFileDDSConv;
-    logRoot += "modexporter_logs/";
 	// Log File is initialized in savingstate.cpp::InitializeSubstitutions()
 	logFileDDSConv.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::app);
 //    logFileDDSConv << "Original texture,Exported texture,Export result\n";
