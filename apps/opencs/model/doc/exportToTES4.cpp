@@ -237,6 +237,17 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		bDoArmor = true;
 	}
 
+	if (esm.mConversionOptions.find("#skipcreatures") != std::string::npos)
+	{
+		bDoCreatures = false;
+	}
+
+	if (esm.mConversionOptions.find("#skipnpcs") != std::string::npos)
+	{
+		bDoNPCs = false;
+	}
+
+
 	//	appendStage(new ExportCollectionTES4Stage<CSMWorld::IdCollection<ESM::GameSetting> >
 	//		(currentDoc.getData().getGmsts(), currentSave));
 
