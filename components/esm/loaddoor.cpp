@@ -156,7 +156,8 @@ namespace ESM
                     else
                     {
                         std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-                        nifFile.exportFileNif(esm, fileStream, filePath);
+						// TODO: re-enable after door animation is implemented
+//                        nifFile.exportFileNif(esm, fileStream, filePath);
                     }
                 }
 
