@@ -71,7 +71,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool bDoClasses = true;
 	bool bDoFactions = true;
 	bool bDoEnchantments = true;
-	bool bDoLandTextures = true;
+	bool bDoLandTextures = false;
 	bool bDoWeapons = true;
 	bool bDoAmmo = true;
 	bool bDoMisc = true;
