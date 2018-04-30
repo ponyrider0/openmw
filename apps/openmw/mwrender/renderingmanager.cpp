@@ -287,8 +287,8 @@ namespace MWRender
         mFirstPersonFieldOfView = Settings::Manager::getFloat("first person field of view", "Camera");
 		// TODO: render-experiments
 		if (mDistantTerrainEnabled)
-			mViewDistance += (mViewDistance-2000)*50;
-		float viewDistance = std::min(mViewDistance, 6666.f);
+			mViewDistance += (mViewDistance < 4000) ? (mViewDistance - 2000) * 5 : (mViewDistance - 2000) * 50 - (2000 * 45);
+//		float viewDistance = std::min(mViewDistance, 1.5f*6666.f);
 		mStateUpdater->setFogEnd(mViewDistance);
 
         mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("near", mNearClip));
@@ -535,7 +535,7 @@ namespace MWRender
             else
             {
 				// TODO: render-experiments
-				float viewDistance = std::min(mViewDistance, 6666.f);
+				float viewDistance = std::min(mViewDistance, 1.5f*6666.f);
 				mStateUpdater->setFogStart(viewDistance * (1 - mFogDepth));
 				mStateUpdater->setFogEnd(mViewDistance);
             }
@@ -967,8 +967,8 @@ namespace MWRender
                 mViewDistance = Settings::Manager::getFloat("viewing distance", "Camera");
 				// TODO: render-experiments
 				if (mDistantTerrainEnabled)
-					mViewDistance += (mViewDistance-2000)*50;
-				float viewDistance = std::min(mViewDistance, 6666.f);
+					mViewDistance += (mViewDistance < 4000) ? (mViewDistance - 2000) * 5 : (mViewDistance - 2000) * 50 - (2000 * 45);
+//				float viewDistance = std::min(mViewDistance, 1.5f*6666.f);
 				mStateUpdater->setFogEnd(mViewDistance);
                 updateProjectionMatrix();
             }
