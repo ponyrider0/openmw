@@ -26,6 +26,8 @@ Doxygen
 .settings
 .directory
 .idea
+cmake-build-*
+files/windows/*.aps
 ## qt-creator
 CMakeLists.txt.user*
 
@@ -82,3 +84,4 @@ moc_*.cxx
 gamecontrollerdb.txt
 openmw.appdata.xml
 venv/
+*.DS_Store

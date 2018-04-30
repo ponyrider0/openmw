@@ -153,11 +153,11 @@ void CSMPrefs::State::declare()
     declareInt ("error-height", "Initial height of the error panel", 100).
         setRange (100, 10000);
     declareBool ("highlight-occurrences", "Highlight other occurrences of selected names", true);
+    declareColour ("colour-highlight", "Colour of highlighted occurrences", QColor("lightcyan"));
     declareSeparator();
     declareColour ("colour-int", "Highlight Colour: Integer Literals", QColor ("darkmagenta"));
     declareColour ("colour-float", "Highlight Colour: Float Literals", QColor ("magenta"));
     declareColour ("colour-name", "Highlight Colour: Names", QColor ("grey"));
-    declareColour ("colour-highlight", "Highlight Colour: Highlighting", QColor("palegreen"));
     declareColour ("colour-keyword", "Highlight Colour: Keywords", QColor ("red"));
     declareColour ("colour-special", "Highlight Colour: Special Characters", QColor ("darkorange"));
     declareColour ("colour-comment", "Highlight Colour: Comments", QColor ("green"));
@@ -240,6 +240,8 @@ void CSMPrefs::State::declare()
     declareShortcut ("document-world-cells", "Open Cell List", QKeySequence());
     declareShortcut ("document-world-referencables", "Open Object List", QKeySequence());
     declareShortcut ("document-world-references", "Open Instance List", QKeySequence());
+    declareShortcut ("document-world-lands", "Open Lands List", QKeySequence());
+    declareShortcut ("document-world-landtextures", "Open Land Textures List", QKeySequence());
     declareShortcut ("document-world-pathgrid", "Open Pathgrid List", QKeySequence());
     declareShortcut ("document-world-regionmap", "Open Region Map", QKeySequence());
     declareShortcut ("document-mechanics-globals", "Open Global List", QKeySequence());
@@ -259,6 +261,7 @@ void CSMPrefs::State::declare()
     declareShortcut ("document-character-topicinfos", "Open Topic Info List", QKeySequence());
     declareShortcut ("document-character-journalinfos", "Open Journal Info List", QKeySequence());
     declareShortcut ("document-character-bodyparts", "Open Body Part List", QKeySequence());
+    declareShortcut ("document-assets-reload", "Reload Assets", QKeySequence(Qt::Key_F5));
     declareShortcut ("document-assets-sounds", "Open Sound Asset List", QKeySequence());
     declareShortcut ("document-assets-soundgens", "Open Sound Generator List", QKeySequence());
     declareShortcut ("document-assets-meshes", "Open Mesh Asset List", QKeySequence());
@@ -275,6 +278,7 @@ void CSMPrefs::State::declare()
     declareShortcut ("table-edit", "Edit Record", QKeySequence());
     declareShortcut ("table-add", "Add Row/Record", QKeySequence(Qt::ShiftModifier | Qt::Key_A));
     declareShortcut ("table-clone", "Clone Record", QKeySequence(Qt::ShiftModifier | Qt::Key_D));
+    declareShortcut ("touch-record", "Touch Record", QKeySequence());
     declareShortcut ("table-revert", "Revert Record", QKeySequence());
     declareShortcut ("table-remove", "Remove Row/Record", QKeySequence(Qt::Key_Delete));
     declareShortcut ("table-moveup", "Move Record Up", QKeySequence());

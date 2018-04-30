@@ -44,8 +44,36 @@ namespace MWMechanics
         return schoolSkillMap[school];
     }
 
-    float getSpellSuccessChance (const ESM::Spell* spell, const MWWorld::Ptr& actor, int* effectiveSchool, bool cap)
+    float calcEffectCost(const ESM::ENAMstruct& effect)
     {
+        const ESM::MagicEffect* magicEffect = MWBase::Environment::get().getWorld()->getStore().get<ESM::MagicEffect>().find(effect.mEffectID);
+
+        int minMagn = 1;
+        int maxMagn = 1;
+        if (!(magicEffect->mData.mFlags & ESM::MagicEffect::NoMagnitude))
+        {
+            minMagn = effect.mMagnMin;
+            maxMagn = effect.mMagnMax;
+        }
+
+        int duration = 0;
+        if (!(magicEffect->mData.mFlags & ESM::MagicEffect::NoDuration))
+            duration = effect.mDuration;
+
+        static const float fEffectCostMult = MWBase::Environment::get().getWorld()->getStore()
+            .get<ESM::GameSetting>().find("fEffectCostMult")->getFloat();
+
+        float x = 0.5 * (std::max(1, minMagn) + std::max(1, maxMagn));
+        x *= 0.1 * magicEffect->mData.mBaseCost;
+        x *= 1 + duration;
+        x += 0.05 * std::max(1, effect.mArea) * magicEffect->mData.mBaseCost;
+
+        return x * fEffectCostMult;
+    }
+
+    float calcSpellBaseSuccessChance (const ESM::Spell* spell, const MWWorld::Ptr& actor, int* effectiveSchool)
+    {
+        // Morrowind for some reason uses a formula slightly different from magicka cost calculation
         float y = std::numeric_limits<float>::max();
         float lowestSkill = 0;
 
@@ -54,8 +82,10 @@ namespace MWMechanics
             float x = static_cast<float>(it->mDuration);
             const ESM::MagicEffect* magicEffect = MWBase::Environment::get().getWorld()->getStore().get<ESM::MagicEffect>().find(
                         it->mEffectID);
+
             if (!(magicEffect->mData.mFlags & ESM::MagicEffect::UncappedDamage))
                 x = std::max(1.f, x);
+
             x *= 0.1f * magicEffect->mData.mBaseCost;
             x *= 0.5f * (it->mMagnMin + it->mMagnMax);
             x *= it->mArea * 0.05f * magicEffect->mData.mBaseCost;
@@ -75,9 +105,26 @@ namespace MWMechanics
             }
         }
 
+        CreatureStats& stats = actor.getClass().getCreatureStats(actor);
+
+        int actorWillpower = stats.getAttribute(ESM::Attribute::Willpower).getModified();
+        int actorLuck = stats.getAttribute(ESM::Attribute::Luck).getModified();
+
+        float castChance = (lowestSkill - spell->mData.mCost + 0.2f * actorWillpower + 0.1f * actorLuck);
+
+        return castChance;
+    }
+
+    float getSpellSuccessChance (const ESM::Spell* spell, const MWWorld::Ptr& actor, int* effectiveSchool, bool cap)
+    {
         bool godmode = actor == MWMechanics::getPlayer() && MWBase::Environment::get().getWorld()->getGodModeState();
 
         CreatureStats& stats = actor.getClass().getCreatureStats(actor);
+
+        float castBonus = -stats.getMagicEffects().get(ESM::MagicEffect::Sound).getMagnitude();
+
+        float castChance = calcSpellBaseSuccessChance(spell, actor, effectiveSchool) + castBonus;
+        castChance *= stats.getFatigueTerm();
 
         if (stats.getMagicEffects().get(ESM::MagicEffect::Silence).getMagnitude()&& !godmode)
             return 0;
@@ -95,13 +142,6 @@ namespace MWMechanics
         {
             return 100;
         }
-
-        float castBonus = -stats.getMagicEffects().get(ESM::MagicEffect::Sound).getMagnitude();
-
-        int actorWillpower = stats.getAttribute(ESM::Attribute::Willpower).getModified();
-        int actorLuck = stats.getAttribute(ESM::Attribute::Luck).getModified();
-
-        float castChance = (lowestSkill - spell->mData.mCost + castBonus + 0.2f * actorWillpower + 0.1f * actorLuck) * stats.getFatigueTerm();
 
         if (!cap)
             return std::max(0.f, castChance);
@@ -289,7 +329,7 @@ namespace MWMechanics
     {
     }
 
-    void CastSpell::launchMagicBolt (const ESM::EffectList& effects)
+    void CastSpell::launchMagicBolt ()
     {        
         osg::Vec3f fallbackDirection (0,1,0);     
 
@@ -300,8 +340,7 @@ namespace MWMechanics
                 osg::Vec3f(mTarget.getRefData().getPosition().asVec3())-
                 osg::Vec3f(mCaster.getRefData().getPosition().asVec3());
             
-        MWBase::Environment::get().getWorld()->launchMagicBolt(mId, false, effects,
-                                                   mCaster, mSourceName, fallbackDirection);
+        MWBase::Environment::get().getWorld()->launchMagicBolt(mId, mCaster, fallbackDirection);
     }
 
     void CastSpell::inflict(const MWWorld::Ptr &target, const MWWorld::Ptr &caster,
@@ -497,6 +536,13 @@ namespace MWMechanics
 
                         appliedLastingEffects.push_back(effect);
 
+                        // Unequip all items, if a spell with the ExtraSpell effect was casted
+                        if (effectIt->mEffectID == ESM::MagicEffect::ExtraSpell && target.getClass().hasInventoryStore(target))
+                        {
+                            MWWorld::InventoryStore& store = target.getClass().getInventoryStore(target);
+                            store.unequipAll(target);
+                        }
+
                         // Command spells should have their effect, including taking the target out of combat, each time the spell successfully affects the target
                         if (((effectIt->mEffectID == ESM::MagicEffect::CommandHumanoid && target.getClass().isNpc())
                         || (effectIt->mEffectID == ESM::MagicEffect::CommandCreature && target.getTypeName() == typeid(ESM::Creature).name()))
@@ -633,7 +679,7 @@ namespace MWMechanics
         }
         else if (target.getClass().isActor() && effectId == ESM::MagicEffect::Dispel)
         {
-            target.getClass().getCreatureStats(target).getActiveSpells().purgeAll(magnitude);
+            target.getClass().getCreatureStats(target).getActiveSpells().purgeAll(magnitude, true);
             return true;
         }
         else if (target.getClass().isActor() && target == getPlayer())
@@ -783,7 +829,7 @@ namespace MWMechanics
             inflict(mTarget, mCaster, enchantment->mEffects, ESM::RT_Touch);
 
         if (launchProjectile)
-            launchMagicBolt(enchantment->mEffects);
+            launchMagicBolt();
         else if (isProjectile || !mTarget.isEmpty())
             inflict(mTarget, mCaster, enchantment->mEffects, ESM::RT_Target);
 
@@ -875,7 +921,7 @@ namespace MWMechanics
         if (!mTarget.isEmpty())
             inflict(mTarget, mCaster, spell->mEffects, ESM::RT_Touch);
 
-        launchMagicBolt(spell->mEffects);
+        launchMagicBolt();
 
         return true;
     }
@@ -1091,6 +1137,9 @@ namespace MWMechanics
                 receivedMagicDamage = true;
                 adjustDynamicStat(creatureStats, effectKey.mId-ESM::MagicEffect::DamageHealth, -magnitude);
             }
+
+            break;
+
         case ESM::MagicEffect::DamageMagicka:
         case ESM::MagicEffect::DamageFatigue:
             if (!godmode)
@@ -1107,6 +1156,9 @@ namespace MWMechanics
                     receivedMagicDamage = true;
                 adjustDynamicStat(creatureStats, effectKey.mId-ESM::MagicEffect::AbsorbHealth, -magnitude);
             }
+
+            break;
+
         case ESM::MagicEffect::AbsorbMagicka:
         case ESM::MagicEffect::AbsorbFatigue:
             if (!godmode)

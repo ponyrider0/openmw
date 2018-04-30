@@ -96,9 +96,9 @@ namespace MWGui
                 if (spell.mType == Spell::Type_Power)
                     addGroup("#{sPowers}", "");
                 else if (spell.mType == Spell::Type_Spell)
-                    addGroup("#{sSpells}", "#{sCostChance}");
+                    addGroup("#{sSpells}", mShowCostColumn ? "#{sCostChance}" : "");
                 else
-                    addGroup("#{sMagicItem}", "#{sCostCharge}");
+                    addGroup("#{sMagicItem}", mShowCostColumn ? "#{sCostCharge}" : "");
                 curType = spell.mType;
             }
 
@@ -106,6 +106,7 @@ namespace MWGui
 
             Gui::SharedStateButton* t = mScrollView->createWidget<Gui::SharedStateButton>(skin,
                 MyGUI::IntCoord(0, 0, 0, spellHeight), MyGUI::Align::Left | MyGUI::Align::Top);
+            t->setNeedKeyFocus(true);
             t->setCaption(spell.mName);
             t->setTextAlign(MyGUI::Align::Left);
             adjustSpellWidget(spell, i, t);

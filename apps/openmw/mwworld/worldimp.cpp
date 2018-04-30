@@ -823,7 +823,10 @@ namespace MWWorld
         mWeatherManager->advanceTime (hours, incremental);
 
         if (!incremental)
+        {
+            mRendering->notifyWorldSpaceChanged();
             mProjectileManager->clear();
+        }
 
         hours += mGameHour->getFloat();
 
@@ -1457,6 +1460,7 @@ namespace MWWorld
     {
         osg::Vec3f a(x1,y1,z1);
         osg::Vec3f b(x2,y2,z2);
+
         MWPhysics::PhysicsSystem::RayResult result = mPhysics->castRay(a, b, MWWorld::Ptr(), std::vector<MWWorld::Ptr>(), MWPhysics::CollisionType_World|MWPhysics::CollisionType_Door);
         return result.mHit;
     }
@@ -1624,15 +1628,13 @@ namespace MWWorld
         if (!paused)
             doPhysics (duration);
 
+        updatePlayer(paused);
+
         mPhysics->debugDraw();
 
         mWorldScene->update (duration, paused);
 
-        updateWindowManager ();
-
         updateSoundListener();
-
-        updatePlayer(paused);
 
         mSpellPreloadTimer -= duration;
         if (mSpellPreloadTimer <= 0.f)
@@ -1758,8 +1760,6 @@ namespace MWWorld
         // inform the GUI about focused object
         MWWorld::Ptr object = getFacedObject ();
 
-        MWBase::Environment::get().getWindowManager()->setFocusObject(object);
-
         // retrieve object dimensions so we know where to place the floating label
         if (!object.isEmpty ())
         {
@@ -1768,6 +1768,8 @@ namespace MWWorld
             MWBase::Environment::get().getWindowManager()->setFocusObjectScreenCoords(
                 screenBounds.x(), screenBounds.y(), screenBounds.z(), screenBounds.w());
         }
+
+        MWBase::Environment::get().getWindowManager()->setFocusObject(object);
     }
 
     MWWorld::Ptr World::getFacedObject(float maxDistance, bool ignorePlayer)
@@ -2116,11 +2118,16 @@ namespace MWWorld
 
         pos.z() += heightRatio*2*mPhysics->getRenderingHalfExtents(object).z();
 
-        return isUnderwater(object.getCell(), pos);
+        const CellStore *currCell = object.isInCell() ? object.getCell() : NULL; // currCell == NULL should only happen for player, during initial startup
+
+        return isUnderwater(currCell, pos);
     }
 
     bool World::isUnderwater(const MWWorld::CellStore* cell, const osg::Vec3f &pos) const
     {
+        if (!cell)
+            return false;
+
         if (!(cell->getCell()->hasWater())) {
             return false;
         }
@@ -2580,7 +2587,25 @@ namespace MWWorld
     {
         pos.rot[0] = pos.rot[1] = pos.rot[2] = 0;
 
-        if (const ESM::Cell *ext = getExterior(name)) {
+        const ESM::Cell *ext = getExterior(name);
+
+        if (!ext && name.find(',') != std::string::npos) {
+            try {
+                int x = std::stoi(name.substr(0, name.find(',')));
+                int y = std::stoi(name.substr(name.find(',')+1));
+                ext = getExterior(x, y)->getCell();
+            }
+            catch (std::invalid_argument)
+            {
+                // This exception can be ignored, as this means that name probably refers to a interior cell instead of comma separated coordinates
+            }
+            catch (std::out_of_range)
+            {
+                throw std::runtime_error("Cell coordinates out of range.");
+            }
+        }
+
+        if (ext) {
             int x = ext->getGridX();
             int y = ext->getGridY();
             indexToPosition(x, y, pos.pos[0], pos.pos[1], true);
@@ -2590,6 +2615,7 @@ namespace MWWorld
 
             return true;
         }
+
         return false;
     }
 
@@ -2795,10 +2821,9 @@ namespace MWWorld
         mProjectileManager->launchProjectile(actor, projectile, worldPos, orient, bow, speed, attackStrength);
     }
 
-    void World::launchMagicBolt (const std::string &spellId, bool stack, const ESM::EffectList& effects,
-                                 const MWWorld::Ptr& caster, const std::string& sourceName, const osg::Vec3f& fallbackDirection)
+    void World::launchMagicBolt (const std::string &spellId, const MWWorld::Ptr& caster, const osg::Vec3f& fallbackDirection)
     {
-        mProjectileManager->launchMagicBolt(spellId, stack, effects, caster, sourceName, fallbackDirection);
+        mProjectileManager->launchMagicBolt(spellId, caster, fallbackDirection);
     }
 
     const std::vector<std::string>& World::getContentFiles() const
