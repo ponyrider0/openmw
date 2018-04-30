@@ -258,6 +258,9 @@ namespace MWRender
         float mFieldOfView;
         float mFirstPersonFieldOfView;
 
+		// TODO: render-experiments
+		bool mDistantTerrainEnabled;
+
         void operator = (const RenderingManager&);
         RenderingManager(const RenderingManager&);
     };

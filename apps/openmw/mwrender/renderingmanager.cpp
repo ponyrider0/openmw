@@ -213,6 +213,9 @@ namespace MWRender
 
         mWater.reset(new Water(mRootNode, sceneRoot, mResourceSystem, mViewer->getIncrementalCompileOperation(), fallback, resourcePath));
 
+		// TODO: render-experiments
+		mDistantTerrainEnabled = Settings::Manager::getBool("distant terrain", "Terrain");
+
         const bool distantTerrain = Settings::Manager::getBool("distant terrain", "Terrain");
         mTerrainStorage = new TerrainStorage(mResourceSystem, Settings::Manager::getString("normal map pattern", "Shaders"), Settings::Manager::getString("normal height map pattern", "Shaders"),
                                             Settings::Manager::getBool("auto use terrain normal maps", "Shaders"), Settings::Manager::getString("terrain specular map pattern", "Shaders"),
@@ -282,10 +285,14 @@ namespace MWRender
         mViewDistance = Settings::Manager::getFloat("viewing distance", "Camera");
         mFieldOfView = Settings::Manager::getFloat("field of view", "Camera");
         mFirstPersonFieldOfView = Settings::Manager::getFloat("first person field of view", "Camera");
-        mStateUpdater->setFogEnd(mViewDistance);
+		// TODO: render-experiments
+		if (mDistantTerrainEnabled)
+			mViewDistance += (mViewDistance-2000)*50;
+		float viewDistance = std::min(mViewDistance, 6666.f);
+		mStateUpdater->setFogEnd(mViewDistance);
 
         mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("near", mNearClip));
-        mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("far", mViewDistance));
+		mRootNode->getOrCreateStateSet()->addUniform(new osg::Uniform("far", mViewDistance));
 
         mUniformNear = mRootNode->getOrCreateStateSet()->getUniform("near");
         mUniformFar = mRootNode->getOrCreateStateSet()->getUniform("far");
@@ -527,8 +534,10 @@ namespace MWRender
             }
             else
             {
-                mStateUpdater->setFogStart(mViewDistance * (1 - mFogDepth));
-                mStateUpdater->setFogEnd(mViewDistance);
+				// TODO: render-experiments
+				float viewDistance = std::min(mViewDistance, 6666.f);
+				mStateUpdater->setFogStart(viewDistance * (1 - mFogDepth));
+				mStateUpdater->setFogEnd(mViewDistance);
             }
         }
     }
@@ -956,7 +965,11 @@ namespace MWRender
             else if (it->first == "Camera" && it->second == "viewing distance")
             {
                 mViewDistance = Settings::Manager::getFloat("viewing distance", "Camera");
-                mStateUpdater->setFogEnd(mViewDistance);
+				// TODO: render-experiments
+				if (mDistantTerrainEnabled)
+					mViewDistance += (mViewDistance-2000)*50;
+				float viewDistance = std::min(mViewDistance, 6666.f);
+				mStateUpdater->setFogEnd(mViewDistance);
                 updateProjectionMatrix();
             }
             else if (it->first == "General" && (it->second == "texture filter" ||
