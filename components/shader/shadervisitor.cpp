@@ -173,14 +173,32 @@ namespace Shader
                         image = mImageManager.getImage(normalMapFileName);
                     }
 					// TODO: render-experiments
+/*
 					else
 					{
-						boost::replace_last(normalMapFileName, mNormalMapPattern + ".", "_n.");
+						boost::replace_last(normalMapFileName, mNormalMapPattern + ".", "_nrm.");
 						if (mImageManager.getVFS()->exists(normalMapFileName))
 						{
 							image = mImageManager.getImage(normalMapFileName);
 						}
+						else
+						{
+							boost::replace_last(normalMapFileName, "_nrm.", "_nm.");
+							if (mImageManager.getVFS()->exists(normalMapFileName))
+							{
+								image = mImageManager.getImage(normalMapFileName);
+							}
+							else
+							{
+								boost::replace_last(normalMapFileName, "_nm.", "_n.");
+								if (mImageManager.getVFS()->exists(normalMapFileName))
+								{
+									image = mImageManager.getImage(normalMapFileName);
+								}
+							}
+						}
 					}
+*/
                 }
 
                 if (image)

@@ -374,6 +374,13 @@ namespace NifOsg
                 return;
             }
 
+			// TODO: render-experiments
+			if (textureEffect->texture->filename.find("tad_rock_refl") != std::string::npos)
+			{
+				std::cerr << "DEBUG: skipping black-listed environment map: " << textureEffect->texture->filename << " (" << mFilename << ")" << std::endl;
+				return;
+			}
+
             osg::ref_ptr<osg::TexGen> texGen (new osg::TexGen);
             switch (textureEffect->coordGenType)
             {
@@ -1252,8 +1259,22 @@ namespace NifOsg
                         case Nif::NiTexturingProperty::GlowTexture:
                         case Nif::NiTexturingProperty::DarkTexture:
                         case Nif::NiTexturingProperty::BumpTexture:
-                        case Nif::NiTexturingProperty::DetailTexture:
-                        case Nif::NiTexturingProperty::DecalTexture:
+							// TODO: render-experiments
+							if (texprop->textures[i].texture.empty() != true &&
+								texprop->textures[i].texture->filename.find("_nrm.") != std::string::npos)
+							{
+								std::cerr << "DEBUG: detected normal map: " << texprop->textures[i].texture->filename << std::endl;
+//								continue;
+							}
+						case Nif::NiTexturingProperty::DetailTexture:
+							// TODO: render-experiments
+							if (texprop->textures[i].texture.empty() != true &&
+								texprop->textures[i].texture->filename.find("_ao_") != std::string::npos)
+							{
+								std::cerr << "DEBUG: detected ambient-occlusion map: " << texprop->textures[i].texture->filename << std::endl;
+//								continue;
+							}
+						case Nif::NiTexturingProperty::DecalTexture:
                             break;
                         case Nif::NiTexturingProperty::GlossTexture:
                         {
@@ -1296,7 +1317,7 @@ namespace NifOsg
 
                     int texUnit = boundTextures.size();
 
-                    stateset->setTextureAttributeAndModes(texUnit, texture2d, osg::StateAttribute::ON);
+					stateset->setTextureAttributeAndModes(texUnit, texture2d, osg::StateAttribute::ON);
 
                     if (i == Nif::NiTexturingProperty::GlowTexture)
                     {
@@ -1317,24 +1338,24 @@ namespace NifOsg
                     }
                     else if (i == Nif::NiTexturingProperty::DetailTexture)
                     {
-                        osg::TexEnvCombine* texEnv = new osg::TexEnvCombine;
-                        texEnv->setScale_RGB(2.f);
-                        texEnv->setCombine_Alpha(osg::TexEnvCombine::MODULATE);
-                        texEnv->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
-                        texEnv->setOperand1_Alpha(osg::TexEnvCombine::SRC_ALPHA);
-                        texEnv->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
-                        texEnv->setSource1_Alpha(osg::TexEnvCombine::TEXTURE);
-                        texEnv->setCombine_RGB(osg::TexEnvCombine::MODULATE);
-                        texEnv->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
-                        texEnv->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
-                        texEnv->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
-                        texEnv->setSource1_RGB(osg::TexEnvCombine::TEXTURE);
-                        stateset->setTextureAttributeAndModes(texUnit, texEnv, osg::StateAttribute::ON);
+						osg::TexEnvCombine* texEnv = new osg::TexEnvCombine;
+						texEnv->setScale_RGB(2.f);
+						texEnv->setCombine_Alpha(osg::TexEnvCombine::MODULATE);
+						texEnv->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+						texEnv->setOperand1_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+						texEnv->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+						texEnv->setSource1_Alpha(osg::TexEnvCombine::TEXTURE);
+						texEnv->setCombine_RGB(osg::TexEnvCombine::MODULATE);
+						texEnv->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+						texEnv->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+						texEnv->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+						texEnv->setSource1_RGB(osg::TexEnvCombine::TEXTURE);
+						stateset->setTextureAttributeAndModes(texUnit, texEnv, osg::StateAttribute::ON);
                     }
                     else if (i == Nif::NiTexturingProperty::BumpTexture)
                     {
-                        // Set this texture to Off by default since we can't render it with the fixed-function pipeline
-                        stateset->setTextureMode(texUnit, GL_TEXTURE_2D, osg::StateAttribute::OFF);
+						// Set this texture to Off by default since we can't render it with the fixed-function pipeline
+						stateset->setTextureMode(texUnit, GL_TEXTURE_2D, osg::StateAttribute::OFF);
                     }
                     else if (i == Nif::NiTexturingProperty::DecalTexture)
                     {
