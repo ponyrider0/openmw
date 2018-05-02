@@ -63,6 +63,20 @@ void NiTexturingProperty::post(NIFFile *nif)
     Property::post(nif);
     for(int i = 0;i < 7;i++)
         textures[i].post(nif);
+
+	// TODO: render-experiments
+	//if (textures[2].texture.empty() != true &&
+	//	textures[2].texture->filename.find("_ao_") != std::string::npos)
+	//{
+	//	std::cerr << "DEBUG: skipping black-listed environment map: " << textures[2].texture->filename << " (" << nif->getFilename() << ")" << std::endl;
+	//	textures[2].inUse = false; 
+	//	textures[5].inUse = false; 
+	//}
+	if (textures[5].inUse && textures[2].inUse)
+	{
+		textures[2].inUse = false;
+	}
+
 }
 
 void NiFogProperty::read(NIFStream *nif)

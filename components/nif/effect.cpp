@@ -50,6 +50,17 @@ void NiTextureEffect::post(NIFFile *nif)
 {
     NiDynamicEffect::post(nif);
     texture.post(nif);
+
+	// TODO: render-experiments
+	if (texture.empty() != true &&
+		texture->filename.find("vfx_flare02") != std::string::npos)
+	{
+		std::cerr << "DEBUG: redirecting black-listed environment map: " << texture->filename << " (" << nif->getFilename() << ")" << std::endl;
+//		texture->filename = "";
+//		texture->filename = "Q_refl_writing_dark.dds";
+
+	}
+
 }
 
 void NiPointLight::read(NIFStream *nif)

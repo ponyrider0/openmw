@@ -173,7 +173,7 @@ namespace Shader
                         image = mImageManager.getImage(normalMapFileName);
                     }
 					// TODO: render-experiments
-/*
+
 					else
 					{
 						boost::replace_last(normalMapFileName, mNormalMapPattern + ".", "_nrm.");
@@ -198,7 +198,7 @@ namespace Shader
 							}
 						}
 					}
-*/
+
                 }
 
                 if (image)

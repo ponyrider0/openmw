@@ -376,7 +376,8 @@ namespace NifOsg
 
 			// TODO: render-experiments
 			if (textureEffect->texture->filename.find("tad_rock_refl") != std::string::npos ||
-				textureEffect->texture->filename.find("vfx_flare02") != std::string::npos )
+				textureEffect->texture->filename.find("vfx_flare02") != std::string::npos ||
+				textureEffect->texture->filename == "")
 			{
 				std::cerr << "DEBUG: skipping black-listed environment map: " << textureEffect->texture->filename << " (" << mFilename << ")" << std::endl;
 				return;
