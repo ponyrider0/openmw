@@ -396,7 +396,9 @@ void QuadTreeWorld::ensureQuadTreeBuilt()
     if (mQuadTreeBuilt)
         return;
 
-    const float minSize = 1/8.f;
+	// TODO: render-experiments
+//    const float minSize = 1/8.f;
+	const float minSize = 1/8.f;
     QuadTreeBuilder builder(mStorage, mViewDataMap.get(), minSize);
     builder.build();
 
