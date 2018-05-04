@@ -632,10 +632,10 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 
 		// 32bit strlen + recordname
 		std::string nameToWrite = ninode->name;
-		//if (ninode->name == "Bip01")
-		//{
-		//	nameToWrite = "Scene Root";
-		//}
+		if (ninode->name == "Bip01")
+		{
+			// trigger flag to modify root node positioning and rotation later
+		}
 		uintVal = nameToWrite.size();
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
 		len = 4;
