@@ -174,6 +174,8 @@ void NIFFile::parse(Files::IStreamPtr stream)
 	previousPos = currentPos;
 	currentPos = stream->tellg();
 	mHeaderSize = currentPos - previousPos;
+	NiNode* bip01;
+
     for(size_t i = 0;i < recNum;i++)
     {
         Record *r = NULL;
@@ -202,6 +204,44 @@ void NIFFile::parse(Files::IStreamPtr stream)
         r->recIndex = i;
         records[i] = r;
         r->read(&nif);
+
+		// ***** Check for Bip01 Pelvis and send translation up to Bip01
+		if (r->recType == RC_NiNode)
+		{
+			NiNode* node = (NiNode*) r;
+			if (Misc::StringUtils::lowerCase(node->name) == "bip01")
+			{
+				// 0, 0, 90
+				node->trafo.rotation.mValues[0][0] = 0;
+				node->trafo.rotation.mValues[0][1] = -1;
+				node->trafo.rotation.mValues[0][2] = 0;
+				node->trafo.rotation.mValues[1][0] = 1;
+				node->trafo.rotation.mValues[1][1] = 0;
+				node->trafo.rotation.mValues[1][2] = 0;
+				node->trafo.rotation.mValues[2][0] = 0;
+				node->trafo.rotation.mValues[2][1] = 0;
+				node->trafo.rotation.mValues[2][2] = 1;
+				bip01 = node;
+			}
+			else if (Misc::StringUtils::lowerCase(node->name) == "bip01 pelvis")
+			{
+				// **add transformation to bip01
+				node->trafo.rotation.mValues[0][0] = 0;
+				node->trafo.rotation.mValues[0][1] = 1;
+				node->trafo.rotation.mValues[0][2] = 0;
+				node->trafo.rotation.mValues[1][0] = 0;
+				node->trafo.rotation.mValues[1][1] = 0;
+				node->trafo.rotation.mValues[1][2] = 1;
+				node->trafo.rotation.mValues[2][0] = 1;
+				node->trafo.rotation.mValues[2][1] = 0;
+				node->trafo.rotation.mValues[2][2] = 0;
+				for (int posi = 0; posi < 3; posi++)
+				{
+					bip01->trafo.pos[posi] += node->trafo.pos[posi];
+					node->trafo.pos[posi] = 0;
+				}
+			}
+		}
 
 		previousPos = currentPos;
 		currentPos = stream->tellg();
@@ -616,6 +656,9 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 	Nif::NiNode *ninode = dynamic_cast<Nif::NiNode*>(records[recordIndex]);
 	if (ninode != NULL)
 	{
+		bool isRoot = false;
+		bool isPelvis = false;
+
 		int byteswritten = 0;
 		// 32bit strlen + recordtype
 		char recordType[] = "NiNode";
@@ -635,6 +678,11 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 		if (ninode->name == "Bip01")
 		{
 			// trigger flag to modify root node positioning and rotation later
+			isRoot = true;
+		}
+		else if (ninode->name == "Bip01 Pelvis")
+		{
+			isPelvis = true;
 		}
 		uintVal = nameToWrite.size();
 		for (int j = 0; j < 4; j++) buffer[j] = reinterpret_cast<char *>(&uintVal)[j];
@@ -689,6 +737,34 @@ void NIFFile::exportRecordNiNode(Files::IStreamPtr inStream, std::ostream & outS
 		byteswritten += len;
 
 		// Rotation
+		/*
+		if (isRoot)
+		{
+			// 0, 0, 90
+			ninode->trafo.rotation.mValues[0][0] = 0;
+			ninode->trafo.rotation.mValues[0][1] = -1;
+			ninode->trafo.rotation.mValues[0][2] = 0;
+			ninode->trafo.rotation.mValues[1][0] = 1;
+			ninode->trafo.rotation.mValues[1][1] = 0;
+			ninode->trafo.rotation.mValues[1][2] = 0;
+			ninode->trafo.rotation.mValues[2][0] = 0;
+			ninode->trafo.rotation.mValues[2][1] = 0;
+			ninode->trafo.rotation.mValues[2][2] = 1;
+		}
+		if (isPelvis)
+		{
+			// -90, 0, -90
+			ninode->trafo.rotation.mValues[0][0] = 0;
+			ninode->trafo.rotation.mValues[0][1] = 1;
+			ninode->trafo.rotation.mValues[0][2] = 0;
+			ninode->trafo.rotation.mValues[1][0] = 0;
+			ninode->trafo.rotation.mValues[1][1] = 0;
+			ninode->trafo.rotation.mValues[1][2] = 1;
+			ninode->trafo.rotation.mValues[2][0] = 1;
+			ninode->trafo.rotation.mValues[2][1] = 0;
+			ninode->trafo.rotation.mValues[2][2] = 0;
+		}
+		*/
 		for (int a = 0; a < 3; a++)
 		{
 			for (int b = 0; b < 3; b++)
