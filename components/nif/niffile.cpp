@@ -206,6 +206,7 @@ void NIFFile::parse(Files::IStreamPtr stream)
         r->read(&nif);
 
 		// ***** Check for Bip01 Pelvis and send translation up to Bip01
+		/*
 		if (r->recType == RC_NiNode)
 		{
 			NiNode* node = (NiNode*) r;
@@ -242,6 +243,7 @@ void NIFFile::parse(Files::IStreamPtr stream)
 				}
 			}
 		}
+		*/
 
 		previousPos = currentPos;
 		currentPos = stream->tellg();
