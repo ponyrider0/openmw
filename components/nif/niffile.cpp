@@ -912,6 +912,15 @@ void NIFFile::exportFileNifFar(ESM::ESMWriter &esm, Files::IStreamPtr inStream, 
     if (mReadyToExport == false)
         throw std::runtime_error("EXPORT NIF: exportFileNif() called prior to prepareExport()");
 
+	bool bBlenderVWD = false;
+	if (esm.mConversionOptions.find("#blendervwd") != std::string::npos)
+		bBlenderVWD = true;
+
+	if (bBlenderVWD != true)
+	{
+		return;
+	}
+
     // export lowres textures only if exporter _far.nif
     for (auto it = mOldName2NewName.begin(); it != mOldName2NewName.end(); it++)
     {

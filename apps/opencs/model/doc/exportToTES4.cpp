@@ -5900,14 +5900,33 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 		if (bBlenderOutput)
 		{
+			std::string cmdFlags;
+			if (nifConvItem->second.second == 1) // door
+			{
+				cmdFlags = " -l 2 -s 6 -q 2";
+			}
+			else if (nifConvItem->second.second == 2) // weapon
+			{
+				cmdFlags = " -m 5 -l 5 -s 4 -q 3";
+			}
+			else if (nifConvItem->second.second == 3) // clutter
+			{
+				cmdFlags = " -l 4 -s 4 -q 3";
+			}
+			else if (nifConvItem->second.second == 0) // generic
+			{
+				cmdFlags = "";
+			}
+
 			// create New BlenderOutList (currently only types 1 & 2 supported
-			if (nifConvItem->second.second == 0 ||
-				nifConvItem->second.second == 1)
+//			if (nifConvItem->second.second == 0 ||
+//				nifConvItem->second.second == 1)
+			if (true)
 			{
 				if (bFullResCollision)
-					blenderOutList_fullres << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
+					blenderOutList_fullres << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << ":" << nifInputName << ":" << cmdFlags << "\n";
 				else
-					blenderOutList << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
+					blenderOutList << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << ":" << nifInputName << ":" << cmdFlags << "\n";
 				if (++linecount > 100)
 				{
 					linecount = 0;
@@ -6017,7 +6036,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 		if (bBlenderOutput && bDoClothing)
 		{
-			blenderOutList_clothing << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << "\n";
+			blenderOutList_clothing << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << ":" << nifInputName << ":" << " " << "\n";
 			if (++linecount > 100)
 			{
 				linecount = 0;
