@@ -5679,6 +5679,13 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 #endif
 	outputRoot += "nifconv_bats/";
 
+	// FarNifAutoGen support
+	bool bFarNifAutoGen = true;
+	if (esm.mConversionOptions.find("#farnifautogen") != std::string::npos)
+	{
+		bFarNifAutoGen = true;
+	}
+
 	bool bLegacyNifConv = true;
 	if (esm.mConversionOptions.find("#oldnifconv") != std::string::npos)
 	{
@@ -5688,7 +5695,11 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	bool bBlenderOutput = false;
 	if (esm.mConversionOptions.find("#blender") != std::string::npos)
 		bBlenderOutput = true;
-    bool bDoClothing = false;
+	bool bBlenderVWD = false;
+	if (esm.mConversionOptions.find("#blendervwd") != std::string::npos)
+		bBlenderVWD = true;
+	
+	bool bDoClothing = false;
     if (esm.mConversionOptions.find("#clothing") != std::string::npos ||
         esm.mConversionOptions.find("#armor") != std::string::npos)
         bDoClothing = true;
@@ -5717,6 +5728,18 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	bool bFullResCollision = true;
 	if (esm.mConversionOptions.find("#qhull") != std::string::npos)
 		bFullResCollision = false;
+
+	// FarNifAutoGen support
+	std::ofstream farNifAutoGen_nifjoblist;
+	if (bFarNifAutoGen)
+	{
+		if (boost::filesystem::exists(oblivionOutput) == false)
+		{
+			boost::filesystem::create_directories(oblivionOutput);
+		}
+		std::string nifjoblist_filename = oblivionOutput + "FarNifAutoGen_nifjoblist_" + modStem;
+		farNifAutoGen_nifjoblist.open(nifjoblist_filename + ".job", std::ios_base::out | std::ios_base::trunc);
+	}
 
     if (bBlenderOutput)
     {
@@ -5851,7 +5874,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 				batchFileLODNIFConv << "NIF_Conv.exe " << nifInputName << " -l 15 -s 0 -q 0 -f -c " << " -d " << lodFileName << "\n";
 			}
 
-			if (bBlenderOutput)
+			if (bBlenderVWD)
 			{
 				// create New BlenderOutList
 //				blenderOutList_far << Misc::ResourceHelpers::getNormalizedPath(nifOutputName).substr(0, nifOutputName.length() - 4) + "_far.nif" << "\n";
@@ -5865,6 +5888,14 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 					blenderOutList_far.open(far_jobstem + jobstring + ".job", std::ios_base::out | std::ios_base::trunc);
 				}
 			}
+
+			if (bFarNifAutoGen)
+			{
+				// create FarNifAutoGen Nif_Job_List
+				farNifAutoGen_nifjoblist << Misc::ResourceHelpers::getNormalizedPath(nifOutputName).substr(0, nifOutputName.length() - 8) + ".nif" << ",9999.0\n";
+//				farNifAutoGen_nifjoblist << Misc::ResourceHelpers::getNormalizedPath(nifOutputName) << ",1.0\n";
+			}
+
 		}
 
 		if (bBlenderOutput)
@@ -5925,6 +5956,11 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 		batchFileNIFConv_helper1.close();
 		//	batchFileNIFConv_helper2.close();
 		batchFileLODNIFConv.close();
+	}
+
+	if (bFarNifAutoGen)
+	{
+		farNifAutoGen_nifjoblist.close();
 	}
 
     if (bBlenderOutput)
