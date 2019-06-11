@@ -1,1 +1,3 @@
+ModExporter (Modified OpenMW-CS)
+=======
 The ModExporter is designed to load a TES3 (Morrowind) based ESP/ESM file and export it as a TES4 (Oblivion) ESP which can be played in Morroblivion. It is based off the OpenMW code base. Although it was designed with Tamriel Rebuilt in mind, it can be used with many other Morrowind-based mods. Currently, it will convert landscapes, static meshes, NPCs and weapons. There is partial conversion of creatues, armor, clothing (meshes are substituted instead of converted). Dialog and quests are converted, but not fully usable due to incomplete conversion of scripts. A script translator and byte compiler are partially complete. Future versions will have more complete conversion of scripts and thus more usable dialog and quests.
