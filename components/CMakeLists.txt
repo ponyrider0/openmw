@@ -78,7 +78,7 @@ add_component_dir (esm
     savedgame journalentry queststate locals globalscript player objectstate cellid cellstate globalmap inventorystate containerstate npcstate creaturestate dialoguestate statstate
     npcstats creaturestats weatherstate quickkeys fogstate spellstate activespells creaturelevliststate doorstate projectilestate debugprofile
     aisequence magiceffects util custommarkerstate stolenitems transport animationstate controlsstate
-    scriptconverter ../../apps/opencs/model/world/infoselectwrapper
+    scriptconverter TES4scriptcompiler ../../apps/opencs/model/world/infoselectwrapper
     )
 
 add_component_dir (esmterrain
