@@ -6,7 +6,7 @@ The ModExporter is designed to load a TES3 (Morrowind) based ESP/ESM file and ex
 
 Technical Details:
 -----
-The OpenMW base classes related to loading and saving record types are modified to allow exporting to TES4 format.  There is also a proof-of-concept branch which can export OpenMW-only mods to a TES3-compatible ESP/ESM.  Most of the relevant modifications for those interested in the TES4 ESP/ESM file format can be found in this directory: https://github.com/ponyrider0/openmw/tree/Export-to-Morroblivion/components/esm
+The OpenMW base classes related to loading and saving record types are modified to allow exporting to TES4 format.  There is also a proof-of-concept branch which can export OpenMW-only mods to a TES3-compatible ESP/ESM.  Most of the relevant modifications for those interested in the TES4 ESP/ESM file format can be found in this directory (look at loadXXXX.cpp files) : https://github.com/ponyrider0/openmw/tree/Export-to-Morroblivion/components/esm
 
 An example is the statics class function (bool Static::exportTESx, line 69) : https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/loadstat.cpp
 
