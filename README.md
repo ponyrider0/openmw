@@ -6,15 +6,20 @@ The ModExporter is designed to load a TES3 (Morrowind) based ESP/ESM file and ex
 
 Technical Details:
 -----
-The OpenMW base classes related to loading and saving record types are modified to allow exporting to TES4 format.  There is also a proof-of-concept branch which can export OpenMW-only mods to a TES3-compatible ESP/ESM.  Most of the relevant modifications for those interested in the TES4 ESP/ESM file format can be found in this directory (look at loadXXXX.cpp files) : https://github.com/ponyrider0/openmw/tree/Export-to-Morroblivion/components/esm
+The OpenMW base classes related to loading and saving record types are modified to allow exporting to TES4 format.  There is also a proof-of-concept branch which can export OpenMW-only mods to a TES3-compatible ESP/ESM.  Much of the data-mapping, preparation and translation as well as ESP/ESM file structure organization is managed through this class: https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/apps/opencs/model/doc/exportToTES4.cpp
 
-An example is the statics class function (bool Static::exportTESx, line 69) : https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/loadstat.cpp
+Most of the relevant modifications for those interested in the TES4 ESP/ESM file format can be found in this directory (look at loadXXXX.cpp files) : https://github.com/ponyrider0/openmw/tree/Export-to-Morroblivion/components/esm
+
+An example of the export function for the statics class is here (bool Static::exportTESx, line 69) : https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/loadstat.cpp
 
 TES4-export support added to these classes: Globals, Scripts, Spells, Races, Sounds, Classes, Factions, Enchantments, Regions, LandTextures, Weapons, Ammo, Misc, Keys, Soulgems, Lights, Ingredients, Clothing, Books, Armor, Apparati, Potions, LeveledItems, Activators, Statics, Furniture, Doors, Containers, Flora, NPCs, Creatures, LeveledCreatures, Cell References, Exterior Cells, Interior Cells, Quests, Dialog.
 
 For those interested in the TES4 ESP/ESM file header, check out this function (void ESM::HeaderTES4::exportTES4, line 89): https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/loadtes4.cpp
 
 Since TES4 game engine has moved to a hardcoded 30+2 bit FormID to identify records rather than dynamically resolving text-based identifiers, lookup tables were created to assign and manage FormID to textID resolution, with compatibility for current FormIDs used in Morroblivion.  These lookup tables can be found here: https://github.com/ponyrider0/Mod-Exporter-CSVfiles
+
+Currently, scripts are translated and byte-compiled in a single-stage, line by line, using this class:
+https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/scriptconverter.cpp.  However, work is currently being done to separate the byte-compiler from the translator in this branch: https://github.com/ponyrider0/openmw/tree/Script-Translator-Update-2019
 
 A tutorial for using ModExporter to convert Tamriel Rebuilt can be found here: http://tesrenewal.com/forums/morroblivion-development/tutorial-converting-tamriel-rebuilt-to-morroblivion
 
