@@ -16,7 +16,7 @@ TES4-export support added to these classes: Globals, Scripts, Spells, Races, Sou
 
 For those interested in the TES4 ESP/ESM file header, check out this function (void ESM::HeaderTES4::exportTES4, line 89): https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/loadtes4.cpp
 
-Since TES4 game engine has moved to a hardcoded 30+2 bit FormID to identify records rather than dynamically resolving text-based identifiers, lookup tables were created to assign and manage FormID to textID resolution, with compatibility for current FormIDs used in Morroblivion.  These lookup tables can be found here: https://github.com/ponyrider0/Mod-Exporter-CSVfiles
+Since TES4 game engine has moved to a hardcoded 8+24 bit FormID to identify records rather than dynamically resolving text-based identifiers, lookup tables were created to assign and manage FormID to textID resolution, with compatibility for current FormIDs used in Morroblivion.  These lookup tables can be found here: https://github.com/ponyrider0/Mod-Exporter-CSVfiles
 
 Currently, scripts are translated and byte-compiled in a single-stage, line by line, using this class:
 https://github.com/ponyrider0/openmw/blob/Export-to-Morroblivion/components/esm/scriptconverter.cpp.  However, work is currently being done to separate the byte-compiler from the translator in this branch: https://github.com/ponyrider0/openmw/tree/Script-Translator-Update-2019
