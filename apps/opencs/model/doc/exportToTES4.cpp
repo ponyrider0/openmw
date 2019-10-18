@@ -1179,19 +1179,23 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
 				bool bSuccess;
-				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				if (bSuccess)
+
+				// avoid creating duplicate info records
+				if ((formID != 0) && (writer.mUniqueIDcheck.find(infoFormID) != writer.mUniqueIDcheck.end()))
 				{
+					// do not write, issue warning
+					std::cout << "ESMWRITER WARNING: duplicate INFO record detected, will skip: (" << info.mResponse << ") [" << std::hex << infoFormID << "]" << std::endl;
+				}
+				else
+				{
+					writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 					// todo: resolve mActor->mFaction to put factionID with PCExpelled
 //					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse));
 					info.exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info.mResponse), prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
 				}
-				else
-				{
-					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
-				}
+
 			}
 		}
 
