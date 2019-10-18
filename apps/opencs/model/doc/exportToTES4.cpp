@@ -4178,6 +4178,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 					if ( Misc::StringUtils::lowerCase(refRecord.mRefID) == "TR_m2_q_4_SorenDremora")
 						sSIG = "ACHR";
 				}
+				// sanity check: try to resolve baseFormID here, if no formID found, then use static XMarker (0x03B)
+				std::string baseEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "");
+				uint32_t baseFormID = writer.crossRefStringID(baseEDID, "BASEREF", false);
+				if (baseFormID == 0)
+				{
+					// TODO: write error message	
+					sSIG = "REFR";
+				}
+
 				// start record
 				writer.startRecordTES4(sSIG, refFlags, refFormID, strEDID);
 				refRecord.exportTES4 (writer, mDocument, strEDID, teleportDoorRefID, &returnPosition);
@@ -4581,6 +4590,15 @@ void CSMDoc::ExportExteriorCellCollectionTES4Stage::perform (int stage, Messages
 								{
 									sSIG = "ACHR";
 								}
+								// sanity check: try to resolve baseFormID here, if no formID found, then use static XMarker (0x03B)
+								std::string baseEDID = writer.generateEDIDTES4(refRecord.mRefID, 0, "");
+								uint32_t baseFormID = writer.crossRefStringID(baseEDID, "BASEREF", false);
+								if (baseFormID == 0)
+								{
+									// TODO: write error message	
+									sSIG = "REFR";
+								}
+
 								// start record
 								writer.startRecordTES4(sSIG, refFlags, refFormID, refStringID);
 //								refRecord.exportTES4(writer, mDocument, "");
