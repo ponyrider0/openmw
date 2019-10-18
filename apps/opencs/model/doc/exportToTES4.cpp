@@ -564,11 +564,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 		{
 			for (auto greetingItem = mGreetingInfoList[i].begin(); greetingItem != mGreetingInfoList[i].end(); greetingItem++)
 			{
-				std::string infoEDID = "info#" + greetingItem->first.mId;
-				if (infoEDID == "info#1372930131120012690")
-				{
-					infoEDID = infoEDID + duplicateChar++;
-				}
+				std::string infoEDID = "info#" + greetingItem->second + greetingItem->first.mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				if (infoFormID == 0)
 				{
@@ -576,29 +572,21 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 				}
 				uint32_t infoFlags = 0;
 				// ***** didn't store records to check deleted/disabled status *****
-				bool bSuccess;
-				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				if (bSuccess)
+
+				// avoid creating duplicate info records
+				if ((infoFormID != 0) && (writer.mUniqueIDcheck.find(infoFormID) != writer.mUniqueIDcheck.end()))
 				{
-					// substitute PNAM if needed
-/*
-					if (writer.mPNAMINFOmap.empty() != true)
-					{
-						if (writer.mPNAMINFOmap.find(infoFormID) != writer.mPNAMINFOmap.end())
-						{
-							prevRecordID = writer.mPNAMINFOmap[infoFormID];
-						}
-					}
-*/
-//					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse));
+					// do not write, issue warning
+					std::cout << "ESMWRITER WARNING: duplicate INFO record detected, will skip: (" << greetingItem->second << ") [" << std::hex << infoFormID << "]" << std::endl;
+				}
+				else
+				{
+					writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
 					greetingItem->first.exportTESx(mDocument, writer, 4, 0, greetingItem->second, CreateAddTopicList(greetingItem->first.mResponse), prevRecordID);
 					writer.endRecordTES4("INFO");
 					prevRecordID = infoFormID;
 				}
-				else
-				{
-					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
-				}
+
 			}
 
 		}
@@ -623,7 +611,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 			writer.startGroupTES4(helloID, 7);
 			for (auto helloItem = mHelloInfoList.begin(); helloItem != mHelloInfoList.end(); helloItem++)
 			{
-				std::string infoEDID = "info#" + helloItem->first.mId;
+				std::string infoEDID = "info#" + helloItem->second + helloItem->first.mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
 				//			if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
@@ -904,130 +892,6 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			dialog.exportTESx(writer, 4);
 			writer.endRecordTES4("DIAL");
 		}
-/*
-		for (auto info_it = dialog.mInfo.begin(); info_it != dialog.mInfo.end(); info_it++)
-		{
-			auto infoRecord = mInfos.getRecord(mInfos.searchId(info_it->mId));
-			if (infoRecord.isModified() || infoRecord.isDeleted())
-			{
-				// check Result script for names of future ChoiceTopics
-				ESM::ScriptConverter scriptReader(info_it->mResultScript, writer, mDocument);
-				scriptReader.ExtractChoices();
-				for (auto choicePair = scriptReader.mChoicesList.begin(); choicePair != scriptReader.mChoicesList.end(); choicePair++)
-				{
-					std::string actorEDID = writer.generateEDIDTES4(info_it->mActor, 0, "NPC_");
-					std::stringstream choiceTopicKey;
-					choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choicePair->first;
-					if (choicePair->second == "")
-					{
-						std::string errorMesg = "ERROR: empty choice text: " + info_it->mId + "\n";
-						OutputDebugString(errorMesg.c_str());
-					}
-					infoChoiceTopicNames.insert(std::make_pair(choiceTopicKey.str(), choicePair->second));
-				}
-
-				bool bIsHello = false;
-				bool bSkipInfo = false;
-				// iterate through INFO conditional statements to see if there is a Choice function used
-				for (auto selectRule = info_it->mSelects.begin(); selectRule != info_it->mSelects.end(); selectRule++)
-				{
-					int choiceNum = 0;
-					CSMWorld::ConstInfoSelectWrapper selectWrapper(*selectRule);
-					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Choice)
-					{
-						std::string actorEDID = writer.generateEDIDTES4(info_it->mActor, 0, "NPC_");
-						choiceNum = selectWrapper.getVariant().getInteger();
-						std::stringstream choiceTopicKey;
-						choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choiceNum;
-						infoChoiceList[choiceTopicKey.str()].push_back(*info_it);
-						bSkipInfo = true;
-
-						uint32_t formID = writer.crossRefStringID(choiceTopicKey.str(), "DIAL", false, true);
-						if (formID == 0)
-						{
-							formID = writer.reserveFormID(formID, choiceTopicKey.str(), "DIAL");
-						}
-						break;
-					}
-
-					if (selectWrapper.getFunctionName() == CSMWorld::ConstInfoSelectWrapper::Function_Hello)
-					{
-						bIsHello = true;
-					}
-
-				}
-
-				if (bSkipInfo == true)
-					continue;
-
-				// only add to greeting list after bSkipInfo section above
-				if (bIsGreeting == true)
-				{
-					mGreetingInfoList.push_back(std::make_pair(*info_it, topicEDID));
-					continue;
-				}
-
-				if (bIsHello)
-				{
-					std::cout << "HELLO used by : [" << topicEDID << "] '" << info_it->mResponse << "'" << std::endl;
-//					mHelloInfoList.push_back(std::make_pair(info, topicEDID));
-					continue;
-				}
-
-				if (bHasInfoGroup == false)
-				{
-					bHasInfoGroup = true;
-					// create child group
-					writer.startGroupTES4(formID, 7);
-				}
-
-				std::string infoEDID = "info#" + info_it->mId;
-				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
-				int newType = 0;
-				switch (topic.get().mType)
-				{
-				case ESM::Dialogue::Topic:
-					newType = 0;
-					break;
-				case ESM::Dialogue::Voice:
-					newType = 1;
-					break;
-				case ESM::Dialogue::Greeting:
-					newType = 0;
-					break;
-				case ESM::Dialogue::Persuasion:
-					newType = 3;
-					break;
-				case ESM::Dialogue::Journal:
-					// issue error
-					throw std::runtime_error("ERROR: unexpected journal/quest data while processing dialog");
-					abort();
-					break;
-				case ESM::Dialogue::Unknown:
-					newType = 0;
-					break;
-				default:
-					newType = 0;
-				}
-				uint32_t infoFlags = 0;
-				if (infoRecord.isDeleted()) infoFlags |= 0x800; // DISABLED
-				bool bSuccess;
-				bSuccess = writer.startRecordTES4("INFO", infoFlags, infoFormID, infoEDID);
-				if (bSuccess)
-				{
-					// todo: resolve mActor->mFaction to put factionID with PCExpelled
-					info_it->exportTESx(mDocument, writer, 4, newType, topicEDID, CreateAddTopicList(info_it->mResponse));
-					writer.endRecordTES4("INFO");
-				}
-				else
-				{
-					std::cout << "[INFO] startRecordTES4() failed... [" << std::hex << infoFormID << "] " << infoEDID << std::endl;
-				}
-
-
-			}
-		}
-*/
 
 		// write modified selected info records
 		uint32_t prevRecordID = 0;
@@ -1148,7 +1012,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 					writer.startGroupTES4(formID, 7);
 				}
 
-				std::string infoEDID = "info#" + info.mId;
+				std::string infoEDID = "info#" + topicEDID + info.mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				int newType = 0;
 				switch (topic.get().mType)
@@ -1242,7 +1106,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			writer.startGroupTES4(choiceformID, 7);
 			for (auto infoChoiceItem = choiceNumPair->second.begin(); infoChoiceItem != choiceNumPair->second.end(); infoChoiceItem++)
 			{
-				std::string infoEDID = "info#" + infoChoiceItem->mId;
+				std::string infoEDID = "info#" + choiceTopicStr.str() + infoChoiceItem->mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
@@ -5500,11 +5364,11 @@ void CSMDoc::ExportLandCollectionTES4Stage::perform (int stage, Messages& messag
 
 
 CSMDoc::ExportLandTextureCollectionTES4Stage::ExportLandTextureCollectionTES4Stage (Document& document,
-	SavingState& state, bool skipMaster, bool setupOnly)
+	SavingState& state, bool skipMaster, bool doExport)
 	: mDocument (document), mState (state)
 {
 	mSkipMasterRecords = skipMaster;
-	mSetupOnly = setupOnly;
+	mSetupOnly = !doExport;
 }
 
 int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()

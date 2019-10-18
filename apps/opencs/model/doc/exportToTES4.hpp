@@ -845,7 +845,7 @@ namespace CSMDoc
 
 	public:
 
-		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state, bool skipMaster=true, bool setupOnly=false);
+		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state, bool skipMaster=true, bool doExport=false);
 
 		virtual int setup();
 		///< \return number of steps
