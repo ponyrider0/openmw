@@ -1181,7 +1181,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				bool bSuccess;
 
 				// avoid creating duplicate info records
-				if ((formID != 0) && (writer.mUniqueIDcheck.find(infoFormID) != writer.mUniqueIDcheck.end()))
+				if ((infoFormID != 0) && (writer.mUniqueIDcheck.find(infoFormID) != writer.mUniqueIDcheck.end()))
 				{
 					// do not write, issue warning
 					std::cout << "ESMWRITER WARNING: duplicate INFO record detected, will skip: (" << info.mResponse << ") [" << std::hex << infoFormID << "]" << std::endl;
