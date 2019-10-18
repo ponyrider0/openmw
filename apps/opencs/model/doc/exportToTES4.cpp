@@ -5555,9 +5555,19 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 	uint32_t flags=0;
 	if (landTexture.mState == CSMWorld::RecordBase::State_Deleted)
 		flags |= 0x800; // DO NOT USE DELETED, USE DISABLED
-	writer.startRecordTES4("LTEX", flags, formID, strEDID);
-	record.exportTESx (writer, true, 4);
-	writer.endRecordTES4 ("LTEX");
+
+	// avoid creating duplicate ltex records
+	if ( (formID != 0) && (writer.mUniqueIDcheck.find(formID)!=writer.mUniqueIDcheck.end()) )
+	{
+		// do not write, issue warning
+		std::cout << "ESMWRITER WARNING: duplicate LTEX record detectd, will skip: (" << strEDID << ") [" << std::hex << formID << "]" << std::endl;
+	}
+	else
+	{
+		writer.startRecordTES4("LTEX", flags, formID, strEDID);
+		record.exportTESx(writer, true, 4);
+		writer.endRecordTES4("LTEX");
+	}
 
 	if (stage == mActiveRecords.size()-1)
 	{
