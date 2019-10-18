@@ -841,10 +841,11 @@ namespace CSMDoc
 		std::vector<int> mActiveRecords;
 //		int mActiveRefCount=0;
 		bool mSkipMasterRecords=true;
+		bool mSetupOnly=false;
 
 	public:
 
-		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state, bool skipMaster=true);
+		ExportLandTextureCollectionTES4Stage (Document& document, SavingState& state, bool skipMaster=true, bool setupOnly=false);
 
 		virtual int setup();
 		///< \return number of steps

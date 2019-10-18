@@ -285,7 +285,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	if (bDoRegions) appendStage (new ExportRegionDataTES4Stage (currentDoc, currentSave, skipMasterRecords));
 //	appendStage (new ExportClimateCollectionTES4Stage (currentDoc, currentSave, skipMasterRecords));
 
-	if (bDoLandTextures) appendStage(new ExportLandTextureCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
+	appendStage(new ExportLandTextureCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords, bDoLandTextures));
 
 	if (bDoWeapons) appendStage(new ExportWeaponCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
 	if (bDoAmmo) appendStage(new ExportAmmoCollectionTES4Stage(currentDoc, currentSave, skipMasterRecords));
@@ -5459,10 +5459,11 @@ void CSMDoc::ExportLandCollectionTES4Stage::perform (int stage, Messages& messag
 
 
 CSMDoc::ExportLandTextureCollectionTES4Stage::ExportLandTextureCollectionTES4Stage (Document& document,
-	SavingState& state, bool skipMaster)
+	SavingState& state, bool skipMaster, bool setupOnly)
 	: mDocument (document), mState (state)
 {
 	mSkipMasterRecords = skipMaster;
+	mSetupOnly = setupOnly;
 }
 
 int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
@@ -5514,14 +5515,16 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 //		if (mSkipMasterRecords)
 //			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
 
-		if (bExportRecord)
+		if (bExportRecord && !mSetupOnly)
 		{
 			mActiveRecords.push_back(i);
 		}
 
 	}
 
-	return mActiveRecords.size();
+	if (!mSetupOnly)
+		return mActiveRecords.size();
+	else return 1;
 //	mActiveRefCount =  mDocument.getData().getLandTextures().getSize();
 //	return mActiveRefCount;
 }
@@ -5530,6 +5533,9 @@ void CSMDoc::ExportLandTextureCollectionTES4Stage::perform (int stage, Messages&
 {
 	std::ostringstream debugstream;
 	ESM::ESMWriter& writer = mState.getWriter();
+
+	if (mSetupOnly)
+		return;
 
 	// LTEX GRUP
 	if (stage == 0)
