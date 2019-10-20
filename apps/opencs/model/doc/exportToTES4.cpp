@@ -107,6 +107,7 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool skipMasterRecords = SKIP_MASTER_RECORDS;
 //	bool bLTEX_Override = skipMasterRecords;
 	bool bPluginless_Override = false;
+	bool bLand_Only = false;
 
 	std::string esmName = currentDoc.getSavePath().filename().stem().string();
 	if (esmName == "Morrowind" ||
@@ -169,7 +170,12 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		bStatics_Only = true;
 	}
 
-	if (bVWD_Only || bStatics_Only)
+	if (esm.mConversionOptions.find("#landonly") != std::string::npos)
+	{
+		bLand_Only = true;
+	}
+
+	if (bVWD_Only || bStatics_Only || bLand_Only)
 	{
 		bDoGlobals = false;
 		bDoScripts = false;
@@ -212,6 +218,14 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	{
 		bDoStatics = true;
 		bDoActivators = false;
+	}
+
+	if (bLand_Only)
+	{
+		bDoStatics = false;
+		bDoActivators = false;
+		bDoLandTextures = true;
+		bDoExteriors = true;
 	}
 
 	if (esm.mConversionOptions.find("#ltex") != std::string::npos)
