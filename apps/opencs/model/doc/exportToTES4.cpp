@@ -97,8 +97,8 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	bool bDoInteriors = true;
 
 	bool bDoRegions = false;
-	bool bDoDialog = true;
-	bool bDoQuests = true;
+	bool bDoDialog = false;
+	bool bDoQuests = false;
 	bool bDoActivators = true;
 	bool bDoStatics = true;
 
@@ -151,12 +151,16 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	if (esm.mConversionOptions.find("#enablemasters") != std::string::npos)
 		skipMasterRecords = false;
 
-	if (esm.mConversionOptions.find("#enableregions") != std::string::npos)
+	if (esm.mConversionOptions.find("#regions") != std::string::npos)
 		bDoRegions = true;
 
+	if (esm.mConversionOptions.find("#dialog") != std::string::npos)
+		bDoDialog = true;
 	if (esm.mConversionOptions.find("#skipdialog") != std::string::npos)
 		bDoDialog = false;
 
+	if (esm.mConversionOptions.find("#quests") != std::string::npos)
+		bDoQuests = true;
 	if (esm.mConversionOptions.find("#skipquests") != std::string::npos)
 		bDoQuests = false;
 
