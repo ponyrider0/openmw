@@ -5417,8 +5417,9 @@ int CSMDoc::ExportLandTextureCollectionTES4Stage::setup()
 			// just go ahead and skip to mapping index
 			bExportRecord = false;
 		}
-//		if (mSkipMasterRecords)
-//			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
+
+		if (mSkipMasterRecords)
+			bExportRecord &= ((formID & 0xFF000000) > 0x01000000);
 
 		if (bExportRecord && !mSetupOnly)
 		{

@@ -147,10 +147,14 @@ namespace ESM
 		esm.endSubRecordTES4("SNAM");
 
 		// Grasses Array
-//		esm.startSubRecordTES4("GNAM");
-//		uint32_t grassFormID = 0;
-//		esm.writeT<uint32_t>(grassFormID);
-//		esm.endSubRecordTES4("GNAM");
+		if (matType == 4)
+		{
+			esm.startSubRecordTES4("GNAM");
+			// hardcoded grass formID for Oblivion.esm GCLongGrass03
+			uint32_t grassFormID = 0x1FF20;
+			esm.writeT<uint32_t>(grassFormID);
+			esm.endSubRecordTES4("GNAM");
+		}
 
 		debugstream << std::endl;
 //		OutputDebugString(debugstream.str().c_str());
