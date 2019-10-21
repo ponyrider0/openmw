@@ -987,6 +987,7 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
 //        std::cout << "NIFFile:: archive=[" << archiveName << "]" << " EXPORTING: " << exportName << "\n";
     }
 
+/*
 #ifdef _WIN32
     std::string outputRoot = "C:/";
     std::string logRoot = "";
@@ -995,6 +996,19 @@ void NIFFile::exportDDS(const std::string &oldName, const std::string &exportNam
     outputRoot += "/";
     std::string logRoot = outputRoot;
 #endif
+*/
+	std::string outputRoot = getenv("MODEXPORTER_OUTPUTROOT");
+	if (outputRoot.length() == 0)
+	{
+#ifdef _WIN32
+		std::string outputRoot = "C:";
+#else
+		std::string outputRoot = getenv("HOME");
+#endif
+	}
+	outputRoot += "/";
+	std::string logRoot = outputRoot + "Oblivion.output/";
+
     logRoot += "modexporter_logs/";
     std::string modStem = mDocument->getSavePath().filename().stem().string();
     std::string logFileStem = "Exported_TextureList_" + modStem;
@@ -1233,6 +1247,7 @@ void NIFFile::prepareExport(CSMDoc::Document &doc, ESM::ESMWriter &esm, std::str
 
 std::string NIFFile::CreateResourcePaths(std::string modelPath)
 {
+/*
 #ifdef _WIN32
 	std::string outputRoot = "C:/";
 	std::string logRoot = "";
@@ -1241,6 +1256,18 @@ std::string NIFFile::CreateResourcePaths(std::string modelPath)
 	outputRoot += "/";
 	std::string logRoot = outputRoot;
 #endif
+*/
+	std::string outputRoot = getenv("MODEXPORTER_OUTPUTROOT");
+	if (outputRoot.length() == 0)
+	{
+#ifdef _WIN32
+		std::string outputRoot = "C:";
+#else
+		std::string outputRoot = getenv("HOME");
+#endif
+	}
+	outputRoot += "/";
+	std::string logRoot = outputRoot + "Oblivion.output/";
 
     std::string normalizedModelPath = Misc::ResourceHelpers::getNormalizedPath(modelPath);
 

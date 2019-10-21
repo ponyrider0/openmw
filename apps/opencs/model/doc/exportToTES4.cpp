@@ -5609,6 +5609,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 {
 	std::cout << std::endl << "Creating batch file for NIF conversions...";
 
+/*
 #ifdef _WIN32
     std::string outputRoot = "";
 	std::string oblivionOutput = "C:/Oblivion.output/";
@@ -5617,6 +5618,19 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
     outputRoot += "/";
 	std::string oblivionOutput = outputRoot + "Oblivion.output/";
 #endif
+*/
+	std::string outputRoot = getenv("MODEXPORTER_OUTPUTROOT");
+	if (outputRoot.length() == 0)
+	{
+#ifdef _WIN32
+		std::string outputRoot = "C:";
+#else
+		std::string outputRoot = getenv("HOME");
+#endif
+	}
+	outputRoot += "/";
+	std::string oblivionOutput = outputRoot + "Oblivion.output/";
+
 	outputRoot += "nifconv_bats/";
 
 	// FarNifAutoGen support
@@ -6014,14 +6028,18 @@ void CSMDoc::FinalizeExportTES4Stage::ExportDDSFiles(ESM::ESMWriter & esm)
 	std::string logFileStem = "Exported_TextureList_" + modStem;
 	std::ofstream logFileDDSConv;
 
+	std::string outputRoot = getenv("MODEXPORTER_OUTPUTROOT");
+	if (outputRoot.length() == 0)
+	{
 #ifdef _WIN32
-	std::string outputRoot = "C:/";
-    std::string logRoot = "";
+		std::string outputRoot = "C:";
 #else
-	std::string outputRoot = getenv("HOME");
-    outputRoot += "/";
-    std::string logRoot = outputRoot;
+		std::string outputRoot = getenv("HOME");
 #endif
+	}
+	outputRoot += "/";
+	std::string logRoot = outputRoot + "Oblivion.output/";
+
     logRoot += "modexporter_logs/";
 	// Log File is initialized in savingstate.cpp::InitializeSubstitutions()
 	logFileDDSConv.open(logRoot + logFileStem + ".csv", std::ios_base::out | std::ios_base::app);

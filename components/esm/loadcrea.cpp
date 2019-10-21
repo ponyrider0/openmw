@@ -192,6 +192,7 @@ namespace ESM {
 		// MODT?
 */
 
+/*
 #ifdef _WIN32
 		std::string outputRoot = "C:/";
 		std::string logRoot = "";
@@ -200,6 +201,19 @@ namespace ESM {
 		outputRoot += "/";
 		std::string logRoot = outputRoot;
 #endif
+*/
+		std::string outputRoot = getenv("MODEXPORTER_OUTPUTROOT");
+		if (outputRoot.length() == 0)
+		{
+#ifdef _WIN32
+			std::string outputRoot = "C:";
+#else
+			std::string outputRoot = getenv("HOME");
+#endif
+		}
+		outputRoot += "/";
+		std::string logRoot = outputRoot + "Oblivion.output/";
+
 		bool bConvertCreatures = false;
 		if (esm.mConversionOptions.find("#creature") != std::string::npos)
 			bConvertCreatures = true;
