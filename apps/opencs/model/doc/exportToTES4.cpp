@@ -151,33 +151,14 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 	if (esm.mConversionOptions.find("#enablemasters") != std::string::npos)
 		skipMasterRecords = false;
 
-	if (esm.mConversionOptions.find("#regions") != std::string::npos)
-		bDoRegions = true;
-
-	if (esm.mConversionOptions.find("#dialog") != std::string::npos)
-		bDoDialog = true;
-	if (esm.mConversionOptions.find("#skipdialog") != std::string::npos)
-		bDoDialog = false;
-
-	if (esm.mConversionOptions.find("#quests") != std::string::npos)
-		bDoQuests = true;
-	if (esm.mConversionOptions.find("#skipquests") != std::string::npos)
-		bDoQuests = false;
-
 	if (esm.mConversionOptions.find("#vwdonly") != std::string::npos)
-	{
 		bVWD_Only = true;
-	}
 
 	if (esm.mConversionOptions.find("#staticsonly") != std::string::npos)
-	{
 		bStatics_Only = true;
-	}
 
 	if (esm.mConversionOptions.find("#landonly") != std::string::npos)
-	{
 		bLand_Only = true;
-	}
 
 	if (bVWD_Only || bStatics_Only || bLand_Only)
 	{
@@ -226,11 +207,27 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	if (bLand_Only)
 	{
-		bDoStatics = false;
-		bDoActivators = false;
+		if (!bStatics_Only)
+		{
+			bDoStatics = false;
+			bDoActivators = false;
+		}
 		bDoLandTextures = true;
 		bDoExteriors = true;
 	}
+
+	if (esm.mConversionOptions.find("#regions") != std::string::npos)
+		bDoRegions = true;
+
+	if (esm.mConversionOptions.find("#dialog") != std::string::npos)
+		bDoDialog = true;
+	if (esm.mConversionOptions.find("#skipdialog") != std::string::npos)
+		bDoDialog = false;
+
+	if (esm.mConversionOptions.find("#quests") != std::string::npos)
+		bDoQuests = true;
+	if (esm.mConversionOptions.find("#skipquests") != std::string::npos)
+		bDoQuests = false;
 
 	if (esm.mConversionOptions.find("#ltex") != std::string::npos)
 	{
@@ -5631,16 +5628,16 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	outputRoot += "/";
 	std::string oblivionOutput = outputRoot + "Oblivion.output/";
 
-	outputRoot += "nifconv_bats/";
+	std::string legacyBatchRoot = "nifconv_bats/";
 
 	// FarNifAutoGen support
-	bool bFarNifAutoGen = true;
+	bool bFarNifAutoGen = false;
 	if (esm.mConversionOptions.find("#farnifautogen") != std::string::npos)
 	{
 		bFarNifAutoGen = true;
 	}
 
-	bool bLegacyNifConv = true;
+	bool bLegacyNifConv = false;
 	if (esm.mConversionOptions.find("#oldnifconv") != std::string::npos)
 	{
 		bLegacyNifConv = true;
@@ -5721,15 +5718,15 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 
 	if (bLegacyNifConv)
 	{
-        if (boost::filesystem::exists(outputRoot) == false)
+        if (boost::filesystem::exists(legacyBatchRoot) == false)
         {
-            boost::filesystem::create_directories(outputRoot);
+            boost::filesystem::create_directories(legacyBatchRoot);
         }
 
-		batchFileNIFConv.open(outputRoot + batchFileStem + ".bat", std::ios_base::out | std::ios_base::trunc);
-		batchFileNIFConv_helper1.open(outputRoot + batchFileStem + "_helper.dat", std::ios_base::out | std::ios_base::trunc);
-		//	batchFileNIFConv_helper2.open(outputRoot + batchFileStem + "_helper2.dat", std::ios_base::out | std::ios_base::trunc);
-		batchFileLODNIFConv.open(outputRoot + batchFileStem + "_LOD.bat", std::ios_base::out | std::ios_base::trunc);
+		batchFileNIFConv.open(legacyBatchRoot + batchFileStem + ".bat", std::ios_base::out | std::ios_base::trunc);
+		batchFileNIFConv_helper1.open(legacyBatchRoot + batchFileStem + "_helper.dat", std::ios_base::out | std::ios_base::trunc);
+		//	batchFileNIFConv_helper2.open(legacyBatchRoot + batchFileStem + "_helper2.dat", std::ios_base::out | std::ios_base::trunc);
+		batchFileLODNIFConv.open(legacyBatchRoot + batchFileStem + "_LOD.bat", std::ios_base::out | std::ios_base::trunc);
 
 		// set up header code for spawning
 		batchFileNIFConv << "@echo off\n";
@@ -5949,7 +5946,7 @@ void CSMDoc::FinalizeExportTES4Stage::MakeBatchNIFFiles(ESM::ESMWriter& esm)
 	std::ofstream batchFileArmorConv;
 	if (bLegacyNifConv)
 	{
-		batchFileArmorConv.open(outputRoot + batchFileStem + "_ARMO.bat", std::ios_base::out | std::ios_base::trunc);
+		batchFileArmorConv.open(legacyBatchRoot + batchFileStem + "_ARMO.bat", std::ios_base::out | std::ios_base::trunc);
 		batchFileArmorConv << "@echo off\n";
 		batchFileArmorConv << "cd ..\n";
 	}
