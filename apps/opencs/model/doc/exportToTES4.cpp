@@ -6401,12 +6401,13 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	// write unresolved local vars
 	std::ofstream unresolvedLocalVarStream;
 	unresolvedLocalVarStream.open(outputRoot + "UnresolvedLocalVars_" + modStem + ".csv", std::ios_base::out | std::ios_base::trunc);
-	unresolvedLocalVarStream << "Local Var" << "," << "QuestVar Index" << "," << "Occurences" << std::endl;
+	unresolvedLocalVarStream << "Local Var" << "," << "QuestVar Index" << "," << "Occurences" << "," << "RunScriptLine" << std::endl;
 	for (auto localVarItem = esm.mUnresolvedLocalVars.begin();
 		localVarItem != esm.mUnresolvedLocalVars.end();
 		localVarItem++)
 	{
-		unresolvedLocalVarStream << "short " << localVarItem->first << "," << "" << "," << localVarItem->second << std::endl;
+		unresolvedLocalVarStream << "short " << localVarItem->first << "," << "" << "," << localVarItem->second << ",";
+		unresolvedLocalVarStream << "\tRunScriptLine \"set mwDialogHelper." << localVarItem->first << " to %q%i%q." << localVarItem->first << "\" activatedRef" << std::endl;
 	}
 	unresolvedLocalVarStream.close();
 
