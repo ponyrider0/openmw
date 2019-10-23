@@ -207,7 +207,11 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	if (bLand_Only)
 	{
-		if (!bStatics_Only)
+		if (bStatics_Only)
+		{
+			bDoReferences = true;
+		}
+		else
 		{
 			bDoStatics = false;
 			bDoActivators = false;
@@ -3194,6 +3198,10 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		OutputDebugString(debugstream.str().c_str());
 	}
 
+	bool bStaticsOnly = false;
+	if (writer.mConversionOptions.find("#staticsonly") != std::string::npos)
+		bStaticsOnly = true;
+
 	// process a batch of 100 references in each stage
 	for (int i=stage*100; i<stage*100+100 && i<size; ++i)
 	{
@@ -3217,6 +3225,12 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		{
 			persistentRef = true;
 			scriptedRef = true;
+		}
+
+		if (bStaticsOnly)
+		{
+			if (baseRefIndex.second != CSMWorld::UniversalId::Type::Type_Static)
+				continue;
 		}
 
 		if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
