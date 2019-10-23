@@ -214,16 +214,12 @@ namespace ESM
 
 
 		// SCDA (compiled)
-		esm.startSubRecordTES4("SCDA");
-		if (bCompileScripts)
+		if (bCompileScripts && compiledSize > 0)
 		{
+			esm.startSubRecordTES4("SCDA");
 			esm.write(scriptConverter.GetCompiledByteBuffer(), scriptConverter.GetByteBufferSize());
+			esm.endSubRecordTES4("SCDA");
 		}
-		else
-		{
-			esm.write(0, 0);
-		}
-		esm.endSubRecordTES4("SCDA");
 
 		// SCTX (text)
 		esm.startSubRecordTES4("SCTX");
