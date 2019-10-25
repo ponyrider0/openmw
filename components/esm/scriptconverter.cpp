@@ -2768,7 +2768,7 @@ namespace ESM
 			arg2String = "0";
 			bEvalArg2 = false;
 			tokenItem++;
-			if (tokenItem->type != TokenType::identifierT || tokenItem->type != TokenType::string_literalT)
+			if (tokenItem->type != TokenType::identifierT && tokenItem->type != TokenType::string_literalT)
 			{
 				// todo: lookup factionID based on current npc...
 /*
