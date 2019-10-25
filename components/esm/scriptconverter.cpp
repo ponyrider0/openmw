@@ -1162,7 +1162,15 @@ namespace ESM
 		{
 			OpCode = 0x1468;
 		}
-
+		else if (cmdString == "getdetected")
+		{
+			OpCode = 0x102D;
+		}
+		else if (cmdString == "playgroup")
+		{
+			OpCode = 0x1013;
+		}
+		
 		return OpCode;
 	}
 
@@ -1759,6 +1767,21 @@ namespace ESM
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getdisabled")
 		{
 			bUseREF = true;
+		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setdelete")
+		{
+			// todo: check next token for 0 or 1 argument
+			tokenItem++;
+			if (tokenItem->str == "1")
+			{
+				cmdString = "DeleteReference";
+				bUseREF = true;
+			}
+			else
+			{
+				// undelete??
+				abort("ERROR: can not undelete a reference in Oblivion.");
+			}
 		}
 
 		std::string cmdLine = cmdString;
@@ -2741,6 +2764,7 @@ namespace ESM
 		else if (Misc::StringUtils::lowerCase(cmdString) == "pcclearexpelled")
 		{
 			cmdString = "SetPCExpelled";
+			bEvalArg1 = false;
 			arg2String = "0";
 			bEvalArg2 = false;
 			tokenItem++;
@@ -3771,6 +3795,7 @@ namespace ESM
 			|| (tokenString == "setatstart")
 			|| (tokenString == "getwaterlevel")
 			|| (tokenString == "getscale")
+			|| (tokenString == "setdelete")
 			)
 		{
 			parse_0arg(tokenItem);
@@ -3860,6 +3885,8 @@ namespace ESM
 			|| (tokenString == "fadeout")
 			|| (tokenString == "gethello")
 			|| (tokenString == "sethello")
+			|| (tokenString == "getdetected")
+			|| (tokenString == "playgroup")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -5161,6 +5188,7 @@ namespace ESM
 		mKeywords.push_back("getspelleffects");
 		mKeywords.push_back("fadein");
 		mKeywords.push_back("fadeout");
+		mKeywords.push_back("getdetected");
 
 	}
 
