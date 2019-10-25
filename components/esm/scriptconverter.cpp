@@ -4834,6 +4834,12 @@ namespace ESM
 		{
 			bReturnBase = false;
 		}
+		else
+		{
+			std::stringstream errStream;
+			errStream << "SCRIPT: WARNING!!!! baseSIG not identified for referenced script: [" << refSIG_lowercase << "]" << "\"" << baseName << "\"" << "\n";
+			error_mesg(errStream.str());
+		}
 
 		// "base" string will override default record type behavior
 		if (Misc::StringUtils::lowerCase(refValString).find("script") != std::string::npos)
