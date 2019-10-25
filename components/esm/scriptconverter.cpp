@@ -2746,7 +2746,17 @@ namespace ESM
 			tokenItem++;
 			if (tokenItem->type != TokenType::identifierT || tokenItem->type != TokenType::string_literalT)
 			{
-				// todo: lookup factionID...
+				// todo: lookup factionID based on current npc...
+/*
+				// 1. get npcID... but from where???? --> this is dynamic run-time data, not set at compile-time!! each TES3 NPC running script would need a separate script in TES4!
+				std::string npcID = "";
+				// 2. lookup npc->factionID
+				int index = mDoc.getData().getReferenceables().getIndex(npcID);
+				auto npcRec = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(index);
+				// 3. argString = npc->factionID
+				arg1String = npcRec.get().mFaction;
+*/
+				// abort script until above npcid resolution problem is solved
 				abort("SetPCExpelled/PCClearExpelled: no faction specified\n");
 				return;
 			}
@@ -4775,7 +4785,7 @@ namespace ESM
 
 		bool bReturnBase = true;
 
-		// returnbase behavior defaults to on for following record types
+		// returnbase behavior defaults to OFF for following record types
 		std::string refSIG_lowercase = Misc::StringUtils::lowerCase(refSIG);
 		if (refSIG_lowercase == "npc_"
 			|| refSIG_lowercase == "crea"
