@@ -4643,8 +4643,8 @@ namespace ESM
 			// convert refRecord.second to refSIG
 			if (refRecord.first != -1)
 			{
-				for (int i = 0; i<4; i++)
-					refSIG[i] = reinterpret_cast<char *>(&refRecord.second)[i];
+//				for (int i = 0; i<4; i++)
+//					refSIG[i] = reinterpret_cast<char *>(&refRecord.second)[i];
 			}
 			else
 			{
@@ -4729,64 +4729,80 @@ namespace ESM
 		case CSMWorld::UniversalId::Type_Npc:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mScript;
 			refFact = mDoc.getData().getReferenceables().getDataSet().getNPCs().mContainer.at(refRecord.first).get().mFaction;
+			refSIG = "NPC_";
 			break;
 
 		case CSMWorld::UniversalId::Type_Book:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getBooks().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "BOOK";
 			break;
 
 		case CSMWorld::UniversalId::Type_Activator:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getActivators().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ACTI";
 			break;
 
 		case CSMWorld::UniversalId::Type_Potion:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getPotions().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ALCH";
 			break;
 
 		case CSMWorld::UniversalId::Type_Apparatus:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getApparati().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "APPA";
 			break;
 
 		case CSMWorld::UniversalId::Type_Armor:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getArmors().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "ARMO";
 			break;
 
 		case CSMWorld::UniversalId::Type_Clothing:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getClothing().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CLOT";
 			break;
 
 		case CSMWorld::UniversalId::Type_Container:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getContainers().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CONT";
 			break;
 
 		case CSMWorld::UniversalId::Type_Creature:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getCreatures().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "CREA";
 			break;
 
 		case CSMWorld::UniversalId::Type_Door:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getDoors().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "DOOR";
 			break;
 
 		case CSMWorld::UniversalId::Type_Ingredient:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getIngredients().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "INGR";
 			break;
 
 		case CSMWorld::UniversalId::Type_Light:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getLights().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "LIGH";
 			break;
 
 		case CSMWorld::UniversalId::Type_Miscellaneous:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getMiscellaneous().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "MISC";
 			break;
 
 		case CSMWorld::UniversalId::Type_Weapon:
 			refScript = mDoc.getData().getReferenceables().getDataSet().getWeapons().mContainer.at(refRecord.first).get().mScript;
+			refSIG = "WEAP";
 			break;
 
 		case CSMWorld::UniversalId::Type_Static:
+			refSIG = "STAT";
 			break;
 
 		case CSMWorld::UniversalId::Type_CreatureLevelledList:
+			refSIG = "LVLC";
 			break;
 
 		case CSMWorld::UniversalId::Type_None:
@@ -4809,6 +4825,13 @@ namespace ESM
 			break;
 		}
 
+		// sanity check
+		if (refSIG == "")
+		{
+			std::stringstream errStream;
+			errStream << "SCRIPT: WARNING! lookup_reference, refSIG failed to initialize: CSMWorld::UniversalId=[" << refRecord.second << "]" << "\"" << baseName << "\"" << "\n";
+			error_mesg(errStream.str());
+		}
 
 		bool bReturnBase = true;
 
@@ -4833,12 +4856,6 @@ namespace ESM
 			)
 		{
 			bReturnBase = false;
-		}
-		else
-		{
-			std::stringstream errStream;
-			errStream << "SCRIPT: WARNING!!!! baseSIG not identified for referenced script: [" << refSIG_lowercase << "]" << "\"" << baseName << "\"" << "\n";
-			error_mesg(errStream.str());
 		}
 
 		// "base" string will override default record type behavior
