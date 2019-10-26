@@ -3801,7 +3801,7 @@ namespace ESM
 			|| (tokenString == "setatstart")
 			|| (tokenString == "getwaterlevel")
 			|| (tokenString == "getscale")
-			|| (tokenString == "setdelete")
+//			|| (tokenString == "setdelete")
 			)
 		{
 			parse_0arg(tokenItem);
