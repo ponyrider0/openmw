@@ -4383,7 +4383,7 @@ namespace ESM
 
 		if (baseName == "")
 		{
-			abort("prepare_reference(): baseName is empty!\n");
+			error_mesg("WARNING: prepare_reference(): baseName is empty!\n");
 			return 0;
 		}
 
