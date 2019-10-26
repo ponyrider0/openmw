@@ -5344,5 +5344,33 @@ namespace ESM
 		return false;
 	}
 
+	std::string ScriptConverter::Token::TypeToString()
+	{
+		std::string tokenTypeString = "";
+		switch (type)
+		{
+		case TokenType::endlineT:
+			tokenTypeString = "EOL";
+			break;
+		case TokenType::identifierT:
+			tokenTypeString = "IDENTIFIER";
+			break;
+		case TokenType::keywordT:
+			tokenTypeString = "KEYWORD";
+			break;
+		case TokenType::number_literalT:
+			tokenTypeString = "NUMBER LITERAL";
+			break;
+		case TokenType::operatorT:
+			tokenTypeString = "OPERATOR";
+			break;
+		case TokenType::string_literalT:
+			tokenTypeString = "STRING LITERAL";
+			break;
+		}
+		return tokenTypeString;
+
+	}
+
 }
 

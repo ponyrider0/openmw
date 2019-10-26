@@ -75,6 +75,7 @@ namespace ESM {
 
 			Token(int arg1, std::string arg2) { type = arg1; str = arg2; }
 			bool IsHigherPrecedence(const std::vector<struct Token>::iterator& tokenItem);
+			std::string TypeToString();
 		};
 
 		struct ScriptContext
