@@ -2596,7 +2596,7 @@ namespace ESM
 		if (OpCode == 0)
 		{
 			std::stringstream errorMesg;
-			errorMesg << "parse_1arg(): unhandled command=" << cmdString << std::endl;
+			errorMesg << "parse_1arg(): unhandled command (No assigned OpCode)=" << cmdString << std::endl;
 			abort(errorMesg.str());
 			if (bUseCommandReference)
 			{
