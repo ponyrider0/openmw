@@ -1170,6 +1170,10 @@ namespace ESM
 		{
 			OpCode = 0x1013;
 		}
+		else if (cmdString == "getquestrunning")
+		{
+			OpCode = 0x1038;
+		}
 		
 		return OpCode;
 	}
