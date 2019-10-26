@@ -2526,6 +2526,12 @@ namespace ESM
 			bEvalArgString = false;
 
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "scriptrunning")
+		{
+			cmdString = "GetQuestRunning";
+			argSIG = "SCPT";
+		}
+
 
 		//-------------------------------------------------
 		if (bSkipArgParse == false && argString == "")
@@ -3887,6 +3893,7 @@ namespace ESM
 			|| (tokenString == "sethello")
 			|| (tokenString == "getdetected")
 			|| (tokenString == "playgroup")
+			|| (tokenString == "scriptrunning")
 			)
 		{
 			parse_1arg(tokenItem);
@@ -5212,6 +5219,7 @@ namespace ESM
 		mKeywords.push_back("fadein");
 		mKeywords.push_back("fadeout");
 		mKeywords.push_back("getdetected");
+		mKeywords.push_back("scriptrunning");
 
 	}
 
