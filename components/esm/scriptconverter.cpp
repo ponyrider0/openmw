@@ -468,7 +468,7 @@ namespace ESM
 			if (mNewStatement == true)
 			{
 				std::stringstream errMesg;
-				errMesg << "Unhandled Identifier Command: <" << tokenItem->type << "> " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+				errMesg << "parse_statement(): Unhandled Identifier Command: <" << tokenItem->TypeToString() << "> " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 				abort(errMesg.str());
 			}
 			mNewStatement = false;
@@ -485,7 +485,7 @@ namespace ESM
 			if (mNewStatement == true)
 			{
 				std::stringstream errMesg;
-				errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+				errMesg << "Unhandled Token: <" << tokenItem->TypeToString() << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 				abort(errMesg.str());
 			}
 			mNewStatement = false;
@@ -706,7 +706,7 @@ namespace ESM
 		}
 
 		std::stringstream errMesg;
-		errMesg << "Unhandled Token: <" << tokenItem->type << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+		errMesg << "parse_expression(): Unhandled Token: <" << tokenItem->TypeToString() << "> '" << tokenItem->str << "'" << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 		abort(errMesg.str());
 		bUseVarReference = false;
 		mVarRef_mID = "";
@@ -795,7 +795,7 @@ namespace ESM
 
 		// ERROR message
 		std::stringstream ErrMsg;
-		ErrMsg << "unhandled operator token: " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
+		ErrMsg << "parse_operator(): unhandled operator: " << tokenItem->str << std::endl << "DEBUG LINE: " << Debug_CurrentScriptLine.str() << std::endl;
 		abort(ErrMsg.str());
 		return;
 
@@ -1600,7 +1600,7 @@ namespace ESM
 			{
 				// issue error
 				std::stringstream errStr;
-				errStr << "unexpected keyword in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+				errStr << "parse_set(): unexpected keyword (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
 				abort(errStr.str());
 			}
 		} 
@@ -1653,7 +1653,7 @@ namespace ESM
 		else
 		{
 			std::stringstream errStr;
-			errStr << "unexpected token type in set statement (expected variable name): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+			errStr << "parse_set(): unexpected token type in set statement (expected variable name): [" << tokenItem->TypeToString() << "] " << tokenItem->str << std::endl;
 			abort(errStr.str());
 		}
 
@@ -1662,7 +1662,7 @@ namespace ESM
 		if (Misc::StringUtils::lowerCase(tokenItem->str) != "to")
 		{
 			std::stringstream errStr;
-			errStr << "unexpected token type in set statement (expected \"to\" operator): [" << tokenItem->type << "] " << tokenItem->str << std::endl;
+			errStr << "parse_set(): unexpected token type in set statement (expected \"to\" operator): [" << tokenItem->TypeToString() << "] " << tokenItem->str << std::endl;
 			abort(errStr.str());
 		}
 
@@ -1780,7 +1780,7 @@ namespace ESM
 			else
 			{
 				// undelete??
-				abort("ERROR: can not undelete a reference in Oblivion.");
+				abort("parse_0arg(): setdelete 0, unhandled state: can not undelete a reference in Oblivion.");
 			}
 		}
 
@@ -1821,7 +1821,7 @@ namespace ESM
 		}
 		else
 		{
-			abort("parse_0arg(): 0x0 opcode: " + tokenItem->str + "\n");
+			abort("parse_0arg(): 0x0 opcode: " + cmdString + "\n");
 		}
 
 		return;
@@ -1861,7 +1861,7 @@ namespace ESM
 				}
 				else
 				{
-					abort("double command reference");
+					abort("sub_parse_arg(): double command reference: possibleRef=" + possibleRef + ", mCommandRef=" + mCommandRef_EDID );
 					return false;
 				}
 				if (refEDID != "")
@@ -1871,7 +1871,7 @@ namespace ESM
 				else
 				{
 					mCommandRef_EDID = mESM.generateEDIDTES4(possibleRef, 0, argSIG);
-					abort("ERROR: could not find appropriate reference for: " + mCommandRef_EDID + " (" + possibleRef + ")\n");
+					abort("sub_parse_arg(): could not find appropriate reference for: " + mCommandRef_EDID + " (" + possibleRef + ")\n");
 				}
 			}
 			else if (tokenItem->str == ".")
@@ -1895,7 +1895,7 @@ namespace ESM
 					}
 					else
 					{
-						abort("double var reference");
+						abort("sub_parse_arg(): double var reference: possibleRef=" + possibleRef + ", mVarRef=" + mVarRef_mID);
 						return false;
 					}
 					mVarRef_mID = possibleRef;
@@ -2001,7 +2001,7 @@ namespace ESM
 		{
 			if (sub_parse_get_set_mod_AV_command(tokenItem, getAVresult, cmdString, argString, argdata) == false)
 			{
-				abort("error processing Set/Mod AV command");
+				abort("parse_1arg(): getresistdisease: error processing Set/Mod AV command, tokenStr=" + tokenItem->str);
 				return;
 			}
 			bSkipArgParse = true;
@@ -2029,7 +2029,7 @@ namespace ESM
 			}
 			else
 			{
-				abort("parse_1arg(): GetPos invalid axis\n");
+				abort("parse_1arg(): GetPos/GetAngle(): invalid axis\n");
 				return;
 			}
 			uint8_t rawchar = axisString[0];
@@ -2117,7 +2117,7 @@ namespace ESM
 			}
 			else
 			{
-				abort("parse_1arg(): error processing: " + cmdString + "\n");
+				abort("parse_1arg(): startscript: error processing: " + cmdString + "\n");
 				return;
 			}
 		}
@@ -2136,7 +2136,7 @@ namespace ESM
 			}
 			else
 			{
-				abort("parse_1arg(): error processing: " + cmdString + "\n");
+				abort("parse_1arg(): stopscript: error processing: " + cmdString + "\n");
 				return;
 			}
 		}
@@ -2243,7 +2243,7 @@ namespace ESM
 				}
 				else
 				{
-					abort("no reference for <GetFactionRank>");
+					abort("parse_1arg(): no reference for <GetFactionRank>");
 				}
 			}
 		}
@@ -2300,7 +2300,7 @@ namespace ESM
 			else if (tokenItem->str != "==")
 			{
 				std::stringstream errmesg;
-				errmesg << "ERROR: Unsupported operation/argument with GetCurrentAIPackage: [" << tokenItem->str << "]\n";
+				errmesg << "parse_1arg(): getcurrentaipackage: Unsupported operation/argument: [" << tokenItem->str << "]\n";
 				abort(errmesg.str());
 				tokenItem--;
 				return;
@@ -2339,7 +2339,7 @@ namespace ESM
 					default:
 						// error message
 						std::stringstream errmesg;
-						errmesg << "ERROR: Unsupported number comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+						errmesg << "parse_1arg(): Unsupported number comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
 						abort(errmesg.str());
 						tokenItem--; tokenItem--;
 						return;
@@ -2358,7 +2358,7 @@ namespace ESM
 				else if (tokenItem->type == TokenType::identifierT || tokenItem->type == TokenType::string_literalT)
 				{
 					std::stringstream errmesg;
-					errmesg << "ERROR: Unsupported variable comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+					errmesg << "parse_1arg(): Unsupported variable comparison with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
 					abort(errmesg.str());
 					tokenItem--; tokenItem--;
 					return;
@@ -2366,7 +2366,7 @@ namespace ESM
 				else
 				{
 					std::stringstream errmesg;
-					errmesg << "ERROR: Unexpected argument type with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
+					errmesg << "parse_1arg(): Unexpected argument type with 'GetCurrentAIPackage ==' [" << tokenItem->str << "]\n";
 					abort(errmesg.str());
 					tokenItem--; tokenItem--;
 					return;
@@ -2383,7 +2383,7 @@ namespace ESM
 					bUseCommandReference = false;
 					mCommandRef_EDID = "";
 				}
-				abort("parse_1arg():: sub_parse_arg() failed - ");
+				abort("parse_1arg(): setdisposition: sub_parse_arg() failed - ");
 				return;
 			}
 			std::string dispoString = argString;
@@ -2395,7 +2395,7 @@ namespace ESM
 			else
 			{
 				std::stringstream errmesg;
-				errmesg << "ERROR: Unsupported variable argument with SetDisposition [" << dispoString << "]\n";
+				errmesg << "parse_1arg(): setdisposition: unsupported variable argument: [" << dispoString << "]\n";
 				abort(errmesg.str());
 				return;
 			}
@@ -2485,7 +2485,7 @@ namespace ESM
 					bUseCommandReference = false;
 					mCommandRef_EDID = "";
 				}
-				abort("parse_1arg():: sub_parse_arg() failed - ");
+				abort("parse_1arg(): sethello: sub_parse_arg() failed - ");
 				return;
 			}
 			std::string helloString = argString;
@@ -2497,7 +2497,7 @@ namespace ESM
 			else
 			{
 				std::stringstream errmesg;
-				errmesg << "ERROR: Unsupported variable argument with SetDisposition [" << helloString << "]\n";
+				errmesg << "parse_1arg(): sethello: Unsupported variable argument: helloString=[" << helloString << "]\n";
 				abort(errmesg.str());
 				return;
 			}
@@ -2538,7 +2538,7 @@ namespace ESM
 					bUseCommandReference = false;
 					mCommandRef_EDID = "";
 				}
-				abort("parse_1arg():: sub_parse_arg() failed - ");
+				abort("parse_1arg(): sub_parse_arg() failed: argString=[" + argString + "] tokenItem=<" + tokenItem->TypeToString() + "> [" + tokenItem->str + "]");
 				return;
 			}
 		}
@@ -3901,7 +3901,7 @@ namespace ESM
 			}
 			// Default: unhandled keyword, skip to next tokenStatement
 			std::stringstream errMesg;
-			errMesg << "Unhandled Keyword: <" << tokenItem->type << "> " << tokenItem->str << std::endl;
+			errMesg << "WARNING: Unhandled Keyword: <" << tokenItem->TypeToString() << "> " << tokenItem->str << std::endl;
 			error_mesg(errMesg.str());
 //			OutputDebugString(errMesg.str().c_str());
 			if (mParseMode == 1)
@@ -3937,7 +3937,7 @@ namespace ESM
 		{
 			// error parsing journal
 			std::stringstream errorMesg;
-			errorMesg << "parse_keyword(): unexpected token type, expected string_literal:  <" << tokenItem->type << "> " << tokenItem->str << std::endl;
+			errorMesg << "parse_addremoveitem(): unexpected token type, expected string_literal:  <" << tokenItem->type << "> " << tokenItem->str << std::endl;
 			abort(errorMesg.str());
 		}
 
@@ -3960,7 +3960,7 @@ namespace ESM
 		else
 		{
 			std::stringstream errorMesg;
-			errorMesg << "ERROR: ScriptConverter:parse_keyword() - unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
+			errorMesg << "parse_addremoveitem(): unexpected token type, expected number_literalT: [" << tokenItem->type << "] token=" << tokenItem->str << std::endl;
 			abort(errorMesg.str());
 //			std::cout << std::endl << "DEBUG OUTPUT: " << std::endl << mScriptText << std::endl << std::endl;
 		}
@@ -4024,7 +4024,7 @@ namespace ESM
 			{
 				// error parsing choice statement
 				std::stringstream errorMesg;
-				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected string_literal: " << tokenItem->type << std::endl;
+				errorMesg << "parse_choice(): unexpected token type, expected string_literal: " << tokenItem->type << std::endl;
 				abort(errorMesg.str());
 			}
 			tokenItem++; // advance to next token
@@ -4034,7 +4034,7 @@ namespace ESM
 			else
 			{
 				std::stringstream errorMesg;
-				errorMesg << "ERROR: ScriptConverter:parse_choice() - unexpected token type, expected number_literal: " << tokenItem->type << std::endl;
+				errorMesg << "parse_choice(): unexpected token type, expected number_literal: " << tokenItem->type << std::endl;
 				abort(errorMesg.str());
 			}
 			tokenItem++; // advance to next token
@@ -4429,9 +4429,9 @@ namespace ESM
 		{
 			// do not abort, just issue error and return 0 so scriptconverter can continue
 			if (mode == 100)
-				error_mesg("WARNING: could not resolve reference BaseObj EDID (" + refSIG + ") " + refEDID + "\n");
+				error_mesg("WARNING: prepare_reference(): could not resolve reference BaseObj EDID (" + refSIG + ") " + refEDID + "\n");
 			else
-				error_mesg("WARNING: could not resolve reference BaseObj stringID=" + baseName + "\n");
+				error_mesg("WARNING: prepare_reference(): could not resolve reference BaseObj stringID=" + baseName + "\n");
 		}
 
 		return RefData;
@@ -4905,9 +4905,9 @@ namespace ESM
 	{
 		std::stringstream errStream;
 		if (mScriptName != "")
-			errStream << "Script Converter Error (" << mScriptName << "): " << errString;
+			errStream << "ScriptConverter (" << mScriptName << "): " << errString;
 		else
-			errStream << "Script Converter Error <result script>: " << errString;
+			errStream << "ScriptConverter <result script>: " << errString;
 
 		OutputDebugString(errStream.str().c_str());
 	}
@@ -4917,7 +4917,7 @@ namespace ESM
 		if (mFailureCode == 0)
 		{
 			mFailureCode = 1;
-			error_mesg(error_string);
+			error_mesg("ABORT: " + error_string);
 		}
 	}
 
