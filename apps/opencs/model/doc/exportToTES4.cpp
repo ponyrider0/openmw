@@ -225,13 +225,40 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 
 	if (esm.mConversionOptions.find("#dialog") != std::string::npos)
 		bDoDialog = true;
-	if (esm.mConversionOptions.find("#skipdialog") != std::string::npos)
+	if ( (esm.mConversionOptions.find("#skipdialog") != std::string::npos)
+		|| (esm.mConversionOptions.find("#nodialog") != std::string::npos) )
 		bDoDialog = false;
 
 	if (esm.mConversionOptions.find("#quests") != std::string::npos)
 		bDoQuests = true;
-	if (esm.mConversionOptions.find("#skipquests") != std::string::npos)
+	if ( (esm.mConversionOptions.find("#skipquests") != std::string::npos)
+		|| (esm.mConversionOptions.find("#noquests") != std::string::npos) )
 		bDoQuests = false;
+
+	if (esm.mConversionOptions.find("#doors") != std::string::npos)
+		bDoDoors = true;
+	if (esm.mConversionOptions.find("#nodoors") != std::string::npos)
+		bDoDoors = false;
+
+	if (esm.mConversionOptions.find("#exteriors") != std::string::npos)
+		bDoExteriors = true;
+	if (esm.mConversionOptions.find("#noexteriors") != std::string::npos)
+		bDoExteriors = false;
+
+	if (esm.mConversionOptions.find("#interiors") != std::string::npos)
+		bDoInteriors = true;
+	if (esm.mConversionOptions.find("#nointeriors") != std::string::npos)
+		bDoInteriors = false;
+
+	if (esm.mConversionOptions.find("#activators") != std::string::npos)
+		bDoActivators = true;
+	if (esm.mConversionOptions.find("#noactivators") != std::string::npos)
+		bDoActivators = false;
+
+	if (esm.mConversionOptions.find("#containers") != std::string::npos)
+		bDoContainers = true;
+	if (esm.mConversionOptions.find("#nocontainers") != std::string::npos)
+		bDoContainers = false;
 
 	if (esm.mConversionOptions.find("#ltex") != std::string::npos)
 	{
@@ -256,12 +283,14 @@ void CSMDoc::ExportToTES4::defineExportOperation(Document& currentDoc, SavingSta
 		bDoArmor = true;
 	}
 
-	if (esm.mConversionOptions.find("#skipcreatures") != std::string::npos)
+	if ( (esm.mConversionOptions.find("#skipcreatures") != std::string::npos)
+		|| (esm.mConversionOptions.find("#nocreatures") != std::string::npos) )
 	{
 		bDoCreatures = false;
 	}
 
-	if (esm.mConversionOptions.find("#skipnpcs") != std::string::npos)
+	if ( (esm.mConversionOptions.find("#skipnpcs") != std::string::npos)
+		|| (esm.mConversionOptions.find("#nonpcs") != std::string::npos) )
 	{
 		bDoNPCs = false;
 	}
@@ -3198,12 +3227,27 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		OutputDebugString(debugstream.str().c_str());
 	}
 
-	bool bStaticsOnly = false;
-	if (writer.mConversionOptions.find("#staticsonly") != std::string::npos)
-		bStaticsOnly = true;
+	bool bDoAllRefs = true;
+	bool bDoStatics = false;
+	bool bDoNPCs = false;
+	bool bDoDoors = false;
+	bool bDoActivators = false;
+	bool bDoContainers = false;
+	if (writer.mConversionOptions.find("#statref") != std::string::npos)
+		bDoStatics = true;
+	if (writer.mConversionOptions.find("#npc_ref") != std::string::npos)
+		bDoNPCs = true;
+	if (writer.mConversionOptions.find("#doorref") != std::string::npos)
+		bDoDoors = true;
+	if (writer.mConversionOptions.find("#actiref") != std::string::npos)
+		bDoActivators = true;
+	if (writer.mConversionOptions.find("#contref") != std::string::npos)
+		bDoContainers = true;
+	if (writer.mConversionOptions.find("#norefs") != std::string::npos)
+		bDoAllRefs = false;
 
 	// process a batch of 100 references in each stage
-	for (int i=stage*100; i<stage*100+100 && i<size; ++i)
+	for (int i = stage * 100; i < stage * 100 + 100 && i < size; ++i)
 	{
 		std::string sSIG = "REFR";
 		std::string baseRecordID = "";
@@ -3211,7 +3255,7 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		bool scriptedRef = false;
 
 		// get record then baseObj ID
-		const CSMWorld::Record<CSMWorld::CellRef>& record = mDocument.getData().getReferences().getRecord (i);
+		const CSMWorld::Record<CSMWorld::CellRef>& record = mDocument.getData().getReferences().getRecord(i);
 		baseRecordID = record.get().mRefID;
 		CSMWorld::RefIdData::LocalIndex baseRefIndex = mDocument.getData().getReferenceables().getDataSet().searchId(baseRecordID);
 
@@ -3220,18 +3264,48 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		std::string tempStr = Misc::StringUtils::lowerCase(baseRecordID);
 
 		// check BaseObjToPersistentRefList
-		
-		if (writer.mBaseObjToScriptedREFList.find(tempStr) != writer.mBaseObjToScriptedREFList.end() )
+
+		if (writer.mBaseObjToScriptedREFList.find(tempStr) != writer.mBaseObjToScriptedREFList.end())
 		{
 			persistentRef = true;
 			scriptedRef = true;
 		}
 
-		if (bStaticsOnly)
+
+
+		switch (baseRefIndex.second)
 		{
-			if (baseRefIndex.second != CSMWorld::UniversalId::Type::Type_Static)
+		case CSMWorld::UniversalId::Type::Type_Static:
+			if (bDoStatics == false)
+				continue;
+			break;
+
+		case CSMWorld::UniversalId::Type::Type_Npc:
+			if (bDoNPCs == false)
+				continue;
+			break;
+
+		case CSMWorld::UniversalId::Type::Type_Door:
+			if (bDoDoors == false)
+				continue;
+			break;
+
+		case CSMWorld::UniversalId::Type::Type_Activator:
+			if (bDoActivators == false)
+				continue;
+			break;
+
+		case CSMWorld::UniversalId::Type::Type_Container:
+			if (bDoContainers == false)
+				continue;
+			break;
+
+		default:
+			if (bDoAllRefs == false)
 				continue;
 		}
+
+
 
 		if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
 		{
