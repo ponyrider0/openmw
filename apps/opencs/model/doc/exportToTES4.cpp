@@ -3300,6 +3300,64 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 				continue;
 			break;
 
+		case CSMWorld::UniversalId::Type::Type_Apparatus:
+			if (writer.mConversionOptions.find("#apparef") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Armor:
+			if (writer.mConversionOptions.find("#armoref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Book:
+			if (writer.mConversionOptions.find("#bookref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Clothing:
+			if (writer.mConversionOptions.find("#clotref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Creature:
+			if (writer.mConversionOptions.find("#crearef") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+			if (writer.mConversionOptions.find("#lvlcref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Ingredient:
+			if (writer.mConversionOptions.find("#ingrref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_ItemLevelledList:
+			if (writer.mConversionOptions.find("#lvliref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Light:
+			if (writer.mConversionOptions.find("#lighref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Lockpick:
+			if (writer.mConversionOptions.find("#lockref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Potion:
+			if (writer.mConversionOptions.find("#alchref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Probe:
+			if (writer.mConversionOptions.find("#probref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Sound:
+			if (writer.mConversionOptions.find("#sounref") == std::string::npos)
+				continue;
+			break;
+		case CSMWorld::UniversalId::Type::Type_Weapon:
+			if (writer.mConversionOptions.find("#weapref") == std::string::npos)
+				continue;
+			break;
+
+
 		default:
 			if (bDoAllRefs == false)
 				continue;
