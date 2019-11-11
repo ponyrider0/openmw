@@ -1165,6 +1165,11 @@ namespace ESM
 
 		} // (bIsTopic)
 
+		if (esm.mConversionOptions.find("#noscripts") != std::string::npos)
+		{
+			return;
+		}
+
 		// Result Script block
 		// SCHR... (basic script data)
 		// [unused x4, refcount, compiled size, varcount, script type]

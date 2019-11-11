@@ -177,6 +177,15 @@ namespace ESM
 			bCompileScripts = true;
 		}
 
+		if (esm.mConversionOptions.find("#noscripts") != std::string::npos)
+		{
+			// SCTX (text)
+			esm.startSubRecordTES4("SCTX");
+			esm.writeHCString("");
+			esm.endSubRecordTES4("SCTX");
+			return;
+		}
+
 		ESM::ScriptConverter scriptConverter(mScriptText, esm, doc);
 		scriptConverter.processScript();
 
