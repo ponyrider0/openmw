@@ -386,19 +386,25 @@ void ESM::CellRef::exportTES4 (ESMWriter &esm, const CSMDoc::Document &doc, cons
 		ownerID = esm.crossRefStringID(mOwner, "NPC_");
 	else
 		ownerID = factionID;
+
+	if (esm.mConversionOptions.find("#noowners") != std::string::npos)
+		ownerID = 0;
 	if (ownerID != 0)
 	{
 		esm.startSubRecordTES4("XOWN");
 		esm.writeT<uint32_t>(ownerID);
 		esm.endSubRecordTES4("XOWN");
+
+		// XRNK, faction rank
+		if (factionID != 0 && mFactionRank != -2)
+		{
+			esm.startSubRecordTES4("XRNK");
+			esm.writeT<int32_t>(mFactionRank);
+			esm.endSubRecordTES4("XRNK");
+		}
+
 	}
-	// XRNK, faction rank
-	if (factionID != 0 && mFactionRank != -2)
-	{
-		esm.startSubRecordTES4("XRNK");
-		esm.writeT<int32_t>(mFactionRank);
-		esm.endSubRecordTES4("XRNK");
-	}
+
 	// XGLB
 	uint32_t globalVarID = esm.crossRefStringID(mGlobalVariable, "GLOB");
 	if (ownerID != 0 && globalVarID != 0)
