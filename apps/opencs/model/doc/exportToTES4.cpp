@@ -3233,6 +3233,22 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 	bool bDoDoors = false;
 	bool bDoActivators = false;
 	bool bDoContainers = false;
+	bool bDoAppa = false;
+	bool bDoArmo = false;
+	bool bDoBook = false;
+	bool bDoClot = false;
+	bool bDoCrea = false;
+	bool bDoLVLC = false;
+	bool bDoIngr = false;
+	bool bDoLVLI = false;
+	bool bDoLigh = false;
+	bool bDoLock = false;
+	bool bDoProb = false;
+	bool bDoAlch = false;
+	bool bDoSoun = false;
+	bool bDoWeap = false;
+	if (writer.mConversionOptions.find("#norefs") != std::string::npos)
+		bDoAllRefs = false;
 	if (writer.mConversionOptions.find("#statref") != std::string::npos)
 		bDoStatics = true;
 	if (writer.mConversionOptions.find("#npc_ref") != std::string::npos)
@@ -3243,8 +3259,34 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		bDoActivators = true;
 	if (writer.mConversionOptions.find("#contref") != std::string::npos)
 		bDoContainers = true;
-	if (writer.mConversionOptions.find("#norefs") != std::string::npos)
-		bDoAllRefs = false;
+	if (writer.mConversionOptions.find("#apparef") == std::string::npos)
+		bDoAppa = true;
+	if (writer.mConversionOptions.find("#armoref") == std::string::npos)
+		bDoArmo = true;
+	if (writer.mConversionOptions.find("#bookref") == std::string::npos)
+		bDoBook = true;
+	if (writer.mConversionOptions.find("#clotref") == std::string::npos)
+		bDoClot = true;
+	if (writer.mConversionOptions.find("#crearef") == std::string::npos)
+		bDoCrea = true;
+	if (writer.mConversionOptions.find("#lvlcref") == std::string::npos)
+		bDoLVLC = true;
+	if (writer.mConversionOptions.find("#ingrref") == std::string::npos)
+		bDoIngr = true;
+	if (writer.mConversionOptions.find("#lvliref") == std::string::npos)
+		bDoLVLI = true;
+	if (writer.mConversionOptions.find("#lighref") == std::string::npos)
+		bDoLigh = true;
+	if (writer.mConversionOptions.find("#lockref") == std::string::npos)
+		bDoLock = true;
+	if (writer.mConversionOptions.find("#alchref") == std::string::npos)
+		bDoAlch = true;
+	if (writer.mConversionOptions.find("#probref") == std::string::npos)
+		bDoProb = true;
+	if (writer.mConversionOptions.find("#sounref") == std::string::npos)
+		bDoSoun = true;
+	if (writer.mConversionOptions.find("#weapref") == std::string::npos)
+		bDoWeap = true;
 
 	// process a batch of 100 references in each stage
 	for (int i = stage * 100; i < stage * 100 + 100 && i < size; ++i)
@@ -3272,97 +3314,97 @@ void CSMDoc::ExportReferenceCollectionTES4Stage::perform (int stage, Messages& m
 		}
 
 
-
-		switch (baseRefIndex.second)
+		if (bDoAllRefs == false)
 		{
-		case CSMWorld::UniversalId::Type::Type_Static:
-			if (bDoStatics == false)
-				continue;
-			break;
+			switch (baseRefIndex.second)
+			{
+			case CSMWorld::UniversalId::Type::Type_Static:
+				if (bDoStatics == false)
+					continue;
+				break;
 
-		case CSMWorld::UniversalId::Type::Type_Npc:
-			if (bDoNPCs == false)
-				continue;
-			break;
+			case CSMWorld::UniversalId::Type::Type_Npc:
+				if (bDoNPCs == false)
+					continue;
+				break;
 
-		case CSMWorld::UniversalId::Type::Type_Door:
-			if (bDoDoors == false)
-				continue;
-			break;
+			case CSMWorld::UniversalId::Type::Type_Door:
+				if (bDoDoors == false)
+					continue;
+				break;
 
-		case CSMWorld::UniversalId::Type::Type_Activator:
-			if (bDoActivators == false)
-				continue;
-			break;
+			case CSMWorld::UniversalId::Type::Type_Activator:
+				if (bDoActivators == false)
+					continue;
+				break;
 
-		case CSMWorld::UniversalId::Type::Type_Container:
-			if (bDoContainers == false)
-				continue;
-			break;
+			case CSMWorld::UniversalId::Type::Type_Container:
+				if (bDoContainers == false)
+					continue;
+				break;
 
-		case CSMWorld::UniversalId::Type::Type_Apparatus:
-			if (writer.mConversionOptions.find("#apparef") == std::string::npos)
+			case CSMWorld::UniversalId::Type::Type_Apparatus:
+				if (bDoAppa == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Armor:
+				if (bDoArmo == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Book:
+				if (bDoBook == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Clothing:
+				if (bDoClot == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Creature:
+				if (bDoCrea == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
+				if (bDoLVLC == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Ingredient:
+				if (bDoIngr == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_ItemLevelledList:
+				if (bDoLVLI == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Light:
+				if (bDoLigh == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Lockpick:
+				if (bDoLock == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Potion:
+				if (bDoAlch == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Probe:
+				if (bDoProb == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Sound:
+				if (bDoSoun == false)
+					continue;
+				break;
+			case CSMWorld::UniversalId::Type::Type_Weapon:
+				if (bDoWeap == false)
+					continue;
+				break;
+			default:
 				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Armor:
-			if (writer.mConversionOptions.find("#armoref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Book:
-			if (writer.mConversionOptions.find("#bookref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Clothing:
-			if (writer.mConversionOptions.find("#clotref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Creature:
-			if (writer.mConversionOptions.find("#crearef") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_CreatureLevelledList:
-			if (writer.mConversionOptions.find("#lvlcref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Ingredient:
-			if (writer.mConversionOptions.find("#ingrref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_ItemLevelledList:
-			if (writer.mConversionOptions.find("#lvliref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Light:
-			if (writer.mConversionOptions.find("#lighref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Lockpick:
-			if (writer.mConversionOptions.find("#lockref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Potion:
-			if (writer.mConversionOptions.find("#alchref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Probe:
-			if (writer.mConversionOptions.find("#probref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Sound:
-			if (writer.mConversionOptions.find("#sounref") == std::string::npos)
-				continue;
-			break;
-		case CSMWorld::UniversalId::Type::Type_Weapon:
-			if (writer.mConversionOptions.find("#weapref") == std::string::npos)
-				continue;
-			break;
 
+			}
 
-		default:
-			if (bDoAllRefs == false)
-				continue;
 		}
-
 
 
 		if (baseRefIndex.second == CSMWorld::UniversalId::Type::Type_Npc)
