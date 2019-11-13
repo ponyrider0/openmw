@@ -2305,9 +2305,27 @@ namespace ESM
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "forcegreeting")
 		{
-			cmdString = "StartConversation";
-			argString = "player";
-			bEvalArgString = true;
+//			cmdString = "StartConversation";
+//			argString = "player";
+//			bEvalArgString = true;
+			std::string scriptFuncName = "mwStartConversationHelperFunction";
+			cmdString = "Call";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x00);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "setpccrimelevel")
 		{
