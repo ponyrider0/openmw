@@ -2151,14 +2151,40 @@ namespace ESM
 			// check if player, then hardcode to FollowPlayer package
 			if (Misc::StringUtils::lowerCase(argString).find("player") != std::string::npos)
 			{
-				// hardcode
-				// cmdline: AddScriptPackage ref:FollowPlayer
-				// FORMID: 0x0009828A 
-				cmdString = "AddScriptPackage";
-				argString = "FollowPlayer";
-				argSIG = "PACK";
-				bSkipArgParse = true;
-				bEvalArgString = true;
+				// check if dialog result script vs. object/actor script
+				if (bIsFullScript)
+				{
+					// if object/actor script, then use hardcoded followplayer
+					// cmdline: AddScriptPackage ref:FollowPlayer
+					// FORMID: 0x0009828A 
+					cmdString = "AddScriptPackage";
+					argString = "FollowPlayer";
+					argSIG = "PACK";
+					bSkipArgParse = true;
+					bEvalArgString = true;
+				}
+				else
+				{
+					// if dialog result script, then use "Call mwDialogHelperFollowPCFunction"
+					std::string scriptFuncName = "mwDialogHelperFollowPCFunction";
+					cmdString = "Call";
+					std::string scriptSIG = "SCPT";
+					uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+					// compose new arg string
+					argString = scriptFuncName;
+					// compile argstring
+					// 01 05 ...
+					countParams = 0x0501;
+					// 00 52 +(global ref index)
+					argdata.push_back(0x00);
+					argdata.push_back(0x52);
+					for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+					// number of arguments
+					argdata.push_back(0x00);
+					bUseBinaryData = true;
+					bEvalArgString = false;
+				}
+
 			}
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "aiwander")
@@ -2166,35 +2192,61 @@ namespace ESM
 			tokenItem++;
 			std::string wanderRangeStr = tokenItem->str;
 			int wanderRange = atoi(wanderRangeStr.c_str());
-			// default
-			argString = "aaaDefaultExploreCurrentLoc256";
-			if (wanderRange == 0)
+
+			if (bIsFullScript)
 			{
-				argString = "aaaDefaultStayAtEditorLocation";
-			}
-			else if (wanderRange <= 256)
-			{
+				// default
 				argString = "aaaDefaultExploreCurrentLoc256";
+				if (wanderRange == 0)
+				{
+					argString = "aaaDefaultStayAtEditorLocation";
+				}
+				else if (wanderRange <= 256)
+				{
+					argString = "aaaDefaultExploreCurrentLoc256";
+				}
+				else if (wanderRange <= 512)
+				{
+					argString = "aaaDefaultExploreEditorLoc512"; // todo: make currentloc512
+				}
+				else if (wanderRange <= 1000)
+				{
+					argString = "aaaDefaultExploreEditorLoc1024"; // todo: make currentloc1024
+				}
+				else if (wanderRange > 1000)
+				{
+					argString = "aaaDefaultExploreCurrentLoc3000";
+				}
+				// hardcode
+				// cmdline: AddScriptPackage ref:FollowPlayer
+				// FORMID: 0x0009828A 
+				cmdString = "AddScriptPackage";
+				argSIG = "PACK";
+				bSkipArgParse = true;
+				bEvalArgString = true;
 			}
-			else if (wanderRange <= 512)
+			else
 			{
-				argString = "aaaDefaultExploreEditorLoc512"; // todo: make currentloc512
+				// if dialog result script, then use "Call mwDialogHelperAIWanderFunction"
+				std::string scriptFuncName = "mwDialogHelperAIWanderFunction";
+				cmdString = "Call";
+				std::string scriptSIG = "SCPT";
+				uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+				// compose new arg string
+				argString = scriptFuncName;
+				// compile argstring
+				// 01 05 ...
+				countParams = 0x0501;
+				// 00 52 +(global ref index)
+				argdata.push_back(0x00);
+				argdata.push_back(0x52);
+				for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+				// number of arguments
+				argdata.push_back(0x00);
+				bUseBinaryData = true;
+				bEvalArgString = false;
 			}
-			else if (wanderRange <= 1000)
-			{
-				argString = "aaaDefaultExploreEditorLoc1024"; // todo: make currentloc1024
-			}
-			else if (wanderRange > 1000)
-			{
-				argString = "aaaDefaultExploreCurrentLoc3000";
-			}
-			// hardcode
-			// cmdline: AddScriptPackage ref:FollowPlayer
-			// FORMID: 0x0009828A 
-			cmdString = "AddScriptPackage";
-			argSIG = "PACK";
-			bSkipArgParse = true;
-			bEvalArgString = true;
+
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getdeadcount")
 		{
