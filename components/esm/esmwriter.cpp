@@ -2823,11 +2823,13 @@ namespace ESM
 			switch (modelType)
 			{
 			case 0:
-				stringList.push_back("morroblivion\\creatures\\swampfly\\skeleton.nif");
+//				stringList.push_back("morroblivion\\creatures\\swampfly\\skeleton.nif");
+				stringList.push_back("Creatures\\Imp\\Skeleton.NIF");
 				break;
 
 			case 1:
-				stringList.push_back("body.nif");
+//				stringList.push_back("body.nif");
+				stringList.push_back("imp.nif");
 				break;
 			}
 		}
