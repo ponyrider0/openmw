@@ -601,6 +601,61 @@ int CSMDoc::SavingState::loadmwEDIDSubstitutionMap2(std::string filename)
 	return errorcode;
 }
 
+int CSMDoc::SavingState::loadCreatureEDIDModelmap(std::string filename)
+{
+	std::cout << "Importing '" << filename << "'" << std::endl;
+
+	int errorcode = 0;
+
+	std::ifstream inputFile(filename);
+	std::string inputLine;
+
+	// skip header line
+	std::getline(inputFile, inputLine);
+
+	while (std::getline(inputFile, inputLine))
+	{
+		std::istringstream parserStream(inputLine);
+		std::string tempModelStr, strGenEDID;
+		std::vector<std::string> stringList;
+		uint32_t formID;
+
+		for (int i = 0; i >= 0; i++)
+		{
+			std::string token;
+			std::getline(parserStream, token, ',');
+
+			if (token == "")
+				break;
+
+			// assign token to string
+			switch (i)
+			{
+			case 0:
+				strGenEDID = token;
+				std::cout << "DEBUG: loadCreatureEDIDModelMap(): EDID=" << strGenEDID;
+				break;
+			default:
+				tempModelStr = token;
+				std::cout << ", modelName=" << tempModelStr;
+				stringList.push_back(tempModelStr);
+				break;
+			}
+		}
+		std::cout << "\n";
+
+		if (stringList.size() == 0 || strGenEDID == "")
+			continue;
+
+		mWriter.mCreatureEDIDModelmap[Misc::StringUtils::lowerCase(strGenEDID)] = stringList;
+
+	}
+	inputFile.close();
+
+	return errorcode;
+}
+
+
 int CSMDoc::SavingState::loadEDIDmap3(std::string filename)
 {
 	std::cout << "Importing '" << filename << "'" << std::flush;
@@ -1121,6 +1176,8 @@ int CSMDoc::SavingState::initializeSubstitutions(std::string esmName)
 //	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmapCREA.csv");
 //	loadmwEDIDSubstitutionMap(csvRoot + "GenericToMorroblivionEDIDmap.csv");
 	loadmwEDIDSubstitutionMap2(csvRoot + "GenericToMorroblivionEDIDmap2b.csv");
+
+	loadCreatureEDIDModelmap(csvRoot + esmName +  "_CreatureModelSubs.csv");
 
 	if (mWriter.mESMMastersmap.find(Misc::StringUtils::lowerCase(esmName)) != mWriter.mESMMastersmap.end())
 	{

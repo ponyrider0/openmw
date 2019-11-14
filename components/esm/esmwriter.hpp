@@ -208,7 +208,9 @@ public:
 		static std::string substituteBookModel(const std::string& model, int modelType);
 		static std::string substituteLightModel(const std::string& model, int modelType);
 		static std::string substituteWeaponModel(const std::string& model, int modelType);
-		static std::vector<std::string> substituteCreatureModel(const std::string& creatureEDID, int modelType);
+		static std::vector<std::string> substituteCreatureModel(const std::string& creatureEDID);
+		std::vector<std::string> substituteCreatureModel2(const std::string& creatureEDID);
+		std::map<std::string, std::vector<std::string>> mCreatureEDIDModelmap;
 
 		static std::string substituteHairID(const std::string& hairName);
 		void exportFaceGen(const std::string& headName);

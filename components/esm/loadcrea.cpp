@@ -259,9 +259,11 @@ namespace ESM {
 
 		}
 
-		std::vector<std::string> skeletonString = esm.substituteCreatureModel(strEDID, 0);
+		std::vector<std::string> modelList2 = esm.substituteCreatureModel2(strEDID);
+//		std::vector<std::string> skeletonString = esm.substituteCreatureModel(strEDID, 0);
 		esm.startSubRecordTES4("MODL");
-		esm.writeHCString(skeletonString[0]);
+//		esm.writeHCString(skeletonString[0]);
+		esm.writeHCString(modelList2[0]);
 		esm.endSubRecordTES4("MODL");
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(140);
@@ -288,11 +290,19 @@ namespace ESM {
 		esm.endSubRecordTES4("NIFZ");
 		// NIFT
 */
-		std::vector<std::string> modelList = esm.substituteCreatureModel(strEDID, 1);
+//		std::vector<std::string> modelList = esm.substituteCreatureModel(strEDID, 1);
 		esm.startSubRecordTES4("NIFZ");
-		for (auto stringIter = modelList.begin(); stringIter != modelList.end(); stringIter++)
+		if (modelList2.size() > 1)
 		{
-			esm.writeHCString(*stringIter);
+			for (auto stringIter = modelList2.begin(); stringIter != modelList2.end(); stringIter++)
+			{
+				if (stringIter == modelList2.begin()) ++stringIter;
+				esm.writeHCString(*stringIter);
+			}
+		}
+		else
+		{
+			esm.writeHCString("");
 		}
 		esm.writeT<uint8_t>(0); // terminating null character for string list
 		esm.endSubRecordTES4("NIFZ");
