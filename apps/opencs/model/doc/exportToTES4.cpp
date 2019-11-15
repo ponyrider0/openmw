@@ -1152,7 +1152,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			writer.endRecordTES4("DIAL");
 
 			writer.startGroupTES4(choiceformID, 7);
-			for (auto infoChoiceItem = choiceNumPair->second.begin(); infoChoiceItem != choiceNumPair->second.end(); infoChoiceItem++)
+			for (auto infoChoiceItem = choiceNumPair->second.rbegin(); infoChoiceItem != choiceNumPair->second.rend(); infoChoiceItem++)
 			{
 				std::string infoEDID = "info#" + choiceTopicStr.str() + infoChoiceItem->mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
