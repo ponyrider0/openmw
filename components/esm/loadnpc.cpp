@@ -227,8 +227,8 @@ namespace ESM
 			flags |= 0x08;
 		if (mFlags & Flags::Autocalc)
 			flags |= 0x10;
-		// turn on NoRumors
-		flags |= 0x2000;
+		flags |= 0x200; // No Low Level Processing 
+		flags |= 0x2000; // turn on NoRumors
 		esm.writeT<uint32_t>(flags); //flags
 		tempVal = (autocalc) ? 50 : mNpdt52.mMana;
 		esm.writeT<uint16_t>(tempVal); // base spell pts
