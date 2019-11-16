@@ -975,13 +975,16 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 				{
 					std::string actorEDID = writer.generateEDIDTES4(info.mActor, 0, "NPC_");
 					std::stringstream choiceTopicKey;
-					choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choicePair->first;
-					if (choicePair->second == "")
+					std::string topicString = choicePair->second;
+					int choiceNum = choicePair->first;
+					choiceTopicKey << topicEDID << "X" << actorEDID << "X" << choiceNum;
+					if (topicString == "")
 					{
 						std::string errorMesg = "ERROR: empty choice text: " + info.mId + "\n";
 						OutputDebugString(errorMesg.c_str());
 					}
-					infoChoiceTopicNames.insert(std::make_pair(choiceTopicKey.str(), choicePair->second));
+//					infoChoiceTopicNames.insert(std::make_pair(choiceTopicKey.str(), topicString));
+					infoChoiceTopicNames[choiceTopicKey.str()] = topicString;
 				}
 
 				bool bIsHello = false;
@@ -1124,24 +1127,24 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 //			int choiceNum = choiceNumPair->first;
 			std::string choiceTopicKey = choiceNumPair->first;
 			std::string fullString = infoChoiceTopicNames[choiceTopicKey];
-			std::stringstream choiceTopicStr(choiceTopicKey);
+//			std::stringstream choiceTopicKeyStr(choiceTopicKey);
 //			choiceTopicStr << topicEDID << "Choice" << choiceNum;
 
 			if (fullString == "")
 			{
-				std::string errorMesg = "ERROR: choice topic is empty: " + choiceTopicStr.str() + "\n";
+				std::string errorMesg = "ERROR: choice topic is empty: " + choiceTopicKey + "\n";
 				OutputDebugString(errorMesg.c_str());
 			}
 
-			uint32_t choiceformID = writer.crossRefStringID(choiceTopicStr.str(), "DIAL", false, true);
+			uint32_t choiceformID = writer.crossRefStringID(choiceTopicKey, "DIAL", false, true);
 			if (choiceformID == 0)
 			{
-				choiceformID = writer.reserveFormID(choiceformID, choiceTopicStr.str(), "DIAL");
+				choiceformID = writer.reserveFormID(choiceformID, choiceTopicKey, "DIAL");
 			}
 			uint32_t flags = 0;
-			writer.startRecordTES4("DIAL", flags, choiceformID, choiceTopicStr.str());
+			writer.startRecordTES4("DIAL", flags, choiceformID, choiceTopicKey);
 			writer.startSubRecordTES4("EDID");
-			writer.writeHCString(choiceTopicStr.str());
+			writer.writeHCString(choiceTopicKey);
 			writer.endSubRecordTES4("EDID");
 			writer.startSubRecordTES4("FULL");
 			writer.writeHCString(fullString);
@@ -1154,7 +1157,7 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 			writer.startGroupTES4(choiceformID, 7);
 			for (auto infoChoiceItem = choiceNumPair->second.rbegin(); infoChoiceItem != choiceNumPair->second.rend(); infoChoiceItem++)
 			{
-				std::string infoEDID = "info#" + choiceTopicStr.str() + infoChoiceItem->mId;
+				std::string infoEDID = "info#" + choiceTopicKey + infoChoiceItem->mId;
 				uint32_t infoFormID = writer.crossRefStringID(infoEDID, "INFO", false, true);
 				uint32_t infoFlags = 0;
 				if (topic.isDeleted()) infoFlags |= 0x800; // DISABLED
