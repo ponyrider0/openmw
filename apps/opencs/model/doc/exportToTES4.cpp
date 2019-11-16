@@ -564,8 +564,16 @@ std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTop
 		int searchResult;
 		if ( (searchResult = searchText.find(*keyphrase)) != searchText.npos)
 		{
+			// check beginning, to make sure not part of larger word
 			if (searchResult == 0 || (searchText[searchResult - 1] < 'a' || searchText[searchResult - 1] > 'z'))
 			{
+				int searchResultEnd = searchResult + (*keyphrase).size();
+				// check ending, to make sure not part of larger word
+				if (searchResultEnd < searchText.size())
+				{
+					if (searchText[searchResultEnd] !='s' && searchText[searchResultEnd] <= 'a' && searchText[searchResultEnd] >= 'z')
+						continue;
+				}
 				addTopicList.push_back(mState.getWriter().generateEDIDTES4(*keyphrase, 4));
 			}
 		}
