@@ -571,7 +571,7 @@ std::vector<std::string> CSMDoc::ExportDialogueCollectionTES4Stage::CreateAddTop
 				// check ending, to make sure not part of larger word
 				if (searchResultEnd < searchText.size())
 				{
-					if (searchText[searchResultEnd] !='s' && searchText[searchResultEnd] <= 'a' && searchText[searchResultEnd] >= 'z')
+					if (searchText[searchResultEnd] !='s' && searchText[searchResultEnd] >= 'a' && searchText[searchResultEnd] <= 'z')
 						continue;
 				}
 				addTopicList.push_back(mState.getWriter().generateEDIDTES4(*keyphrase, 4));
