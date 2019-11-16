@@ -179,31 +179,39 @@ namespace ESM
 		// There are two passes for each variable: 
 		//	the first pass is the ideal match which will replace the leading space,
 		//	the second pass is a fuzzy match which will add an extra leading space.
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCName", "&sUActnQuick1;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCName", "&sUActnQuick1;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %Name", "&sUActnQuick2;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%Name", "&sUActnQuick2;");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCName", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCName", "&sUActnQuick1;");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %Name", "&sUActnQuick2;");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%Name", "&sUActnQuick2;");
 
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCNAME", "&sUActnQuick1;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCNAME", "&sUActnQuick1;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %NAME", "&sUActnQuick2;");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%NAME", "&sUActnQuick2;");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCNAME", "&sUActnQuick1;");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCNAME", "&sUActnQuick1;");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %NAME", "&sUActnQuick2;");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%NAME", "&sUActnQuick2;");
 
 		// first pass catches uncapitalized instances of words
 		// second pass should catch remaining instances needing capitalization
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRace", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRace", "Outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCClass", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCClass", "Outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRank", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRank", "Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ".  %PCRace", ".  Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ". %PCRace", ". Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCRace", " outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCRace", "Outlander");
 
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRACE", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRACE", "Outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCCLASS", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCCLASS", "Outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, " %PCRANK", " outlander");
-		newResponse = Misc::StringUtils::replaceAll(newResponse, "%PCRANK", "Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ".  %PCClass", ".  Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ". %PCClass", ". Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCClass", " outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCClass", "Outlander");
+
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ".  %PCRank", ".  Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, ". %PCRank", ". Outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCRank", " outlander");
+		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCRank", "Outlander");
+
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCRACE", " outlander");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCRACE", "Outlander");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCCLASS", " outlander");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCCLASS", "Outlander");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, " %PCRANK", " outlander");
+//		newResponse = Misc::StringUtils::replaceAllAnyCase(newResponse, "%PCRANK", "Outlander");
 
 		if (bIsQuestStage)
 		{

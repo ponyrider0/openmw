@@ -150,6 +150,20 @@ public:
 		return str;
 	}
 
+	static std::string replaceAllAnyCase(std::string str, const std::string& from, const std::string& to)
+	{
+		size_t start_pos = 0;
+		std::string lowercaseStr = lowerCase(str);
+		std::string lowercaseFrom = lowerCase(from);
+		while ((start_pos = lowercaseStr.find(lowercaseFrom, start_pos)) != std::string::npos)
+		{
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+		}
+		return str;
+	}
+
+
 };
 
 }
