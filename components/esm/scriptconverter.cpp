@@ -2802,6 +2802,31 @@ namespace ESM
 			newString << confidenceVal;
 			arg2String = newString.str();
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "setalarm")
+		{
+			cmdString = "SetActorValue";
+			arg1String = "Responsibility";
+			bUseBinaryData1 = true;
+			uint16_t actorvalue = 36; // hardcoded with TES4 AV for Responsibility
+			for (int i = 0; i < 2; i++) arg1data.push_back(reinterpret_cast<uint8_t *> (&actorvalue)[i]);
+			bUseBinaryData2 = true;
+			tokenItem++;
+			if (sub_parse_arg(tokenItem, arg2String, bEvalArg2, bNeedsDialogHelper2) == false)
+			{
+				abort("parse_2arg(): error parse argument2.\n");
+				return;
+			}
+			int responsibilityVal = 0;
+			int alarmVal = atoi(arg2String.c_str());
+			// use 3 checks in case we want to modify curve mapping
+			if (alarmVal == 0) responsibilityVal = 30;
+			else if (alarmVal < 70) responsibilityVal = alarmVal + 30;
+			else if (alarmVal >= 70) responsibilityVal = 100;
+			arg2data = compile_param_long(responsibilityVal);
+			std::stringstream newString;
+			newString << responsibilityVal;
+			arg2String = newString.str();
+		}
 		else if ( (getAVresult=check_get_set_mod_AV_command(cmdString)) >= 0)
 		{
 			if (sub_parse_get_set_mod_AV_command(tokenItem, getAVresult, cmdString, arg1String, arg1data) == false)
@@ -2921,6 +2946,7 @@ namespace ESM
 				bEvalArg2 = false;
 			}
 		}
+
 
 		if (arg1String == "")
 		{
@@ -3888,6 +3914,7 @@ namespace ESM
 			|| (tokenString == "modfight")
 			|| (tokenString == "setfight")
 			|| (tokenString == "setflee")
+			|| (tokenString == "setalarm")
 //			|| (tokenString == "sethealth")
 			|| (tokenString == "pcclearexpelled")
 			|| (tokenString == "lock")
@@ -5294,6 +5321,8 @@ namespace ESM
 		mKeywords.push_back("fadeout");
 		mKeywords.push_back("getdetected");
 		mKeywords.push_back("scriptrunning");
+
+		mKeywords.push_back("setalarm");
 
 	}
 
