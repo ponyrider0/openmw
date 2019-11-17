@@ -6599,6 +6599,7 @@ void CSMDoc::FinalizeExportTES4Stage::perform (int stage, Messages& messages)
 	std::cout << "..Log writing done.\n\n[" << modStem << "] EXPORT COMPLETED! You may now close the ModExporter, or open another ESP." << std::endl;
 }
 
+// TODO: Fix wrong sibling error
 uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWorld::CellRef& refRecord, uint32_t refFormID, ESM::Position& returnPosition)
 {
 	uint32_t teleportDoorRefID = 0;
@@ -6616,11 +6617,42 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 	std::map<std::string, std::deque<int>>::iterator destCellPersistentRefList;
 
 	if (refRecord.mDestCell.length() != 0)
-		// interior cell persistent ref list
-		destCellPersistentRefList = mState.mPersistentRefMap.find(Misc::StringUtils::lowerCase (refRecord.mDestCell) );
+	{
+		// if mDest is exterior cell, then use "worldspace-dummycell" instead
+		// 1. get mDest object
+		CSMWorld::Record<CSMWorld::Cell> cellRecord = mDocument.getData().getCells().getRecord(refRecord.mDestCell);
+		// 2. check interior == false
+		if (cellRecord.get().isExterior())
+		{
+			// 3. redirect to worldspace-dummycell
+			destCellPersistentRefList = mState.mPersistentRefMap.find("worldspace-dummycell");
+		}
+		else
+		{
+			// interior cell persistent ref list
+			destCellPersistentRefList = mState.mPersistentRefMap.find(Misc::StringUtils::lowerCase(refRecord.mDestCell));
+		}
+	}
 	else
-		// exterior cell persistent ref list
+	{
+/*
+		CSMWorld::Record<CSMWorld::Cell> cellRecord = mDocument.getData().getCells().getRecord(refRecord.mCell);
+		if (cellRecord.get().isExterior())
+		{
+			// 3. redirect to worldspace-dummycell
+			destCellPersistentRefList = mState.mPersistentRefMap.find("worldspace-dummycell");
+		}
+		else
+		{
+			// dest door in same cell
+			destCellPersistentRefList = mState.mPersistentRefMap.find(Misc::StringUtils::lowerCase(refRecord.mCell));
+		}
+*/
 		destCellPersistentRefList = mState.mPersistentRefMap.find("worldspace-dummycell");
+
+	}
+
+
 
 	if (destCellPersistentRefList == mState.mPersistentRefMap.end() )
 	{
@@ -6637,11 +6669,15 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 		}
 	}
 
+	std::vector<std::pair<CSMWorld::Record<CSMWorld::CellRef>, int>> SiblingDoorCandidateList;
 	for (auto dest_refIndex = destCellPersistentRefList->second.begin();
 		dest_refIndex != destCellPersistentRefList->second.end(); dest_refIndex++)
 	{
 		auto destRef = mDocument.getData().getReferences().getRecord(*dest_refIndex);
 		auto destRefBaseRecord = mDocument.getData().getReferenceables().getDataSet().searchId(destRef.get().mRefID);
+		// *******
+		// CHECK FOR **BEST** MATCH
+		// *******
 		if (destRefBaseRecord.second == CSMWorld::UniversalId::Type_Door)
 		{
 			float distanceDoorToDest = writer.calcDistance(refRecord.mDoorDest, destRef.get().mPos);
@@ -6653,30 +6689,62 @@ uint32_t CSMDoc::FindSiblingDoor(Document& mDocument, SavingState& mState, CSMWo
 //			destRefStringID << "*refindex" << *dest_refIndex;
 //			std::string strEDID = writer.generateEDIDTES4(destRef.get().mId);
 			std::string strEDID = destRef.get().mId;
-			teleportDoorRefID = writer.crossRefStringID(strEDID, "REFR", false, false);
-			if (teleportDoorRefID == 0)
+			uint32_t candidateRefID = writer.crossRefStringID(strEDID, "REFR", false, false);
+			if (candidateRefID == 0)
 			{
 //				throw std::runtime_error("Find Sibling Door: ERROR: Destination door does not have a formID.");
 				continue;
 			}
 			// WORKAROUND: check if this door is already registered in map, if so, look for another door
-			if (mState.mReferenceToReferenceMap.find(teleportDoorRefID) != mState.mReferenceToReferenceMap.end() ||
-				teleportDoorRefID == refFormID)
+			if (mState.mReferenceToReferenceMap.find(candidateRefID) != mState.mReferenceToReferenceMap.end())
 			{
 				continue;
 			}
-			else
+
+			if (candidateRefID == refFormID)
 			{
-				// add matching door ID as index to retrieve current Reference Door ID
-				mState.mReferenceToReferenceMap.insert(std::make_pair(teleportDoorRefID, refFormID));
-				for (int i=0; i < 3; i++)
-				{				
-					returnPosition.pos[i] = destRef.get().mPos.pos[i] - refRecord.mDoorDest.pos[i];
-					returnPosition.rot[i] = refRecord.mDoorDest.rot[i];
-				}
-				break;
+				continue;
+			}
+
+			// Add to list of door candidates
+			SiblingDoorCandidateList.push_back(std::make_pair(destRef, distanceDoorToDest));
+		}
+	}
+
+	if (SiblingDoorCandidateList.size() == 0)
+	{
+		//  throw std::runtime_error("Find Sibling Door: ERROR: Destination Cell not found.");
+		return 0;
+	}
+
+	CSMWorld::Record<CSMWorld::CellRef> bestmatchRef;
+	uint32_t shortestDistance;
+	for (auto candidate = SiblingDoorCandidateList.begin(); candidate != SiblingDoorCandidateList.end(); candidate++)
+	{
+		if (candidate == SiblingDoorCandidateList.begin())
+		{
+			bestmatchRef = candidate->first;
+			shortestDistance = candidate->second;
+		}
+		else
+		{
+			if (candidate->second < shortestDistance)
+			{
+				bestmatchRef = candidate->first;
+				shortestDistance = candidate->second;
 			}
 		}
+	}
+	std::string bestmatchEDID = bestmatchRef.get().mId;
+	teleportDoorRefID = writer.crossRefStringID(bestmatchEDID, "REFR", false, false);
+
+	// add matching door ID as index to retrieve current Reference Door ID
+	mState.mReferenceToReferenceMap.insert(std::make_pair(teleportDoorRefID, refFormID));
+	// translate mDoorDest position to relative position from mDoor
+	for (int i = 0; i < 3; i++)
+	{
+		returnPosition.pos[i] = bestmatchRef.get().mPos.pos[i] - refRecord.mDoorDest.pos[i];
+		returnPosition.rot[i] = refRecord.mDoorDest.rot[i];
 	}
 
 	return teleportDoorRefID;
