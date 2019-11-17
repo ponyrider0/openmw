@@ -3263,18 +3263,26 @@ namespace ESM
 				std::string tempCallbackName = tokenItem->str;
 				// EXCEPTION CHECK for On<Event> == 0 reverse events... for now issue error and skip those events
 				tokenItem++;
-				if (tokenItem->str != "==" && tokenItem->str != ")" && tokenItem->type != TokenType::endlineT)
-				{
-					// unhandled On<Event> condition
-					abort("[" + tempCallbackName + "] unhandled callback condition: '" + tokenItem->str + "'\n");
-				}
-				else if (tokenItem->str == "==")
+				if (tokenItem->str == "==" || tokenItem->str == ">=")
 				{
 					tokenItem++;
 					if (tokenItem->str != "1")
 					{
 						abort("[" + tempCallbackName + "] unhandled callback condition: =='" + tokenItem->str + "'\n");
 					}
+				}
+				else if (tokenItem->str == "!=")
+				{
+					tokenItem++;
+					if (tokenItem->str != "0")
+					{
+						abort("[" + tempCallbackName + "] unhandled callback condition: =='" + tokenItem->str + "'\n");
+					}
+				}
+				else if (tokenItem->str != ")" && tokenItem->type != TokenType::endlineT)
+				{
+					// unhandled On<Event> condition
+					abort("[" + tempCallbackName + "] unhandled callback condition: '" + tokenItem->str + "'\n");
 				}
 
 				if (Misc::StringUtils::lowerCase(tempCallbackName) == "getaipackagedone")
