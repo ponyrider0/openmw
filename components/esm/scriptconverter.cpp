@@ -2045,10 +2045,18 @@ namespace ESM
 			argSIG = "DIAL";
 		}
 		else if ( (Misc::StringUtils::lowerCase(cmdString) == "playsoundvp")
-			|| (Misc::StringUtils::lowerCase(cmdString) == "playsound3dvp") )
+			|| (Misc::StringUtils::lowerCase(cmdString) == "playsound3dvp")
+			)
 		{
+			// remove 'vp' from command
 			cmdString = cmdString.substr(0, cmdString.size()-2);
 			// any need to remove extra argument data ??
+		}
+		else if ((Misc::StringUtils::lowerCase(cmdString) == "playloopsound3dvp")
+			|| (Misc::StringUtils::lowerCase(cmdString) == "playloopsound3d")
+			)
+		{
+			cmdString = "playsound3d";
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "centeroncell")
 		{
@@ -3964,6 +3972,8 @@ namespace ESM
 			|| (tokenString == "playsound3d")
 			|| (tokenString == "playsoundvp")
 			|| (tokenString == "playsound3dvp")
+			|| (tokenString == "playloopsound3dvp")
+			|| (tokenString == "playloopsound3d")
 			|| (tokenString == "centeroncell")
 			|| (tokenString == "equip")
 			|| (tokenString == "getjournalindex")
@@ -5287,6 +5297,7 @@ namespace ESM
 		mKeywords.push_back("dontsaveobject");
 		mKeywords.push_back("stopsound");
 		mKeywords.push_back("playloopsound3dvp");
+		mKeywords.push_back("playloopsound3d");
 		mKeywords.push_back("forcegreeting");
 
 		mKeywords.push_back("random");
