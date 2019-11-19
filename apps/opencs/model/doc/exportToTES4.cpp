@@ -739,6 +739,15 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::appendSpecialRecords()
 			writer.writeT<uint8_t>(questPriority);
 			writer.endSubRecordTES4("DATA");
 
+			// hardcode Morrowind and PlayableRace
+			// #1) GetQuestRunning(MorroDefaultQuest) == 1
+			uint32_t MorroDefaultQuestFormID = 0x013A0000;
+			uint32_t compareFunction = 0x0038; // GetQuestRunning (0x1038)
+			writer.exportConditionalExpression(compareFunction, MorroDefaultQuestFormID, "=", 1.0);
+			// #2) GetIsPlayableRace() ==  1
+			compareFunction = 0x00FE; // GetIsPlayableRace (0x10FE) 
+			writer.exportConditionalExpression(compareFunction, MorroDefaultQuestFormID, "=", 1.0);
+
 			writer.endRecordTES4("QUST");
 		}
 
@@ -860,9 +869,18 @@ void CSMDoc::ExportDialogueCollectionTES4Stage::perform (int stage, Messages& me
 		writer.writeT<uint8_t>(questPriority);
 		writer.endSubRecordTES4("DATA");
 
+		// hardcode Morrowind and PlayableRace
+		// #1) GetQuestRunning(MorroDefaultQuest) == 1
+		uint32_t MorroDefaultQuestFormID = 0x013A0000;
+		uint32_t compareFunction = 0x0038; // GetQuestRunning (0x1038)
+		writer.exportConditionalExpression(compareFunction, MorroDefaultQuestFormID, "=", 1.0);
+		// #2) GetIsPlayableRace() ==  1
+		compareFunction = 0x00FE; // GetIsPlayableRace (0x10FE) 
+		writer.exportConditionalExpression(compareFunction, MorroDefaultQuestFormID, "=", 1.0);
+		// add CTDA conditions if any
 		if (hasQuestData)
 		{
-			// use CTDAs as global conditions for quest
+			// TODO....
 		}
 
 		// write modified quest stages (info records)
