@@ -115,7 +115,7 @@ namespace ESM {
 		bool bUseVarReference = false;
 		std::string mCommandRef_EDID = "";
 		std::string mVarRef_mID = "";
-		int mDialogHelperIndex=0;
+//		int mDialogHelperIndex=0;
 		bool bSetCmd = false;
 		bool bIfCmd = false;
 		int mSetCmd_StartPosition=0;

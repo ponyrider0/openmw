@@ -600,7 +600,15 @@ namespace ESM
 			bool bLookupFailed = false;
 			if (bUseVarReference == false)
 			{
-				if (prepare_localvar(varString) == 0)
+				if (prepare_localvar(varString) == 1)
+				{
+					if (bIsFullScript == false)
+					{
+						bUseVarReference = true;
+						mVarRef_mID = "mwDialogHelper";
+					}
+				}
+				else
 				{
 					if (prepare_reference(refEDID, refSIG, 100) == 0)
 						bLookupFailed = true;
@@ -1637,7 +1645,14 @@ namespace ESM
 			// check if localvar, if not then check if reference
 			if (bUseVarReference == false)
 			{
-				if (prepare_localvar(varString) == 0)
+				if (prepare_localvar(varString) == 1)
+				{
+					if (bIsFullScript == false)
+					{
+						bNeedsDialogHelper = true;
+					}
+				}
+				else
 				{
 					if (prepare_reference(refEDID, refSIG, 100) == 0)
 					{
@@ -1917,12 +1932,16 @@ namespace ESM
 				tokenItem--;
 			}
 
-			mDialogHelperIndex = 0;
+//			mDialogHelperIndex = 0;
 			if (prepare_localvar(possibleRef) != 0)
 			{
 				argString = possibleRef;
-				if (mDialogHelperIndex != 0)
+				if (bIsFullScript == false)
+				{
 					bNeedsDialogHelper = true;
+				}
+//				if (mDialogHelperIndex != 0)
+//					bNeedsDialogHelper = true;
 			}
 			else
 			{
@@ -4490,7 +4509,7 @@ namespace ESM
 			// try to lookup localvars with DlgHelper Quest
 			if (mESM.mLocalVarIndexmap.find(searchName) != mESM.mLocalVarIndexmap.end())
 			{
-				mDialogHelperIndex = mESM.mLocalVarIndexmap[searchName];
+//				mDialogHelperIndex = mESM.mLocalVarIndexmap[searchName];
 				RefData = 1;
 			}
 
