@@ -633,16 +633,16 @@ int CSMDoc::SavingState::loadCreatureEDIDModelmap(std::string filename)
 			{
 			case 0:
 				strGenEDID = token;
-				std::cout << "DEBUG: loadCreatureEDIDModelMap(): EDID=" << strGenEDID;
+//				std::cout << "DEBUG: loadCreatureEDIDModelMap(): EDID=" << strGenEDID;
 				break;
 			default:
 				tempModelStr = token;
-				std::cout << ", modelName=" << tempModelStr;
+//				std::cout << ", modelName=" << tempModelStr;
 				stringList.push_back(tempModelStr);
 				break;
 			}
 		}
-		std::cout << "\n";
+//		std::cout << "\n";
 
 		if (stringList.size() == 0 || strGenEDID == "")
 			continue;

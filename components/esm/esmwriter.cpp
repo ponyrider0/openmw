@@ -2585,7 +2585,29 @@ namespace ESM
 			stringList.push_back("skinbuck.nif");
 		}
 
-		// default
+		if (creatureEDID.find("bird") != std::string::npos ||
+			creatureEDID.find("chicken") != std::string::npos ||
+			creatureEDID.find("raven") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Aa_Blood\\Raven\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
+		if (creatureEDID.find("grahl") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Aa_Blood\\IceTroll\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
+		if (creatureEDID.find("giant") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Aa_Blood\\frostgiant\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
 		if (creatureEDID.find("minotaur") != std::string::npos)
 		{
 			stringList.clear();
@@ -2608,7 +2630,7 @@ namespace ESM
 			stringList.push_back("goblegs01.nif");
 			stringList.push_back("goblinchest01.nif");
 			stringList.push_back("goblinhandl.nif");
-			stringList.push_back("gonblinhandr.nif");
+			stringList.push_back("goblinhandr.nif");
 			stringList.push_back("goblinhead.nif");
 		}
 
@@ -2628,8 +2650,15 @@ namespace ESM
 			stringList.push_back("shrink.nif");
 		}
 
+		if (creatureEDID.find("spriggan") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Spriggan\\skeleton.NIF");
+			stringList.push_back("hair.nif");
+			stringList.push_back("spriggan.nif");
+		}
+
 		if (creatureEDID.find("skeleton") != std::string::npos ||
-			creatureEDID.find("lich") != std::string::npos ||
 			creatureEDID.find("skel") != std::string::npos)
 		{
 			stringList.clear();
@@ -2638,10 +2667,32 @@ namespace ESM
 			stringList.push_back("skull.nif");
 		}
 
+		if (creatureEDID.find("lich") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Lich\\skeleton.NIF");
+			stringList.push_back("lich.nif");
+		}
+
+		if (creatureEDID.find("bonewalker") != std::string::npos ||
+			creatureEDID.find("ubonewk") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Morroblivion\\Creatures\\Undead\\BoneWalker\\skeleton.nif");
+			stringList.push_back("mesh.nif");
+		}
+
+		if (creatureEDID.find("bonelord") != std::string::npos ||
+			creatureEDID.find("uboneld") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Morroblivion\\Creatures\\Undead\\BoneLord\\skeleton.nif");
+			stringList.push_back("bonelordparticles.nif");
+			stringList.push_back("mesh.nif");
+			stringList.push_back("skull.nif");
+		}
+
 		if (creatureEDID.find("zombie") != std::string::npos ||
-			creatureEDID.find("bonewalker") != std::string::npos ||
-			creatureEDID.find("uboneld") != std::string::npos ||
-			creatureEDID.find("ubonewk") != std::string::npos ||
 			creatureEDID.find("mwuundumum") != std::string::npos ||
 			creatureEDID.find("mummy") != std::string::npos)
 		{
@@ -2696,27 +2747,29 @@ namespace ESM
 			stringList.push_back("jelly.nif");
 		}
 
-		if (creatureEDID.find("kwama") != std::string::npos ||
+		if (creatureEDID.find("kwama_worker") != std::string::npos ||
+			creatureEDID.find("kwama") != std::string::npos ||
 			creatureEDID.find("kwa") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Morroblivion\\Creatures\\Kwama\\KwamaWorker\\skeleton.nif");
+			stringList.push_back("mesh.nif");
+		}
+
+		if (creatureEDID.find("kwama_forager") != std::string::npos ||
+			creatureEDID.find("kwafrg") != std::string::npos)
 		{
 			stringList.clear();
 			stringList.push_back("Morroblivion\\Creatures\\Kwama\\KwamaForager\\skeleton.nif");
 			stringList.push_back("mesh.nif");
 		}
 
-		if (creatureEDID.find("nix") != std::string::npos)
+		if (creatureEDID.find("nixhound") != std::string::npos ||
+			creatureEDID.find("nix") != std::string::npos)
 		{
 			stringList.clear();
 			stringList.push_back("creatures\\nixhound\\skeleton.nif");
 			stringList.push_back("nixhound.nif");
-		}
-
-		if (creatureEDID.find("drid") != std::string::npos)
-		{
-			stringList.clear();
-			stringList.push_back("creatures\\spiderdaedra\\skeleton.nif");
-			stringList.push_back("daedra hair.nif");
-			stringList.push_back("trdridreaf.nif");
 		}
 
 		if (creatureEDID.find("fish") != std::string::npos)
@@ -2734,6 +2787,13 @@ namespace ESM
 //			stringList.push_back("morroblivion\\creatures\\swampfly\\skeleton.nif");
 			stringList.push_back("Creatures\\Imp\\Skeleton.NIF");
 //			stringList.push_back("body.nif");
+			stringList.push_back("imp.nif");
+		}
+
+		if (creatureEDID.find("imp") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Imp\\Skeleton.NIF");
 			stringList.push_back("imp.nif");
 		}
 
@@ -2799,12 +2859,64 @@ namespace ESM
 			stringList.push_back("tail.nif");
 		}
 
+		if (creatureEDID.find("horker") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Horker\\Skeleton.NIF");
+			stringList.push_back("body.nif");
+		}
+
 		if (creatureEDID.find("wolf") != std::string::npos)
 		{
+			stringList.clear();
 			stringList.push_back("Creatures\\Dog\\Skeleton.NIF");
 			stringList.push_back("wolfbody.nif");
 			stringList.push_back("wolfeyes.nif");
 			stringList.push_back("wolfhead.nif");
+		}
+
+		if (creatureEDID.find("redwolf") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Aa_Blood\\RedWolf\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
+		if (creatureEDID.find("bonewolf") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Aa_Blood\\UndeadWolf\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
+		if (creatureEDID.find("lion") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\MountainLion\\Skeleton.NIF");
+			stringList.push_back("head.nif");
+			stringList.push_back("lion_body.nif");
+			stringList.push_back("paw_l.nif");
+			stringList.push_back("paw_r.nif");
+		}
+
+		if (creatureEDID.find("sheep") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Sheep\\skeleton.nif");
+			stringList.push_back("fleeces01.nif");
+			stringList.push_back("fleeces02.nif");
+			stringList.push_back("sheep.nif");
+		}
+
+		if (creatureEDID.find("ram") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Sheep\\skeleton.nif");
+			stringList.push_back("fleeces01.nif");
+			stringList.push_back("fleeces02.nif");
+			stringList.push_back("ramhornl.nif");
+			stringList.push_back("ramhornr.nif");
+			stringList.push_back("sheep.nif");
 		}
 
 		if (creatureEDID.find("troll") != std::string::npos ||
@@ -2815,8 +2927,8 @@ namespace ESM
 			stringList.push_back("troll.nif");
 		}
 
-		if (creatureEDID.find("chicken") != std::string::npos ||
-			creatureEDID.find("clannfear") != std::string::npos)
+		if (creatureEDID.find("clannfear") != std::string::npos ||
+			creatureEDID.find("clfear") != std::string::npos)
 		{
 			stringList.clear();
 			stringList.push_back("Creatures\\Clannfear\\Skeleton.NIF");
@@ -2831,7 +2943,52 @@ namespace ESM
 			stringList.push_back("daedroth.nif");
 		}
 
-		if (creatureEDID.find("dreu") != std::string::npos ||
+		if (creatureEDID.find("dridrea") != std::string::npos ||
+			creatureEDID.find("drid") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("creatures\\spiderdaedra\\skeleton.nif");
+			stringList.push_back("daedra hair.nif");
+			stringList.push_back("spiderdaedra.nif");
+//			stringList.push_back("trdridream.nif");
+		}
+
+		if (creatureEDID.find("xivilai") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Xivilai\\Skeleton.NIF");
+			stringList.push_back("hair.nif");
+			stringList.push_back("xivilai.nif");
+		}
+
+		if (creatureEDID.find("goldensaint") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Morroblivion\\Creatures\\Daedra\\GoldenSaint\\skeleton.nif");
+			stringList.push_back("mesh.nif");
+			stringList.push_back("pauldronleft.nif");
+			stringList.push_back("pauldronright.nif");
+		}
+
+		if (creatureEDID.find("hunger") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Hunger\\Skeleton.NIF");
+			stringList.push_back("hunger.nif");
+			stringList.push_back("hungertungue2.nif");
+			stringList.push_back("skipeset04.nif");
+		}
+
+		if (creatureEDID.find("scamp") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Scamp\\Skeleton.NIF");
+			stringList.push_back("head.nif");
+			stringList.push_back("scamp.nif");
+		}
+
+		if (creatureEDID.find("dreugh") != std::string::npos ||
+			creatureEDID.find("dreu") != std::string::npos ||
 			creatureEDID.find("cephalopod") != std::string::npos)
 		{
 			stringList.clear();
@@ -2854,11 +3011,34 @@ namespace ESM
 			stringList.push_back("stripedguar.nif");
 		}
 
+		if (creatureEDID.find("kagouti") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Morroblivion\\Creatures\\wildlife\\kagouti\\skeleton.nif");
+			stringList.push_back("kagouti.nif");
+		}
+
+		if (creatureEDID.find("alit") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("Creatures\\Alit\\skeleton.nif");
+			stringList.push_back("body.nif");
+		}
+
 		if (creatureEDID.find("scrib") != std::string::npos)
 		{
 			stringList.clear();
 			stringList.push_back("Morroblivion\\Creatures\\Kwama\\Scrib\\skeleton.nif");
 //			stringList.push_back("skeleton.nif");
+		}
+
+		if (creatureEDID.find("shalk") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("creatures\\Shalk\\skeleton.nif");
+			stringList.push_back("antennaleft.nif");
+			stringList.push_back("antennaright.nif");
+			stringList.push_back("body.nif");
 		}
 
 		if (creatureEDID.find("ogrim") != std::string::npos ||
@@ -2880,6 +3060,12 @@ namespace ESM
 			stringList.push_back("body.nif");
 		}
 
+		if (creatureEDID.find("spidercenturion") != std::string::npos)
+		{
+			stringList.clear();
+			stringList.push_back("morro\\creatures\\centspider\\skeleton.nif");
+			stringList.push_back("centurion.nif");
+		}
 
 		return stringList;
 	}
