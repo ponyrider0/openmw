@@ -600,7 +600,7 @@ namespace ESM
 			bool bLookupFailed = false;
 			if (bUseVarReference == false)
 			{
-				if (prepare_localvar(varString) == 1)
+				if (prepare_localvar(varString) != 0)
 				{
 					if (bIsFullScript == false)
 					{
@@ -1645,7 +1645,7 @@ namespace ESM
 			// check if localvar, if not then check if reference
 			if (bUseVarReference == false)
 			{
-				if (prepare_localvar(varString) == 1)
+				if (prepare_localvar(varString) != 0)
 				{
 					if (bIsFullScript == false)
 					{
