@@ -1921,153 +1921,179 @@ namespace ESM
 	{
 		std::string retString = "";
 		std::string tempString;
+		std::string prefixString;
 
 		tempString = Misc::StringUtils::lowerCase(model);
 
-		// leather armor suite
-//		if (tempString.find("leather") != std::string::npos)
-		if (true)
+		// default: leather armor suite
+		if (tempString.find("iron") != std::string::npos)
+			prefixString = "Armor\\Iron\\";
+		else if (tempString.find("steel") != std::string::npos)
+			prefixString = "Armor\\Steel\\";
+		else if (tempString.find("chain") != std::string::npos || tempString.find("ring") != std::string::npos ||
+			tempString.find("mail") != std::string::npos)
+			prefixString = "Armor\\Chainmail\\";
+		else if (tempString.find("fur") != std::string::npos)
+			prefixString = "Armor\\Fur\\";
+		else if (tempString.find("leather") != std::string::npos || tempString.find("netch") != std::string::npos)
+			prefixString = "Armor\\Thief\\";
+		else if (tempString.find("ebony") != std::string::npos)
+			prefixString = "Armor\\Ebony\\";
+		else if (tempString.find("glass") != std::string::npos)
+			prefixString = "Armor\\Glass\\";
+		else if (tempString.find("silver") != std::string::npos)
+			prefixString = "Armor\\Mithral\\";
+		else if (tempString.find("imperial") != std::string::npos || tempString.find("captain") != std::string::npos)
+			prefixString = "Armor\\Legion\\";
+		else if (tempString.find("dwemer") != std::string::npos || tempString.find("dwarven") != std::string::npos ||
+			tempString.find("nord") != std::string::npos)
+			prefixString = "Armor\\Dwarven\\";
+		else if (tempString.find("orc") != std::string::npos || tempString.find("goblin") != std::string::npos )
+			prefixString = "Armor\\Orcish\\";
+		else if (tempString.find("dae") != std::string::npos)
+			prefixString = "Armor\\Daedric\\";
+		else if (tempString.find("bone") != std::string::npos || tempString.find("dreug") != std::string::npos ||
+			tempString.find("dres") != std::string::npos || tempString.find("indoril") != std::string::npos ||
+			tempString.find("necrom") != std::string::npos)
+			prefixString = "Armor\\Amber\\";
+		else
+			prefixString = "Armor\\Fur\\";
+
+
+		if (tempString.find("greave") != std::string::npos)
 		{
-
-			// default model if nothing else found
-			if (true)
-//			if (tempString.find("cuirass") != std::string::npos)
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-					retString = "Armor\\Thief\\M\\Cuirass.NIF";
-					break;
-				case 1: // female model
-					retString = "Armor\\Thief\\F\\Cuirass.NIF";
-					break;
-				case 2: // male gnd
-					retString = "Armor\\Thief\\M\\Cuirass_gnd.NIF";
-					break;
-				case 3: // female gnd
-					retString = "Armor\\Thief\\F\\Cuirass_gnd.NIF";
-					break;
-				case 4: // male ico
-					retString = "Armor\\Thief\\M\\Cuirass.dds";
-					break;
-				case 5: // female ico
-					retString = "Armor\\Thief\\F\\Cuirass.dds";
-					break;
-				}
+			case 0: // male model
+				retString = prefixString + "M\\Greaves.NIF";
+				break;
+			case 1: // female model
+				retString = prefixString + "F\\Greaves.NIF";
+				break;
+			case 2: // male gnd
+				retString = prefixString + "M\\Greaves_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = prefixString + "M\\Greaves.dds";
+				break;
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
 			}
-
-			if (tempString.find("greaves") != std::string::npos)
+		}
+		else if (tempString.find("gauntlet") != std::string::npos || tempString.find("glove") != std::string::npos ||
+			tempString.find("bracer") != std::string::npos)
+		{
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-					retString = "Armor\\Thief\\M\\Greaves.NIF";
-					break;
-				case 1: // female model
-					retString = "Armor\\Thief\\F\\Greaves.NIF";
-					break;
-				case 2: // male gnd
-					retString = "Armor\\Thief\\M\\Greaves_gnd.NIF";
-					break;
-				case 4: // male ico
-					retString = "Armor\\Thief\\M\\Greaves.dds";
-					break;
-				case 3: // female gnd
-				case 5: // female ico
-					retString = "";
-					break;
-				}
+			case 0: // male model
+				retString = prefixString + "M\\Gauntlets.NIF";
+				break;
+			case 1: // female model
+				retString = prefixString + "F\\Gauntlets.NIF";
+				break;
+			case 2: // male gnd
+				retString = prefixString + "M\\Gauntlets_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = prefixString + "M\\Gauntlets.dds";
+				break;
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
 			}
-
-			if (tempString.find("gauntlet") != std::string::npos)
+		}
+		else if (tempString.find("boot") != std::string::npos)
+		{
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-					retString = "Armor\\Thief\\M\\Gauntlets.NIF";
-					break;
-				case 1: // female model
-					retString = "Armor\\Thief\\F\\Gauntlets.NIF";
-					break;
-				case 2: // male gnd
-					retString = "Armor\\Thief\\M\\Gauntlets_gnd.NIF";
-					break;
-				case 4: // male ico
-					retString = "Armor\\Thief\\M\\Gauntlets.dds";
-					break;
-				case 3: // female gnd
-				case 5: // female ico
-					retString = "";
-					break;
-				}
+			case 0: // male model
+				retString = prefixString + "M\\Boots.NIF";
+				break;
+			case 1: // female model
+				retString = prefixString + "F\\Boots.NIF";
+				break;
+			case 2: // male gnd
+				retString = prefixString + "M\\Boots_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = prefixString + "M\\Boots.dds";
+				break;
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
 			}
-
-			if (tempString.find("boots") != std::string::npos)
+		}
+		else if (tempString.find("helm") != std::string::npos || tempString.find("mask") != std::string::npos || 
+			tempString.find("head") != std::string::npos || tempString.find("coif") != std::string::npos ||
+			tempString.find("cap") != std::string::npos || tempString.find("face") != std::string::npos ||
+			tempString.find("masq") != std::string::npos || tempString.find("hat") != std::string::npos)
+		{
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-					retString = "Armor\\Thief\\M\\Boots.NIF";
-					break;
-				case 1: // female model
-					retString = "Armor\\Thief\\F\\Boots.NIF";
-					break;
-				case 2: // male gnd
-					retString = "Armor\\Thief\\M\\Boots_gnd.NIF";
-					break;
-				case 4: // male ico
-					retString = "Armor\\Thief\\M\\Boots.dds";
-					break;
-				case 3: // female gnd
-				case 5: // female ico
-					retString = "";
-					break;
-				}
+			case 0: // male model
+				retString = prefixString + "Helmet.NIF";
+				break;
+			case 1: // female model
+				retString = prefixString + "Helmet.NIF";
+				break;
+			case 2: // male gnd
+				retString = prefixString + "Helmet_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = prefixString + "M\\Helmet.dds";
+				break;
+			case 3: // female gnd
+			case 5: // female ico
+				retString = "";
+				break;
 			}
-
-			if (tempString.find("helm") != std::string::npos)
+		}
+		else if ( (tempString.find("shield") != std::string::npos) || (tempString.find("buckler") != std::string::npos) )
+		{
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-					retString = "Armor\\Thief\\Helmet.NIF";
-					break;
-				case 1: // female model
-					retString = "Armor\\Thief\\Helmet.NIF";
-					break;
-				case 2: // male gnd
-					retString = "Armor\\Thief\\Helmet_gnd.NIF";
-					break;
-				case 4: // male ico
-					retString = "Armor\\Thief\\M\\Helmet.dds";
-					break;
-				case 3: // female gnd
-				case 5: // female ico
-					retString = "";
-					break;
-				}
+			case 0: // male model
+			case 2: // male gnd
+				retString = prefixString + "Shield.NIF";
+				break;
+			case 4: // male ico
+			case 5: // female ico
+				retString = prefixString + "Shield.dds";
+				break;
+			case 1: // female model
+			case 3: // female gnd
+				retString = "";
+				break;
 			}
-
-			if ( (tempString.find("shield") != std::string::npos) ||
-				(tempString.find("buckler") != std::string::npos) )
+		}
+		else
+		{
+			// default to cuirass
+			switch (modelType)
 			{
-				switch (modelType)
-				{
-				case 0: // male model
-				case 2: // male gnd
-					retString = "Armor\\Leather\\Shield.NIF";
-					break;
-				case 4: // male ico
-				case 5: // female ico
-					retString = "Armor\\Leather\\Shield.dds";
-					break;
-				case 1: // female model
-				case 3: // female gnd
-					retString = "";
-					break;
-				}
+			case 0: // male model
+				retString = prefixString + "M\\Cuirass.NIF";
+				break;
+			case 1: // female model
+				retString = prefixString + "F\\Cuirass.NIF";
+				break;
+			case 2: // male gnd
+				retString = prefixString + "M\\Cuirass_gnd.NIF";
+				break;
+			case 3: // female gnd
+				retString = prefixString + "F\\Cuirass_gnd.NIF";
+				break;
+			case 4: // male ico
+				retString = prefixString + "M\\Cuirass.dds";
+				break;
+			case 5: // female ico
+				retString = prefixString + "F\\Cuirass.dds";
+				break;
 			}
-
 		}
 		
 		return retString;
