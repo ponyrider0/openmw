@@ -38,6 +38,35 @@ namespace ESM
 	{
 		parser();
 
+		// finalize result script translation
+		if (bIsFullScript != true && mCurrentContext.convertedStatements.empty() != true)
+		{
+			// append script line: "Call mwDialogHelperFinalizeFunc"
+			std::vector<uint8_t> argdata;
+			uint16_t sizeParams = 2;
+			uint16_t countParams = 1;
+			std::string argString = "mwDialogHelperFinalizeFunc";
+			std::string cmdString = "Call";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(argString, scriptSIG, 100);
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x00);
+			std::stringstream convertedStatement;
+			convertedStatement << "\r\n" << cmdString << " " << argString;
+			mCurrentContext.convertedStatements.push_back(convertedStatement.str());
+			// compile
+			uint16_t OpCode = getOpCode(cmdString);
+			sizeParams += argdata.size();
+			compile_command(OpCode, sizeParams, countParams, argdata);
+		}
+
 		// Finalize Byte Buffer
 		if (bIsFullScript != true && mCurrentContext.compiledCode.empty() != true)
 		{
