@@ -3965,6 +3965,7 @@ namespace ESM
 			|| (tokenString == "setatstart")
 			|| (tokenString == "getwaterlevel")
 			|| (tokenString == "getscale")
+			|| (tokenString == "gotojail")
 //			|| (tokenString == "setdelete")
 			)
 		{
