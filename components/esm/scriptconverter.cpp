@@ -94,10 +94,10 @@ namespace ESM
 		for (auto statement = mConvertedStatementList.begin(); statement != mConvertedStatementList.end(); statement++)
 		{
 //			exportStr << *statement << std::endl;
-			exportStr << *statement << "\n";
+			exportStr << *statement << "\r\n";
 		}
 //		exportStr << std::endl << oldCode;
-		exportStr << "\n" << oldCode;
+		exportStr << "\r\n" << oldCode;
 
 		return std::string(exportStr.str());
 	}
