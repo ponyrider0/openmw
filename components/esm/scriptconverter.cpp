@@ -2106,6 +2106,55 @@ namespace ESM
 		{
 			cmdString = "playsound3d";
 		}
+		else if (Misc::StringUtils::lowerCase(cmdString) == "getsoundplaying")
+		{
+			if (mParseMode != 0)
+			{
+				// TODO: add eval system...
+				cmdString = "Eval";
+				abort("getsoundplaying: expression mode not implemented");
+				return;
+			}
+			else
+			{
+				cmdString = "Call";
+			}
+			std::string scriptFuncName = "mwGetSoundPlaying";
+			std::string scriptSIG = "SCPT";
+			uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+			tokenItem++;
+			std::string soundSIG = "SOUN";
+			if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, soundSIG, true) == false)
+			{
+				if (bUseCommandReference)
+				{
+					bUseCommandReference = false;
+					mCommandRef_EDID = "";
+				}
+				abort("parse_1arg(): getsoundplaying: sub_parse_arg() failed: argString=[" + argString + "] tokenItem=<" + tokenItem->TypeToString() + "> [" + tokenItem->str + "]");
+				return;
+			}
+			std::string soundName = argString;
+			uint16_t soundRef = prepare_reference(soundName, soundSIG, 100);
+			// compose new arg string
+			argString = scriptFuncName + " " + soundName;
+			// compile argstring
+			// 01 05 ...
+			countParams = 0x0501;
+			// 00 52 +(global ref index)
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			// number of arguments
+			argdata.push_back(0x01);
+			// argument header: 05 00 52 +(refindex)
+			argdata.push_back(0x05);
+			argdata.push_back(0x00);
+			argdata.push_back(0x52);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			bUseBinaryData = true;
+			bEvalArgString = false;
+		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "centeroncell")
 		{
 			argSIG = "CELL";
@@ -4023,6 +4072,7 @@ namespace ESM
 			|| (tokenString == "playsound3dvp")
 			|| (tokenString == "playloopsound3dvp")
 			|| (tokenString == "playloopsound3d")
+			|| (tokenString == "getsoundplaying")
 			|| (tokenString == "centeroncell")
 			|| (tokenString == "equip")
 			|| (tokenString == "getjournalindex")
@@ -5348,6 +5398,7 @@ namespace ESM
 		mKeywords.push_back("playloopsound3dvp");
 		mKeywords.push_back("playloopsound3d");
 		mKeywords.push_back("forcegreeting");
+		mKeywords.push_back("getsoundplaying");
 
 		mKeywords.push_back("random");
 		mKeywords.push_back("random100");
