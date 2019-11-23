@@ -134,6 +134,7 @@ namespace ESM {
 		void parse_statement(std::vector<struct Token>::iterator& tokenItem);
 		void parse_expression(std::vector<struct Token>::iterator& tokenItem);
 		void parse_operator(std::vector<struct Token>::iterator& tokenItem);
+		bool parse_expression_generate_eval(std::vector<struct Token>::iterator& tokenItem);
 
 		uint16_t getOpCode(std::string OpCodeString);
 		void parse_placeatme(std::vector<struct Token>::iterator& tokenItem);

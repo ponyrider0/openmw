@@ -523,6 +523,212 @@ namespace ESM
 
 	}
 
+	bool ScriptConverter::parse_expression_generate_eval(std::vector<struct Token>::iterator & tokenItem)
+	{
+//		return false;
+
+		// DEBUG OUTPUT
+		std::cout << "\n\n=================================================\nPARSE_EXPRESSION_GENERATE_EVAL STARTING:\n=====================================================\n";
+
+		// Sanity-checks, previous token must be IF keyword
+		--tokenItem;
+		if (tokenItem->str == "(") --tokenItem;
+		if ( tokenItem->str != "if" || mParseMode != 1)
+		{
+			std::cout << "SANITY CHECKS: if / mParseMode, FAILED, token= " << tokenItem->str << ", mParseMode=" << mParseMode << "\n";
+			abort("parse_expression_generate_eval: unsupported script context");
+			tokenItem++;
+			if (tokenItem->str == "(") tokenItem++;
+			return false;
+		}
+		tokenItem++;
+		if (tokenItem->str == "(") tokenItem++;
+
+		std::cout << "SANITY CHECKS: if ( statement, PASSED\n";
+
+/**
+		// framework for full command support
+		while (tokenItem->type != ESM::ScriptConverter::TokenType::endlineT)
+		{
+			// grab first token and parse sub expression
+			if (tokenItem->type == ESM::ScriptConverter::TokenType::keywordT)
+			{
+				// ....
+			}
+			else if (tokenItem->type == ESM::ScriptConverter::TokenType::operatorT)
+			{
+				// ...
+			}
+			else if (tokenItem->type == ESM::ScriptConverter::TokenType::number_literalT)
+			{
+				// ...
+			}
+			else
+			{
+				abort("parse_expression_generate_eval: unsupported expression, expected keyword token");
+				return false;
+			}
+			tokenItem++;
+		}
+**/
+		// build eval script line
+		// ...
+		// compile
+		// ...
+
+		// Hardcoded getsoundplaying
+		if (Misc::StringUtils::lowerCase(tokenItem->str) != "getsoundplaying")
+		{
+			std::cout << "SANITY CHECKS: getsoundplaying, FAILED, token=" << tokenItem->str << "\n";
+			abort("parse_expression_generate_eval: unsupported keyword in expression:" + tokenItem->str);
+			return false;
+		}
+		std::cout << "SANITY CHECKS: getsoundplaying, PASSED\n";
+
+		// 1. parse getsoundplaying command
+		// 2. parse comparison operator
+		// 3. parse operand2
+
+		std::string scriptFuncName = "mwGetSoundPlaying";
+		std::string scriptSIG = "SCPT";
+		uint16_t funcRef = prepare_reference(scriptFuncName, scriptSIG, 100);
+		tokenItem++;
+		std::string argString = tokenItem->str;
+		std::string soundSIG = "SOUN";
+		bool bEvalArgString = false;
+		bool bNeedsDialogHelper = false;
+		if (sub_parse_arg(tokenItem, argString, bEvalArgString, bNeedsDialogHelper, soundSIG, true) == false)
+		{
+			std::cout << "sub_parse_arg(" << argString << "), FAILED\n";
+			abort("parse_expression_generate_eval: getsoundplaying: sub_parse_arg() failed: argString=[" + argString + "] tokenItem=<" + tokenItem->TypeToString() + "> [" + tokenItem->str + "]");
+			return false;
+		}
+		std::cout << "sub_parse_arg(" << argString << "), PASSED\n";
+		uint16_t soundRef = prepare_reference(argString, soundSIG, 100);
+		// compose command string
+		std::string commandString = "(Call " + scriptFuncName + " " + argString + ")";
+		std::vector<uint8_t> argdata;
+		// compile subfunction command
+		argdata.push_back(0x58);
+		argdata.push_back(0x00);
+		argdata.push_back(0x00);
+		// 'Call' Function
+		argdata.push_back(0x83);
+		argdata.push_back(0x18);
+		// sizeparams
+		argdata.push_back(0x0E);
+		argdata.push_back(0x00);
+		// compile argstring
+		// 01 05 00 52 +(global ref index)
+		argdata.push_back(0x01);
+		argdata.push_back(0x05);
+		argdata.push_back(0x00);
+		argdata.push_back(0x52);
+		for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+		argdata.push_back(0x01);
+		argdata.push_back(0x05);
+		argdata.push_back(0x00);
+		argdata.push_back(0x52);
+		for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&soundRef)[i]);
+
+		// parse remainder of exression
+		tokenItem++;
+		if (tokenItem->type != ESM::ScriptConverter::TokenType::operatorT)
+		{
+			std::cout << "SANITY CHECKS: operator, FAILED\n";
+			abort("parse_expression_generate_eval: expected operator, instead: " + tokenItem->str);
+			return false;
+		}
+		std::cout << "SANITY CHECKS: operator, PASSED\n";
+		std::string operatorString = tokenItem->str;
+
+		tokenItem++;
+		if (tokenItem->type != ESM::ScriptConverter::TokenType::number_literalT)
+		{
+			std::cout << "SANITY CHECKS: operand, FAILED\n";
+			abort("parse_expression_generate_eval: expected number literal, instead: " + tokenItem->str);
+			return false;
+		}
+		std::cout << "SANITY CHECKS: operand, PASSED\n";
+		std::string operandString = tokenItem->str;
+
+		if (operandString != "0")
+		{
+			std::cout << "SANITY CHECKS: '0', FAILED\n";
+			abort("parse_expression_generate_eval: expected operand=0, instead: operand=" + operandString);
+			return false;
+		}
+		std::cout << "SANITY CHECKS: '0', PASSED\n";
+		if (operatorString != "==")
+		{
+			std::cout << "SANITY CHECKS: '==', FAILED\n";
+			abort("parse_expression_generate_eval: expected operator='==', instead: operator=" + operatorString);
+			return false;
+		}
+		std::cout << "SANITY CHECKS: '==', PASSED\n";
+
+		// compile operand and operator
+		argdata.push_back(0x42);
+		argdata.push_back(0x00); // hardcoded zero operand
+		argdata.push_back(0x04); // hardcoded '==' operator
+
+
+		std::stringstream convertedStatement;
+		convertedStatement << "Eval ( " << commandString << " " << operatorString  << " " << operandString << ")";
+		if (mParseMode != 1)
+		{
+			std::cout << "SANITY CHECKS: mParseMode, FAILED\n";
+			abort("parse_expression_generate_eval: expected mParseMode == 1");
+			return false;
+		}
+		else // mParseMode == 1 aka parse_expression
+		{
+			std::cout << "SANITY CHECKS: mParseMode, PASSED\n";
+			std::string expressionLine = mCurrentContext.convertedStatements.back();
+			// remove '(' if that is the last statement 
+			if (expressionLine.back() == '(')
+			{
+				expressionLine.pop_back();
+				// get rid of space before '(' too
+				expressionLine.pop_back();
+			}
+			expressionLine += " " + convertedStatement.str();
+			mCurrentContext.convertedStatements[mCurrentContext.convertedStatements.size() - 1] = expressionLine;
+			mOperatorExpressionStack.clear();
+			gotoEOL(tokenItem);
+		}
+
+		// bytecompiled statement:
+		// OpCode, ParamBytes, ParamCount, Parameters
+		uint16_t OpCode = 0;
+		uint16_t sizeParams = 3; // start out with 3 extra bytes, per EVAL structure
+		sizeParams += argdata.size();
+		uint8_t countParams = 0x01;
+
+//		OpCode = getOpCode("eval");
+		OpCode = 0x1769;
+		if (OpCode == 0)
+		{
+			std::cout << "SANITY CHECKS: OpCode, FAILED\n";
+			abort ("parse_expression_generate_eval: OpCode not found or invalid.");
+			return false;
+		}
+		std::cout << "SANITY CHECKS: OpCode, PASSED\n";
+
+		compile_command(OpCode, sizeParams); 
+		// countparams is only 1 byte, per EVAL structure
+		mCurrentContext.compiledCode.push_back(countParams);
+		// decrement argsize then rewrite after countParams, per EVAL structure
+		--sizeParams;
+		for (int i = 0; i<2; ++i) mCurrentContext.compiledCode.push_back(reinterpret_cast<uint8_t *> (&sizeParams)[i]);
+		mCurrentContext.compiledCode.insert(mCurrentContext.compiledCode.end(), argdata.begin(), argdata.end());
+
+		std::cout << "==============================================\nPARSE_EXPRESSION_GENERATE_EVAL COMPLETED SUCCESSFULLY:\n========================================\n";
+
+		return true;
+
+	}
+
 	void ScriptConverter::parse_expression(std::vector<struct Token>::iterator & tokenItem)
 	{
 		std::vector<uint8_t> varData;
@@ -2108,16 +2314,18 @@ namespace ESM
 		}
 		else if (Misc::StringUtils::lowerCase(cmdString) == "getsoundplaying")
 		{
-			if (mParseMode != 0)
+			if (mParseMode == 1 && bSetCmd == false)
 			{
-				// TODO: add eval system...
-				cmdString = "Eval";
-				abort("getsoundplaying: expression mode not implemented");
+				if (parse_expression_generate_eval(tokenItem) == false)
+				{
+					if (bUseCommandReference)
+					{
+						bUseCommandReference = false;
+						mCommandRef_EDID = "";
+					}
+					abort("parse_1arg(): parse_expression_generate_eval failed.");
+				}
 				return;
-			}
-			else
-			{
-				cmdString = "Call";
 			}
 			std::string scriptFuncName = "mwGetSoundPlaying";
 			std::string scriptSIG = "SCPT";
@@ -2151,7 +2359,7 @@ namespace ESM
 			argdata.push_back(0x05);
 			argdata.push_back(0x00);
 			argdata.push_back(0x52);
-			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&funcRef)[i]);
+			for (int i = 0; i<2; ++i) argdata.push_back(reinterpret_cast<uint8_t *> (&soundRef)[i]);
 			bUseBinaryData = true;
 			bEvalArgString = false;
 		}
