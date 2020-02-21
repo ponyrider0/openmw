@@ -252,10 +252,10 @@ namespace ESM
 				debugstream << "ESMWRITER ERROR: non-unique FormID was written to ESM: [" << name << "](" << overRideStringID << ") " << std::hex << formID <<
 					", overwritten by: (" << stringID << ") " << std::hex << activeID << std::endl;
 				OutputDebugString(debugstream.str().c_str());
-//				std::cout << debugstream.str();
+				std::cout << debugstream.str();
 			}
-//			bSuccess = false;
-//			return bSuccess;
+			bSuccess = false;
+			return bSuccess;
 		}
 		
 		mRecordCount++;
