@@ -10,6 +10,8 @@
 #include "loadnpc.hpp"
 #include <apps/opencs/model/doc/document.hpp>
 
+#define DIALOG_PLACHOLDER_NPC 0x012609C5
+
 namespace ESM
 {
     unsigned int DialInfo::sRecordId = REC_INFO;
@@ -385,6 +387,7 @@ namespace ESM
 				if (actorFormID == 0)
 				{
 					std::cout << "ERROR: actorFormID resolved to null: [" << mActor << "]\n";
+					actorFormID = DIALOG_PLACHOLDER_NPC;
 				}
 				uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
 				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
@@ -401,6 +404,7 @@ namespace ESM
 				if (classFormID == 0)
 				{
 					std::cout << "ERROR: classFormID resolved to null: [" << mClass << "]\n";
+					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
 				else
 				{
@@ -416,6 +420,7 @@ namespace ESM
 					// TODO: find better way of detecting uninitialized mFaction string
 					if (mFaction.size() > 0)
 						std::cout << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
+					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
 				else
 				{
@@ -430,6 +435,7 @@ namespace ESM
 				if (pcFactFormID == 0)
 				{
 					std::cout << "ERROR: PCFactionFormID resolved to null: [" << mPcFaction << "]\n";
+					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
 				else
 				{
@@ -1144,6 +1150,8 @@ namespace ESM
 
 				if (compareFunction != 0)
 					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
+				else
+					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
 
 			} // for each mSelects
 
