@@ -263,6 +263,10 @@ public:
 		bool CompressNextRecord();
 		std::string mConversionOptions;
 
+		void SetBookmarkPoint();
+		void ModifyBookmarkPoint(const char* data, size_t size);
+		void UnsetBookmarkPoint();
+
     private:
         std::list<RecordData> mRecords;
 		std::list<RecordData> mSubrecords;
@@ -277,6 +281,8 @@ public:
 		char mTempfilename[MAX_PATH];
 
         Header mHeader;
+		std::streampos mBookmarkPoint;
+
     };
 }
 

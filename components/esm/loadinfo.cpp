@@ -13,16 +13,22 @@
 #define DIALOG_PLACHOLDER_NPC 0x012609C5
 #define ERR_DIALOG_PLACHOLDER_NPC 0x00000882
 
-void Log_DialogError(std::string message, std::string topicString, const ESM::DialInfo *dial)
+void Log_DialogError(std::string message, std::string topicString, const ESM::DialInfo *info, ESM::ESMWriter &esm)
 {
 	std::ofstream dialogErrorLOG;
 
-	if (message.find("\n",0) == std::string::npos)
+	if (message.find("\n") == std::string::npos)
 		message.append("\n");
 
+	std::string infoEDID;
+	infoEDID = "info#" + topicString + info->mId;
+	uint32_t InfoFormID = esm.crossRefStringID(infoEDID, "INFO", false);
+
 	dialogErrorLOG.open("modexporter_dialogError.log", std::ios_base::out | std::ios_base::app);
-	dialogErrorLOG << "DIALOG ERROR: [" << dial->mId << "]" << "[" << topicString << "]" << message;
+	dialogErrorLOG << "DIALOG INFO: [0x" << std::hex << InfoFormID << "][" << topicString << "][" << info->mId << "]," << message;
 	dialogErrorLOG.close();
+
+	std::cout << "DIALOG INFO: [0x" << std::hex << InfoFormID << "][" << topicString << "][" << info->mId << "]," << message;
 
 }
 
@@ -160,6 +166,8 @@ namespace ESM
 		bool bIsQuestStage=false;
 		bool bIsVoice=false;
 
+		bool bDisableDialog=false;
+
 		std::stringstream error_message;
 
 		uint32_t tempFormID;
@@ -276,6 +284,7 @@ namespace ESM
 
 			uint32_t questFormID = esm.crossRefStringID("MorroDefaultQuest", "QUST", false);
 			esm.startSubRecordTES4("QSTI");
+			esm.SetBookmarkPoint();
 			esm.writeT<uint32_t>(questFormID); // can have multiple
 			esm.endSubRecordTES4("QSTI");
 
@@ -412,9 +421,9 @@ namespace ESM
 				if (actorFormID == 0)
 				{
 					error_message << "ERROR: actorFormID resolved to null: [" << mActor << "]\n";
-					std::cout << error_message.str();
-					Log_DialogError(error_message.str(), topicEDID, this);
+					Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					bDisableDialog = true;
 				}
 				else
 				{
@@ -434,9 +443,9 @@ namespace ESM
 				if (classFormID == 0)
 				{
 					error_message << "ERROR: classFormID resolved to null: [" << mClass << "]\n";
-					std::cout << error_message.str();
-					Log_DialogError(error_message.str(), topicEDID, this);
+					Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					bDisableDialog = true;
 				}
 				else
 				{
@@ -453,9 +462,9 @@ namespace ESM
 					if (mFaction.size() > 0 && mFaction != "FFFF")
 					{
 						error_message << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
+						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 						esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+						bDisableDialog = true;
 					}
 				}
 				else
@@ -471,9 +480,9 @@ namespace ESM
 				if (pcFactFormID == 0)
 				{
 					error_message << "ERROR: PCFactionFormID resolved to null: [" << mPcFaction << "]\n";
-					std::cout << error_message.str();
-					Log_DialogError(error_message.str(), topicEDID, this);
+					Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					bDisableDialog = true;
 				}
 				else
 				{
@@ -500,9 +509,8 @@ namespace ESM
 					uint32_t compareArg2;
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						error_message << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
+						error_message << "ERROR: GetInCell: Unable to resolve Cell<->LocalVar for mCell[" << mCell << "]" << std::endl;
+						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
@@ -587,10 +595,8 @@ namespace ESM
 // BREAK if Quest value is null
 					if (compareArg1 == 0)
 					{
-						error_message << "Dialog INFO: Could not resolve quest varname: " << varName << "\n";
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
-
+						error_message << "ERROR: Could not resolve quest varname: " << varName << "\n";
+//						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 						compareFunction = 0;
 						break;
 					}
@@ -663,9 +669,8 @@ namespace ESM
 							raceFormID = esm.crossRefStringID("wood elf", "race");
 							break;
 						default:
-							error_message << "ERROR! GetPCIsRace: RaceType not found: " << tempRaceVal << "\n";
-							std::cout << error_message.str();
-							Log_DialogError(error_message.str(), topicEDID, this);
+							error_message << "ERROR: GetPCIsRace: RaceType not found: " << tempRaceVal << "\n";
+							Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 
 							break;
 						}
@@ -729,9 +734,8 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
 					if (compareArg1 == 0)
 					{
-						error_message << "ERROR: GetIsID: actorID resolved to NULL: " << varName << "\n";
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
+						error_message << "ERROR: GetIsNOTID: actorID resolved to NULL: " << varName << "\n";
+						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 					}
 					break;
 
@@ -755,9 +759,8 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						error_message << "Unresolved Condition:[" << topicEDID << "] Can't resolve LocalVar to mwDialogHelper:" << selectWrapper.toString() << std::endl;
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
+						error_message << "ERROR: Can't resolve LocalVar to mwDialogHelper, " << selectWrapper.toString() << "\n";
+//						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
@@ -773,9 +776,20 @@ namespace ESM
 						// Check for warning condition, 'LocalVar == 0'
 						if (compareOperator == "=" && compareVal == 0)
 						{
-							error_message << "\"LocalVar == 0\" Check invoked:" << selectWrapper.toString() << std::endl;
-							Log_DialogError(error_message.str(), topicEDID, this);
-							esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+
+							// Skip if a white-list condition is met
+							if (mActor != "" || mClass != "" || mFaction != "")
+							{
+								error_message << "WARNING: \"LocalVar == 0\" condition detected, " << selectWrapper.toString() << "\n";
+								Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
+							}
+							else
+							{
+								error_message << "ERROR: \"LocalVar == 0\" condition detected, " << selectWrapper.toString() << "\n";
+								Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
+								bDisableDialog = true;
+							}
+
 						}
 					}
 					break;
@@ -808,9 +822,8 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						error_message << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-						std::cout << error_message.str();
-						Log_DialogError(error_message.str(), topicEDID, this);
+						error_message << "ERROR: LocalIsNot: Unresolved varName, " << selectWrapper.toString() << "\n";
+//						Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
@@ -857,9 +870,8 @@ namespace ESM
 						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 						if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 						{
-							error_message << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
-							std::cout << error_message.str();
-							Log_DialogError(error_message.str(), topicEDID, this);
+							error_message << "ERROR: GetNotInCell: Unable to Resolve mCell=[" << mCell << "]" << "\n";
+//							Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
 							if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 								esm.mUnresolvedLocalVars[varName] = 1;
 							else
@@ -1211,9 +1223,9 @@ namespace ESM
 
 				default:
 					// record stats on missing function and occurences
-					error_message << "Unhandled Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
-					std::cout << error_message.str();
-
+					error_message << "ERROR: Unhandled Condition, " << selectWrapper.toString() << "\n";
+//					Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
+					compareFunction = 0;
 					break;
 				}
 
@@ -1225,15 +1237,25 @@ namespace ESM
 				{
 					if (error_message.str() == "")
 					{
-						error_message << selectWrapper.toString() << "\n";
-						Log_DialogError(error_message.str(), topicEDID, this);
+						error_message << "ERROR, " << selectWrapper.toString() << "\n";
 					}
+					Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
+
 					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					bDisableDialog = true;
 				}
 
 			} // for each mSelects
 
 		} // (bIsTopic)
+
+		if (bDisableDialog)
+		{
+			uint32_t disabledDialogFormID = esm.crossRefStringID("mwDisabledDialog", "QUST", false);
+			// modify QSTI FormID
+			esm.ModifyBookmarkPoint((char*)&disabledDialogFormID, sizeof(disabledDialogFormID));
+			esm.UnsetBookmarkPoint();
+		}
 
 		if (bIsTopic)
 		{

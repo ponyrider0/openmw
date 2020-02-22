@@ -190,6 +190,34 @@ namespace ESM
 		mStream->seekp(currentPos);
 	}
 
+	void ESMWriter::ModifyBookmarkPoint(const char* data, size_t size)
+	{
+		if (mStream == NULL)
+			return;
+
+		std::streampos currentPos = mStream->tellp();
+
+		mStream->seekp(mBookmarkPoint, std::ios_base::beg);
+		mCounting = false;
+		write(data, size);
+		mCounting = true;
+
+		mStream->seekp(currentPos);
+	}
+
+	void ESMWriter::SetBookmarkPoint()
+	{
+		if (mStream == NULL)
+			return;
+
+		mBookmarkPoint = mStream->tellp();
+	}
+
+	void ESMWriter::UnsetBookmarkPoint()
+	{
+		mBookmarkPoint = std::ios_base::end;
+	}
+
     void ESMWriter::close()
     {
         if (!mRecords.empty())
