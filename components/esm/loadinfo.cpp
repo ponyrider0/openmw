@@ -11,10 +11,24 @@
 #include <apps/opencs/model/doc/document.hpp>
 
 #define DIALOG_PLACHOLDER_NPC 0x012609C5
+#define ERR_DIALOG_PLACHOLDER_NPC 0x00000882
+
+void Log_DialogError(std::string message, std::string topicString, const ESM::DialInfo *dial)
+{
+	std::ofstream dialogErrorLOG;
+
+	if (message.find("\n",0) == std::string::npos)
+		message.append("\n");
+
+	dialogErrorLOG.open("modexporter_dialogError.log", std::ios_base::out | std::ios_base::app);
+	dialogErrorLOG << "DIALOG ERROR: [" << dial->mId << "]" << "[" << topicString << "]" << message;
+	dialogErrorLOG.close();
+
+}
 
 namespace ESM
-{
-    unsigned int DialInfo::sRecordId = REC_INFO;
+{	
+	unsigned int DialInfo::sRecordId = REC_INFO;
 
     void DialInfo::load(ESMReader &esm, bool &isDeleted)
     {
@@ -146,10 +160,13 @@ namespace ESM
 		bool bIsQuestStage=false;
 		bool bIsVoice=false;
 
+		std::stringstream error_message;
+
 		uint32_t tempFormID;
 		std::string strEDID, tempStr;
 		std::ostringstream debugstream;
 		strEDID = esm.generateEDIDTES4(mId, 4);
+
 
 		switch (newType)
 		{
@@ -178,6 +195,14 @@ namespace ESM
 		scriptConverter.processScript();
 		// create new response string with substituted names early
 		std::string newResponse = mResponse;
+
+/*
+		if (Misc::StringUtils::lowerCase(mResponse).find("you're with the temple") != std::string::npos)
+		{
+			Log_DialogError("Found \"You're with the Temple...\" error record.", topicEDID, this);
+		}
+*/
+
 		// There are two passes for each variable: 
 		//	the first pass is the ideal match which will replace the leading space,
 		//	the second pass is a fuzzy match which will add an extra leading space.
@@ -386,11 +411,16 @@ namespace ESM
 				uint32_t actorFormID = esm.crossRefStringID(mActor, "NPC_");
 				if (actorFormID == 0)
 				{
-					std::cout << "ERROR: actorFormID resolved to null: [" << mActor << "]\n";
-					actorFormID = DIALOG_PLACHOLDER_NPC;
+					error_message << "ERROR: actorFormID resolved to null: [" << mActor << "]\n";
+					std::cout << error_message.str();
+					Log_DialogError(error_message.str(), topicEDID, this);
+					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
-				uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
-				esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
+				else
+				{
+					uint32_t compareFunction = 0x0048; // GetIsID (decimal 72)
+					esm.exportConditionalExpression(compareFunction, actorFormID, "=", 1.0);
+				}
 			}
 			if (mRace != "")
 			{
@@ -403,8 +433,10 @@ namespace ESM
 				uint32_t classFormID = esm.crossRefStringID(mClass, "CLAS");
 				if (classFormID == 0)
 				{
-					std::cout << "ERROR: classFormID resolved to null: [" << mClass << "]\n";
-					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					error_message << "ERROR: classFormID resolved to null: [" << mClass << "]\n";
+					std::cout << error_message.str();
+					Log_DialogError(error_message.str(), topicEDID, this);
+					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
 				else
 				{
@@ -418,9 +450,13 @@ namespace ESM
 				if (factionFormID == 0)
 				{
 					// TODO: find better way of detecting uninitialized mFaction string
-					if (mFaction.size() > 0)
-						std::cout << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
-					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					if (mFaction.size() > 0 && mFaction != "FFFF")
+					{
+						error_message << "ERROR: FactionFormID resolved to null: [" << mFaction << "]\n";
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
+						esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					}
 				}
 				else
 				{
@@ -434,8 +470,10 @@ namespace ESM
 				uint32_t pcFactFormID = esm.crossRefStringID(mPcFaction, "FACT");
 				if (pcFactFormID == 0)
 				{
-					std::cout << "ERROR: PCFactionFormID resolved to null: [" << mPcFaction << "]\n";
-					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
+					error_message << "ERROR: PCFactionFormID resolved to null: [" << mPcFaction << "]\n";
+					std::cout << error_message.str();
+					Log_DialogError(error_message.str(), topicEDID, this);
+					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
 				}
 				else
 				{
@@ -462,7 +500,10 @@ namespace ESM
 					uint32_t compareArg2;
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						std::cout << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+						error_message << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
+
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
@@ -531,11 +572,14 @@ namespace ESM
 
 				std::string sSIG = "";
 				std::string varName = "";
+				bool skip_error = false;
 				switch (selectWrapper.getFunctionName())
 				{
 				case CSMWorld::ConstInfoSelectWrapper::Function_Choice:
 					// just skip since this is already rolled into ChoiceTopic
+					skip_error = true;
 					break;
+
 				case CSMWorld::ConstInfoSelectWrapper::Function_Journal:
 					compareFunction = 0x3A; // GetStage (int 58)
 					varName = selectWrapper.getVariableName();
@@ -543,7 +587,10 @@ namespace ESM
 // BREAK if Quest value is null
 					if (compareArg1 == 0)
 					{
-						std::cout << "Dialog INFO: Could not resolve quest varname: " << varName << "\n";
+						error_message << "Dialog INFO: Could not resolve quest varname: " << varName << "\n";
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
+
 						compareFunction = 0;
 						break;
 					}
@@ -616,7 +663,10 @@ namespace ESM
 							raceFormID = esm.crossRefStringID("wood elf", "race");
 							break;
 						default:
-							std::cout << "ERROR! GetPCIsRace: RaceType not found: " << tempRaceVal << "\n";
+							error_message << "ERROR! GetPCIsRace: RaceType not found: " << tempRaceVal << "\n";
+							std::cout << error_message.str();
+							Log_DialogError(error_message.str(), topicEDID, this);
+
 							break;
 						}
 						compareArg1 = raceFormID;
@@ -679,7 +729,9 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID(varName, "NPC_");
 					if (compareArg1 == 0)
 					{
-						std::cout << "ERROR: GetIsID: actorID resolved to NULL: " << varName << "\n";
+						error_message << "ERROR: GetIsID: actorID resolved to NULL: " << varName << "\n";
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
 					}
 					break;
 
@@ -703,7 +755,10 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						error_message << "Unresolved Condition:[" << topicEDID << "] Can't resolve LocalVar to mwDialogHelper:" << selectWrapper.toString() << std::endl;
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
+
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
@@ -714,6 +769,14 @@ namespace ESM
 					else
 					{
 						compareArg2 = esm.mLocalVarIndexmap[varName];
+
+						// Check for warning condition, 'LocalVar == 0'
+						if (compareOperator == "=" && compareVal == 0)
+						{
+							error_message << "\"LocalVar == 0\" Check invoked:" << selectWrapper.toString() << std::endl;
+							Log_DialogError(error_message.str(), topicEDID, this);
+							esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+						}
 					}
 					break;
 
@@ -745,7 +808,9 @@ namespace ESM
 					compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 					if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 					{
-						std::cout << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						error_message << "Unresolved Condition:[" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+						std::cout << error_message.str();
+						Log_DialogError(error_message.str(), topicEDID, this);
 						if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 							esm.mUnresolvedLocalVars[varName] = 1;
 						else
@@ -792,7 +857,9 @@ namespace ESM
 						compareArg1 = esm.crossRefStringID("mwDialogHelper", "QUST", false);
 						if (esm.mLocalVarIndexmap.find(varName) == esm.mLocalVarIndexmap.end())
 						{
-							std::cout << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+							error_message << "Unresolved Condition:[" << topicEDID << "] " << " mCell == [" << mCell << "]" << std::endl;
+							std::cout << error_message.str();
+							Log_DialogError(error_message.str(), topicEDID, this);
 							if (esm.mUnresolvedLocalVars.find(varName) == esm.mUnresolvedLocalVars.end())
 								esm.mUnresolvedLocalVars[varName] = 1;
 							else
@@ -1144,14 +1211,25 @@ namespace ESM
 
 				default:
 					// record stats on missing function and occurences
-					std::cout << "Unhandled Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+					error_message << "Unhandled Condition: [" << topicEDID << "] " << selectWrapper.toString() << std::endl;
+					std::cout << error_message.str();
+
 					break;
 				}
 
 				if (compareFunction != 0)
+				{
 					esm.exportConditionalExpression(compareFunction, compareArg1, compareOperator, compareVal, flags, compareArg2);
-				else
-					esm.exportConditionalExpression(0x0048, DIALOG_PLACHOLDER_NPC, "=", 1.0);
+				}
+				else if (skip_error == false)
+				{
+					if (error_message.str() == "")
+					{
+						error_message << selectWrapper.toString() << "\n";
+						Log_DialogError(error_message.str(), topicEDID, this);
+					}
+					esm.exportConditionalExpression(0x0048, ERR_DIALOG_PLACHOLDER_NPC, "=", 1.0);
+				}
 
 			} // for each mSelects
 
