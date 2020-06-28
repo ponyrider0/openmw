@@ -778,7 +778,7 @@ namespace ESM
 						{
 
 							// Skip if a white-list condition is met
-							if (mActor != "" || mClass != "" || mFaction != "")
+							if (mActor != "" || (mCell != "" && (mClass != "" || mFaction != "" || mRace != "")) )
 							{
 								error_message << "WARNING: \"LocalVar == 0\" condition detected, " << selectWrapper.toString() << "\n";
 								Log_DialogError(error_message.str(), topicEDID, this, esm); error_message.str(""); error_message.clear();
