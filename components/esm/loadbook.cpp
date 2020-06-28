@@ -4,6 +4,14 @@
 #include "esmwriter.hpp"
 #include "defs.hpp"
 
+#include <boost/filesystem.hpp>
+#include "../nif/niffile.hpp"
+#include "../nif/controlled.hpp"
+
+#include <apps/opencs/model/doc/document.hpp>
+#include <components/vfs/manager.hpp>
+#include <components/misc/resourcehelpers.hpp>
+
 namespace ESM
 {
     unsigned int Book::sRecordId = REC_BOOK;
@@ -78,11 +86,16 @@ namespace ESM
         esm.writeHNOString("TEXT", mText);
         esm.writeHNOCString("ENAM", mEnchant);
     }
-	bool Book::exportTESx(ESMWriter &esm, int export_format) const
+	bool Book::exportTESx(ESMWriter & esm, int export_format) const
+	{
+		return false;
+	}
+	bool Book::exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format) const
 	{
 		uint32_t tempFormID;
 		std::string tempStr;
 		std::ostringstream tempPath;
+		std::ostringstream modelPath;
 
 		tempStr = esm.generateEDIDTES4(mId, 0, "BOOK");
 		esm.startSubRecordTES4("EDID");
@@ -96,12 +109,83 @@ namespace ESM
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size()-4, 4, ".nif");
-		tempPath << "clutter\\books\\morro\\" << tempStr;
-		esm.QueueModelForExport(mModel, tempPath.str());
+		modelPath << "clutter\\books\\morro\\" << tempStr;
+		esm.QueueModelForExport(mModel, modelPath.str());
 //		tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 0);
 		esm.startSubRecordTES4("MODL");
-		esm.writeHCString(tempPath.str());
+		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
+
+		bool bBlenderOutput = false;
+		if (esm.mConversionOptions.find("#blender") != std::string::npos)
+			bBlenderOutput = true;
+
+		int vwdMode = VWD_MODE_NORMAL_ONLY;
+		if (esm.mConversionOptions.find("#vwd") != std::string::npos)
+			vwdMode = VWD_MODE_NORMAL_AND_LOD; // normals + vwd
+		if (esm.mConversionOptions.find("#vwdonly") != std::string::npos)
+		{
+			vwdMode = VWD_MODE_LOD_ONLY; // no normal nifs
+			if (esm.mConversionOptions.find("#vwdonly++") != std::string::npos)
+				vwdMode = VWD_MODE_LOD_AND_LARGE_NORMAL; // vwds + large normals
+		}
+
+		float vwdThreshold = VWD_QUAL_MEDIUM;
+		if (esm.mConversionOptions.find("#vwdfast") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_LOW;
+		}
+		if (esm.mConversionOptions.find("#vwdhd") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_HIGH;
+		}
+		if (esm.mConversionOptions.find("#vwdultra") != std::string::npos)
+		{
+			vwdThreshold = VWD_QUAL_ULTRA;
+		}
+
+		float modelBounds = 0.0f;
+		// ** Load NIF and get model's true Bound Radius
+		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+		doc.getVFS()->normalizeFilename(nifInputName);
+		try
+		{
+			Files::IStreamPtr fileStream = NULL;
+			fileStream = doc.getVFS()->get(nifInputName);
+			// read stream into NIF parser...
+			Nif::NIFFile nifFile(fileStream, nifInputName);
+			modelBounds = nifFile.mModelBounds;
+
+			if (bBlenderOutput)
+			{
+				nifFile.prepareExport(doc, esm, modelPath.str());
+				if (vwdMode != VWD_MODE_LOD_ONLY)
+				{
+					if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
+					{
+						// skip
+					}
+					else
+					{
+						std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+						nifFile.exportFileNif(esm, fileStream, filePath);
+					}
+				}
+
+				if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
+				{
+					std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+					nifFile.exportFileNifFar(esm, fileStream, filePath);
+				}
+			}
+
+		}
+		catch (std::runtime_error e)
+		{
+			std::string errString(e.what());
+			std::cout << "Book::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+		}
+
 		// MODB == Bound Radius
 		esm.startSubRecordTES4("MODB");
 		esm.writeT<float>(30.0);

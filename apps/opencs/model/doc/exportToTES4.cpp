@@ -1968,7 +1968,7 @@ void CSMDoc::ExportMiscCollectionTES4Stage::perform (int stage, Messages& messag
 		writer.startRecordTES4(sSIG, flags, formID, strEDID);
 */
 		StartModRecord(sSIG, miscRecord.get().mId, writer, miscRecord.mState);
-		miscRecord.get().exportTESx(writer, 4);
+		miscRecord.get().exportTESx(mDocument, writer, 4);
 		writer.endRecordTES4(sSIG);
 	}
 
@@ -2031,7 +2031,12 @@ void CSMDoc::ExportLightCollectionTES4Stage::perform (int stage, Messages& messa
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getLights().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getLights().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Light> record = mDocument.getData().getReferenceables().getDataSet().getLights().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
@@ -2238,7 +2243,7 @@ void CSMDoc::ExportFloraCollectionTES4Stage::perform (int stage, Messages& messa
 	}
 
 	StartModRecord(sSIG, containerRecord.get().mId, writer, containerRecord.mState);
-	containerRecord.get().exportAsFlora(writer, ingredientEDID);
+	containerRecord.get().exportAsFlora(mDocument, writer, ingredientEDID);
 	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRefCount-1)
@@ -2320,7 +2325,7 @@ void CSMDoc::ExportContainerCollectionTES4Stage::perform (int stage, Messages& m
 //	uint32_t formID = writer.crossRefStringID(strEDID, sSIG, false, true);
 
 	StartModRecord(sSIG, containerRecord.get().mId, writer, containerRecord.mState);
-	containerRecord.get().exportTESx(writer, 4);
+	containerRecord.get().exportTESx(mDocument, writer, 4);
 	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
@@ -2483,16 +2488,21 @@ int CSMDoc::ExportBookCollectionTES4Stage::setup()
 void CSMDoc::ExportBookCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "BOOK";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getBooks().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Book> record = mDocument.getData().getReferenceables().getDataSet().getBooks().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1)
 	{
@@ -2629,16 +2639,21 @@ int CSMDoc::ExportApparatusCollectionTES4Stage::setup()
 void CSMDoc::ExportApparatusCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "APPA";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0 && mActiveRecords.size() > 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getApparati().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getApparati().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Apparatus> record = mDocument.getData().getReferenceables().getDataSet().getApparati().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{
@@ -2690,16 +2705,21 @@ int CSMDoc::ExportPotionCollectionTES4Stage::setup()
 void CSMDoc::ExportPotionCollectionTES4Stage::perform (int stage, Messages& messages)
 {
 	std::string sSIG = "ALCH";
+	ESM::ESMWriter& writer = mState.getWriter();
 
 	// GRUP
 	if (stage == 0 && mActiveRecords.size() > 0)
 	{
-		ESM::ESMWriter& writer = mState.getWriter();
 		writer.startGroupTES4(sSIG, 0);
 	}
 
 	int recordIndex = mActiveRecords.at(stage);
-	mDocument.getData().getReferenceables().getDataSet().getPotions().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+//	mDocument.getData().getReferenceables().getDataSet().getPotions().exportTESx (recordIndex, mState.getWriter(), mSkipMasterRecords, 4);
+	const CSMWorld::Record<ESM::Potion> record = mDocument.getData().getReferenceables().getDataSet().getPotions().mContainer.at(recordIndex);
+
+	StartModRecord(sSIG, record.get().mId, writer, record.mState);
+	record.get().exportTESx(mDocument, writer, 4);
+	writer.endRecordTES4(sSIG);
 
 	if (stage == mActiveRecords.size()-1 && mActiveRecords.size() > 0)
 	{

@@ -6,6 +6,11 @@
 
 #include "esmcommon.hpp"
 
+namespace CSMDoc
+{
+	class Document;
+}
+
 namespace ESM
 {
 
@@ -55,7 +60,8 @@ struct Container
     void load(ESMReader &esm, bool &isDeleted);
     void save(ESMWriter &esm, bool isDeleted = false) const;
 	bool exportTESx(ESMWriter &esm, int export_format) const;
-	bool exportAsFlora(ESMWriter &esm, std::string ingredientEDID) const;
+	bool exportTESx(CSMDoc::Document &doc, ESMWriter &esm, int export_format) const;
+	bool exportAsFlora(CSMDoc::Document &doc, ESMWriter &esm, std::string ingredientEDID) const;
 
     void blank();
     ///< Set record to default state (does not touch the ID).
