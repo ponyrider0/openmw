@@ -1970,7 +1970,7 @@ namespace ESM
 		else if (tempString.find("glass") != std::string::npos)
 			prefixString = "Armor\\Glass\\";
 		else if (tempString.find("silver") != std::string::npos)
-			prefixString = "Armor\\Mithral\\";
+			prefixString = "Armor\\Mithril\\";
 		else if (tempString.find("imperial") != std::string::npos || tempString.find("captain") != std::string::npos)
 			prefixString = "Armor\\Legion\\";
 		else if (tempString.find("dwemer") != std::string::npos || tempString.find("dwarven") != std::string::npos ||
@@ -2057,19 +2057,20 @@ namespace ESM
 		}
 		else if (tempString.find("helm") != std::string::npos || tempString.find("mask") != std::string::npos || 
 			tempString.find("head") != std::string::npos || tempString.find("coif") != std::string::npos ||
-			tempString.find("cap") != std::string::npos || tempString.find("face") != std::string::npos ||
+			(tempString.find("cap") != std::string::npos && tempString.find("captain") == std::string::npos) ||
+			tempString.find("face") != std::string::npos ||
 			tempString.find("masq") != std::string::npos || tempString.find("hat") != std::string::npos)
 		{
 			switch (modelType)
 			{
 			case 0: // male model
-				retString = prefixString + "Helmet.NIF";
+				retString = prefixString + "M\\Helmet.NIF";
 				break;
 			case 1: // female model
-				retString = prefixString + "Helmet.NIF";
+				retString = prefixString + "F\\Helmet.NIF";
 				break;
 			case 2: // male gnd
-				retString = prefixString + "Helmet_gnd.NIF";
+				retString = prefixString + "M\\Helmet_gnd.NIF";
 				break;
 			case 4: // male ico
 				retString = prefixString + "M\\Helmet.dds";
@@ -2124,6 +2125,78 @@ namespace ESM
 			}
 		}
 		
+		// Hardcoded Overrides
+		tempString = "";
+		tempString = Misc::StringUtils::lowerCase(retString);
+		if ((tempString.find("armor\\amber\\m\\helmet.nif") != std::string::npos) ||
+			(tempString.find("armor\\amber\\f\\helmet.nif") != std::string::npos))
+			retString = "Armor\\Amber\\Helmet.nif";
+		if (tempString.find("armor\\amber\\m\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Amber\\Helmet_gnd.nif";
+
+		if ( (tempString.find("armor\\glass\\m\\helmet.nif") != std::string::npos) ||
+			(tempString.find("armor\\glass\\f\\helmet.nif") != std::string::npos) )
+			retString = "Armor\\Glass\\Helmet.nif";
+		if (tempString.find("armor\\glass\\m\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Glass\\Helmet_gnd.nif";
+
+		if ((tempString.find("armor\\legion\\m\\helmet.nif") != std::string::npos) ||
+			(tempString.find("armor\\legion\\f\\helmet.nif") != std::string::npos))
+			retString = "Armor\\Legion\\Helmet.nif";
+		if (tempString.find("armor\\legion\\m\\helmet_gnd.nif") != std::string::npos) 
+			retString = "Armor\\Legion\\Helmet_gnd.nif";
+
+		if ((tempString.find("armor\\orcish\\m\\helmet.nif") != std::string::npos) ||
+			(tempString.find("armor\\orcish\\f\\helmet.nif") != std::string::npos))
+			retString = "Armor\\Orcish\\Helmet.nif";
+		if (tempString.find("armor\\orcish\\m\\helmet_gnd.nif") != std::string::npos) 
+			retString = "Armor\\Orcish\\Helmet_gnd.nif";
+
+		if (tempString.find("armor\\iron\\f\\helmet.nif") != std::string::npos)
+			retString = "Armor\\Iron\\M\\Helmet.nif";
+		if (tempString.find("armor\\iron\\f\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Iron\\M\\Helmet_gnd.nif";
+
+		if (tempString.find("armor\\leather\\f\\helmet.nif") != std::string::npos)
+			retString = "Armor\\Leather\\M\\Helmet.nif";
+		if (tempString.find("armor\\leather\\f\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Leather\\M\\Helmet_gnd.nif";
+
+		if (tempString.find("armor\\mithril\\f\\helmet.nif") != std::string::npos)
+			retString = "Armor\\Mithril\\M\\Helmet.nif";
+		if (tempString.find("armor\\mithril\\f\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Mithril\\M\\Helmet_gnd.nif";
+
+		if (tempString.find("armor\\steel\\f\\helmet.nif") != std::string::npos)
+			retString = "Armor\\Steel\\M\\Helmet.nif";
+		if (tempString.find("armor\\steel\\f\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Steel\\M\\Helmet_gnd.nif";
+		//====================================================================================
+		if (tempString.find("armor\\dwarven\\f\\boots.nif") != std::string::npos)
+			retString = "Armor\\Dwarven\\M\\Boots.nif";
+		if (tempString.find("armor\\dwarven\\f\\cuirass.nif") != std::string::npos)
+			retString = "Armor\\Dwarven\\M\\Cuirass.nif";
+		if (tempString.find("armor\\dwarven\\f\\gauntlets.nif") != std::string::npos)
+			retString = "Armor\\Dwarven\\M\\Gauntlets.nif";
+
+		if (tempString.find("armor\\steel\\f\\boots.nif") != std::string::npos)
+			retString = "Armor\\Steel\\M\\Boots.nif";
+		if (tempString.find("armor\\steel\\f\\cuirass.nif") != std::string::npos)
+			retString = "Armor\\Steel\\M\\Cuirass.nif";
+		if (tempString.find("armor\\steel\\f\\gauntlets.nif") != std::string::npos)
+			retString = "Armor\\Steel\\M\\Gauntlets.nif";
+
+		if (tempString.find("armor\\legion\\f\\boots.nif") != std::string::npos)
+			retString = "Armor\\Legion\\M\\Boots.nif";
+		if (tempString.find("armor\\legion\\f\\gauntlets.nif") != std::string::npos)
+			retString = "Armor\\Legion\\M\\Gauntlets.nif";
+
+		if (tempString.find("armor\\mithril\\f\\boots.nif") != std::string::npos)
+			retString = "Armor\\Mithril\\M\\Boots.nif";
+		if (tempString.find("armor\\mithril\\f\\gauntlets.nif") != std::string::npos)
+			retString = "Armor\\Mithril\\M\\Gauntlets.nif";
+
+
 		return retString;
 	}
 
@@ -2890,7 +2963,7 @@ namespace ESM
 		{
 			stringList.clear();
 			stringList.push_back("Creatures\\Boar\\Skeleton.NIF");
-			stringList.push_back("blackhair.nif");
+			stringList.push_back("backhair.nif");
 			stringList.push_back("boarbody.nif");
 			stringList.push_back("boarhead.nif");
 		}
