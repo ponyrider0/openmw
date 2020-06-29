@@ -93,6 +93,7 @@ namespace ESM
 		std::string tempStr;
 		std::ostringstream tempPath;
 		std::ostringstream modelPath;
+		bool bSubstitute = false;
 
 		tempStr = esm.generateEDIDTES4(mId, 0, "ALCH");
 		esm.startSubRecordTES4("EDID");
@@ -104,82 +105,101 @@ namespace ESM
 		esm.endSubRecordTES4("FULL");
 
 		// MODL == Model Filename
-		tempStr = esm.generateEDIDTES4(mModel, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
-		modelPath << "clutter\\potions\\morro\\" << tempStr;
-		esm.QueueModelForExport(mModel, modelPath.str());
+		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+		doc.getVFS()->normalizeFilename(nifInputName);
+		// Sanity CHECK: Make sure BSA is not blacklisted
+		std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
+		if (archiveName.find("morrowind.bsa") != std::string::npos ||
+			archiveName.find("tribunal.bsa") != std::string::npos ||
+			archiveName.find("bloodmoon.bsa") != std::string::npos)
+		{
+			bSubstitute = true;
+		}
+
+		if (bSubstitute) {
+			modelPath << "Morroblivion\\Clutter\\Potions\\PotionBargain.nif";
+		}
+		else {
+			tempStr = esm.generateEDIDTES4(mModel, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".nif");
+			modelPath << "clutter\\potions\\morro\\" << tempStr;
+			esm.QueueModelForExport(mModel, modelPath.str());
+
+		}
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
 
-		bool bBlenderOutput = false;
-		if (esm.mConversionOptions.find("#blender") != std::string::npos)
-			bBlenderOutput = true;
+		if (bSubstitute == false)
+		{
+			bool bBlenderOutput = false;
+			if (esm.mConversionOptions.find("#blender") != std::string::npos)
+				bBlenderOutput = true;
 
-		int vwdMode = VWD_MODE_NORMAL_ONLY;
-		if (esm.mConversionOptions.find("#vwd") != std::string::npos)
-			vwdMode = VWD_MODE_NORMAL_AND_LOD; // normals + vwd
-		if (esm.mConversionOptions.find("#vwdonly") != std::string::npos)
-		{
-			vwdMode = VWD_MODE_LOD_ONLY; // no normal nifs
-			if (esm.mConversionOptions.find("#vwdonly++") != std::string::npos)
-				vwdMode = VWD_MODE_LOD_AND_LARGE_NORMAL; // vwds + large normals
-		}
-
-		float vwdThreshold = VWD_QUAL_MEDIUM;
-		if (esm.mConversionOptions.find("#vwdfast") != std::string::npos)
-		{
-			vwdThreshold = VWD_QUAL_LOW;
-		}
-		if (esm.mConversionOptions.find("#vwdhd") != std::string::npos)
-		{
-			vwdThreshold = VWD_QUAL_HIGH;
-		}
-		if (esm.mConversionOptions.find("#vwdultra") != std::string::npos)
-		{
-			vwdThreshold = VWD_QUAL_ULTRA;
-		}
-
-		float modelBounds = 0.0f;
-		// ** Load NIF and get model's true Bound Radius
-		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		doc.getVFS()->normalizeFilename(nifInputName);
-		try
-		{
-			Files::IStreamPtr fileStream = NULL;
-			fileStream = doc.getVFS()->get(nifInputName);
-			// read stream into NIF parser...
-			Nif::NIFFile nifFile(fileStream, nifInputName);
-			modelBounds = nifFile.mModelBounds;
-
-			if (bBlenderOutput)
+			int vwdMode = VWD_MODE_NORMAL_ONLY;
+			if (esm.mConversionOptions.find("#vwd") != std::string::npos)
+				vwdMode = VWD_MODE_NORMAL_AND_LOD; // normals + vwd
+			if (esm.mConversionOptions.find("#vwdonly") != std::string::npos)
 			{
-				nifFile.prepareExport(doc, esm, modelPath.str());
-				if (vwdMode != VWD_MODE_LOD_ONLY)
-				{
-					if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
-					{
-						// skip
-					}
-					else
-					{
-						std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-						nifFile.exportFileNif(esm, fileStream, filePath);
-					}
-				}
-
-				if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
-				{
-					std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
-					nifFile.exportFileNifFar(esm, fileStream, filePath);
-				}
+				vwdMode = VWD_MODE_LOD_ONLY; // no normal nifs
+				if (esm.mConversionOptions.find("#vwdonly++") != std::string::npos)
+					vwdMode = VWD_MODE_LOD_AND_LARGE_NORMAL; // vwds + large normals
 			}
 
-		}
-		catch (std::runtime_error e)
-		{
-			std::string errString(e.what());
-			std::cout << "Alch::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+			float vwdThreshold = VWD_QUAL_MEDIUM;
+			if (esm.mConversionOptions.find("#vwdfast") != std::string::npos)
+			{
+				vwdThreshold = VWD_QUAL_LOW;
+			}
+			if (esm.mConversionOptions.find("#vwdhd") != std::string::npos)
+			{
+				vwdThreshold = VWD_QUAL_HIGH;
+			}
+			if (esm.mConversionOptions.find("#vwdultra") != std::string::npos)
+			{
+				vwdThreshold = VWD_QUAL_ULTRA;
+			}
+
+			float modelBounds = 0.0f;
+			// ** Load NIF and get model's true Bound Radius
+			try
+			{
+				Files::IStreamPtr fileStream = NULL;
+				fileStream = doc.getVFS()->get(nifInputName);
+				// read stream into NIF parser...
+				Nif::NIFFile nifFile(fileStream, nifInputName);
+				modelBounds = nifFile.mModelBounds;
+
+				if (bBlenderOutput)
+				{
+					nifFile.prepareExport(doc, esm, modelPath.str());
+					if (vwdMode != VWD_MODE_LOD_ONLY)
+					{
+						if (vwdMode == VWD_MODE_LOD_AND_LARGE_NORMAL && modelBounds < vwdThreshold)
+						{
+							// skip
+						}
+						else
+						{
+							std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+							nifFile.exportFileNif(esm, fileStream, filePath);
+						}
+					}
+
+					if (vwdMode != VWD_MODE_NORMAL_ONLY && modelBounds >= vwdThreshold)
+					{
+						std::string filePath = Nif::NIFFile::CreateResourcePaths(modelPath.str());
+						nifFile.exportFileNifFar(esm, fileStream, filePath);
+					}
+				}
+
+			}
+			catch (std::runtime_error e)
+			{
+				std::string errString(e.what());
+				std::cout << "Alch::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+			}
+
 		}
 
 		// MODB == Bound Radius
@@ -189,14 +209,20 @@ namespace ESM
 
 		// ICON, mIcon
 		tempPath.str(""); tempPath.clear();
-		if (mIcon.size() > 4)
-		{
-			tempStr = esm.generateEDIDTES4(mIcon, 1);
-			tempStr.replace(tempStr.size() - 4, 4, ".dds");
-			tempPath << "clutter\\potions\\morro\\" << tempStr;
+		if (bSubstitute) {
+			tempPath << "darthsouth\\Potions\\bargainpotion.dds";
 		}
-		esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
-//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+		else {
+			if (mIcon.size() > 4)
+			{
+				tempStr = esm.generateEDIDTES4(mIcon, 1);
+				tempStr.replace(tempStr.size() - 4, 4, ".dds");
+				tempPath << "clutter\\potions\\morro\\" << tempStr;
+			}
+			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
+			//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+
+		}
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());
 		esm.endSubRecordTES4("ICON");
