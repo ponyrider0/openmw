@@ -104,26 +104,63 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
-		// MODL == Model Filename
-		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		doc.getVFS()->normalizeFilename(nifInputName);
-		// Sanity CHECK: Make sure BSA is not blacklisted
-		std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
-		if (archiveName.find("morrowind.bsa") != std::string::npos ||
-			archiveName.find("tribunal.bsa") != std::string::npos ||
-			archiveName.find("bloodmoon.bsa") != std::string::npos)
-		{
-			bSubstitute = true;
+		std::string nifInputName;
+		if (mModel.size() > 4) {
+			nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+			doc.getVFS()->normalizeFilename(nifInputName);
+			try {
+				// Sanity CHECK: Make sure BSA is not blacklisted
+				std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
+				if (archiveName.find("morrowind.bsa") != std::string::npos ||
+					archiveName.find("tribunal.bsa") != std::string::npos ||
+					archiveName.find("bloodmoon.bsa") != std::string::npos)
+				{
+					bSubstitute = true;
+				}
+			}
+			catch (std::runtime_error e)
+			{
+				std::string errString(e.what());
+				std::cout << "Book::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+			}
 		}
 
+		// MODL == Model Filename
+		tempStr = esm.generateEDIDTES4(mModel, 1);
+		tempStr.replace(tempStr.size() - 4, 4, ".nif");
+		modelPath << "clutter\\potions\\morro\\" << tempStr;
+		esm.QueueModelForExport(mModel, modelPath.str());
 		if (bSubstitute) {
-			modelPath << "Morroblivion\\Clutter\\Potions\\PotionBargain.nif";
-		}
-		else {
-			tempStr = esm.generateEDIDTES4(mModel, 1);
-			tempStr.replace(tempStr.size() - 4, 4, ".nif");
-			modelPath << "clutter\\potions\\morro\\" << tempStr;
-			esm.QueueModelForExport(mModel, modelPath.str());
+			tempStr = Misc::StringUtils::lowerCase(modelPath.str());
+			if (tempStr.find("bargain") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\\PotionBargain.nif");
+			}
+			else if (tempStr.find("cheap") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\\PotionCheap.nif");
+			}
+			else if (tempStr.find("exclusive") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\\PotionExclusive.nif");
+			}
+			else if (tempStr.find("fresh") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\PotionFresh.nif");
+			}
+			else if (tempStr.find("quality") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\\PotionQuality.nif");
+			}
+			else if (tempStr.find("standard") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Potions\\PotionStandard.nif");
+			}
+			else if (tempStr.find("comberry") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Booze\\ComberryWine.nif");
+			}
+			else if (tempStr.find("cyro") != std::string::npos) {
+				modelPath.str("Morroblivion\\Clutter\\Booze\\CyroWhiskey.nif");
+			}
+			else {
+				//default
+				modelPath.str("Morroblivion\\Clutter\\Booze\\LocalBrew.nif");
+
+			}
 
 		}
 		esm.startSubRecordTES4("MODL");
@@ -209,19 +246,45 @@ namespace ESM
 
 		// ICON, mIcon
 		tempPath.str(""); tempPath.clear();
-		if (bSubstitute) {
-			tempPath << "darthsouth\\Potions\\bargainpotion.dds";
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".dds");
+			tempPath << "clutter\\potions\\morro\\" << tempStr;
 		}
-		else {
-			if (mIcon.size() > 4)
-			{
-				tempStr = esm.generateEDIDTES4(mIcon, 1);
-				tempStr.replace(tempStr.size() - 4, 4, ".dds");
-				tempPath << "clutter\\potions\\morro\\" << tempStr;
+		esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
+		//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+		if (bSubstitute) {
+			tempStr = Misc::StringUtils::lowerCase(tempPath.str());
+			if (tempStr.find("bargain") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\bargainpotion.dds");
 			}
-			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
-			//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+			else if (tempStr.find("cheap") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\cheappotion.dds");
+			}
+			else if (tempStr.find("exclusive") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\exclusivepotion.dds");
+			}
+			else if (tempStr.find("fresh") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\freshpotion.dds");
+			}
+			else if (tempStr.find("quality") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\qualitypotion.dds");
+			}
+			else if (tempStr.find("standard") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\standardpotion.dds");
+			}
+			else if (tempStr.find("comberry") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\comberrywine.dds");
+			}
+			else if (tempStr.find("cyro") != std::string::npos) {
+				tempPath.str("darthsouth\\Potions\\cyrowhiskey.dds");
+			}
+			else {
+				//default
+				tempPath.str("darthsouth\\Potions\\localbrew.dds");
 
+			}
 		}
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());

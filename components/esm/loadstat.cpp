@@ -80,6 +80,11 @@ namespace ESM
 		tempStr = esm.generateEDIDTES4(mModel, 1);
 		tempStr.replace(tempStr.size() - 4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
+		// hardcoded substitutions
+		tempStr = Misc::StringUtils::lowerCase(modelPath.str());
+		if (tempStr.find("furnUdeUchairU02.nif") != std::string::npos) {
+			modelPath.str("morro\\f\\FurnUDeUChairU03.nif");
+		}
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");

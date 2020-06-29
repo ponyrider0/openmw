@@ -107,25 +107,35 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
-		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		doc.getVFS()->normalizeFilename(nifInputName);
-		// Sanity CHECK: Make sure BSA is not blacklisted
-		std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
-		if (archiveName.find("morrowind.bsa") != std::string::npos ||
-			archiveName.find("tribunal.bsa") != std::string::npos ||
-			archiveName.find("bloodmoon.bsa") != std::string::npos)
-		{
-			bSubstitute = true;
+		std::string nifInputName;
+		if (mModel.size() > 4) {
+			nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+			doc.getVFS()->normalizeFilename(nifInputName);
+			try {
+				// Sanity CHECK: Make sure BSA is not blacklisted
+				std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
+				if (archiveName.find("morrowind.bsa") != std::string::npos ||
+					archiveName.find("tribunal.bsa") != std::string::npos ||
+					archiveName.find("bloodmoon.bsa") != std::string::npos)
+				{
+					bSubstitute = true;
+				}
+			}
+			catch (std::runtime_error e)
+			{
+				std::string errString(e.what());
+				std::cout << "Book::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+			}
+
 		}
 
 		// MODL == Model Filename
-		if (bSubstitute)
-			modelPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 0);
-		else {
-			tempStr = esm.generateEDIDTES4(mModel, 1);
-			tempStr.replace(tempStr.size() - 4, 4, ".nif");
-			modelPath << "clutter\\books\\morro\\" << tempStr;
-			esm.QueueModelForExport(mModel, modelPath.str());
+		tempStr = esm.generateEDIDTES4(mModel, 1);
+		tempStr.replace(tempStr.size() - 4, 4, ".nif");
+		modelPath << "clutter\\books\\morro\\" << tempStr;
+		esm.QueueModelForExport(mModel, modelPath.str());
+		if (bSubstitute) {
+			modelPath.str(esm.substituteBookModel(modelPath.str(), mData.mIsScroll, 0));
 		}
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
@@ -210,19 +220,16 @@ namespace ESM
 		// MODT
 		// ICON, mIcon
 		tempPath.str(""); tempPath.clear();
-		if (bSubstitute) {
-			tempPath << esm.substituteBookModel(mName + (mData.mIsScroll ? "sc" : ""), 1);
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".dds");
+			tempPath << "clutter\\morro\\" << tempStr;
 		}
-		else {
-			if (mIcon.size() > 4)
-			{
-				tempStr = esm.generateEDIDTES4(mIcon, 1);
-				tempStr.replace(tempStr.size() - 4, 4, ".dds");
-				tempPath << "clutter\\morro\\" << tempStr;
-			}
-			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
-			//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
-
+		esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
+		//		esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
+		if (bSubstitute) {
+			tempPath.str(esm.substituteBookModel(tempPath.str(), mData.mIsScroll, 1));
 		}
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());

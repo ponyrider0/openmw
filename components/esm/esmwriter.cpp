@@ -1964,7 +1964,7 @@ namespace ESM
 		else if (tempString.find("fur") != std::string::npos)
 			prefixString = "Armor\\Fur\\";
 		else if (tempString.find("leather") != std::string::npos || tempString.find("netch") != std::string::npos)
-			prefixString = "Armor\\Thief\\";
+			prefixString = "Armor\\Leather\\";
 		else if (tempString.find("ebony") != std::string::npos)
 			prefixString = "Armor\\Ebony\\";
 		else if (tempString.find("glass") != std::string::npos)
@@ -2151,6 +2151,11 @@ namespace ESM
 			retString = "Armor\\Orcish\\Helmet.nif";
 		if (tempString.find("armor\\orcish\\m\\helmet_gnd.nif") != std::string::npos) 
 			retString = "Armor\\Orcish\\Helmet_gnd.nif";
+
+		if (tempString.find("armor\\dwarven\\f\\helmet.nif") != std::string::npos)
+			retString = "Armor\\Dwarven\\M\\Helmet.nif";
+		if (tempString.find("armor\\dwarven\\f\\helmet_gnd.nif") != std::string::npos)
+			retString = "Armor\\Dwarven\\M\\Helmet_gnd.nif";
 
 		if (tempString.find("armor\\iron\\f\\helmet.nif") != std::string::npos)
 			retString = "Armor\\Iron\\M\\Helmet.nif";
@@ -2396,7 +2401,7 @@ namespace ESM
 		return retString;
 	}
 
-	std::string ESMWriter::substituteBookModel(const std::string& model, int modelType)
+	std::string ESMWriter::substituteBookModel(const std::string& model, bool bIsScroll, int modelType)
 	{
 		std::string retString = "";
 		std::string tempString;
@@ -2404,7 +2409,7 @@ namespace ESM
 		tempString = Misc::StringUtils::lowerCase(model);
 
 		// default model
-		if (true)
+		if (bIsScroll == false)
 //		if (tempString.find("book") != std::string::npos)
 		{
 			switch (modelType)
@@ -2417,7 +2422,7 @@ namespace ESM
 			}
 		}
 
-		if (tempString.find("scroll") != std::string::npos)
+		if (bIsScroll)
 		{
 			switch (modelType)
 			{
@@ -2441,7 +2446,11 @@ namespace ESM
 		tempString = Misc::StringUtils::lowerCase(model);
 
 		// default model
-//		if (true)
+		if (true)
+		{
+			retString = "";
+		}
+
 		if (tempString.find("torch") != std::string::npos)
 		{
 			switch (modelType)
@@ -2477,6 +2486,116 @@ namespace ESM
 				retString = "lights\\0lightUcomUlanterU01.dds";
 			}
 		}
+
+		if (tempString.find("lightudeulampu01") != std::string::npos ||
+			tempString.find("lightudeulampu03") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Lights\\MiddleCandlestickFloor02.NIF";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("lightudeulampu09") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dunmer\\lamp_08.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("streetligh") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dunmer\\streetlightU01.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("fire") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Fire\\FireOpenMediumSmoke.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("log") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dungeons\\logpile_10a.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("brazier") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Tribunal\\OM_brazier.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("censure") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Tribunal\\OM_censure.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("pit") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dungeons\\pitfire01.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
+		if (tempString.find("sconce") != std::string::npos)
+		{
+			switch (modelType)
+			{
+			case 0:
+				retString = "Morroblivion\\Lights\\Dungeons\\sconce10.nif";
+				break;
+			case 1:
+				retString = "";
+			}
+		}
+
 
 		return retString;
 

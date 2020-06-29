@@ -94,34 +94,39 @@ namespace ESM
 		std::ostringstream modelPath;
 		bool bSubstitute = false;
 
-		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
-		doc.getVFS()->normalizeFilename(nifInputName);
-		// Sanity CHECK: Make sure BSA is not blacklisted
-		std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
-		if (archiveName.find("morrowind.bsa") != std::string::npos ||
-			archiveName.find("tribunal.bsa") != std::string::npos ||
-			archiveName.find("bloodmoon.bsa") != std::string::npos)
-		{
-			bSubstitute = true;
-		}
-
 		tempStr = esm.generateEDIDTES4(mId, 0, "LIGH");
 		esm.startSubRecordTES4("EDID");
 		esm.writeHCString(tempStr);
 		esm.endSubRecordTES4("EDID");
 
 		// MODL == Model Filename
+		std::string nifInputName;
 		if (mModel.size() > 4)
 		{
-			if (bSubstitute) {
-				modelPath << esm.substituteLightModel(mId, 0);
+			nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+			doc.getVFS()->normalizeFilename(nifInputName);
+			try {
+				// Sanity CHECK: Make sure BSA is not blacklisted
+				std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
+				if (archiveName.find("morrowind.bsa") != std::string::npos ||
+					archiveName.find("tribunal.bsa") != std::string::npos ||
+					archiveName.find("bloodmoon.bsa") != std::string::npos)
+				{
+					bSubstitute = true;
+				}
 			}
-			else {
-				tempStr = esm.generateEDIDTES4(mModel, 1);
-				tempStr.replace(tempStr.size() - 4, 4, ".nif");
-				modelPath << "lights\\morro\\" << tempStr;
-				esm.QueueModelForExport(mModel, modelPath.str());
+			catch (std::runtime_error e)
+			{
+				std::string errString(e.what());
+				std::cout << "Light::exportTESx() Error: (" << nifInputName << ") " << errString << "\n";
+			}
 
+			tempStr = esm.generateEDIDTES4(mModel, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".nif");
+			modelPath << "lights\\morro\\" << tempStr;
+			esm.QueueModelForExport(mModel, modelPath.str());
+			if (bSubstitute) {
+				modelPath.str(esm.substituteLightModel(modelPath.str(), 0));
 			}
 			esm.startSubRecordTES4("MODL");
 			esm.writeHCString(modelPath.str());
@@ -224,19 +229,16 @@ namespace ESM
 
 		// ICON, mIcon
 		tempPath.str(""); tempPath.clear();
-		if (bSubstitute) {
-			tempPath << esm.substituteLightModel(mId, 1);
+		if (mIcon.size() > 4)
+		{
+			tempStr = esm.generateEDIDTES4(mIcon, 1);
+			tempStr.replace(tempStr.size() - 4, 4, ".dds");
+			tempPath << "lights\\morro\\" << tempStr;
 		}
-		else {
-			if (mIcon.size() > 4)
-			{
-				tempStr = esm.generateEDIDTES4(mIcon, 1);
-				tempStr.replace(tempStr.size() - 4, 4, ".dds");
-				tempPath << "lights\\morro\\" << tempStr;
-			}
-			esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
+		esm.mDDSToExportList.push_back(std::make_pair(mIcon, std::make_pair(tempPath.str(), 1)));
 //			esm.mDDSToExportList[mIcon] = std::make_pair(tempPath.str(), 1);
-
+		if (bSubstitute) {
+			tempPath.str(esm.substituteLightModel(tempPath.str(), 1));
 		}
 		esm.startSubRecordTES4("ICON");
 		esm.writeHCString(tempPath.str());

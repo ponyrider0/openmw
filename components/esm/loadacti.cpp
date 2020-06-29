@@ -74,6 +74,7 @@ namespace ESM
 	{
 		std::string tempStr;
 		std::ostringstream modelPath;
+		bool bSubstitute = false;
 
 		tempStr = esm.generateEDIDTES4(mId, 0, "ACTI");
 		esm.startSubRecordTES4("EDID");
@@ -84,11 +85,38 @@ namespace ESM
 		esm.writeHCString(mName);
 		esm.endSubRecordTES4("FULL");
 
+		std::string nifInputName;
+		if (mModel.size() > 4) {
+			nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
+			doc.getVFS()->normalizeFilename(nifInputName);
+			try {
+				// Sanity CHECK: Make sure BSA is not blacklisted
+				std::string archiveName = Misc::StringUtils::lowerCase(doc.getVFS()->lookupArchive(nifInputName));
+				if (archiveName.find("morrowind.bsa") != std::string::npos ||
+					archiveName.find("tribunal.bsa") != std::string::npos ||
+					archiveName.find("bloodmoon.bsa") != std::string::npos)
+				{
+					bSubstitute = true;
+				}
+			}
+			catch (std::runtime_error e)
+			{
+				std::cout << "Activator::exportTESx() Error: (" << nifInputName << ") " << e.what() << "\n";
+			}
+		}
+
 		// MODL == Model Filename
 		tempStr = esm.generateEDIDTES4(mModel, 1);
-		tempStr.replace(tempStr.size()-4, 4, ".nif");
+		tempStr.replace(tempStr.size() - 4, 4, ".nif");
 		modelPath << "morro\\" << tempStr;
-//		esm.QueueModelForExport(mModel, modelPath.str());
+		//		esm.QueueModelForExport(mModel, modelPath.str());
+		if (bSubstitute) {
+			tempStr = Misc::StringUtils::lowerCase(modelPath.str());
+			// hardcode substitutions here
+			if (tempStr.find("furnUdeUchairU02.nif") != std::string::npos) {
+				modelPath.str("morro\\f\\FurnUDeUChairU03.nif");
+			}
+		}
 		esm.startSubRecordTES4("MODL");
 		esm.writeHCString(modelPath.str());
 		esm.endSubRecordTES4("MODL");
@@ -123,7 +151,6 @@ namespace ESM
 
 		float modelBounds = 0.0f;
 		// ** Load NIF and get model's true Bound Radius
-		std::string nifInputName = "meshes/" + Misc::ResourceHelpers::correctActorModelPath(mModel, doc.getVFS());
 		try
 		{
 			Files::IStreamPtr fileStream = NULL;

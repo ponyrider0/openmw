@@ -205,7 +205,7 @@ public:
 		static uint32_t substituteRaceID(const std::string& raceName);
 		static std::string substituteArmorModel(const std::string& model, int modelType);
 		static std::string substituteClothingModel(const std::string& model, int modelType);
-		static std::string substituteBookModel(const std::string& model, int modelType);
+		static std::string substituteBookModel(const std::string& model, bool bIsScroll, int modelType);
 		static std::string substituteLightModel(const std::string& model, int modelType);
 		static std::string substituteWeaponModel(const std::string& model, int modelType);
 		static std::vector<std::string> substituteCreatureModel(const std::string& creatureEDID);
